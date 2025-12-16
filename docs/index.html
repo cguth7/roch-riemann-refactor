@@ -347,7 +347,7 @@
         <section>
             <div class="stats-row">
                 <div class="stat">
-                    <div class="stat-num">24</div>
+                    <div class="stat-num">26</div>
                     <div class="stat-label">Cycles</div>
                 </div>
                 <div class="stat">
@@ -355,12 +355,12 @@
                     <div class="stat-label">Approaches</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-num">90+</div>
+                    <div class="stat-num">100+</div>
                     <div class="stat-label">Lemmas Proved</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-num">2</div>
-                    <div class="stat-label">Sorries Left</div>
+                    <div class="stat-num">4</div>
+                    <div class="stat-label">Active Sorries</div>
                 </div>
             </div>
         </section>
@@ -370,7 +370,7 @@
             <h2>Two Parallel Approaches</h2>
             <div class="two-col">
                 <div class="approach-box">
-                    <h4><span class="file">RR.lean</span> Axiom-Based</h4>
+                    <h4><span class="file">RR.lean</span> Axiom-Based (Archived)</h4>
                     <ul>
                         <li>Abstract <code>FunctionFieldData</code> structure</li>
                         <li>Axiomatizes single-point bound, RR equation</li>
@@ -390,7 +390,7 @@
                         <li><strong>Riemann inequality PROVED</strong> by degree induction</li>
                     </ul>
                     <p style="font-size: 0.85rem; color: var(--green);">
-                        <strong>Status:</strong> Core infrastructure complete, working toward full RR.
+                        <strong>Status:</strong> Core infrastructure complete, working toward unconditional LocalGapBound.
                     </p>
                 </div>
             </div>
@@ -466,8 +466,8 @@
                         <td><span class="status done">Proved</span></td>
                     </tr>
                     <tr>
-                        <td><code>shifted_element_valuation_le_one</code></td>
-                        <td>f in L(D+v) => v(f*pi^n) &le; 1</td>
+                        <td><code>valuationRingAt</code></td>
+                        <td>Valuation ring at v (local ring)</td>
                         <td><span class="status done">Proved</span></td>
                     </tr>
                     <tr>
@@ -488,6 +488,62 @@
             </ul>
         </section>
 
+        <!-- Current Sorry Status -->
+        <section>
+            <h2>Current Sorry Status (RR_v2.lean)</h2>
+            <table class="status-table">
+                <thead>
+                    <tr>
+                        <th>Line</th>
+                        <th>Name</th>
+                        <th>Status</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>337</td>
+                        <td><code>ellV2_mono</code></td>
+                        <td><span class="status wip">Deprecated</span></td>
+                        <td>Superseded by <code>ellV2_real_mono</code></td>
+                    </tr>
+                    <tr>
+                        <td>715</td>
+                        <td><code>riemann_inequality</code></td>
+                        <td><span class="status wip">Deprecated</span></td>
+                        <td>Superseded by <code>riemann_inequality_real</code></td>
+                    </tr>
+                    <tr>
+                        <td>1001</td>
+                        <td><code>shifted_element_valuation_le_one</code></td>
+                        <td><span class="status wip">Active</span></td>
+                        <td>WithZero.exp arithmetic (proof path clear)</td>
+                    </tr>
+                    <tr>
+                        <td>1030</td>
+                        <td><code>evaluationMapAt</code></td>
+                        <td><span class="status blocked">Blocker</span></td>
+                        <td>Needs residue field bridge</td>
+                    </tr>
+                    <tr>
+                        <td>1042</td>
+                        <td><code>kernel_evaluationMapAt</code></td>
+                        <td><span class="status blocked">Blocked</span></td>
+                        <td>Depends on evaluationMapAt</td>
+                    </tr>
+                    <tr>
+                        <td>1061</td>
+                        <td><code>instLocalGapBound</code></td>
+                        <td><span class="status blocked">Blocked</span></td>
+                        <td>Depends on kernel proof</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="font-size: 0.9rem; color: var(--muted); margin-top: 1rem;">
+                <strong>6 total sorries</strong>: 2 deprecated (placeholder code), 4 active (on critical path to LocalGapBound instance)
+            </p>
+        </section>
+
         <!-- What We Still Need -->
         <section>
             <h2>What We Still Need</h2>
@@ -503,16 +559,22 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td><code>evaluationMapAt</code></td>
-                        <td>Construct phi : L(D+v) -> kappa(v)</td>
-                        <td><span class="difficulty easy">Easy</span></td>
-                        <td>Uniformizer + shifted valuation now PROVED</td>
+                        <td>Residue field bridge</td>
+                        <td>Show valuationRingAt.residueField = residueFieldAtPrime</td>
+                        <td><span class="difficulty medium">Medium</span></td>
+                        <td>Key gap identified in Cycle 26</td>
                     </tr>
                     <tr>
-                        <td>Kernel condition</td>
-                        <td>Prove ker(phi) = L(D)</td>
+                        <td><code>shifted_element_valuation_le_one</code></td>
+                        <td>Complete WithZero.exp arithmetic</td>
+                        <td><span class="difficulty easy">Easy</span></td>
+                        <td>Helper lemmas now in place</td>
+                    </tr>
+                    <tr>
+                        <td><code>evaluationMapAt</code></td>
+                        <td>Construct phi : L(D+v) -> kappa(v)</td>
                         <td><span class="difficulty medium">Medium</span></td>
-                        <td>Valuation arithmetic now available</td>
+                        <td>Depends on residue field bridge</td>
                     </tr>
                     <tr>
                         <td><code>LocalGapBound</code> instance</td>
@@ -532,17 +594,11 @@
                         <td><span class="difficulty very-hard">Very Hard</span></td>
                         <td>Requires differentials, residue theorem</td>
                     </tr>
-                    <tr>
-                        <td>Full RR from first principles</td>
-                        <td>Remove all axioms</td>
-                        <td><span class="difficulty very-hard">Very Hard</span></td>
-                        <td>Multi-month project</td>
-                    </tr>
                 </tbody>
             </table>
 
-            <div class="note success">
-                <strong>Progress (Cycle 24):</strong> Uniformizer infrastructure now COMPLETE. <code>uniformizerAt</code>, <code>uniformizerAt_pow_valuation</code>, and <code>shifted_element_valuation_le_one</code> are all proved. The evaluation map is now straightforward to construct.
+            <div class="note info">
+                <strong>Cycle 26 Progress:</strong> Introduced valuation ring infrastructure. The key insight is that shifted elements land in <code>valuationRingAt v</code> (local condition at single prime) even though they may have poles elsewhere. Now need to bridge the two residue field constructions.
             </div>
         </section>
 
@@ -579,38 +635,6 @@
                 Cycle 22 discovered that <code>HeightOneSpectrum R</code> only captures finite places.
                 The classical Riemann inequality l(D) &le; deg(D) + 1 requires compactification.
                 We cleanly separated this into two typeclasses so proofs work at both levels.
-            </p>
-        </section>
-
-        <!-- Current Sorry Status -->
-        <section>
-            <h2>Current Sorry Status</h2>
-            <div class="note success">
-                <strong>Only 2 sorries remain</strong>, both in deprecated placeholder code:
-            </div>
-            <table class="status-table">
-                <thead>
-                    <tr>
-                        <th>Location</th>
-                        <th>Sorry</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>RR_v2.lean:335</td>
-                        <td><code>ellV2_mono</code></td>
-                        <td><span class="status wip">Deprecated</span> (superseded by <code>ellV2_real_mono</code>)</td>
-                    </tr>
-                    <tr>
-                        <td>RR_v2.lean:713</td>
-                        <td><code>riemann_inequality</code></td>
-                        <td><span class="status wip">Deprecated</span> (superseded by <code>riemann_inequality_real</code>)</td>
-                    </tr>
-                </tbody>
-            </table>
-            <p style="font-size: 0.9rem; color: var(--muted); margin-top: 1rem;">
-                These are placeholder definitions from early cycles. The real versions with <code>_real</code> suffix are fully proved.
             </p>
         </section>
 
@@ -694,10 +718,28 @@
                         <td><span class="status done">8 proved</span></td>
                     </tr>
                     <tr>
-                        <td>24</td>
-                        <td>Linear algebra bridge + uniformizer</td>
-                        <td><code>local_gap_bound_of_exists_map</code>, <code>isSimpleModule</code>, <code>uniformizerAt</code>, <code>shifted_element_valuation_le_one</code></td>
-                        <td><span class="status done">13 proved</span></td>
+                        <td>24.1</td>
+                        <td>Linear algebra bridge</td>
+                        <td><code>local_gap_bound_of_exists_map</code>, <code>isSimpleModule</code></td>
+                        <td><span class="status done">6 proved</span></td>
+                    </tr>
+                    <tr>
+                        <td>24.2</td>
+                        <td>Uniformizer infrastructure</td>
+                        <td><code>uniformizerAt</code>, valuation lemmas</td>
+                        <td><span class="status done">6 proved</span></td>
+                    </tr>
+                    <tr>
+                        <td>25</td>
+                        <td>Integration</td>
+                        <td>Blocker identified (residue field bridge)</td>
+                        <td><span class="status wip">Partial</span></td>
+                    </tr>
+                    <tr>
+                        <td>26</td>
+                        <td>Valuation ring</td>
+                        <td><code>valuationRingAt</code>, local ring infrastructure</td>
+                        <td><span class="status done">8 proved</span></td>
                     </tr>
                 </tbody>
             </table>
@@ -705,12 +747,13 @@
 
         <!-- What's Next -->
         <section>
-            <h2>What's Next (Cycle 25)</h2>
+            <h2>What's Next (Cycle 27)</h2>
             <h3>Immediate Goals</h3>
             <ul style="margin: 1rem 0; padding-left: 1.5rem;">
-                <li><strong>Construct evaluation map</strong> &mdash; Use proved <code>uniformizerAt</code> + <code>shifted_element_valuation_le_one</code> to build phi : L(D+v) -> kappa(v)</li>
-                <li><strong>Prove kernel condition</strong> &mdash; Show ker(phi) = L(D) via the valuation arithmetic infrastructure</li>
-                <li><strong>Instantiate LocalGapBound</strong> &mdash; Apply <code>local_gap_bound_of_exists_map</code> to make riemann_inequality_affine unconditional</li>
+                <li><strong>Bridge residue fields</strong> &mdash; Show <code>valuationRingAt.residueField v</code> is isomorphic to <code>residueFieldAtPrime R v</code></li>
+                <li><strong>Complete shifted valuation lemma</strong> &mdash; Use <code>withzero_exp_mul</code> and <code>withzero_exp_neg</code> helpers</li>
+                <li><strong>Construct evaluation map</strong> &mdash; Map shifted element through valuation ring residue to kappa(v)</li>
+                <li><strong>Instantiate LocalGapBound</strong> &mdash; Apply <code>local_gap_bound_of_exists_map</code></li>
             </ul>
 
             <h3 style="margin-top: 1.5rem;">Stretch Goals</h3>
@@ -745,18 +788,18 @@
                         <li><strong>Two-file strategy</strong> &mdash; Axiom-based (RR.lean) let us explore consequences while constructive (RR_v2.lean) built foundations</li>
                         <li><strong>Typeclass abstraction</strong> &mdash; <code>LocalGapBound</code> / <code>SinglePointBound</code> hierarchy cleanly separated affine vs projective concerns</li>
                         <li><strong>Module.length over finrank</strong> &mdash; Key pivot in Cycle 20; length is additive in exact sequences, finrank isn't</li>
-                        <li><strong>Mathlib discovery</strong> &mdash; Finding <code>bijective_algebraMap_quotient_residueField</code> unlocked the isSimpleModule proof</li>
+                        <li><strong>Valuation ring approach</strong> &mdash; Cycle 26 insight: use local condition at single prime rather than global integrality</li>
                         <li><strong>State files</strong> &mdash; playbook.md and ledger.md provided persistent memory across sessions</li>
                     </ul>
                 </div>
                 <div class="approach-box">
                     <h4 style="color: var(--red);">What Was Hard / Didn't Work</h4>
                     <ul>
-                        <li><strong>Instance plumbing</strong> &mdash; Lean's typeclass system sometimes times out on "obvious" instances (IsFractionRing K K for fields)</li>
+                        <li><strong>Instance plumbing</strong> &mdash; Lean's typeclass system sometimes times out on "obvious" instances</li>
                         <li><strong>Affine model surprise</strong> &mdash; Cycle 22 discovered HeightOneSpectrum only gives finite places; took 3 cycles to cleanly resolve</li>
                         <li><strong>finrank dead end</strong> &mdash; Cycles 17-19 tried finrank-based dimension; had to pivot when monotonicity failed</li>
                         <li><strong>API exploration</strong> &mdash; Finding the right mathlib lemma often took longer than writing the proof</li>
-                        <li><strong>Serre duality gap</strong> &mdash; The "other half" of RR (l(K-D) term) needs differentials/residues that mathlib doesn't have</li>
+                        <li><strong>Residue field gap</strong> &mdash; Multiple constructions of "residue field at v" that don't match definitionally</li>
                     </ul>
                 </div>
             </div>
@@ -792,28 +835,12 @@
                         <td>Found bijective_algebraMap lemma, avoided IsFractionRing entirely</td>
                     </tr>
                     <tr>
-                        <td>24.2</td>
-                        <td>Needed uniformizer for evaluation map</td>
-                        <td>Found <code>intValuation_exists_uniformizer</code>, proved full valuation arithmetic chain</td>
+                        <td>26</td>
+                        <td>Shifted element may have poles at other primes (not in R)</td>
+                        <td>Introduced valuationRingAt (local condition at single prime)</td>
                     </tr>
                 </tbody>
             </table>
-
-            <h3 style="margin-top: 1.5rem;">Cycle 24 Key Discovery: Shifted Evaluation</h3>
-            <p style="margin-bottom: 1rem;">
-                The "shifted evaluation map" strategy (suggested by Gemini) turned out to be the right approach:
-            </p>
-            <ol style="margin: 1rem 0; padding-left: 1.5rem;">
-                <li><strong>Uniformizer:</strong> For height-1 prime v, mathlib provides π ∈ R with v.intValuation(π) = exp(-1)</li>
-                <li><strong>Shift:</strong> For f ∈ L(D+v), multiply by π^{D(v)+1} to "shift" the pole at v</li>
-                <li><strong>Key lemma:</strong> The shifted element f·π^{D(v)+1} has valuation ≤ 1 at v (PROVED)</li>
-                <li><strong>Evaluate:</strong> Elements with valuation ≤ 1 can be mapped to the residue field κ(v)</li>
-            </ol>
-            <p style="font-size: 0.9rem; color: var(--muted);">
-                The mathlib API for <code>WithZero (Multiplicative ℤ)</code> valuation arithmetic was key:
-                <code>exp_nsmul</code>, <code>exp_add</code>, <code>exp_lt_exp</code>, and <code>valuation_of_algebraMap</code>
-                form a complete toolkit for valuation computations.
-            </p>
 
             <h3 style="margin-top: 1.5rem;">Honest Assessment</h3>
             <p style="margin-bottom: 1rem;">
@@ -828,7 +855,7 @@
                 (months of work).
             </p>
             <p style="color: var(--muted);">
-                <strong>Bottom line:</strong> This is a honest partial formalization. We proved the "easy half"
+                <strong>Bottom line:</strong> This is an honest partial formalization. We proved the "easy half"
                 (Riemann inequality) constructively and axiomatized the "hard half" (duality). The axiom-based
                 results are mathematically valid conditional on RR holding; the constructive results are unconditional.
             </p>
@@ -838,7 +865,7 @@
             <p>
                 Lean 4 + mathlib &bull;
                 <a href="https://github.com/cguth7/roch-riemann">GitHub</a> &bull;
-                Cycle 24 Phase 2 &bull;
+                Cycle 26 &bull;
                 Last updated: Dec 16, 2024
             </p>
         </footer>
