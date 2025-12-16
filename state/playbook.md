@@ -14,51 +14,48 @@
   - `Divisor α := α →₀ ℤ` (abbrev for transparent unification)
   - `deg : Divisor α → ℤ` (sum of coefficients)
   - **PROVED**: `deg_add`, `deg_zero`, `deg_neg`, `deg_sub`, `deg_single`
+- **RESOLVED (Cycle 5)**: Function Field Interface
+  - `Effective : Divisor α → Prop` (uses mathlib's Finsupp order)
+  - **PROVED**: `Effective_iff`, `Effective_zero`, `Effective_add`, `Effective_single`
+  - `FunctionFieldData α` structure (K, div, div_mul, div_one, div_inv, deg_div)
+  - **PROVED**: `FunctionFieldData.div_zero`
+  - `RRSpace data D : Set data.K` (Riemann-Roch space L(D))
+  - **PROVED**: `RRSpace.zero_mem`, `RRSpace.mono`
 
 ## Blockers (fundamental)
 - mathlib lacks: line bundles, sheaf cohomology H⁰/H¹, genus for schemes
 - Cannot yet instantiate `RRData.Div` with real `Divisor α` (needs point type from curve)
 - `RRData.deg` is abstract; not yet connected to `Divisor.deg`
+- `RRData.ell` is abstract; not yet connected to `dim RRSpace`
 
-## Next Steps (Cycle 5) - Function Field Interface
+## Next Steps (Cycle 6) - Vector Space Structure for L(D)
 
 **WARNING**: Do NOT touch Schemes or Sheaf Cohomology. Complexity cliff.
 
-**Goal**: Define the Riemann-Roch space L(D) to give semantic meaning to ℓ(D).
+**Goal**: Prove L(D) is a K-vector subspace, enabling `ℓ(D) = finrank K L(D)`.
 
 ### Deliverables (in order)
-1. **Effective divisors** (warmup):
-   - `def Effective (D : Divisor α) : Prop := ∀ p, 0 ≤ D p`
-   - `instance : LE (Divisor α)` where `D ≤ E ↔ Effective (E - D)`
-   - Prove: `le_refl`, `le_trans`, `le_antisymm` (partial order)
+1. **L(D) is a subgroup**:
+   - `RRSpace.add_mem : f ∈ L(D) → g ∈ L(D) → f + g ∈ L(D)`
+   - `RRSpace.neg_mem : f ∈ L(D) → -f ∈ L(D)`
 
-2. **FunctionFieldData structure** (main deliverable):
-   ```
-   structure FunctionFieldData (α : Type*) where
-     K : Type*
-     [field : Field K]
-     div : K → Divisor α                           -- principal divisor map
-     div_mul : ∀ f g, div (f * g) = div f + div g  -- homomorphism
-     div_one : div 1 = 0
-     deg_div : ∀ f, f ≠ 0 → Divisor.deg (div f) = 0  -- CRITICAL for RR
-   ```
+2. **L(D) is closed under scalar multiplication**:
+   - `RRSpace.smul_mem : c ∈ K → f ∈ L(D) → c • f ∈ L(D)`
+   - Requires: `div (c * f) = div c + div f = div f` (for c ≠ 0, div c = 0 since c is constant)
 
-3. **Riemann-Roch space L(D)**:
-   - `def L (data : FunctionFieldData α) (D : Divisor α) : Set data.K := { f | Effective (data.div f + D) }`
-   - This gives `ℓ(D) = dim L(D)` (semantic, not opaque)
+3. **Subspace instance**:
+   - `instance : Submodule K (data.K)` or similar structure
 
-4. **Basic L(D) lemmas** (if time):
-   - `L_zero : 0 ∈ L D` (zero function always in L(D))
-   - `L_mono : D ≤ E → L D ⊆ L E` (monotonicity)
+4. **Connect to dimension**:
+   - Define `ell (data : FunctionFieldData α) (D : Divisor α) := finrank data.K (RRSpace data D)`
+   - This requires L(D) to be finite-dimensional (may need to assume)
 
 ### Why this matters
 | Old (RRData) | New (FunctionFieldData) |
 |---|---|
-| `Div : Type*` (fake) | `Divisor α` (grounded) |
-| `deg : Div → ℤ` (opaque) | `Divisor.deg` (proved) |
-| `ell : Div → ℕ` (opaque) | `dim L(D)` (semantic) |
+| `ell : Div → ℕ` (opaque) | `finrank K L(D)` (semantic) |
 
 ### Do NOT do
 - Schemes, sheaves, cohomology
 - Trying to instantiate FunctionFieldData with real objects yet
-- Connecting to RRData (that's Cycle 6+)
+- Connecting to RRData (that's Cycle 7+)

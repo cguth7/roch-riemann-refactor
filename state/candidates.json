@@ -1,5 +1,5 @@
 {
-  "active_edge": "Define FunctionFieldData, Effective, L(D) Riemann-Roch space",
+  "active_edge": "Prove L(D) is a K-vector subspace",
   "candidates": [
     {
       "name": "Divisor α",
@@ -51,6 +51,76 @@
       "cycle": 4
     },
     {
+      "name": "Divisor.Effective",
+      "status": "PROVED",
+      "statement": "def Effective (D : Divisor α) : Prop := 0 ≤ D",
+      "approach": "Uses mathlib's Finsupp pointwise order",
+      "cycle": 5
+    },
+    {
+      "name": "Divisor.Effective_iff",
+      "status": "PROVED",
+      "statement": "Effective D ↔ ∀ p, 0 ≤ D p",
+      "approach": "Definitional equality",
+      "cycle": 5
+    },
+    {
+      "name": "Divisor.Effective_zero",
+      "status": "PROVED",
+      "statement": "Effective 0",
+      "approach": "le_refl",
+      "cycle": 5
+    },
+    {
+      "name": "Divisor.Effective_add",
+      "status": "PROVED",
+      "statement": "Effective D → Effective E → Effective (D + E)",
+      "approach": "Pointwise omega",
+      "cycle": 5
+    },
+    {
+      "name": "Divisor.Effective_single",
+      "status": "PROVED",
+      "statement": "0 ≤ n → Effective (single p n)",
+      "approach": "Case split on equality",
+      "cycle": 5
+    },
+    {
+      "name": "FunctionFieldData",
+      "status": "DEFINED",
+      "statement": "structure FunctionFieldData (α : Type*) with K, div, div_mul, div_one, div_inv, deg_div",
+      "approach": "Axiomatizes function field with principal divisor map",
+      "cycle": 5
+    },
+    {
+      "name": "FunctionFieldData.div_zero",
+      "status": "PROVED",
+      "statement": "data.div 0 = 0",
+      "approach": "From div_mul 0 0, algebraic manipulation",
+      "cycle": 5
+    },
+    {
+      "name": "RRSpace",
+      "status": "DEFINED",
+      "statement": "def RRSpace (data : FunctionFieldData α) (D : Divisor α) : Set data.K := { f | f = 0 ∨ Effective (data.div f + D) }",
+      "approach": "Riemann-Roch space L(D)",
+      "cycle": 5
+    },
+    {
+      "name": "RRSpace.zero_mem",
+      "status": "PROVED",
+      "statement": "0 ∈ RRSpace data D",
+      "approach": "Or.inl rfl",
+      "cycle": 5
+    },
+    {
+      "name": "RRSpace.mono",
+      "status": "PROVED",
+      "statement": "D ≤ E → RRSpace data D ⊆ RRSpace data E",
+      "approach": "Pointwise comparison with omega",
+      "cycle": 5
+    },
+    {
       "name": "RRDataWithEuler.riemannRoch",
       "status": "DERIVED_FROM_ASSUMPTIONS",
       "statement": "∀ D, ℓ(D) - ℓ(K-D) = deg(D) + 1 - g",
@@ -67,12 +137,14 @@
   "blockers": [
     "mathlib lacks: line bundles, sheaf cohomology H⁰/H¹, genus for schemes",
     "Cannot yet instantiate RRData.Div with Divisor α (needs point type from curve)",
-    "RRData.deg is abstract; not yet connected to Divisor.deg"
+    "RRData.deg is abstract; not yet connected to Divisor.deg",
+    "RRData.ell is abstract; not yet connected to dim RRSpace"
   ],
   "resolved_blockers": [
     "PIVOT Cycle 2: defined RRData structure (elaborates)",
     "PIVOT Cycle 3: extended to RRDataWithEuler (RR derivable from fields)",
-    "CYCLE 4: Defined Divisor α := α →₀ ℤ, proved deg_add/deg_zero/deg_neg/deg_sub/deg_single"
+    "CYCLE 4: Defined Divisor α := α →₀ ℤ, proved deg_add/deg_zero/deg_neg/deg_sub/deg_single",
+    "CYCLE 5: Defined Effective, FunctionFieldData, RRSpace L(D)"
   ],
-  "next_action": "Cycle 5: Define Effective, FunctionFieldData (K, div, div_mul, div_one, deg_div), L(D) Riemann-Roch space. NO schemes/sheaves."
+  "next_action": "Cycle 6: Prove L(D) is a K-vector subspace (add_mem, neg_mem, smul_mem)"
 }

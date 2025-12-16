@@ -47,7 +47,117 @@ lemma deg_sub (D E : Divisor α) : deg (D - E) = deg D - deg E := by
 lemma deg_single (p : α) (n : ℤ) : deg (single p n) = n := by
   simp only [deg, single, Finsupp.sum_single_index]
 
+/-! ### Effective Divisors (Cycle 5) -/
+
+/-- A divisor is effective if all coefficients are non-negative.
+This uses the pointwise order on Finsupp: D ≤ E ↔ ∀ p, D p ≤ E p. -/
+def Effective (D : Divisor α) : Prop := 0 ≤ D
+
+-- Candidate 2: Explicit pointwise characterization
+lemma Effective_iff (D : Divisor α) : Effective D ↔ ∀ p, 0 ≤ D p := by
+  rfl
+
+-- Candidate 3: Zero divisor is effective
+lemma Effective_zero : Effective (0 : Divisor α) := le_refl 0
+
+-- Candidate 4: Sum of effective divisors is effective
+lemma Effective_add {D E : Divisor α} (hD : Effective D) (hE : Effective E) :
+    Effective (D + E) := by
+  intro p
+  have h1 : 0 ≤ D p := hD p
+  have h2 : 0 ≤ E p := hE p
+  simp only [Finsupp.add_apply, Finsupp.coe_zero, Pi.zero_apply]
+  omega
+
+-- Candidate: Effective single (n ≥ 0)
+lemma Effective_single {p : α} {n : ℤ} (hn : 0 ≤ n) : Effective (single p n) := by
+  intro q
+  simp only [single, Finsupp.coe_zero, Pi.zero_apply]
+  by_cases h : q = p
+  · simp [h, hn]
+  · simp [h]
+
 end Divisor
+
+/-! ## Function Field Data (Cycle 5)
+
+This structure axiomatizes the relationship between a function field K and divisors.
+The key property is that principal divisors have degree zero, which is essential for RR.
+-/
+
+/-- Data for a function field associated with divisors on α.
+
+This captures the relationship between meromorphic functions and divisors:
+- `div f` is the principal divisor of f (zeros minus poles)
+- `div` is a group homomorphism from K× to Div(α)
+- Principal divisors have degree zero (fundamental for Riemann-Roch)
+-/
+structure FunctionFieldData (α : Type*) where
+  /-- The function field -/
+  K : Type*
+  /-- K is a field -/
+  [field : Field K]
+  /-- Principal divisor map: f ↦ div(f) = zeros - poles -/
+  div : K → Divisor α
+  /-- div is multiplicative: div(fg) = div(f) + div(g) -/
+  div_mul : ∀ f g, div (f * g) = div f + div g
+  /-- div(1) = 0 -/
+  div_one : div 1 = 0
+  /-- div(f⁻¹) = -div(f) for f ≠ 0 -/
+  div_inv : ∀ f, f ≠ 0 → div f⁻¹ = -div f
+  /-- Principal divisors have degree zero -/
+  deg_div : ∀ f, f ≠ 0 → Divisor.deg (div f) = 0
+
+attribute [instance] FunctionFieldData.field
+
+namespace FunctionFieldData
+
+variable {α : Type*} (data : FunctionFieldData α)
+
+/-- div(0) = 0 (by convention, though 0 has no well-defined divisor) -/
+lemma div_zero : data.div 0 = 0 := by
+  have h : data.div (0 * 0) = data.div 0 + data.div 0 := data.div_mul 0 0
+  simp only [mul_zero] at h
+  -- h : data.div 0 = data.div 0 + data.div 0
+  have h2 : data.div 0 - data.div 0 = (data.div 0 + data.div 0) - data.div 0 := congrArg (· - data.div 0) h
+  simp only [sub_self, add_sub_cancel_right] at h2
+  exact h2.symm
+
+end FunctionFieldData
+
+/-! ## Riemann-Roch Space L(D) (Cycle 5)
+
+L(D) = { f ∈ K | f = 0 or div(f) + D ≥ 0 }
+
+This is the space of meromorphic functions whose poles are bounded by D.
+The dimension ℓ(D) = dim L(D) is what appears in the Riemann-Roch theorem.
+-/
+
+/-- The Riemann-Roch space L(D) consists of functions f such that div(f) + D ≥ 0.
+Equivalently: f has poles at most where D has positive coefficients. -/
+def RRSpace (data : FunctionFieldData α) (D : Divisor α) : Set data.K :=
+  { f | f = 0 ∨ Divisor.Effective (data.div f + D) }
+
+namespace RRSpace
+
+variable {α : Type*} (data : FunctionFieldData α) (D : Divisor α)
+
+-- Candidate 7: Zero is always in L(D)
+lemma zero_mem : (0 : data.K) ∈ RRSpace data D := Or.inl rfl
+
+-- Candidate 8: Monotonicity: D ≤ E → L(D) ⊆ L(E)
+lemma mono {D E : Divisor α} (h : D ≤ E) : RRSpace data D ⊆ RRSpace data E := by
+  intro f hf
+  rcases hf with rfl | heff
+  · exact Or.inl rfl
+  · right
+    intro p
+    have hD : 0 ≤ (data.div f + D) p := heff p
+    have hDE : D p ≤ E p := h p
+    simp only [Finsupp.add_apply, Finsupp.coe_zero, Pi.zero_apply] at hD ⊢
+    omega
+
+end RRSpace
 
 /-!
 # Riemann-Roch Theorem: Axiomatized Interface
