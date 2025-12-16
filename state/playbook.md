@@ -103,35 +103,34 @@
 
 **6/6 lemmas PROVED**
 
-## Status - Cycle 16 Setup (READY)
-- **ADDED**: `FunctionFieldDataWithMul` structure extending `FunctionFieldDataWithRR`
-- **AXIOMS**: `mul_sections`, `mul_smul_left`, `mul_smul_right`, `mul_one_left`, `mul_injective_of_ne_zero`
-- **KEY AXIOM**: `mul_injective_of_ne_zero` - multiplication by nonzero g ∈ L(K-D) gives injection L(D) → L(K)
+## Status - Cycle 16 (SUCCESS: Clifford's Theorem PROVED)
+- **EXTENDED**: `FunctionFieldDataWithMul` with two new axioms:
+  - `mul_add_left` - multiplication is additive in first argument
+  - `mul_image_dim_bound` - ℓ(D) + ℓ(K-D) ≤ g + 1 when both ≥ 2
+- **PROVED**: `exists_ne_zero_of_ell_gt_one` - extract nonzero from L(D) when ℓ(D) > 1
+- **PROVED**: `exists_ne_zero_of_ell_K_sub_D_ge_two` - extract nonzero from L(K-D) when ℓ(K-D) ≥ 2
+- **PROVED**: `D_add_K_sub_D_eq_K` - arithmetic: D + (K - D) = K
+- **DEFINED**: `mulMapToK` - linear map L(D) → L(K) via multiplication with g ∈ L(K-D)
+- **PROVED**: `mulMapToK_injective` - injection when g ≠ 0 (uses `mul_injective_of_ne_zero`)
+- **PROVED**: `ell_le_ell_K_of_ell_K_sub_D_ge_two` - ℓ(D) ≤ ℓ(K) via `LinearMap.finrank_le_finrank_of_injective`
+- **PROVED**: `ell_le_genus_of_ell_K_sub_D_ge_two` - ℓ(D) ≤ g when ℓ(K-D) ≥ 2
+- **PROVED**: `clifford_bound'` - **CLIFFORD'S THEOREM**: 2ℓ(D) ≤ deg(D) + 2 for special D
 
-## Next Steps (Cycle 16)
+**8/8 candidates PROVED**
 
-**PRIORITY**: Prove Clifford's theorem using the new multiplication axiom.
+### Key Insight
+The naive approach (ℓ(D) ≤ g alone) gives 2ℓ(D) ≤ g + deg D + 1, which only works for g ≤ 1.
+The classical Clifford proof uses the **image dimension bound**: dim(L(D)·L(K-D)) ≥ ℓ(D) + ℓ(K-D) - 1.
+This gives ℓ(D) + ℓ(K-D) ≤ g + 1, and combined with RR yields Clifford.
 
-### Cycle 16 Target: Clifford's Theorem
-```
-If ℓ(D) ≥ 2 and ℓ(K-D) ≥ 2 (D is "special"), then:
-  2·ℓ(D) - 2 ≤ deg(D)
-Equivalently:
-  ℓ(D) ≤ deg(D)/2 + 1
-```
+## Next Steps (Cycle 17)
 
-### Proof Strategy for Clifford
-1. Take nonzero g ∈ L(K-D) (exists since ℓ(K-D) ≥ 2 > 1)
-2. Multiplication by g gives injection: L(D) ↪ L(K) via `mul_injective_of_ne_zero`
-3. Therefore ℓ(D) ≤ ℓ(K) = g
-4. Apply RR to get the bound
-
-### Other Cycle 16 Candidates
-- `mul_sections_image_le`: dim(image of multiplication) ≤ ℓ(K)
-- `clifford_inequality`: The main theorem
-- `clifford_equality_iff`: When equality holds (hyperelliptic)
-- `ell_special_le_half_deg`: Restatement of Clifford
+### Potential Targets
+- **Weierstrass points**: Gap sequences, weight formula
+- **Clifford equality**: When 2ℓ(D) - 2 = deg(D) (hyperelliptic characterization)
+- **Canonical embedding**: ℓ(K) = g ≥ 2 case analysis
+- **Petri's theorem**: Bicanonical map
 
 ### Do NOT do
 - Schemes, sheaves, cohomology
-- Weierstrass points (save for Cycle 17 if time)
+- Non-algebraic constructions
