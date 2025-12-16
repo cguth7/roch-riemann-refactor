@@ -369,19 +369,19 @@
         <section>
             <div class="stats-row">
                 <div class="stat">
-                    <div class="stat-num">10</div>
+                    <div class="stat-num">12</div>
                     <div class="stat-label">Cycles</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-num">8</div>
+                    <div class="stat-num">11</div>
                     <div class="stat-label">Definitions</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-num">32</div>
+                    <div class="stat-num">46</div>
                     <div class="stat-label">Lemmas Proved</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-num">7</div>
+                    <div class="stat-num">6</div>
                     <div class="stat-label">Lemmas Pending</div>
                 </div>
             </div>
@@ -391,7 +391,7 @@
         <section>
             <h2>Proof Architecture</h2>
             <div class="flowchart">
-                <svg viewBox="0 0 800 520" xmlns="http://www.w3.org/2000/svg">
+                <svg viewBox="0 0 800 540" xmlns="http://www.w3.org/2000/svg">
                     <!-- Definitions -->
                     <defs>
                         <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
@@ -450,28 +450,38 @@
                     <path d="M470,166 L610,260" stroke="#999" fill="none" marker-end="url(#arrow)"/>
 
                     <!-- Target layer -->
-                    <rect x="150" y="390" width="180" height="36" rx="4" fill="#dcfce7" stroke="#16a34a"/>
-                    <text x="240" y="413" text-anchor="middle" font-size="12" font-weight="500">add_single_le_succ (axiom)</text>
+                    <rect x="120" y="390" width="140" height="36" rx="4" fill="#dcfce7" stroke="#16a34a"/>
+                    <text x="190" y="413" text-anchor="middle" font-size="11" font-weight="500">single_point_bound</text>
 
-                    <rect x="370" y="390" width="180" height="36" rx="4" fill="#fef3c7" stroke="#ca8a04"/>
-                    <text x="460" y="413" text-anchor="middle" font-size="12" font-weight="500">le_deg_add_ell_zero</text>
-                    <text x="460" y="408" text-anchor="middle" font-size="9" fill="#ca8a04">(Riemann ineq.)</text>
+                    <rect x="280" y="390" width="160" height="36" rx="4" fill="#dcfce7" stroke="#16a34a"/>
+                    <text x="360" y="408" text-anchor="middle" font-size="11" font-weight="500">Riemann ineq.</text>
+                    <text x="360" y="420" text-anchor="middle" font-size="9" fill="#16a34a">PROVED</text>
 
-                    <rect x="590" y="390" width="160" height="36" rx="4" fill="#fee2e2" stroke="#dc2626"/>
-                    <text x="670" y="413" text-anchor="middle" font-size="12" font-weight="500">Riemann-Roch</text>
+                    <rect x="460" y="390" width="140" height="36" rx="4" fill="#dcfce7" stroke="#16a34a"/>
+                    <text x="530" y="408" text-anchor="middle" font-size="11" font-weight="500">...WithRR</text>
+                    <text x="530" y="420" text-anchor="middle" font-size="9" fill="#16a34a">(g, K, RR axiom)</text>
+
+                    <rect x="620" y="390" width="140" height="36" rx="4" fill="#dcfce7" stroke="#16a34a"/>
+                    <text x="690" y="408" text-anchor="middle" font-size="11" font-weight="500">ell_K = g</text>
+                    <text x="690" y="420" text-anchor="middle" font-size="9" fill="#16a34a">PROVED</text>
 
                     <!-- Arrows: Dimension -> Target -->
-                    <path d="M230,296 L240,390" stroke="#999" fill="none" marker-end="url(#arrow)"/>
-                    <path d="M610,296 L610,350 L460,390" stroke="#999" fill="none" marker-end="url(#arrow)"/>
-                    <path d="M685,166 L685,350 L240,390" stroke="#999" fill="none" marker-end="url(#arrow)"/>
+                    <path d="M230,296 L190,390" stroke="#999" fill="none" marker-end="url(#arrow)"/>
+                    <path d="M610,296 L610,350 L360,390" stroke="#999" fill="none" marker-end="url(#arrow)"/>
+                    <path d="M685,166 L685,350 L530,390" stroke="#999" fill="none" marker-end="url(#arrow)"/>
 
                     <!-- Arrows within target layer -->
-                    <path d="M330,408 L370,408" stroke="#999" fill="none" marker-end="url(#arrow)"/>
-                    <path d="M550,408 L590,408" stroke="#999" fill="none" marker-end="url(#arrow)"/>
+                    <path d="M260,408 L280,408" stroke="#999" fill="none" marker-end="url(#arrow)"/>
+                    <path d="M440,408 L460,408" stroke="#999" fill="none" marker-end="url(#arrow)"/>
+                    <path d="M600,408 L620,408" stroke="#999" fill="none" marker-end="url(#arrow)"/>
 
-                    <!-- Dashed future arrow -->
-                    <path d="M460,426 L460,480 L670,480 L670,426" stroke="#999" stroke-dasharray="4,4" fill="none" marker-end="url(#arrow)"/>
-                    <text x="565" y="495" text-anchor="middle" font-size="10" fill="#999">+ Serre duality (future)</text>
+                    <!-- Bottom row: full RR -->
+                    <rect x="300" y="470" width="200" height="36" rx="4" fill="#fef3c7" stroke="#ca8a04"/>
+                    <text x="400" y="488" text-anchor="middle" font-size="12" font-weight="500">Full Riemann-Roch</text>
+                    <text x="400" y="500" text-anchor="middle" font-size="9" fill="#ca8a04">riemannRoch_eq (from axiom)</text>
+
+                    <path d="M360,426 L400,470" stroke="#999" fill="none" marker-end="url(#arrow)"/>
+                    <path d="M530,426 L400,470" stroke="#999" fill="none" marker-end="url(#arrow)"/>
                 </svg>
             </div>
             <div class="legend">
@@ -534,7 +544,19 @@
                         <td>10</td>
                         <td>Single-point axiom</td>
                         <td><code>FunctionFieldDataWithBound</code>, <code>deg_add_single</code></td>
-                        <td><span class="status done">4 proved</span> <span class="status wip">3 sorry</span></td>
+                        <td><span class="status done">4 proved</span></td>
+                    </tr>
+                    <tr>
+                        <td>11</td>
+                        <td>Riemann inequality</td>
+                        <td><code>le_deg_add_ell_zero_from_bound</code> (by degree induction)</td>
+                        <td><span class="status done">7 proved</span></td>
+                    </tr>
+                    <tr>
+                        <td>12</td>
+                        <td>Full RR structure</td>
+                        <td><code>FunctionFieldDataWithRR</code>, <code>ell_K = g</code>, vanishing thm</td>
+                        <td><span class="status done">7 proved</span></td>
                     </tr>
                 </tbody>
             </table>
@@ -544,24 +566,36 @@
         <section>
             <h2>Current State</h2>
             <p style="margin-bottom: 1rem;">
-                We have the single-point dimension bound as an axiom:
+                <strong>Riemann inequality PROVED</strong> (Cycle 11) and <strong>full RR structure complete</strong> (Cycle 12):
             </p>
             <div class="theorem-box">
-                <div class="label">Axiom (single_point_bound)</div>
+                <div class="label">Proved: Riemann Inequality</div>
                 <div class="equation" style="font-size: 1.2rem;">
-                    l(D + p) &le; l(D) + 1
+                    l(D) &le; deg(D) + 1 &nbsp;&nbsp; (for effective D)
                 </div>
                 <div class="gloss">
-                    Adding one point to a divisor increases dimension by at most 1
+                    Proved by degree-based induction using single-point bound axiom
                 </div>
             </div>
-            <p style="margin-bottom: 1rem;">
-                <strong>Next step:</strong> Prove Riemann's inequality <code>l(D) &le; deg(D) + l(0)</code> by induction on effective divisors.
-            </p>
+            <div class="theorem-box">
+                <div class="label">Structure: FunctionFieldDataWithRR</div>
+                <div class="equation" style="font-size: 1.2rem;">
+                    l(D) - l(K - D) = deg(D) + 1 - g
+                </div>
+                <div class="gloss">
+                    Full RR theorem axiomatized with genus g and canonical divisor K
+                </div>
+            </div>
+            <h3 style="margin-top: 1.5rem;">Key Results from Cycle 12</h3>
+            <ul style="margin: 1rem 0; padding-left: 1.5rem;">
+                <li><code>ell_K = g</code> &mdash; Canonical space dimension equals genus</li>
+                <li><code>ell_ge_deg_minus_genus</code> &mdash; Lower bound: l(D) &ge; deg(D) + 1 - g</li>
+                <li><code>ell_K_sub_D_eq_zero_of_deg_gt</code> &mdash; Vanishing: deg(D) > 2g-2 implies l(K-D) = 0</li>
+            </ul>
             <p style="color: var(--muted);">
-                The full Riemann-Roch theorem additionally requires Serre duality <code>l(K-D) = h<sup>1</sup>(D)</code>,
-                which we have axiomatized in a separate structure. The main theorem statement typechecks but the
-                proof path from first principles remains incomplete pending mathlib infrastructure.
+                <strong>Architecture:</strong> FunctionFieldData → FunctionFieldDataWithBound → FunctionFieldDataWithRR.
+                The RR equation is axiomatized (not derived from cohomology), but derived lemmas like l(K) = g
+                use semantic properties (deg_div = 0 for principal divisors).
             </p>
         </section>
 
@@ -569,7 +603,7 @@
             <p>
                 Lean 4 + mathlib &bull;
                 <a href="https://github.com/cguth7/roch-riemann">GitHub</a> &bull;
-                Cycle 10 &bull;
+                Cycle 12 &bull;
                 Last updated: Dec 2024
             </p>
         </footer>
