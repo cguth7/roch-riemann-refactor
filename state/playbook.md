@@ -123,14 +123,70 @@ The naive approach (ℓ(D) ≤ g alone) gives 2ℓ(D) ≤ g + deg D + 1, which o
 The classical Clifford proof uses the **image dimension bound**: dim(L(D)·L(K-D)) ≥ ℓ(D) + ℓ(K-D) - 1.
 This gives ℓ(D) + ℓ(K-D) ≤ g + 1, and combined with RR yields Clifford.
 
-## Next Steps (Cycle 17)
+## PIVOT: From Axioms to Construction (Cycle 17+)
 
-### Potential Targets
-- **Weierstrass points**: Gap sequences, weight formula
-- **Clifford equality**: When 2ℓ(D) - 2 = deg(D) (hyperelliptic characterization)
-- **Canonical embedding**: ℓ(K) = g ≥ 2 case analysis
-- **Petri's theorem**: Bicanonical map
+**CRITICAL INSIGHT**: Everything above is circular reasoning. The `rr_axiom` IS Riemann-Roch.
+To make real progress, we must use mathlib's constructive infrastructure.
+
+### Mathlib Components (VERIFIED PRESENT)
+
+| Component | Location | Status |
+|-----------|----------|--------|
+| `HeightOneSpectrum R` | `RingTheory.DedekindDomain.Ideal.Lemmas:456` | ✅ Points on curve |
+| `Module.length` | `RingTheory.Length:32` | ✅ For ℓ(D) |
+| `IsDedekindDomain` | `RingTheory.DedekindDomain.Basic` | ✅ Curve's coordinate ring |
+| `DiscreteValuationRing` | `RingTheory.DedekindDomain.Dvr` | ✅ Local at points |
+| `FractionalIdeal` | `RingTheory.FractionalIdeal` | ✅ For divisor groups |
+| `FiniteAdeleRing` | `RingTheory.DedekindDomain.FiniteAdeleRing` | ✅ Global bounds |
+| `AdicValuation` | `RingTheory.DedekindDomain.AdicValuation:295` | ✅ Valuations at points |
+
+### The Constructive Path (Jiedong Jiang Strategy)
+
+**Step 1**: Define divisors properly
+```lean
+-- Use HeightOneSpectrum as "points"
+abbrev Divisor (R : Type*) [CommRing R] [IsDomain R] [IsDedekindDomain R] :=
+  HeightOneSpectrum R →₀ ℤ
+```
+
+**Step 2**: Define ℓ(D) via Module.length (NOT finrank)
+```lean
+-- L(D) as a module, ℓ(D) = Module.length
+-- Key: Module.length is additive in exact sequences
+```
+
+**Step 3**: Use DVR localization for local analysis
+```lean
+-- At each v : HeightOneSpectrum R, localize to DVR
+-- IsLocalization.AtPrime.isDiscreteValuationRing_of_dedekind_domain
+```
+
+**Step 4**: Prove Riemann inequality via approximation
+```lean
+-- Use FiniteAdeleRing for strong approximation
+-- CRT instances give the approximation theorem
+```
+
+**Step 5**: Serre duality via residues (NOT cohomology)
+```lean
+-- Define residue map using RingTheory.Derivation
+-- Avoid AlgebraicGeometry.Cohomology (blocked)
+```
+
+### Concrete Next Cycle Tasks
+
+1. **Create `RR_v2.lean`** with Dedekind domain setup
+2. **Define** `Divisor R := HeightOneSpectrum R →₀ ℤ`
+3. **Define** `RRSpace` using fractional ideals, not abstract carrier
+4. **Define** `ell` via `Module.length`, prove it's finite
+5. **Prove** degree-dimension bound using DVR localization
+
+### References
+- Gemini analysis: "Lengths of Modules" strategy
+- Search: Yijun Yuan's Harder-Narasimhan repo (infrastructure superset)
+- mathlib: `RingTheory.DedekindDomain.*`
 
 ### Do NOT do
-- Schemes, sheaves, cohomology
-- Non-algebraic constructions
+- Keep using `rr_axiom` (circular)
+- Schemes/sheaves/cohomology (blocked in mathlib)
+- Abstract `FunctionFieldData` axioms
