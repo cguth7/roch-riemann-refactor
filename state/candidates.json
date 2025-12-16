@@ -1,23 +1,42 @@
 {
-  "active_edge": "RRData.riemannRochEq → proof",
+  "active_edge": "RRDataWithEuler proven → base RRData.riemannRoch",
   "candidates": [
     {
-      "name": "riemannRoch",
-      "status": "ELABORATES",
+      "name": "RRDataWithEuler.riemannRoch",
+      "status": "PROVED",
       "statement": "∀ D, ℓ(D) - ℓ(K-D) = deg(D) + 1 - g",
-      "approach": "RRData structure bundles abstract Div, deg, ell, genus, K"
+      "approach": "Derived from Serre duality + Euler characteristic fields",
+      "energy": 10
     },
     {
-      "name": "riemannRoch'",
+      "name": "ell_sub_ell_K_sub_D",
+      "status": "PROVED",
+      "statement": "ℓ(D) - ℓ(K-D) = deg(D) + 1 - g (via Serre duality substitution)",
+      "approach": "Core lemma combining serreDuality and ell_sub_h1_eq_deg",
+      "energy": 10
+    },
+    {
+      "name": "RRDataWithCohomology",
       "status": "ELABORATES",
-      "statement": "expanded form with explicit subtraction",
-      "approach": "same as riemannRoch"
+      "statement": "structure extending RRData with h1, serreDuality",
+      "approach": "Adds H¹ dimension and Serre duality as Prop field",
+      "energy": 9
+    },
+    {
+      "name": "RRDataWithEuler",
+      "status": "ELABORATES",
+      "statement": "structure extending RRDataWithCohomology with eulerChar",
+      "approach": "Adds Euler characteristic and its two key properties",
+      "energy": 9
     }
   ],
-  "blockers": [],
+  "blockers": [
+    "Base RRData.riemannRoch still has sorry - need to extend RRData to RRDataWithEuler"
+  ],
   "resolved_blockers": [
     "PIVOT: defined RRData structure per Progress Gate (Cycle 2)",
-    "RR statement now elaborates without axioms"
+    "RR statement now elaborates without axioms",
+    "PROVED: RRDataWithEuler.riemannRoch via Serre duality + Euler char (Cycle 3)"
   ],
-  "next_action": "Fill sorry in riemannRoch; consider Serre duality, Euler characteristic approach"
+  "next_action": "Either prove RRData → RRDataWithEuler extension, or accept RRDataWithEuler as primary formulation"
 }
