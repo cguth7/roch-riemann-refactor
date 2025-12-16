@@ -662,4 +662,69 @@ lemma ell.le_toNat_deg_add_ell_zero {α : Type*} {k : Type*} [Field k]
     {D : Divisor α} (hD : Divisor.Effective D) (hDeg : 0 ≤ Divisor.deg D) :
     ell data D ≤ (Divisor.deg D).toNat + ell data 0 := sorry
 
+/-! ## Cycle 10 Candidates: Evaluation Axiom and Riemann Inequality -/
+
+-- Candidate 1 [tag: axiom_extension] [status: OK]
+-- Extended FunctionFieldData with single-point dimension bound axiom
+/-- Extension of FunctionFieldData with the single-point dimension bound.
+This axiom captures the key geometric fact: evaluation at a point gives a
+linear map L(D + p) → k with kernel containing L(D), so the quotient has
+dimension at most 1. -/
+structure FunctionFieldDataWithBound (α : Type*) (k : Type*) [Field k]
+    extends FunctionFieldData α k where
+  /-- Axiom: Adding a single point increases dimension by at most 1.
+      This is the key geometric fact needed for Riemann inequality.
+      Intuitively: there exists an evaluation map ev_p : L(D+p) → k
+      with ker(ev_p) ⊇ L(D), so dim(L(D+p)/L(D)) ≤ 1. -/
+  single_point_bound : ∀ (D : Divisor α) (p : α),
+    ell toFunctionFieldData (D + Divisor.single p 1) ≤ ell toFunctionFieldData D + 1
+
+-- Candidate 2 [tag: single_point_proof] [status: PROVED]
+-- Proof of add_single_le_succ using the new axiom
+lemma ell.add_single_le_succ_from_bound {α : Type*} {k : Type*} [Field k]
+    (data : FunctionFieldDataWithBound α k) [∀ D, Module.Finite k (RRSpace data.toFunctionFieldData D)]
+    (D : Divisor α) (p : α) :
+    ell data.toFunctionFieldData (D + Divisor.single p 1) ≤ ell data.toFunctionFieldData D + 1 :=
+  data.single_point_bound D p
+
+-- Candidate 3 [tag: helper] [status: PROVED]
+-- Degree computation for adding single point
+lemma Divisor.deg_add_single {α : Type*} (D : Divisor α) (p : α) (n : ℤ) :
+    Divisor.deg (D + Divisor.single p n) = Divisor.deg D + n := by
+  rw [deg_add, deg_single]
+
+-- Candidate 4 [tag: riemann_inequality] [status: sorry - needs induction]
+-- Special case: single-point divisors have bounded dimension
+lemma ell.single_le_deg_succ_from_bound {α : Type*} {k : Type*} [Field k]
+    (data : FunctionFieldDataWithBound α k) [∀ D, Module.Finite k (RRSpace data.toFunctionFieldData D)]
+    (p : α) (n : ℕ) :
+    ell data.toFunctionFieldData (Divisor.single p (n : ℤ)) ≤ n + 1 := sorry
+
+-- Candidate 5 [tag: riemann_inequality] [status: sorry - needs induction infrastructure]
+-- Main Riemann inequality using single-point axiom and induction
+lemma ell.le_deg_add_ell_zero_from_bound {α : Type*} {k : Type*} [Field k]
+    (data : FunctionFieldDataWithBound α k) [∀ D, Module.Finite k (RRSpace data.toFunctionFieldData D)]
+    {D : Divisor α} (hD : Divisor.Effective D) :
+    (ell data.toFunctionFieldData D : ℤ) ≤ Divisor.deg D + (ell data.toFunctionFieldData 0 : ℤ) := sorry
+
+-- Candidate 6 [tag: helper] [status: sorry - needs Candidate 5]
+-- Natural number version of Riemann inequality
+lemma ell.le_toNat_deg_add_ell_zero_from_bound {α : Type*} {k : Type*} [Field k]
+    (data : FunctionFieldDataWithBound α k) [∀ D, Module.Finite k (RRSpace data.toFunctionFieldData D)]
+    {D : Divisor α} (hD : Divisor.Effective D) (hDeg : 0 ≤ Divisor.deg D) :
+    ell data.toFunctionFieldData D ≤ (Divisor.deg D).toNat + ell data.toFunctionFieldData 0 := sorry
+
+-- Candidate 7 [tag: bridge] [status: OK]
+-- Connection: single-point bound implies dimension difference bound
+lemma ell.diff_add_single_le_one {α : Type*} {k : Type*} [Field k]
+    (data : FunctionFieldDataWithBound α k) [∀ D, Module.Finite k (RRSpace data.toFunctionFieldData D)]
+    (D : Divisor α) (p : α) :
+    (ell data.toFunctionFieldData (D + Divisor.single p 1) : ℤ) - ell data.toFunctionFieldData D ≤ 1 := by
+  have h := data.single_point_bound D p
+  omega
+
+-- Candidate 8 [tag: induction_setup] [status: PROVED]
+-- Helper: adding zero to divisor
+lemma Divisor.add_zero_right {α : Type*} (D : Divisor α) : D + 0 = D := add_zero D
+
 end RiemannRoch

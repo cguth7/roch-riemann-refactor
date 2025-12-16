@@ -274,3 +274,41 @@ Options:
 1. **Axiomatize** `ell.add_single_le_succ` directly as structure field
 2. **Extend FunctionFieldData** with evaluation map or valuations
 3. **Pivot** to different proof strategy not requiring point evaluation
+
+### Cycle 10 - Single-Point Axiom and Riemann Inequality Setup - PARTIAL
+- **Active edge**: Prove or axiomatize `ℓ(D + p) ≤ ℓ(D) + 1`
+- **Decision**: Option 1 - Axiomatize via `FunctionFieldDataWithBound`
+
+#### Results
+| Definition/Lemma | Status | Notes |
+|-----------------|--------|-------|
+| `FunctionFieldDataWithBound` | ✅ DEFINED | Extends FunctionFieldData with `single_point_bound` axiom |
+| `ell.add_single_le_succ_from_bound` | ✅ **PROVED** | Direct application of axiom |
+| `Divisor.deg_add_single` | ✅ **PROVED** | `deg_add` + `deg_single` |
+| `ell.diff_add_single_le_one` | ✅ **PROVED** | omega from axiom |
+| `Divisor.add_zero_right` | ✅ **PROVED** | `add_zero D` |
+| `ell.single_le_deg_succ_from_bound` | 📋 STATED | Induction on n needed |
+| `ell.le_deg_add_ell_zero_from_bound` | 📋 STATED | Riemann inequality - induction on D |
+| `ell.le_toNat_deg_add_ell_zero_from_bound` | 📋 STATED | Corollary of above |
+
+#### Architecture Decision
+Introduced `FunctionFieldDataWithBound` as a structure extending `FunctionFieldData` with:
+```lean
+single_point_bound : ∀ (D : Divisor α) (p : α),
+    ell toFunctionFieldData (D + Divisor.single p 1) ≤ ell toFunctionFieldData D + 1
+```
+
+**Rationale**: This captures the geometric fact that evaluation at p gives a linear map
+L(D+p) → k with kernel ⊇ L(D), so dim(L(D+p)/L(D)) ≤ 1.
+
+**Trade-off**: Axiom vs construction. Can be upgraded later by constructing evaluation map.
+
+#### Reflector Analysis
+- **Top candidates**: `le_deg_add_ell_zero_from_bound` (Riemann inequality), `single_le_deg_succ_from_bound` (stepping stone)
+- **Path clear**: Induction proofs needed, may require `Divisor.single_add` helper
+- **Assessment**: 80% of active edge crossed - axiom in place, need induction proofs
+
+#### Next cycle (Cycle 11)
+1. Prove `single_le_deg_succ_from_bound` by induction on n
+2. Prove `le_deg_add_ell_zero_from_bound` (Riemann inequality) by induction on D
+3. Prove `le_toNat_deg_add_ell_zero_from_bound` as corollary

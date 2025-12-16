@@ -350,5 +350,66 @@
     "CYCLE 8: Finite-dimensionality via typeclass [∀ D, Module.Finite k (RRSpace data D)], all 8 lemmas PROVED",
     "CYCLE 9: Quotient infrastructure (3 proved), Riemann inequality statements (4 stated)"
   ],
-  "next_action": "Cycle 10: Add evaluation map axiom or single_point_bound to FunctionFieldData"
+  "next_action": "Cycle 11: Prove Riemann inequality by induction on effective divisors",
+  "cycle_10_candidates": [
+    {
+      "name": "FunctionFieldDataWithBound",
+      "status": "DEFINED",
+      "statement": "structure extending FunctionFieldData with single_point_bound : ∀ D p, ell (D + p) ≤ ell D + 1",
+      "approach": "Axiomatize single-point dimension bound",
+      "cycle": 10
+    },
+    {
+      "name": "ell.add_single_le_succ_from_bound",
+      "status": "PROVED",
+      "statement": "ell data (D + single p 1) ≤ ell data D + 1",
+      "approach": "Direct application of single_point_bound axiom",
+      "cycle": 10
+    },
+    {
+      "name": "Divisor.deg_add_single",
+      "status": "PROVED",
+      "statement": "deg (D + single p n) = deg D + n",
+      "approach": "Via deg_add + deg_single",
+      "cycle": 10
+    },
+    {
+      "name": "ell.diff_add_single_le_one",
+      "status": "PROVED",
+      "statement": "(ell data (D + single p 1) : ℤ) - ell data D ≤ 1",
+      "approach": "omega from single_point_bound",
+      "cycle": 10
+    },
+    {
+      "name": "Divisor.add_zero_right",
+      "status": "PROVED",
+      "statement": "D + 0 = D",
+      "approach": "add_zero D",
+      "cycle": 10
+    },
+    {
+      "name": "ell.single_le_deg_succ_from_bound",
+      "status": "STATED",
+      "statement": "ell data (single p n) ≤ n + 1",
+      "approach": "Induction on n using single_point_bound",
+      "blocker": "Needs single_add helper",
+      "cycle": 10
+    },
+    {
+      "name": "ell.le_deg_add_ell_zero_from_bound",
+      "status": "STATED",
+      "statement": "Effective D → (ell data D : ℤ) ≤ deg D + ell data 0",
+      "approach": "Riemann inequality - induction on effective D",
+      "blocker": "Needs Finsupp induction infrastructure",
+      "cycle": 10
+    },
+    {
+      "name": "ell.le_toNat_deg_add_ell_zero_from_bound",
+      "status": "STATED",
+      "statement": "Effective D → 0 ≤ deg D → ell data D ≤ (deg D).toNat + ell data 0",
+      "approach": "Corollary of le_deg_add_ell_zero_from_bound",
+      "blocker": "Needs le_deg_add_ell_zero_from_bound",
+      "cycle": 10
+    }
+  ]
 }

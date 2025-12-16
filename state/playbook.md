@@ -49,40 +49,33 @@
 - **BLOCKER**: Cannot prove quotient dimension ≤ degree difference without evaluation map
 - **KEY LEMMA**: `ell.quotient_add_eq_of_le` gives `dim(L(E)/L(D)) + ℓ(D) = ℓ(E)` - reduces single-point bound to quotient bound
 
-## Next Steps (Cycle 10) - Evaluation Map or Axiom
+## Status - Cycle 10 (Success: Single-Point Axiom)
+- **DEFINED**: `FunctionFieldDataWithBound` - extends FunctionFieldData with `single_point_bound` axiom
+- **PROVED**: `ell.add_single_le_succ_from_bound`, `Divisor.deg_add_single`, `ell.diff_add_single_le_one`, `Divisor.add_zero_right`
+- **STATED**: `ell.single_le_deg_succ_from_bound`, `ell.le_deg_add_ell_zero_from_bound`, `ell.le_toNat_deg_add_ell_zero_from_bound`
+- **DESIGN CHOICE**: Used axiom extension rather than direct proof - cleaner architecture, can be upgraded later
+
+## Next Steps (Cycle 11) - Induction Proofs
 
 **WARNING**: Do NOT touch Schemes or Sheaf Cohomology. Complexity cliff.
 
-**Goal**: Unlock Riemann inequality by either axiomatizing or constructing evaluation machinery.
+**Goal**: Prove Riemann inequality by induction using `single_point_bound` axiom.
 
-### Option A: Axiomatize Single-Point Bound (Simplest)
-Add to `FunctionFieldData`:
-```lean
-single_point_bound : ∀ (D : Divisor α) (p : α),
-    ell data (D + Divisor.single p 1) ≤ ell data D + 1
-```
-This directly gives Riemann inequality by induction.
+### Priority 1: `ell.single_le_deg_succ_from_bound`
+Induction on n:
+- Base: `ℓ(0·p) = ℓ(0) ≤ 1` (from `zero_pos`)
+- Step: Use `single_point_bound` + helper `single p (n+1) = single p n + single p 1`
 
-### Option B: Add Evaluation Map (More Principled)
-Extend `FunctionFieldData` with:
-```lean
--- Evaluation at a point (well-defined for f ∈ L(D + p))
-eval : α → data.K → k
-eval_zero : ∀ p, eval p 0 = 0
-eval_add : ∀ p f g, eval p (f + g) = eval p f + eval p g
-eval_smul : ∀ p c f, eval p (c • f) = c * eval p f
--- Key property: f ∈ L(D) iff f ∈ L(D+p) and eval p f = 0
-eval_kernel : ∀ D p f, f ∈ RRSpace data D ↔ (f ∈ RRSpace data (D + single p 1) ∧ eval p f = 0)
-```
-This gives a 1-dim quotient via first isomorphism theorem.
+### Priority 2: `ell.le_deg_add_ell_zero_from_bound` (Riemann inequality)
+Strategy: Induction on support of effective divisor D using `Finsupp.induction`
+- May need intermediate: `ℓ(D + n·p) ≤ ℓ(D) + n` for n ∈ ℕ
 
-### Option C: Valuation Approach (Most General)
-Add local valuations `v_p : K* → ℤ` for each point p.
-Most mathematically faithful but requires more infrastructure.
+### Priority 3: `ell.le_toNat_deg_add_ell_zero_from_bound`
+Simple corollary of Priority 2 via `Int.toNat_of_nonneg`
 
-### Recommendation
-Start with **Option A** (axiom) to unblock progress. Later cycles can strengthen
-to Option B/C if needed for deeper results.
+### Needed Helpers (discover/prove)
+- `Divisor.single_add`: `single p m + single p n = single p (m + n)`
+- Effectivity threading through induction
 
 ### Do NOT do
 - Schemes, sheaves, cohomology
