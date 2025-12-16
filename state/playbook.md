@@ -81,21 +81,26 @@
 **7 new lemmas PROVED, 1 structure DEFINED**
 
 ## Status - Cycle 13 (SUCCESS: Cleanup)
-- **REMOVED**: 4 superseded sorry lemmas (ell.add_single_le_succ, ell.le_deg_add_ell_zero, ell.single_le_deg_succ, ell.le_toNat_deg_add_ell_zero)
-- **FIXED**: 2 unused variable warnings (hFin → _hFin)
-- **REMAINING SORRIES**: Only 2 (base RRData.riemannRoch, RRData.riemannRoch') - no proof path without additional assumptions
+- **REMOVED**: 4 superseded sorry lemmas
+- **FIXED**: 2 unused variable warnings
+- **REMAINING SORRIES**: Only 2 (base RRData theorems)
 
-**Key insight**: The superseded lemmas required quotient-degree axioms that were replaced by the FunctionFieldDataWithBound approach in Cycle 10.
+## Status - Cycle 14 (SUCCESS: Genus 0 and High-Degree Results)
+- **PROVED**: `ell_eq_deg_minus_genus_of_deg_gt` (**KEY**: deg D > 2g-2 ⟹ ℓ(D) = deg D + 1 - g)
+- **PROVED**: `ell_eq_deg_succ_of_genus_zero_deg_gt` (genus 0 formula: ℓ(D) = deg D + 1)
+- **PROVED**: 5 more lemmas (deg_K_genus_zero, ell_K_genus_zero, ell_eq_deg_succ_of_genus_zero_effective, ell_le_deg_succ_of_deg_gt, ell_zero_of_genus_zero_deg_neg_one)
+- **BLOCKED**: `clifford_bound` (needs multiplication axiom - not provable from RR alone)
 
-## Next Steps (Cycle 14)
+**7/8 lemmas PROVED**
+
+## Next Steps (Cycle 15)
 
 **WARNING**: Do NOT touch Schemes or Sheaf Cohomology. Complexity cliff.
 
-### Options for Cycle 14
-1. **Add instantiation lemma** showing FunctionFieldDataWithRR can produce RRData instance
-2. **Prove genus 0 case** - for genus 0, RR simplifies: ℓ(D) = deg(D) + 1 when deg D ≥ -1
-3. **Add more derived lemmas** from the RR axiom (e.g., Clifford's theorem bounds)
+### Options for Cycle 15
+1. **Add Clifford axiom** - extend structure with multiplication map
+2. **Add instantiation lemma** - FunctionFieldDataWithRR → RRData
+3. **Genus 1 special case** - elliptic curves
 
 ### Do NOT do
 - Schemes, sheaves, cohomology
-- Trying to instantiate FunctionFieldData with real objects yet

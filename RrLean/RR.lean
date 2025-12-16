@@ -967,4 +967,101 @@ lemma rr_at_zero [∀ D, Module.Finite k (RRSpace data.fd D)] :
 
 end FunctionFieldDataWithRR
 
+/-! ## Cycle 14 Candidates: Genus 0 and High-Degree Results -/
+
+namespace FunctionFieldDataWithRR
+
+variable {α : Type*} {k : Type*} [Field k] (data : FunctionFieldDataWithRR α k)
+
+-- Candidate 1 [tag: genus_bridge] [status: PROVED]
+-- For genus 0: deg(K) = -2
+lemma deg_K_genus_zero (h_genus : data.genus = 0) :
+    Divisor.deg data.K_div = -2 := by
+  rw [data.deg_K, h_genus]
+  norm_num
+
+-- Candidate 2 [tag: genus_bridge] [status: PROVED]
+-- For genus 0: ℓ(K) = 0
+lemma ell_K_genus_zero [∀ D, Module.Finite k (RRSpace data.fd D)]
+    (h_genus : data.genus = 0) :
+    ell data.fd data.K_div = 0 := by
+  have h := data.ell_K
+  rw [h_genus] at h
+  exact Int.ofNat_inj.mp h
+
+-- Candidate 4 [tag: degree_bridge] [status: PROVED]
+-- For any genus and deg(D) > 2g - 2: RR becomes exact (ℓ(D) = deg(D) + 1 - g)
+lemma ell_eq_deg_minus_genus_of_deg_gt [∀ D, Module.Finite k (RRSpace data.fd D)]
+    (D : Divisor α) (h_deg : 2 * (data.genus : ℤ) - 2 < Divisor.deg D) :
+    (ell data.fd D : ℤ) = Divisor.deg D + 1 - (data.genus : ℤ) := by
+  have hvanish := data.ell_K_sub_D_eq_zero_of_deg_gt D h_deg
+  have hrr := data.rr_axiom D
+  rw [hvanish] at hrr
+  simp only [Nat.cast_zero, sub_zero] at hrr
+  exact hrr
+
+-- Candidate 3 [tag: rr_bundle_bridge] [status: PROVED]
+-- For genus 0 and deg(D) > -2: RR simplifies to ℓ(D) = deg(D) + 1
+lemma ell_eq_deg_succ_of_genus_zero_deg_gt [∀ D, Module.Finite k (RRSpace data.fd D)]
+    (h_genus : data.genus = 0) (D : Divisor α)
+    (h_deg : -2 < Divisor.deg D) :
+    (ell data.fd D : ℤ) = Divisor.deg D + 1 := by
+  have h_deg' : 2 * (data.genus : ℤ) - 2 < Divisor.deg D := by simp [h_genus]; exact h_deg
+  have h := data.ell_eq_deg_minus_genus_of_deg_gt D h_deg'
+  simp [h_genus] at h
+  exact h
+
+-- Candidate 5 [tag: genus_bridge] [status: PROVED]
+-- For genus 0 and effective D: ℓ(D) = deg(D) + 1 when deg(D) ≥ 0
+lemma ell_eq_deg_succ_of_genus_zero_effective [∀ D, Module.Finite k (RRSpace data.fd D)]
+    (h_genus : data.genus = 0) {D : Divisor α}
+    (hD : Divisor.Effective D) :
+    ell data.fd D = (Divisor.deg D).toNat + 1 := by
+  have hdeg_nonneg := Divisor.deg_nonneg_of_effective hD
+  have hdeg_gt : -2 < Divisor.deg D := by omega
+  have h := data.ell_eq_deg_succ_of_genus_zero_deg_gt h_genus D hdeg_gt
+  -- h : (ell ... : ℤ) = Divisor.deg D + 1
+  have hdeg_nat : (Divisor.deg D).toNat = Divisor.deg D := Int.toNat_of_nonneg hdeg_nonneg
+  omega
+
+-- Candidate 6 [tag: rr_bundle_bridge] [status: PROVED]
+-- Upper bound: ℓ(D) ≤ deg(D) + 1 for all D (from RR when deg(D) > 2g-2)
+lemma ell_le_deg_succ_of_deg_gt [∀ D, Module.Finite k (RRSpace data.fd D)]
+    (D : Divisor α) (h_deg : 2 * (data.genus : ℤ) - 2 < Divisor.deg D) :
+    (ell data.fd D : ℤ) ≤ Divisor.deg D + 1 := by
+  have h := data.ell_eq_deg_minus_genus_of_deg_gt D h_deg
+  have hg : 0 ≤ (data.genus : ℤ) := Int.natCast_nonneg _
+  omega
+
+-- Candidate 7 [tag: serre_duality_bridge] [status: PROVED]
+-- For genus 0 and deg(D) = -1: ℓ(D) = 0 and ℓ(K - D) = 0
+lemma ell_zero_of_genus_zero_deg_neg_one [∀ D, Module.Finite k (RRSpace data.fd D)]
+    (h_genus : data.genus = 0) (D : Divisor α)
+    (h_deg : Divisor.deg D = -1) :
+    ell data.fd D = 0 := by
+  -- deg(D) = -1 > -2 = 2g - 2, so vanishing gives ℓ(K-D) = 0
+  have hdeg_gt : 2 * (data.genus : ℤ) - 2 < Divisor.deg D := by simp [h_genus, h_deg]
+  have h := data.ell_eq_deg_minus_genus_of_deg_gt D hdeg_gt
+  simp [h_genus, h_deg] at h
+  omega
+
+-- Candidate 8 [tag: genus_bridge] [status: BLOCKED]
+-- Clifford-type bound requires additional geometric axiom (e.g., multiplication map on sections).
+-- This is NOT provable from RR axiom alone.
+-- The classic proof uses: sections of D and K-D multiply to give sections of K,
+-- giving an inequality from the dimension bound on H⁰(K).
+lemma clifford_bound [∀ D, Module.Finite k (RRSpace data.fd D)]
+    (D : Divisor α)
+    (h_ell_D : 2 ≤ ell data.fd D)
+    (h_ell_KD : 2 ≤ ell data.fd (data.K_div - D)) :
+    2 * (ell data.fd D : ℤ) ≤ Divisor.deg D + 2 := by
+  -- This requires Clifford's inequality which is a separate theorem from RR.
+  -- The proof uses: if D is special, sections of D and K-D multiply to sections of K,
+  -- giving dim L(D) · dim L(K-D) ≤ dim L(K) + dim L(D) + dim L(K-D) - 2 (roughly)
+  -- which combined with RR gives the bound.
+  -- Without a multiplication axiom, we cannot prove this.
+  sorry
+
+end FunctionFieldDataWithRR
+
 end RiemannRoch

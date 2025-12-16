@@ -1,5 +1,5 @@
 {
-  "active_edge": "Cleanup: Remove superseded sorries",
+  "active_edge": "Genus 0 special cases and high-degree exactness",
   "candidates": [
     {
       "name": "Divisor α",
@@ -58,95 +58,11 @@
       "cycle": 5
     },
     {
-      "name": "Divisor.Effective_iff",
-      "status": "PROVED",
-      "statement": "Effective D ↔ ∀ p, 0 ≤ D p",
-      "approach": "Definitional equality",
-      "cycle": 5
-    },
-    {
-      "name": "Divisor.Effective_zero",
-      "status": "PROVED",
-      "statement": "Effective 0",
-      "approach": "le_refl",
-      "cycle": 5
-    },
-    {
-      "name": "Divisor.Effective_add",
-      "status": "PROVED",
-      "statement": "Effective D → Effective E → Effective (D + E)",
-      "approach": "Pointwise omega",
-      "cycle": 5
-    },
-    {
-      "name": "Divisor.Effective_single",
-      "status": "PROVED",
-      "statement": "0 ≤ n → Effective (single p n)",
-      "approach": "Case split on equality",
-      "cycle": 5
-    },
-    {
       "name": "FunctionFieldData",
       "status": "DEFINED",
       "statement": "structure FunctionFieldData (α : Type*) with K, div, div_mul, div_one, div_inv, deg_div",
       "approach": "Axiomatizes function field with principal divisor map",
       "cycle": 5
-    },
-    {
-      "name": "FunctionFieldData.div_zero",
-      "status": "PROVED",
-      "statement": "data.div 0 = 0",
-      "approach": "From div_mul 0 0, algebraic manipulation",
-      "cycle": 5
-    },
-    {
-      "name": "RRSpace",
-      "status": "DEFINED",
-      "statement": "def RRSpace (data : FunctionFieldData α) (D : Divisor α) : Set data.K := { f | f = 0 ∨ Effective (data.div f + D) }",
-      "approach": "Riemann-Roch space L(D)",
-      "cycle": 5
-    },
-    {
-      "name": "RRSpace.zero_mem",
-      "status": "PROVED",
-      "statement": "0 ∈ RRSpace data D",
-      "approach": "Or.inl rfl",
-      "cycle": 5
-    },
-    {
-      "name": "RRSpace.mono",
-      "status": "PROVED",
-      "statement": "D ≤ E → RRSpace data D ⊆ RRSpace data E",
-      "approach": "Pointwise comparison with omega",
-      "cycle": 5
-    },
-    {
-      "name": "FunctionFieldData.div_add",
-      "status": "AXIOM",
-      "statement": "∀ f g, div f ⊓ div g ≤ div (f + g)",
-      "approach": "Strong triangle inequality - structure field",
-      "cycle": 6
-    },
-    {
-      "name": "FunctionFieldData.div_algebraMap",
-      "status": "AXIOM",
-      "statement": "∀ c : k, div (algebraMap k K c) = 0",
-      "approach": "Constants have zero divisor - structure field",
-      "cycle": 6
-    },
-    {
-      "name": "RRSpace.add_mem'",
-      "status": "PROVED",
-      "statement": "f ∈ L(D) → g ∈ L(D) → f + g ∈ L(D)",
-      "approach": "Using div_add (strong triangle inequality)",
-      "cycle": 6
-    },
-    {
-      "name": "RRSpace.smul_mem'",
-      "status": "PROVED",
-      "statement": "c : k → f ∈ L(D) → c • f ∈ L(D)",
-      "approach": "Using div_mul + div_algebraMap",
-      "cycle": 6
     },
     {
       "name": "RRSpace (Submodule)",
@@ -156,205 +72,12 @@
       "cycle": 6
     },
     {
-      "name": "RRDataWithEuler.riemannRoch",
-      "status": "DERIVED_FROM_ASSUMPTIONS",
-      "statement": "∀ D, ℓ(D) - ℓ(K-D) = deg(D) + 1 - g",
-      "approach": "Algebraic derivation from structure fields",
-      "assumptions": [
-        "serreDuality : ∀ D, ell (K - D) = h1 D",
-        "eulerChar_def : ∀ D, eulerChar D = ell D - h1 D",
-        "eulerChar_formula : ∀ D, eulerChar D = deg D + 1 - genus"
-      ],
-      "note": "eulerChar_formula IS Riemann-Roch; derivation is circular",
-      "cycle": 3
-    },
-    {
       "name": "ell",
       "status": "DEFINED",
       "statement": "def ell (data : FunctionFieldData α k) (D : Divisor α) := Module.finrank k (RRSpace data D)",
       "approach": "Semantic dimension using mathlib's finrank",
       "cycle": 7
     },
-    {
-      "name": "RRSpace.le_of_divisor_le",
-      "status": "PROVED",
-      "statement": "D ≤ E → RRSpace data D ≤ RRSpace data E",
-      "approach": "SetLike.coe_subset_coe + mono",
-      "cycle": 7
-    },
-    {
-      "name": "RRSpace.one_mem_of_effective",
-      "status": "PROVED",
-      "statement": "Effective D → 1 ∈ RRSpace data D",
-      "approach": "div 1 = 0, so 0 + D = D ≥ 0",
-      "cycle": 7
-    },
-    {
-      "name": "RRSpace.algebraMap_mem_zero",
-      "status": "PROVED",
-      "statement": "∀ c : k, algebraMap k K c ∈ RRSpace data 0",
-      "approach": "div_algebraMap gives div c = 0",
-      "cycle": 7
-    },
-    {
-      "name": "RRSpace.algebraMap_mem_of_effective",
-      "status": "PROVED",
-      "statement": "Effective D → ∀ c : k, algebraMap k K c ∈ RRSpace data D",
-      "approach": "div_algebraMap + effective D",
-      "cycle": 7
-    },
-    {
-      "name": "ell.mono",
-      "status": "PROVED",
-      "statement": "[Module.Finite k (RRSpace data E)] → D ≤ E → ell data D ≤ ell data E",
-      "approach": "Submodule.finrank_mono + le_of_divisor_le",
-      "cycle": 7
-    },
-    {
-      "name": "ell.pos_of_effective",
-      "status": "PROVED",
-      "statement": "[Module.Finite k (RRSpace data D)] → Effective D → 1 ≤ ell data D",
-      "approach": "L(D) contains 1 ≠ 0, so nontrivial",
-      "cycle": 7
-    },
-    {
-      "name": "ell.zero_pos",
-      "status": "PROVED",
-      "statement": "[Module.Finite k (RRSpace data 0)] → 1 ≤ ell data 0",
-      "approach": "pos_of_effective + Effective_zero",
-      "cycle": 7
-    },
-    {
-      "name": "ell.mono_unconditional",
-      "status": "PROVED",
-      "statement": "[∀ D, Module.Finite k (RRSpace data D)] → D ≤ E → ell data D ≤ ell data E",
-      "approach": "haveI from typeclass, apply ell.mono",
-      "cycle": 8
-    },
-    {
-      "name": "ell.pos_of_effective_unconditional",
-      "status": "PROVED",
-      "statement": "[∀ D, Module.Finite k (RRSpace data D)] → Effective D → 1 ≤ ell data D",
-      "approach": "haveI from typeclass, apply ell.pos_of_effective",
-      "cycle": 8
-    },
-    {
-      "name": "ell.ge_zero_of_effective",
-      "status": "PROVED",
-      "statement": "[∀ D, Module.Finite k (RRSpace data D)] → Effective D → ell data 0 ≤ ell data D",
-      "approach": "Via mono_unconditional with Effective ≤ relation",
-      "cycle": 8
-    },
-    {
-      "name": "ell.mono_of_effective",
-      "status": "PROVED",
-      "statement": "[∀ D, Module.Finite k (RRSpace data D)] → Effective D → Effective E → D ≤ E → ell data D ≤ ell data E",
-      "approach": "Direct application of mono_unconditional",
-      "cycle": 8
-    },
-    {
-      "name": "ell.add_effective_le",
-      "status": "PROVED",
-      "statement": "[∀ D, Module.Finite k (RRSpace data D)] → Effective D → Effective E → ell data D ≤ ell data (D + E)",
-      "approach": "D ≤ D + E when E effective, then mono_unconditional",
-      "cycle": 8
-    },
-    {
-      "name": "ell.zero_pos_unconditional",
-      "status": "PROVED",
-      "statement": "[∀ D, Module.Finite k (RRSpace data D)] → [Nontrivial k] → 1 ≤ ell data 0",
-      "approach": "haveI from typeclass, apply ell.zero_pos",
-      "cycle": 8
-    },
-    {
-      "name": "RRSpace.nontrivial_of_effective",
-      "status": "PROVED",
-      "statement": "Effective D → Nontrivial (RRSpace data D)",
-      "approach": "1 ∈ L(D) for effective D gives distinct elements",
-      "cycle": 8
-    },
-    {
-      "name": "ell.diff_le_deg_diff",
-      "status": "PROVED",
-      "statement": "[∀ D, Module.Finite k (RRSpace data D)] → Effective D → D ≤ E → (ell data D : ℤ) ≤ (ell data E : ℤ)",
-      "approach": "Int.ofNat_le + mono_unconditional",
-      "cycle": 8
-    },
-    {
-      "name": "RRSpace.submodule_inclusion_injective",
-      "status": "PROVED",
-      "statement": "D ≤ E → Function.Injective (Submodule.inclusion (RRSpace.le_of_divisor_le data h))",
-      "approach": "Submodule.inclusion_injective",
-      "cycle": 9
-    },
-    {
-      "name": "ell.quotient_add_eq_of_le",
-      "status": "PROVED",
-      "statement": "finrank k ((RRSpace data E) ⧸ comap) + ell data D = ell data E",
-      "approach": "Rank-nullity via Submodule.comapSubtypeEquivOfLe + LinearEquiv.finrank_eq",
-      "cycle": 9
-    },
-    {
-      "name": "ell.quotient_le_of_le",
-      "status": "PROVED",
-      "statement": "D ≤ E → finrank k ((RRSpace data E) ⧸ comap) ≤ ell data E",
-      "approach": "Submodule.finrank_quotient_le",
-      "cycle": 9
-    },
-    {
-      "name": "ell.add_single_le_succ",
-      "status": "REMOVED",
-      "statement": "ell data (D + Divisor.single p 1) ≤ ell data D + 1",
-      "approach": "Superseded by ell.add_single_le_succ_from_bound",
-      "note": "REMOVED in Cycle 13 - see FunctionFieldDataWithBound version",
-      "cycle": 9
-    },
-    {
-      "name": "ell.le_deg_add_ell_zero",
-      "status": "REMOVED",
-      "statement": "Effective D → (ell data D : ℤ) ≤ Divisor.deg D + (ell data 0 : ℤ)",
-      "approach": "Superseded by ell.le_deg_add_ell_zero_from_bound",
-      "note": "REMOVED in Cycle 13 - see FunctionFieldDataWithBound version",
-      "cycle": 9
-    },
-    {
-      "name": "ell.single_le_deg_succ",
-      "status": "REMOVED",
-      "statement": "ell data (Divisor.single p n) ≤ n + 1",
-      "approach": "Superseded by ell.single_le_deg_succ_from_bound",
-      "note": "REMOVED in Cycle 13 - see FunctionFieldDataWithBound version",
-      "cycle": 9
-    },
-    {
-      "name": "ell.le_toNat_deg_add_ell_zero",
-      "status": "REMOVED",
-      "statement": "Effective D → 0 ≤ deg D → ell data D ≤ (deg D).toNat + ell data 0",
-      "approach": "Superseded by ell.le_toNat_deg_add_ell_zero_from_bound",
-      "note": "REMOVED in Cycle 13 - see FunctionFieldDataWithBound version",
-      "cycle": 9
-    }
-  ],
-  "blockers": [
-    "mathlib lacks: line bundles, sheaf cohomology H⁰/H¹, genus for schemes",
-    "Cannot yet instantiate RRData.Div with Divisor α (needs point type from curve)",
-    "Base RRData.riemannRoch has no proof path without additional structure axioms"
-  ],
-  "resolved_blockers": [
-    "PIVOT Cycle 2: defined RRData structure (elaborates)",
-    "PIVOT Cycle 3: extended to RRDataWithEuler (RR derivable from fields)",
-    "CYCLE 4: Defined Divisor α := α →₀ ℤ, proved deg_add/deg_zero/deg_neg/deg_sub/deg_single",
-    "CYCLE 5: Defined Effective, FunctionFieldData, RRSpace L(D)",
-    "CYCLE 6: L(D) is k-Submodule - added div_add, div_algebraMap, proved add_mem'/smul_mem'",
-    "CYCLE 7: ell(D) = finrank k L(D), proved mono/pos_of_effective/zero_pos",
-    "CYCLE 8: Finite-dimensionality via typeclass [∀ D, Module.Finite k (RRSpace data D)], all 8 lemmas PROVED",
-    "CYCLE 9: Quotient infrastructure (3 proved), Riemann inequality statements (4 stated)",
-    "CYCLE 10: FunctionFieldDataWithBound axiom extension, single_point_bound",
-    "CYCLE 11: Riemann inequality PROVED via degree induction",
-    "CYCLE 12: Full FunctionFieldDataWithRR structure, 7 lemmas PROVED",
-    "CYCLE 13: Cleanup - removed 4 superseded sorries, fixed warnings"
-  ],
-  "next_action": "Cycle 14: Consider genus 0 case or RRData instantiation lemma",
-  "cycle_10_candidates": [
     {
       "name": "FunctionFieldDataWithBound",
       "status": "DEFINED",
@@ -363,59 +86,12 @@
       "cycle": 10
     },
     {
-      "name": "ell.add_single_le_succ_from_bound",
-      "status": "PROVED",
-      "statement": "ell data (D + single p 1) ≤ ell data D + 1",
-      "approach": "Direct application of single_point_bound axiom",
-      "cycle": 10
-    },
-    {
-      "name": "Divisor.deg_add_single",
-      "status": "PROVED",
-      "statement": "deg (D + single p n) = deg D + n",
-      "approach": "Via deg_add + deg_single",
-      "cycle": 10
-    },
-    {
-      "name": "ell.diff_add_single_le_one",
-      "status": "PROVED",
-      "statement": "(ell data (D + single p 1) : ℤ) - ell data D ≤ 1",
-      "approach": "omega from single_point_bound",
-      "cycle": 10
-    },
-    {
-      "name": "Divisor.add_zero_right",
-      "status": "PROVED",
-      "statement": "D + 0 = D",
-      "approach": "add_zero D",
-      "cycle": 10
-    },
-    {
-      "name": "ell.single_le_deg_succ_from_bound",
-      "status": "STATED",
-      "statement": "ell data (single p n) ≤ n + 1",
-      "approach": "Induction on n using single_point_bound",
-      "blocker": "Needs single_add helper",
-      "cycle": 10
-    },
-    {
       "name": "ell.le_deg_add_ell_zero_from_bound",
-      "status": "STATED",
+      "status": "PROVED",
       "statement": "Effective D → (ell data D : ℤ) ≤ deg D + ell data 0",
-      "approach": "Riemann inequality - induction on effective D",
-      "blocker": "Needs Finsupp induction infrastructure",
-      "cycle": 10
+      "approach": "RIEMANN INEQUALITY - degree induction",
+      "cycle": 11
     },
-    {
-      "name": "ell.le_toNat_deg_add_ell_zero_from_bound",
-      "status": "STATED",
-      "statement": "Effective D → 0 ≤ deg D → ell data D ≤ (deg D).toNat + ell data 0",
-      "approach": "Corollary of le_deg_add_ell_zero_from_bound",
-      "blocker": "Needs le_deg_add_ell_zero_from_bound",
-      "cycle": 10
-    }
-  ],
-  "cycle_12_candidates": [
     {
       "name": "FunctionFieldDataWithRR",
       "status": "DEFINED",
@@ -431,27 +107,6 @@
       "cycle": 12
     },
     {
-      "name": "FunctionFieldDataWithRR.deg_K_eq",
-      "status": "PROVED",
-      "statement": "deg K_div = 2g - 2",
-      "approach": "Direct application of deg_K axiom",
-      "cycle": 12
-    },
-    {
-      "name": "FunctionFieldDataWithRR.ell_K_sub_D_eq",
-      "status": "PROVED",
-      "statement": "ℓ(K-D) = ℓ(D) - deg D - 1 + g",
-      "approach": "Serre duality form via linarith from rr_axiom",
-      "cycle": 12
-    },
-    {
-      "name": "FunctionFieldDataWithRR.ell_ge_deg_minus_genus",
-      "status": "PROVED",
-      "statement": "deg D + 1 - g ≤ ℓ(D)",
-      "approach": "Lower bound from RR since ℓ(K-D) ≥ 0",
-      "cycle": 12
-    },
-    {
       "name": "FunctionFieldDataWithRR.ell_K",
       "status": "PROVED",
       "statement": "ℓ(K) = g",
@@ -462,15 +117,83 @@
       "name": "FunctionFieldDataWithRR.ell_K_sub_D_eq_zero_of_deg_gt",
       "status": "PROVED",
       "statement": "deg D > 2g - 2 → ℓ(K-D) = 0",
-      "approach": "Vanishing via deg_div: if f ≠ 0 in L(K-D), contradiction with negative degree",
-      "cycle": 12
-    },
-    {
-      "name": "FunctionFieldDataWithRR.rr_at_zero",
-      "status": "PROVED",
-      "statement": "ℓ(0) - ℓ(K) = 1 - g",
-      "approach": "Special case of RR at D = 0",
+      "approach": "Vanishing via deg_div semantic content",
       "cycle": 12
     }
-  ]
+  ],
+  "cycle_14_candidates": [
+    {
+      "name": "FunctionFieldDataWithRR.deg_K_genus_zero",
+      "status": "PROVED",
+      "statement": "genus = 0 → deg K_div = -2",
+      "approach": "deg_K axiom + h_genus = 0",
+      "cycle": 14
+    },
+    {
+      "name": "FunctionFieldDataWithRR.ell_K_genus_zero",
+      "status": "PROVED",
+      "statement": "genus = 0 → ℓ(K) = 0",
+      "approach": "ell_K lemma + h_genus = 0",
+      "cycle": 14
+    },
+    {
+      "name": "FunctionFieldDataWithRR.ell_eq_deg_minus_genus_of_deg_gt",
+      "status": "PROVED",
+      "statement": "deg D > 2g - 2 → ℓ(D) = deg D + 1 - g",
+      "approach": "RR + vanishing theorem (high-degree exactness)",
+      "cycle": 14
+    },
+    {
+      "name": "FunctionFieldDataWithRR.ell_eq_deg_succ_of_genus_zero_deg_gt",
+      "status": "PROVED",
+      "statement": "genus = 0 → deg D > -2 → ℓ(D) = deg D + 1",
+      "approach": "Special case of ell_eq_deg_minus_genus_of_deg_gt",
+      "cycle": 14
+    },
+    {
+      "name": "FunctionFieldDataWithRR.ell_eq_deg_succ_of_genus_zero_effective",
+      "status": "PROVED",
+      "statement": "genus = 0 → Effective D → ℓ(D) = deg(D).toNat + 1",
+      "approach": "Natural number version for effective divisors",
+      "cycle": 14
+    },
+    {
+      "name": "FunctionFieldDataWithRR.ell_le_deg_succ_of_deg_gt",
+      "status": "PROVED",
+      "statement": "deg D > 2g - 2 → ℓ(D) ≤ deg D + 1",
+      "approach": "Upper bound from ell_eq_deg_minus_genus_of_deg_gt + genus ≥ 0",
+      "cycle": 14
+    },
+    {
+      "name": "FunctionFieldDataWithRR.ell_zero_of_genus_zero_deg_neg_one",
+      "status": "PROVED",
+      "statement": "genus = 0 → deg D = -1 → ℓ(D) = 0",
+      "approach": "Boundary case: deg = -1 > -2 gives exactness with ℓ = 0",
+      "cycle": 14
+    },
+    {
+      "name": "FunctionFieldDataWithRR.clifford_bound",
+      "status": "BLOCKED",
+      "statement": "ℓ(D) ≥ 2 → ℓ(K-D) ≥ 2 → 2·ℓ(D) ≤ deg D + 2",
+      "approach": "Requires multiplication axiom for sections (geometric argument)",
+      "blocker": "Clifford's inequality needs additional structure beyond RR axiom",
+      "cycle": 14
+    }
+  ],
+  "blockers": [
+    "mathlib lacks: line bundles, sheaf cohomology H⁰/H¹, genus for schemes",
+    "Base RRData.riemannRoch has no proof path without additional structure axioms",
+    "Clifford's theorem requires multiplication map on sections (not provable from RR alone)"
+  ],
+  "resolved_blockers": [
+    "CYCLE 4-6: Divisor foundations, FunctionFieldData, RRSpace as k-Submodule",
+    "CYCLE 7-8: ell(D) = finrank, finite-dimensionality via typeclass",
+    "CYCLE 9: Quotient infrastructure for dimension bounds",
+    "CYCLE 10: FunctionFieldDataWithBound axiom extension",
+    "CYCLE 11: Riemann inequality PROVED via degree induction",
+    "CYCLE 12: Full FunctionFieldDataWithRR structure, 7 lemmas PROVED",
+    "CYCLE 13: Cleanup - removed 4 superseded sorries",
+    "CYCLE 14: Genus 0 special cases - 7 lemmas PROVED"
+  ],
+  "next_action": "Cycle 15: Consider Clifford axiom extension or RRData instantiation"
 }
