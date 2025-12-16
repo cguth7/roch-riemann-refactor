@@ -35,7 +35,6 @@
             padding: 3rem 2rem;
         }
 
-        /* Header */
         header {
             margin-bottom: 3rem;
             padding-bottom: 2rem;
@@ -58,7 +57,6 @@
             text-decoration: none;
         }
 
-        /* Section styling */
         section {
             margin-bottom: 3rem;
         }
@@ -78,7 +76,6 @@
             margin-bottom: 0.75rem;
         }
 
-        /* The main theorem box */
         .theorem-box {
             background: var(--math-bg);
             border: 1px solid var(--border);
@@ -117,41 +114,48 @@
             color: var(--green);
         }
 
-        /* Math areas diagram */
-        .areas-grid {
+        .two-col {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
             margin-bottom: 2rem;
         }
 
-        .area-box {
-            padding: 1.25rem;
+        .approach-box {
+            padding: 1.5rem;
             border: 1px solid var(--border);
-            border-radius: 6px;
+            border-radius: 8px;
             background: white;
         }
 
-        .area-box h4 {
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--muted);
-            margin-bottom: 0.5rem;
-        }
-
-        .area-box ul {
-            list-style: none;
+        .approach-box h4 {
             font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        .area-box li {
-            padding: 0.25rem 0;
-            color: var(--text);
+        .approach-box .file {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            background: var(--code-bg);
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
         }
 
-        .area-box li code {
+        .approach-box ul {
+            font-size: 0.9rem;
+            margin-left: 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .approach-box li {
+            margin-bottom: 0.25rem;
+        }
+
+        .approach-box code {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.8rem;
             background: var(--code-bg);
@@ -159,23 +163,32 @@
             border-radius: 3px;
         }
 
-        /* Flowchart */
-        .flowchart {
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 2rem;
-            overflow-x: auto;
+        .stats-row {
+            display: flex;
+            gap: 2rem;
+            padding: 1.5rem 0;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2rem;
         }
 
-        .flowchart svg {
-            display: block;
-            margin: 0 auto;
-            max-width: 100%;
-            height: auto;
+        .stat {
+            text-align: center;
         }
 
-        /* Status table */
+        .stat-num {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
         .status-table {
             width: 100%;
             border-collapse: collapse;
@@ -221,65 +234,13 @@
         .status.wip { background: #fef3c7; color: var(--yellow); }
         .status.blocked { background: #fee2e2; color: var(--red); }
 
-        /* Dependency legend */
-        .legend {
-            display: flex;
-            gap: 1.5rem;
-            margin-top: 1rem;
-            font-size: 0.8rem;
-            color: var(--muted);
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .legend-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-
-        .legend-dot.done { background: var(--green); }
-        .legend-dot.wip { background: var(--yellow); }
-        .legend-dot.blocked { background: var(--red); }
-
-        /* Stats row */
-        .stats-row {
-            display: flex;
-            gap: 2rem;
-            padding: 1.5rem 0;
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 2rem;
-        }
-
-        .stat {
-            text-align: center;
-        }
-
-        .stat-num {
-            font-size: 2rem;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .stat-label {
-            font-size: 0.75rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        /* Notes */
         .note {
             background: #fffbeb;
             border: 1px solid #fcd34d;
             border-radius: 6px;
             padding: 1rem 1.25rem;
             font-size: 0.9rem;
+            margin: 1rem 0;
         }
 
         .note strong {
@@ -294,32 +255,47 @@
             color: var(--accent);
         }
 
-        /* Philosophy section */
-        .philosophy-box {
-            background: #fdf4ff;
-            border: 1px solid #e879f9;
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin: 1.5rem 0;
+        .note.success {
+            background: #dcfce7;
+            border-color: #86efac;
+        }
+        .note.success strong {
+            color: var(--green);
         }
 
-        .philosophy-box h4 {
-            color: #a855f7;
+        .difficulty-table {
+            width: 100%;
+            border-collapse: collapse;
             font-size: 0.9rem;
-            margin-bottom: 0.75rem;
+            margin: 1rem 0;
         }
 
-        .philosophy-box p {
-            font-size: 0.9rem;
-            margin-bottom: 0.75rem;
+        .difficulty-table th, .difficulty-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
         }
 
-        .philosophy-box ul {
-            font-size: 0.9rem;
-            margin-left: 1.25rem;
+        .difficulty-table th {
+            background: var(--code-bg);
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
         }
 
-        /* Footer */
+        .difficulty {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+        }
+
+        .difficulty.easy { background: #dcfce7; color: var(--green); }
+        .difficulty.medium { background: #fef3c7; color: var(--yellow); }
+        .difficulty.hard { background: #fee2e2; color: var(--red); }
+        .difficulty.very-hard { background: #fce7f3; color: #be185d; }
+
         footer {
             margin-top: 3rem;
             padding-top: 2rem;
@@ -334,7 +310,7 @@
         }
 
         @media (max-width: 768px) {
-            .areas-grid {
+            .two-col {
                 grid-template-columns: 1fr;
             }
             .stats-row {
@@ -367,182 +343,265 @@
             </div>
         </section>
 
-        <!-- Mathematical Areas -->
-        <section>
-            <h2>Mathematical Areas Involved</h2>
-            <div class="areas-grid">
-                <div class="area-box">
-                    <h4>Linear Algebra</h4>
-                    <ul>
-                        <li><code>Submodule k K</code></li>
-                        <li><code>Module.finrank</code></li>
-                        <li>Quotient spaces</li>
-                        <li>Rank-nullity</li>
-                    </ul>
-                </div>
-                <div class="area-box">
-                    <h4>Commutative Algebra</h4>
-                    <ul>
-                        <li><code>Finsupp</code> (divisors)</li>
-                        <li><code>Field</code>, <code>Algebra</code></li>
-                        <li>Valuations</li>
-                        <li>Localization</li>
-                    </ul>
-                </div>
-                <div class="area-box">
-                    <h4>Algebraic Geometry</h4>
-                    <ul>
-                        <li><code>Scheme</code> (mathlib)</li>
-                        <li>Line bundles (missing)</li>
-                        <li>Sheaf cohomology (missing)</li>
-                        <li>Genus (missing)</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="note">
-                <strong>Note:</strong> mathlib lacks Weil/Cartier divisors, line bundles, and sheaf cohomology H<sup>0</sup>/H<sup>1</sup>.
-                We work with an axiomatized function field interface instead.
-            </div>
-        </section>
-
         <!-- Stats -->
         <section>
             <div class="stats-row">
                 <div class="stat">
-                    <div class="stat-num">15</div>
+                    <div class="stat-num">24</div>
                     <div class="stat-label">Cycles</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-num">12</div>
-                    <div class="stat-label">Definitions</div>
+                    <div class="stat-num">2</div>
+                    <div class="stat-label">Approaches</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-num">59</div>
+                    <div class="stat-num">80+</div>
                     <div class="stat-label">Lemmas Proved</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-num">3</div>
-                    <div class="stat-label">Sorries</div>
+                    <div class="stat-num">2</div>
+                    <div class="stat-label">Sorries Left</div>
                 </div>
             </div>
         </section>
 
-        <!-- Proof Dependency Graph -->
+        <!-- Two Approaches -->
         <section>
-            <h2>Proof Architecture</h2>
-            <div class="flowchart">
-                <svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Definitions -->
-                    <defs>
-                        <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-                            <path d="M0,0 L0,6 L9,3 z" fill="#999"/>
-                        </marker>
-                    </defs>
-
-                    <!-- Layer labels -->
-                    <text x="20" y="30" font-size="11" fill="#666" font-weight="600">FOUNDATIONS</text>
-                    <text x="20" y="150" font-size="11" fill="#666" font-weight="600">STRUCTURE</text>
-                    <text x="20" y="290" font-size="11" fill="#666" font-weight="600">DIMENSION</text>
-                    <text x="20" y="420" font-size="11" fill="#666" font-weight="600">TARGET</text>
-
-                    <!-- Horizontal dividers -->
-                    <line x1="0" y1="100" x2="800" y2="100" stroke="#eee" stroke-width="1"/>
-                    <line x1="0" y1="230" x2="800" y2="230" stroke="#eee" stroke-width="1"/>
-                    <line x1="0" y1="360" x2="800" y2="360" stroke="#eee" stroke-width="1"/>
-
-                    <!-- Foundation layer -->
-                    <rect x="150" y="50" width="140" height="36" rx="4" fill="#dcfce7" stroke="#16a34a"/>
-                    <text x="220" y="73" text-anchor="middle" font-size="12" font-weight="500">Divisor := alpha ->0 Z</text>
-
-                    <rect x="330" y="50" width="120" height="36" rx="4" fill="#dcfce7" stroke="#16a34a"/>
-                    <text x="390" y="73" text-anchor="middle" font-size="12" font-weight="500">deg : Divisor -> Z</text>
-
-                    <rect x="490" y="50" width="130" height="36" rx="4" fill="#dcfce7" stroke="#16a34a"/>
-                    <text x="555" y="73" text-anchor="middle" font-size="12" font-weight="500">Effective D := 0 le D</text>
-
-                    <!-- Structure layer -->
-                    <rect x="150" y="130" width="180" height="36" rx="4" fill="#dcfce7" stroke="#16a34a"/>
-                    <text x="240" y="153" text-anchor="middle" font-size="12" font-weight="500">FunctionFieldData alpha k</text>
-
-                    <rect x="370" y="130" width="200" height="36" rx="4" fill="#dcfce7" stroke="#16a34a"/>
-                    <text x="470" y="153" text-anchor="middle" font-size="12" font-weight="500">RRSpace : Submodule k K</text>
-
-                    <rect x="610" y="130" width="150" height="36" rx="4" fill="#dcfce7" stroke="#16a34a"/>
-                    <text x="685" y="153" text-anchor="middle" font-size="12" font-weight="500">...WithBound (axiom)</text>
-
-                    <!-- Arrows: Foundation -> Structure -->
-                    <path d="M220,86 L220,100 L240,130" stroke="#999" fill="none" marker-end="url(#arrow)"/>
-                    <path d="M390,86 L390,100 L470,130" stroke="#999" fill="none" marker-end="url(#arrow)"/>
-
-                    <!-- Dimension layer -->
-                    <rect x="150" y="260" width="160" height="36" rx="4" fill="#dcfce7" stroke="#16a34a"/>
-                    <text x="230" y="283" text-anchor="middle" font-size="12" font-weight="500">ell D = finrank L(D)</text>
-
-                    <rect x="350" y="260" width="140" height="36" rx="4" fill="#dcfce7" stroke="#16a34a"/>
-                    <text x="420" y="283" text-anchor="middle" font-size="12" font-weight="500">ell.mono (D le E)</text>
-
-                    <rect x="530" y="260" width="160" height="36" rx="4" fill="#dcfce7" stroke="#16a34a"/>
-                    <text x="610" y="283" text-anchor="middle" font-size="12" font-weight="500">quotient_add_eq</text>
-
-                    <!-- Arrows: Structure -> Dimension -->
-                    <path d="M240,166 L230,260" stroke="#999" fill="none" marker-end="url(#arrow)"/>
-                    <path d="M470,166 L420,260" stroke="#999" fill="none" marker-end="url(#arrow)"/>
-                    <path d="M470,166 L610,260" stroke="#999" fill="none" marker-end="url(#arrow)"/>
-
-                    <!-- Target layer -->
-                    <rect x="120" y="390" width="140" height="36" rx="4" fill="#dcfce7" stroke="#16a34a"/>
-                    <text x="190" y="413" text-anchor="middle" font-size="11" font-weight="500">single_point_bound</text>
-
-                    <rect x="280" y="390" width="160" height="36" rx="4" fill="#dcfce7" stroke="#16a34a"/>
-                    <text x="360" y="408" text-anchor="middle" font-size="11" font-weight="500">Riemann ineq.</text>
-                    <text x="360" y="420" text-anchor="middle" font-size="9" fill="#16a34a">PROVED</text>
-
-                    <rect x="460" y="390" width="140" height="36" rx="4" fill="#dcfce7" stroke="#16a34a"/>
-                    <text x="530" y="408" text-anchor="middle" font-size="11" font-weight="500">...WithRR</text>
-                    <text x="530" y="420" text-anchor="middle" font-size="9" fill="#16a34a">(g, K, RR axiom)</text>
-
-                    <rect x="620" y="390" width="140" height="36" rx="4" fill="#dcfce7" stroke="#16a34a"/>
-                    <text x="690" y="408" text-anchor="middle" font-size="11" font-weight="500">ell_K = g</text>
-                    <text x="690" y="420" text-anchor="middle" font-size="9" fill="#16a34a">PROVED</text>
-
-                    <!-- Arrows: Dimension -> Target -->
-                    <path d="M230,296 L190,390" stroke="#999" fill="none" marker-end="url(#arrow)"/>
-                    <path d="M610,296 L610,350 L360,390" stroke="#999" fill="none" marker-end="url(#arrow)"/>
-                    <path d="M685,166 L685,350 L530,390" stroke="#999" fill="none" marker-end="url(#arrow)"/>
-
-                    <!-- Arrows within target layer -->
-                    <path d="M260,408 L280,408" stroke="#999" fill="none" marker-end="url(#arrow)"/>
-                    <path d="M440,408 L460,408" stroke="#999" fill="none" marker-end="url(#arrow)"/>
-                    <path d="M600,408 L620,408" stroke="#999" fill="none" marker-end="url(#arrow)"/>
-
-                    <!-- Bottom row: full RR and genus cases -->
-                    <rect x="150" y="470" width="130" height="36" rx="4" fill="#dcfce7" stroke="#16a34a"/>
-                    <text x="215" y="488" text-anchor="middle" font-size="11" font-weight="500">Genus 0</text>
-                    <text x="215" y="500" text-anchor="middle" font-size="9" fill="#16a34a">l(D)=deg+1</text>
-
-                    <rect x="300" y="470" width="130" height="36" rx="4" fill="#dcfce7" stroke="#16a34a"/>
-                    <text x="365" y="488" text-anchor="middle" font-size="11" font-weight="500">Genus 1</text>
-                    <text x="365" y="500" text-anchor="middle" font-size="9" fill="#16a34a">l(D)=deg</text>
-
-                    <rect x="450" y="470" width="160" height="36" rx="4" fill="#fef3c7" stroke="#ca8a04"/>
-                    <text x="530" y="488" text-anchor="middle" font-size="11" font-weight="500">Full RR</text>
-                    <text x="530" y="500" text-anchor="middle" font-size="9" fill="#ca8a04">axiomatized</text>
-
-                    <rect x="630" y="470" width="130" height="36" rx="4" fill="#fee2e2" stroke="#dc2626"/>
-                    <text x="695" y="488" text-anchor="middle" font-size="11" font-weight="500">Clifford</text>
-                    <text x="695" y="500" text-anchor="middle" font-size="9" fill="#dc2626">BLOCKED</text>
-
-                    <path d="M360,426 L215,470" stroke="#999" fill="none" marker-end="url(#arrow)"/>
-                    <path d="M360,426 L365,470" stroke="#999" fill="none" marker-end="url(#arrow)"/>
-                    <path d="M530,426 L530,470" stroke="#999" fill="none" marker-end="url(#arrow)"/>
-                    <path d="M690,426 L695,470" stroke="#999" fill="none" marker-end="url(#arrow)"/>
-                </svg>
+            <h2>Two Parallel Approaches</h2>
+            <div class="two-col">
+                <div class="approach-box">
+                    <h4><span class="file">RR.lean</span> Axiom-Based</h4>
+                    <ul>
+                        <li>Abstract <code>FunctionFieldData</code> structure</li>
+                        <li>Axiomatizes single-point bound, RR equation</li>
+                        <li>Derives genus 0, genus 1, high-degree formulas</li>
+                        <li>Clifford's theorem (with multiplication axiom)</li>
+                    </ul>
+                    <p style="font-size: 0.85rem; color: var(--muted);">
+                        <strong>Philosophy:</strong> Capture logical structure of RR, defer construction.
+                    </p>
+                </div>
+                <div class="approach-box" style="border-color: var(--green);">
+                    <h4><span class="file">RR_v2.lean</span> Constructive (Dedekind Domains)</h4>
+                    <ul>
+                        <li>Points = <code>HeightOneSpectrum R</code> (height-1 primes)</li>
+                        <li>L(D) defined via valuations at each prime</li>
+                        <li>Dimension = <code>Module.length</code> (additive in exact sequences)</li>
+                        <li><strong>Riemann inequality PROVED</strong> by degree induction</li>
+                    </ul>
+                    <p style="font-size: 0.85rem; color: var(--green);">
+                        <strong>Status:</strong> Core infrastructure complete, working toward full RR.
+                    </p>
+                </div>
             </div>
-            <div class="legend">
-                <div class="legend-item"><div class="legend-dot done"></div> Proved</div>
-                <div class="legend-item"><div class="legend-dot wip"></div> Axiomatized</div>
-                <div class="legend-item"><div class="legend-dot blocked"></div> Blocked</div>
+        </section>
+
+        <!-- What We Have -->
+        <section>
+            <h2>What We Have (Proved)</h2>
+
+            <div class="theorem-box green">
+                <div class="label">Proved: Riemann Inequality (Cycle 21)</div>
+                <div class="equation">
+                    l(D) &le; deg(D) + 1
+                </div>
+                <div class="gloss">
+                    For effective divisors D on a complete curve (uses SinglePointBound typeclass)
+                </div>
             </div>
+
+            <div class="theorem-box green">
+                <div class="label">Proved: Affine Riemann Inequality (Cycle 23)</div>
+                <div class="equation">
+                    l(D) &le; deg(D) + l(0)
+                </div>
+                <div class="gloss">
+                    For affine models where l(0) may be infinite (uses LocalGapBound + BaseDim)
+                </div>
+            </div>
+
+            <h3 style="margin-top: 1.5rem;">Key Infrastructure (RR_v2.lean)</h3>
+            <table class="status-table">
+                <thead>
+                    <tr>
+                        <th>Component</th>
+                        <th>Definition</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>DivisorV2</code></td>
+                        <td><code>HeightOneSpectrum R ->0 Z</code></td>
+                        <td><span class="status done">Proved</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>RRModuleV2_real</code></td>
+                        <td>L(D) via valuation conditions</td>
+                        <td><span class="status done">Proved</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>ellV2_real_mono</code></td>
+                        <td>D &le; E implies l(D) &le; l(E)</td>
+                        <td><span class="status done">Proved</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>residueFieldAtPrime.linearEquiv</code></td>
+                        <td>R/v.asIdeal &cong; kappa(v)</td>
+                        <td><span class="status done">Proved</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>residueFieldAtPrime.isSimpleModule</code></td>
+                        <td>kappa(v) is simple R-module</td>
+                        <td><span class="status done">Proved</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>local_gap_bound_of_exists_map</code></td>
+                        <td>Linear algebra bridge lemma</td>
+                        <td><span class="status done">Proved</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>riemann_inequality_real</code></td>
+                        <td>l(D) &le; deg(D) + 1</td>
+                        <td><span class="status done">Proved</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 style="margin-top: 1.5rem;">Derived Results (RR.lean)</h3>
+            <ul style="margin: 1rem 0; padding-left: 1.5rem;">
+                <li><code>ell_K = g</code> &mdash; Canonical space dimension equals genus</li>
+                <li><code>ell_K_sub_D_eq_zero_of_deg_gt</code> &mdash; Vanishing theorem</li>
+                <li><code>ell_eq_deg_succ_of_genus_zero_deg_gt</code> &mdash; Genus 0: l(D) = deg + 1</li>
+                <li><code>ell_eq_deg_of_genus_one_deg_pos</code> &mdash; Genus 1: l(D) = deg</li>
+                <li><code>clifford_bound'</code> &mdash; Clifford's inequality (with mul axiom)</li>
+            </ul>
+        </section>
+
+        <!-- What We Still Need -->
+        <section>
+            <h2>What We Still Need</h2>
+
+            <table class="difficulty-table">
+                <thead>
+                    <tr>
+                        <th>Task</th>
+                        <th>Description</th>
+                        <th>Difficulty</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>evaluationMapAt</code></td>
+                        <td>Construct phi : L(D+v) -> kappa(v)</td>
+                        <td><span class="difficulty medium">Medium</span></td>
+                        <td>Needs uniformizer from DVR structure</td>
+                    </tr>
+                    <tr>
+                        <td>Kernel condition</td>
+                        <td>Prove ker(phi) = L(D)</td>
+                        <td><span class="difficulty medium">Medium</span></td>
+                        <td>Should follow from valuation properties</td>
+                    </tr>
+                    <tr>
+                        <td><code>LocalGapBound</code> instance</td>
+                        <td>Make riemann_inequality unconditional</td>
+                        <td><span class="difficulty easy">Easy</span></td>
+                        <td>Once phi is constructed</td>
+                    </tr>
+                    <tr>
+                        <td>Compactification</td>
+                        <td>Add infinite places for l(0) = 1</td>
+                        <td><span class="difficulty hard">Hard</span></td>
+                        <td>Currently affine model only</td>
+                    </tr>
+                    <tr>
+                        <td>Serre duality</td>
+                        <td>l(K-D) = h1(D) from residues</td>
+                        <td><span class="difficulty very-hard">Very Hard</span></td>
+                        <td>Requires differentials, residue theorem</td>
+                    </tr>
+                    <tr>
+                        <td>Full RR from first principles</td>
+                        <td>Remove all axioms</td>
+                        <td><span class="difficulty very-hard">Very Hard</span></td>
+                        <td>Multi-month project</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="note info">
+                <strong>Current Blocker:</strong> The evaluation map construction needs the uniformizer API from mathlib's DVR infrastructure. The mathematical path is clear; it's primarily API exploration.
+            </div>
+        </section>
+
+        <!-- Affine vs Projective -->
+        <section>
+            <h2>Key Insight: Affine vs Projective Models</h2>
+            <div class="two-col">
+                <div class="approach-box">
+                    <h4>Affine Model (Current)</h4>
+                    <ul>
+                        <li>Points = finite places only</li>
+                        <li>L(0) = R (all integral functions)</li>
+                        <li>l(0) = infinity for Dedekind domains</li>
+                        <li>Proves: l(D) &le; deg(D) + l(0)</li>
+                    </ul>
+                    <p style="font-size: 0.85rem; color: var(--muted);">
+                        <strong>Typeclass:</strong> <code>LocalGapBound R K</code>
+                    </p>
+                </div>
+                <div class="approach-box">
+                    <h4>Projective Model (Goal)</h4>
+                    <ul>
+                        <li>Points = finite + infinite places</li>
+                        <li>L(0) = k (constants only)</li>
+                        <li>l(0) = 1</li>
+                        <li>Proves: l(D) &le; deg(D) + 1</li>
+                    </ul>
+                    <p style="font-size: 0.85rem; color: var(--green);">
+                        <strong>Typeclass:</strong> <code>SinglePointBound R K extends LocalGapBound</code>
+                    </p>
+                </div>
+            </div>
+            <p style="font-size: 0.9rem; color: var(--muted);">
+                Cycle 22 discovered that <code>HeightOneSpectrum R</code> only captures finite places.
+                The classical Riemann inequality l(D) &le; deg(D) + 1 requires compactification.
+                We cleanly separated this into two typeclasses so proofs work at both levels.
+            </p>
+        </section>
+
+        <!-- Current Sorry Status -->
+        <section>
+            <h2>Current Sorry Status</h2>
+            <div class="note success">
+                <strong>Only 2 sorries remain</strong>, both in deprecated placeholder code:
+            </div>
+            <table class="status-table">
+                <thead>
+                    <tr>
+                        <th>Location</th>
+                        <th>Sorry</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>RR_v2.lean:335</td>
+                        <td><code>ellV2_mono</code></td>
+                        <td><span class="status wip">Deprecated</span> (superseded by <code>ellV2_real_mono</code>)</td>
+                    </tr>
+                    <tr>
+                        <td>RR_v2.lean:713</td>
+                        <td><code>riemann_inequality</code></td>
+                        <td><span class="status wip">Deprecated</span> (superseded by <code>riemann_inequality_real</code>)</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="font-size: 0.9rem; color: var(--muted); margin-top: 1rem;">
+                These are placeholder definitions from early cycles. The real versions with <code>_real</code> suffix are fully proved.
+            </p>
         </section>
 
         <!-- Build Progress -->
@@ -559,159 +618,98 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td>4</td>
-                        <td>Divisors</td>
-                        <td><code>Divisor</code>, <code>deg_add</code>, <code>deg_single</code></td>
-                        <td><span class="status done">5 proved</span></td>
+                        <td>1-3</td>
+                        <td>Bootstrap</td>
+                        <td>RRData structure, statement elaborates</td>
+                        <td><span class="status done">Complete</span></td>
                     </tr>
                     <tr>
-                        <td>5</td>
-                        <td>Function fields</td>
-                        <td><code>FunctionFieldData</code>, <code>Effective</code>, <code>div_zero</code></td>
-                        <td><span class="status done">5 proved</span></td>
+                        <td>4-6</td>
+                        <td>Foundations</td>
+                        <td><code>Divisor</code>, <code>FunctionFieldData</code>, <code>RRSpace</code></td>
+                        <td><span class="status done">14 proved</span></td>
                     </tr>
                     <tr>
-                        <td>6</td>
-                        <td>L(D) structure</td>
-                        <td><code>RRSpace : Submodule k K</code>, <code>add_mem'</code>, <code>smul_mem'</code></td>
-                        <td><span class="status done">4 proved</span></td>
-                    </tr>
-                    <tr>
-                        <td>7</td>
+                        <td>7-9</td>
                         <td>Dimension</td>
-                        <td><code>ell</code>, <code>mono</code>, <code>pos_of_effective</code></td>
-                        <td><span class="status done">6 proved</span></td>
+                        <td><code>ell = finrank</code>, quotient infrastructure</td>
+                        <td><span class="status done">17 proved</span></td>
                     </tr>
                     <tr>
-                        <td>8</td>
-                        <td>Finite-dimensionality</td>
-                        <td>Typeclass <code>[forall D, Module.Finite k L(D)]</code></td>
+                        <td>10-11</td>
+                        <td>Riemann ineq (v1)</td>
+                        <td>SinglePointBound axiom, degree induction</td>
+                        <td><span class="status done">11 proved</span></td>
+                    </tr>
+                    <tr>
+                        <td>12-16</td>
+                        <td>Full RR structure</td>
+                        <td>Genus, canonical, vanishing, Clifford</td>
+                        <td><span class="status done">28 proved</span></td>
+                    </tr>
+                    <tr>
+                        <td>17</td>
+                        <td>Pivot to v2</td>
+                        <td>Created RR_v2.lean with Dedekind domains</td>
                         <td><span class="status done">8 proved</span></td>
                     </tr>
                     <tr>
-                        <td>9</td>
-                        <td>Quotients</td>
-                        <td><code>quotient_add_eq_of_le</code>, rank-nullity for L(D) subset L(E)</td>
+                        <td>18-19</td>
+                        <td>Valuation-based L(D)</td>
+                        <td><code>RRModuleV2_real</code> complete</td>
+                        <td><span class="status done">6 proved</span></td>
+                    </tr>
+                    <tr>
+                        <td>20</td>
+                        <td>Monotonicity</td>
+                        <td><code>ellV2_real_mono</code> via Module.length</td>
+                        <td><span class="status done">5 proved</span></td>
+                    </tr>
+                    <tr>
+                        <td>21</td>
+                        <td>Riemann ineq (v2)</td>
+                        <td><code>riemann_inequality_real</code> PROVED</td>
+                        <td><span class="status done">8 proved</span></td>
+                    </tr>
+                    <tr>
+                        <td>22</td>
+                        <td>Discovery</td>
+                        <td>Affine model limitation identified</td>
                         <td><span class="status done">3 proved</span></td>
                     </tr>
                     <tr>
-                        <td>10</td>
-                        <td>Single-point axiom</td>
-                        <td><code>FunctionFieldDataWithBound</code>, <code>deg_add_single</code></td>
-                        <td><span class="status done">4 proved</span></td>
+                        <td>23</td>
+                        <td>Typeclass hierarchy</td>
+                        <td><code>LocalGapBound</code> / <code>SinglePointBound</code> split</td>
+                        <td><span class="status done">8 proved</span></td>
                     </tr>
                     <tr>
-                        <td>11</td>
-                        <td>Riemann inequality</td>
-                        <td><code>le_deg_add_ell_zero_from_bound</code> (by degree induction)</td>
-                        <td><span class="status done">7 proved</span></td>
-                    </tr>
-                    <tr>
-                        <td>12</td>
-                        <td>Full RR structure</td>
-                        <td><code>FunctionFieldDataWithRR</code>, <code>ell_K = g</code>, vanishing thm</td>
-                        <td><span class="status done">7 proved</span></td>
-                    </tr>
-                    <tr>
-                        <td>13</td>
-                        <td>Cleanup</td>
-                        <td>Removed 4 superseded sorries, fixed warnings</td>
-                        <td><span class="status done">cleanup</span></td>
-                    </tr>
-                    <tr>
-                        <td>14</td>
-                        <td>Genus 0 &amp; high-degree</td>
-                        <td><code>ell_eq_deg_minus_genus_of_deg_gt</code>, genus 0 formula</td>
-                        <td><span class="status done">7 proved</span></td>
-                    </tr>
-                    <tr>
-                        <td>15</td>
-                        <td>Genus 1 (elliptic)</td>
-                        <td><code>ell_eq_deg_of_genus_one_deg_pos</code>, special divisor bound</td>
+                        <td>24</td>
+                        <td>Linear algebra bridge</td>
+                        <td><code>local_gap_bound_of_exists_map</code>, <code>isSimpleModule</code></td>
                         <td><span class="status done">6 proved</span></td>
                     </tr>
                 </tbody>
             </table>
         </section>
 
-        <!-- Current State -->
-        <section>
-            <h2>Current State</h2>
-            <p style="margin-bottom: 1rem;">
-                <strong>Full RR structure complete</strong> with <strong>genus 0, genus 1, and high-degree exactness</strong>:
-            </p>
-            <div class="theorem-box green">
-                <div class="label">Proved: Genus 1 / Elliptic Curves (Cycle 15)</div>
-                <div class="equation" style="font-size: 1.2rem;">
-                    g = 1, deg(D) &ge; 1 &nbsp;&rArr;&nbsp; l(D) = deg(D)
-                </div>
-                <div class="gloss">
-                    On elliptic curves, dimension equals degree (for positive degree divisors)
-                </div>
-            </div>
-            <div class="theorem-box green">
-                <div class="label">Proved: Special Divisor Characterization (Cycle 15)</div>
-                <div class="equation" style="font-size: 1.2rem;">
-                    l(K - D) > 0 &nbsp;&rArr;&nbsp; deg(D) &le; 2g - 2
-                </div>
-                <div class="gloss">
-                    Divisors with sections in the dual canonical space are bounded
-                </div>
-            </div>
-            <h3 style="margin-top: 1.5rem;">Key Results from Cycles 12-15</h3>
-            <ul style="margin: 1rem 0; padding-left: 1.5rem;">
-                <li><code>ell_K = g</code> &mdash; Canonical space dimension equals genus</li>
-                <li><code>ell_K_sub_D_eq_zero_of_deg_gt</code> &mdash; Vanishing theorem</li>
-                <li><code>ell_eq_deg_minus_genus_of_deg_gt</code> &mdash; High-degree exactness</li>
-                <li><code>ell_eq_deg_succ_of_genus_zero_deg_gt</code> &mdash; Genus 0: l(D) = deg + 1</li>
-                <li><code>ell_eq_deg_of_genus_one_deg_pos</code> &mdash; Genus 1: l(D) = deg</li>
-                <li><code>deg_le_of_ell_K_sub_D_pos</code> &mdash; Special divisor bound</li>
-            </ul>
-        </section>
-
-        <!-- Philosophy Section -->
-        <section>
-            <h2>On Axiomatization vs. Full Construction</h2>
-            <div class="philosophy-box">
-                <h4>What We Have vs. What Would Be Needed</h4>
-                <p>
-                    <strong>Current approach:</strong> We axiomatize the RR equation as a structure field in
-                    <code>FunctionFieldDataWithRR</code>, then derive consequences (vanishing, genus formulas, etc.).
-                </p>
-                <p>
-                    <strong>Full construction would require:</strong>
-                </p>
-                <ul>
-                    <li>Line bundles / invertible sheaves on schemes</li>
-                    <li>Tensor products of line bundles</li>
-                    <li>Sheaf cohomology H<sup>0</sup>, H<sup>1</sup></li>
-                    <li>Serre duality theorem</li>
-                    <li>Euler characteristic formalism</li>
-                    <li>Canonical bundle construction</li>
-                </ul>
-                <p style="margin-top: 0.75rem;">
-                    <strong>My honest assessment:</strong> Nothing <em>physically</em> stops us from adding these.
-                    But each would be a multi-month project. The current axiomatized approach captures the
-                    <em>logical structure</em> of RR while deferring the <em>construction cost</em>.
-                </p>
-            </div>
-            <div class="note info">
-                <strong>Design choice:</strong> We chose "boundary theorem" style &mdash; showing exactly what
-                follows from RR + vanishing, rather than building full cohomology machinery. This is how
-                Bourbaki-style mathematics often works: axiomatize, derive, then instantiate later.
-            </div>
-        </section>
-
         <!-- What's Next -->
         <section>
             <h2>What's Next</h2>
-            <h3>Possible Directions</h3>
+            <h3>Immediate Goals</h3>
             <ul style="margin: 1rem 0; padding-left: 1.5rem;">
-                <li><strong>Clifford's theorem</strong> &mdash; Blocked; needs multiplication axiom L(D) &times; L(K-D) &rarr; L(K)</li>
-                <li><strong>RRData instantiation</strong> &mdash; Bridge concrete structure to abstract interface</li>
-                <li><strong>Genus 2+ cases</strong> &mdash; Hyperelliptic curves, gap sequences</li>
-                <li><strong>Weierstrass points</strong> &mdash; Uses the special divisor characterization</li>
+                <li><strong>Construct evaluation map</strong> &mdash; Use DVR uniformizer to build phi : L(D+v) -> kappa(v)</li>
+                <li><strong>Prove kernel condition</strong> &mdash; Show ker(phi) = L(D) via valuation analysis</li>
+                <li><strong>Instantiate LocalGapBound</strong> &mdash; Makes riemann_inequality_affine unconditional</li>
             </ul>
+
+            <h3 style="margin-top: 1.5rem;">Stretch Goals</h3>
+            <ul style="margin: 1rem 0; padding-left: 1.5rem;">
+                <li><strong>Compactification</strong> &mdash; Add infinite places to get l(0) = 1</li>
+                <li><strong>Serre duality</strong> &mdash; Would require differentials, residue map, residue theorem</li>
+                <li><strong>Full constructive RR</strong> &mdash; Remove all axioms from RR.lean by instantiation</li>
+            </ul>
+
             <h3 style="margin-top: 1.5rem;">What We Won't Do</h3>
             <p style="color: var(--muted);">
                 Schemes, sheaf cohomology, or full line bundle theory. These are complexity cliffs that
@@ -723,7 +721,7 @@
             <p>
                 Lean 4 + mathlib &bull;
                 <a href="https://github.com/cguth7/roch-riemann">GitHub</a> &bull;
-                Cycle 15 &bull;
+                Cycle 24 &bull;
                 Last updated: Dec 2024
             </p>
         </footer>
