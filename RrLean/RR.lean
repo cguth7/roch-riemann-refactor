@@ -1148,6 +1148,11 @@ then f·g has poles bounded by D+E.
 This axiomatizes the key geometric fact that sections multiply:
 if f ∈ L(D) and g ∈ L(E), then f·g ∈ L(D+E).
 
+NOTE: Closure under multiplication (mul_sections) and bilinearity (mul_smul_left/right)
+are actually PROVABLE from div_mul. We over-axiomatized for simplicity.
+The ONLY genuinely new axiom is `mul_injective_of_ne_zero`.
+Future refactor: make mul_sections a def, bilinearity lemmas, keep only injectivity axiom.
+
 This is needed for Clifford's theorem and related results. -/
 structure FunctionFieldDataWithMul (α : Type*) (k : Type*) [Field k]
     extends FunctionFieldDataWithRR α k where
