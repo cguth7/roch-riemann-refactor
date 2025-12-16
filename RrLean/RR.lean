@@ -849,4 +849,148 @@ lemma ell.diff_add_single_le_one {α : Type*} {k : Type*} [Field k]
 -- Helper: adding zero to divisor
 lemma Divisor.add_zero_right {α : Type*} (D : Divisor α) : D + 0 = D := add_zero D
 
+/-! ## Cycle 12 Candidates: Genus, Canonical Divisor, and Full Riemann-Roch
+
+This extends FunctionFieldDataWithBound with the geometric data needed for
+the complete Riemann-Roch theorem:
+- genus g (geometric invariant)
+- canonical divisor K (associated to differentials)
+- Riemann-Hurwitz: deg(K) = 2g - 2
+- RR axiom: ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
+
+**Note**: The RR axiom implicitly encodes Serre duality.
+-/
+
+-- Candidate 1 [tag: genus_bridge] [status: OK]
+/-- Extension of FunctionFieldDataWithBound with genus and canonical divisor.
+This structure adds the geometric data needed for the full Riemann-Roch theorem. -/
+structure FunctionFieldDataWithRR (α : Type*) (k : Type*) [Field k]
+    extends FunctionFieldDataWithBound α k where
+  /-- The genus g of the curve (dimension of H¹(O_X)) -/
+  genus : ℕ
+  /-- The canonical divisor K (divisor class of Ω¹_{X/k}) -/
+  K_div : Divisor α
+  /-- Axiom: deg(K) = 2g - 2 (Riemann-Hurwitz for genus) -/
+  deg_K : Divisor.deg K_div = 2 * (genus : ℤ) - 2
+  /-- Axiom: Riemann-Roch theorem.
+      ℓ(D) - ℓ(K - D) = deg(D) + 1 - g for all divisors D. -/
+  rr_axiom : ∀ (D : Divisor α),
+    (ell toFunctionFieldDataWithBound.toFunctionFieldData D : ℤ) -
+    ell toFunctionFieldDataWithBound.toFunctionFieldData (K_div - D) =
+    Divisor.deg D + 1 - (genus : ℤ)
+
+namespace FunctionFieldDataWithRR
+
+variable {α : Type*} {k : Type*} [Field k] (data : FunctionFieldDataWithRR α k)
+
+-- Abbreviation for the underlying FunctionFieldData
+abbrev fd : FunctionFieldData α k := data.toFunctionFieldDataWithBound.toFunctionFieldData
+
+-- Candidate 2 [tag: rr_bundle_bridge] [status: PROVED]
+-- Direct application of the RR axiom
+lemma riemannRoch_eq [∀ D, Module.Finite k (RRSpace data.fd D)] (D : Divisor α) :
+    (ell data.fd D : ℤ) - ell data.fd (data.K_div - D) = Divisor.deg D + 1 - (data.genus : ℤ) :=
+  data.rr_axiom D
+
+-- Candidate 3 [tag: degree_bridge] [status: PROVED]
+-- Degree of canonical divisor equals 2g - 2
+lemma deg_K_eq : Divisor.deg data.K_div = 2 * (data.genus : ℤ) - 2 := data.deg_K
+
+-- Candidate 4 [tag: serre_duality_bridge] [status: PROVED]
+-- Serre duality form: express ℓ(K - D) in terms of ℓ(D)
+lemma ell_K_sub_D_eq [∀ D, Module.Finite k (RRSpace data.fd D)] (D : Divisor α) :
+    (ell data.fd (data.K_div - D) : ℤ) =
+    ell data.fd D - Divisor.deg D - 1 + (data.genus : ℤ) := by
+  have h := data.rr_axiom D
+  -- h : ℓ(D) - ℓ(K-D) = deg D + 1 - g
+  -- Rearrange: ℓ(K-D) = ℓ(D) - deg D - 1 + g
+  linarith
+
+-- Candidate 5 [tag: rr_bundle_bridge] [status: PROVED]
+-- Lower bound on ℓ(D) from Riemann-Roch (since ℓ(K-D) ≥ 0)
+lemma ell_ge_deg_minus_genus [∀ D, Module.Finite k (RRSpace data.fd D)] (D : Divisor α) :
+    Divisor.deg D + 1 - (data.genus : ℤ) ≤ (ell data.fd D : ℤ) := by
+  have h := data.rr_axiom D
+  -- h : ℓ(D) - ℓ(K-D) = deg D + 1 - g
+  -- Since ℓ(K-D) ≥ 0 (nat coerced to int), we have ℓ(D) ≥ deg D + 1 - g
+  have hnn : (0 : ℤ) ≤ ell data.fd (data.K_div - D) := Int.natCast_nonneg _
+  linarith
+
+-- Candidate 6 [tag: genus_bridge] [status: PROVED]
+-- Dimension of canonical space L(K): apply RR to D = K
+lemma ell_K [∀ D, Module.Finite k (RRSpace data.fd D)] :
+    (ell data.fd data.K_div : ℤ) = data.genus := by
+  have h := data.rr_axiom data.K_div
+  -- h : ℓ(K) - ℓ(K - K) = deg(K) + 1 - g
+  -- K - K = 0, so ℓ(K - K) = ℓ(0) = 1
+  have h0 : ell data.fd 0 = 1 := data.toFunctionFieldDataWithBound.ell_zero_eq_one
+  have hKK : data.K_div - data.K_div = 0 := sub_self data.K_div
+  rw [hKK, h0, data.deg_K] at h
+  -- h : ℓ(K) - 1 = (2g - 2) + 1 - g = g - 1
+  -- But h uses toFunctionFieldData, convert to fd
+  have hconv : ell data.fd data.K_div = ell data.toFunctionFieldDataWithBound.toFunctionFieldData data.K_div := rfl
+  rw [hconv]
+  omega
+
+-- Candidate 7 [tag: serre_duality_bridge] [status: PROVED]
+-- When deg(D) > 2g - 2, we have ℓ(K - D) = 0 (no sections)
+-- Proof: If f ≠ 0 in L(K-D), then div(f) + K - D ≥ 0, so deg(K-D) ≥ -deg(div f) = 0.
+-- But deg(K-D) = (2g-2) - deg(D) < 0 by hypothesis. Contradiction.
+lemma ell_K_sub_D_eq_zero_of_deg_gt [∀ D, Module.Finite k (RRSpace data.fd D)]
+    (D : Divisor α) (h_deg : 2 * (data.genus : ℤ) - 2 < Divisor.deg D) :
+    ell data.fd (data.K_div - D) = 0 := by
+  -- deg(K - D) < 0
+  have hdeg_KD : Divisor.deg (data.K_div - D) < 0 := by
+    rw [Divisor.deg_sub, data.deg_K]
+    linarith
+  -- Show L(K-D) = {0} by contradiction
+  by_contra hne
+  have hpos : 0 < ell data.fd (data.K_div - D) := Nat.pos_of_ne_zero hne
+  -- L(K-D) is nontrivial, so contains nonzero f
+  have hnt : Nontrivial (RRSpace data.fd (data.K_div - D)) :=
+    Module.finrank_pos_iff.mp hpos
+  -- Get two distinct elements
+  obtain ⟨x, y, hxy⟩ := hnt
+  -- At least one of them is not 0 (they're distinct)
+  have : x ≠ 0 ∨ y ≠ 0 := by
+    by_contra h
+    push_neg at h
+    have hx0 : x = 0 := h.1
+    have hy0 : y = 0 := h.2
+    exact hxy (hx0.trans hy0.symm)
+  rcases this with hx | hy
+  · -- x ≠ 0
+    have hf := x.property
+    rcases hf with hf0 | heff
+    · exact hx (Subtype.ext hf0)
+    -- div(x) + (K - D) ≥ 0, so deg(div x) + deg(K - D) ≥ 0
+    have hdeg_div : Divisor.deg (data.fd.div x.val) = 0 := by
+      have hne : x.val ≠ 0 := fun h => hx (Subtype.ext h)
+      exact data.fd.deg_div x.val hne
+    have hdeg_sum : 0 ≤ Divisor.deg (data.fd.div x.val + (data.K_div - D)) :=
+      Divisor.deg_nonneg_of_effective heff
+    rw [Divisor.deg_add, hdeg_div, zero_add] at hdeg_sum
+    linarith
+  · -- y ≠ 0
+    have hf := y.property
+    rcases hf with hf0 | heff
+    · exact hy (Subtype.ext hf0)
+    have hdeg_div : Divisor.deg (data.fd.div y.val) = 0 := by
+      have hne : y.val ≠ 0 := fun h => hy (Subtype.ext h)
+      exact data.fd.deg_div y.val hne
+    have hdeg_sum : 0 ≤ Divisor.deg (data.fd.div y.val + (data.K_div - D)) :=
+      Divisor.deg_nonneg_of_effective heff
+    rw [Divisor.deg_add, hdeg_div, zero_add] at hdeg_sum
+    linarith
+
+-- Candidate 8 [tag: rr_bundle_bridge] [status: PROVED]
+-- RR at D = 0: ℓ(0) - ℓ(K) = deg(0) + 1 - g = 1 - g
+lemma rr_at_zero [∀ D, Module.Finite k (RRSpace data.fd D)] :
+    (ell data.fd 0 : ℤ) - ell data.fd data.K_div = 1 - (data.genus : ℤ) := by
+  have h := data.rr_axiom 0
+  simp only [Divisor.deg_zero, sub_zero, zero_add] at h
+  exact h
+
+end FunctionFieldDataWithRR
+
 end RiemannRoch

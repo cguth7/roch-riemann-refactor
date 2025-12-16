@@ -350,7 +350,7 @@
     "CYCLE 8: Finite-dimensionality via typeclass [∀ D, Module.Finite k (RRSpace data D)], all 8 lemmas PROVED",
     "CYCLE 9: Quotient infrastructure (3 proved), Riemann inequality statements (4 stated)"
   ],
-  "next_action": "Cycle 11: Prove Riemann inequality by induction on effective divisors",
+  "next_action": "Cycle 13: Clean up old sorries, consider genus 0 case",
   "cycle_10_candidates": [
     {
       "name": "FunctionFieldDataWithBound",
@@ -410,6 +410,64 @@
       "approach": "Corollary of le_deg_add_ell_zero_from_bound",
       "blocker": "Needs le_deg_add_ell_zero_from_bound",
       "cycle": 10
+    }
+  ],
+  "cycle_12_candidates": [
+    {
+      "name": "FunctionFieldDataWithRR",
+      "status": "DEFINED",
+      "statement": "structure extending FunctionFieldDataWithBound with genus, K_div, deg_K, rr_axiom",
+      "approach": "Axiomatize full Riemann-Roch as structure fields",
+      "cycle": 12
+    },
+    {
+      "name": "FunctionFieldDataWithRR.riemannRoch_eq",
+      "status": "PROVED",
+      "statement": "ℓ(D) - ℓ(K-D) = deg D + 1 - g",
+      "approach": "Direct application of rr_axiom",
+      "cycle": 12
+    },
+    {
+      "name": "FunctionFieldDataWithRR.deg_K_eq",
+      "status": "PROVED",
+      "statement": "deg K_div = 2g - 2",
+      "approach": "Direct application of deg_K axiom",
+      "cycle": 12
+    },
+    {
+      "name": "FunctionFieldDataWithRR.ell_K_sub_D_eq",
+      "status": "PROVED",
+      "statement": "ℓ(K-D) = ℓ(D) - deg D - 1 + g",
+      "approach": "Serre duality form via linarith from rr_axiom",
+      "cycle": 12
+    },
+    {
+      "name": "FunctionFieldDataWithRR.ell_ge_deg_minus_genus",
+      "status": "PROVED",
+      "statement": "deg D + 1 - g ≤ ℓ(D)",
+      "approach": "Lower bound from RR since ℓ(K-D) ≥ 0",
+      "cycle": 12
+    },
+    {
+      "name": "FunctionFieldDataWithRR.ell_K",
+      "status": "PROVED",
+      "statement": "ℓ(K) = g",
+      "approach": "Apply RR to D = K, use ℓ(0) = 1 and deg(K) = 2g-2",
+      "cycle": 12
+    },
+    {
+      "name": "FunctionFieldDataWithRR.ell_K_sub_D_eq_zero_of_deg_gt",
+      "status": "PROVED",
+      "statement": "deg D > 2g - 2 → ℓ(K-D) = 0",
+      "approach": "Vanishing via deg_div: if f ≠ 0 in L(K-D), contradiction with negative degree",
+      "cycle": 12
+    },
+    {
+      "name": "FunctionFieldDataWithRR.rr_at_zero",
+      "status": "PROVED",
+      "statement": "ℓ(0) - ℓ(K) = 1 - g",
+      "approach": "Special case of RR at D = 0",
+      "cycle": 12
     }
   ]
 }

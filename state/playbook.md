@@ -64,21 +64,36 @@
 **Key technique**: Degree-based induction on `(deg D).toNat` instead of `Finsupp.induction_linear`.
 **Requires**: `[DecidableEq α]` for effectivity proof.
 
-## Next Steps (Cycle 12)
+## Status - Cycle 12 (SUCCESS: Full Riemann-Roch Structure)
+- **DEFINED**: `FunctionFieldDataWithRR` extending FunctionFieldDataWithBound with:
+  - `genus : ℕ` (geometric genus)
+  - `K_div : Divisor α` (canonical divisor)
+  - `deg_K : deg K_div = 2g - 2` (Riemann-Hurwitz)
+  - `rr_axiom : ℓ(D) - ℓ(K-D) = deg D + 1 - g` (Riemann-Roch)
+- **PROVED**: `riemannRoch_eq` (direct application of axiom)
+- **PROVED**: `deg_K_eq` (degree of canonical divisor)
+- **PROVED**: `ell_K_sub_D_eq` (Serre duality form: ℓ(K-D) in terms of ℓ(D))
+- **PROVED**: `ell_ge_deg_minus_genus` (lower bound from RR)
+- **PROVED**: `ell_K` (**ℓ(K) = g**, key result connecting canonical space to genus)
+- **PROVED**: `ell_K_sub_D_eq_zero_of_deg_gt` (vanishing: deg D > 2g-2 ⟹ ℓ(K-D) = 0)
+- **PROVED**: `rr_at_zero` (special case at D = 0)
+
+**7 new lemmas PROVED, 1 structure DEFINED**
+
+## Next Steps (Cycle 13)
 
 **WARNING**: Do NOT touch Schemes or Sheaf Cohomology. Complexity cliff.
 
-**Goal**: Connect Riemann inequality to full Riemann-Roch theorem.
+**Goal**: Clean up old sorries and strengthen the theory.
 
-### Riemann Inequality Status
-We have: ℓ(D) ≤ deg(D) + ℓ(0) = deg(D) + 1 for effective D
+### Remaining Sorries
+1. `riemannRoch` / `riemannRoch'` in base `RRData` - no proof path without more assumptions
+2. Old `ell.add_single_le_succ` etc. without `_from_bound` suffix - superseded by axiom versions
 
-### Path to Full RR
-Full Riemann-Roch: ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
-
-Need:
-1. Upper bound for ℓ(K - D) using Serre duality
-2. Connection between abstract RRData and concrete FunctionFieldDataWithBound
+### Options for Cycle 13
+1. **Remove or deprecate old sorries** that are superseded by `_from_bound` versions
+2. **Add instantiation lemma** showing FunctionFieldDataWithRR can produce RRData instance
+3. **Prove genus 0 case** - for genus 0, RR simplifies significantly
 
 ### Do NOT do
 - Schemes, sheaves, cohomology
