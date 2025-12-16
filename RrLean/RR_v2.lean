@@ -795,21 +795,31 @@ lemma divisor_le_add_single (D : DivisorV2 R) (v : HeightOneSpectrum R) :
 lemma HeightOneSpectrum.isMaximal (v : HeightOneSpectrum R) : v.asIdeal.IsMaximal :=
   v.isPrime.isMaximal v.ne_bot
 
--- Candidate 1 [tag: residue_field_equiv] [status: SORRY] [cycle: 24]
-/-- Linear equivalence between κ(v) and R ⧸ v.asIdeal.
+-- Candidate 1 [tag: residue_field_equiv] [status: PROVED] [cycle: 24.2]
+/-- Linear equivalence between R ⧸ v.asIdeal and κ(v).
 
 Since v.asIdeal is maximal (via HeightOneSpectrum.isMaximal), R ⧸ v.asIdeal is a field.
-We have `IsFractionRing (R ⧸ v.asIdeal) κ(v)` from mathlib. When the domain is a field,
-the algebraMap to its fraction ring is bijective.
+The algebraMap `R ⧸ v.asIdeal → κ(v)` is bijective for maximal ideals
+(via `Ideal.bijective_algebraMap_quotient_residueField`).
 
-**Status**: SORRY - instance plumbing for IsFractionRing K K when K is a field is complex.
-The mathematical fact is clear (fraction ring of a field is itself), but the
-Lean 4 typeclass instances need careful handling. -/
+This bijective R-algebra homomorphism gives an R-linear isomorphism. -/
 noncomputable def residueFieldAtPrime.linearEquiv (v : HeightOneSpectrum R) :
     (R ⧸ v.asIdeal) ≃ₗ[R] residueFieldAtPrime R v := by
-  -- This requires showing algebraMap (R ⧸ v.asIdeal) → κ(v) is bijective
-  -- when v.asIdeal is maximal. The math is clear but instance plumbing is complex.
-  sorry
+  -- The algebraMap is bijective when v.asIdeal is maximal
+  haveI : v.asIdeal.IsMaximal := v.isMaximal
+  have hbij := Ideal.bijective_algebraMap_quotient_residueField v.asIdeal
+  -- Construct the linear equivalence from the bijective algebra map
+  exact LinearEquiv.ofBijective
+    { toFun := algebraMap (R ⧸ v.asIdeal) (residueFieldAtPrime R v)
+      map_add' := fun x y => by simp only [map_add]
+      map_smul' := fun r x => by
+        simp only [RingHom.id_apply]
+        -- r • x in R ⧸ v.asIdeal means (algebraMap R (R ⧸ v.asIdeal) r) * x
+        rw [Algebra.smul_def, Algebra.smul_def, map_mul]
+        -- Need: algebraMap (R ⧸ v.asIdeal) κ(v) (algebraMap R (R ⧸ v.asIdeal) r)
+        --     = algebraMap R κ(v) r
+        rw [IsScalarTower.algebraMap_apply R (R ⧸ v.asIdeal) (residueFieldAtPrime R v) r] }
+    hbij
 
 -- Helper: The residue field is a simple R-module (length = 1)
 -- This follows because v.asIdeal is maximal, so R/v.asIdeal is simple,

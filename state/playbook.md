@@ -37,7 +37,8 @@ Cycle 24 was split into two phases per strategic override. Phase 1 implemented t
 |-----------------|--------|-------|
 | `divisor_le_add_single` | ✅ **PROVED** | D ≤ D + single v 1 |
 | `HeightOneSpectrum.isMaximal` | ✅ **PROVED** | Height-1 primes are maximal in Dedekind domains |
-| `residueFieldAtPrime.isSimpleModule` | ⚠️ SORRY | κ(v) is simple R-module (infrastructure) |
+| `residueFieldAtPrime.linearEquiv` | ✅ **PROVED** | R ⧸ v.asIdeal ≃ₗ[R] κ(v) via bijective algebraMap |
+| `residueFieldAtPrime.isSimpleModule` | ✅ **PROVED** | κ(v) is simple R-module (uses linearEquiv) |
 | `residueFieldAtPrime.length_eq_one` | ✅ **PROVED** | Module.length R (κ(v)) = 1 |
 | `local_gap_bound_of_exists_map` | ✅ **PROVED** | **LINEAR ALGEBRA BRIDGE** |
 
@@ -57,29 +58,23 @@ lemma local_gap_bound_of_exists_map
 2. Since range φ ⊆ κ(v) and κ(v) is simple, length(range φ) ≤ 1
 3. Therefore: ℓ(D+v) ≤ ℓ(D) + 1
 
-### Phase 2 Progress (Cycle 24 Session 2)
-- Added `residueFieldAtPrime.linearEquiv` with SORRY
-- **BLOCKER**: Timeout on `IsFractionRing (R ⧸ v.asIdeal) (R ⧸ v.asIdeal)` construction
+### Phase 2 Results (Cycle 24 Session 3) - PARTIAL COMPLETE
+- ✅ `residueFieldAtPrime.linearEquiv` PROVED via bijective algebraMap
+- ✅ `residueFieldAtPrime.isSimpleModule` PROVED using the linearEquiv
 
-### CRITICAL INSIGHT: Avoid IsFractionRing Plumbing
-The timeout occurs because we're forcing the elaborator to construct "field is its own fraction ring".
-**This is unnecessary for proving isSimpleModule.**
+**Key Discovery**: `Ideal.bijective_algebraMap_quotient_residueField` in mathlib
+- When I is maximal, `algebraMap (R ⧸ I) I.ResidueField` is bijective
+- This gives us `R ⧸ v.asIdeal ≃ₗ[R] κ(v)` directly
+- No need for IsFractionRing plumbing
 
-**Simpler approach**:
-1. `HeightOneSpectrum.isMaximal` → `v.asIdeal` is maximal (already proved)
-2. For maximal I: submodules of R ⧸ I ↔ ideals containing I
-3. Maximal I ⟹ only I and ⊤ contain I ⟹ only ⊥ and ⊤ submodules ⟹ **simple**
-4. Key lemmas:
-   - `Ideal.isMaximal_def : I.IsMaximal ↔ IsCoatom I`
-   - `isSimpleModule_iff_isCoatom : IsSimpleModule R (M ⧸ m) ↔ IsCoatom m`
+**Proof Strategy for linearEquiv**:
+```lean
+-- Use bijective algebraMap to construct LinearEquiv
+have hbij := Ideal.bijective_algebraMap_quotient_residueField v.asIdeal
+exact LinearEquiv.ofBijective { toFun := algebraMap ..., map_add', map_smul' } hbij
+```
 
-**Options**:
-- **Option A**: Prove `IsSimpleModule R (R ⧸ v.asIdeal)` directly, transport to κ(v)
-- **Option B**: Redefine `residueFieldAtPrime` as `R ⧸ v.asIdeal` (simpler)
-
-### Phase 2 Tasks (NEXT SESSION)
-- [ ] **FIX isSimpleModule**: Use ideal↔submodule correspondence, NOT IsFractionRing
-- [ ] Remove `linearEquiv` sorry (may be unnecessary with Option B)
+### Phase 2 Tasks (REMAINING)
 - [ ] Construct `evaluationMapAt v D : L(D+v) →ₗ[R] κ(v)`
 - [ ] Prove kernel condition: ker(evaluationMapAt) = range(inclusion)
 - [ ] Instantiate `LocalGapBound R K`
@@ -88,9 +83,8 @@ The timeout occurs because we're forcing the elaborator to construct "field is i
 - [ ] instance : LocalGapBound R K (making riemann_inequality_affine unconditional)
 
 ### Current Sorry Count (RR_v2.lean)
-1. Line 335: `ellV2_mono` (deprecated)
-2. Line 713: `riemann_inequality` (deprecated)
-3. Line 808: `residueFieldAtPrime.linearEquiv` (new - may be removable)
+1. Line 335: `ellV2_mono` (deprecated, superseded by `ellV2_real_mono`)
+2. Line 713: `riemann_inequality` (deprecated, superseded by `riemann_inequality_real`)
 
 ---
 

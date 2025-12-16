@@ -957,17 +957,43 @@ lemma local_gap_bound_of_exists_map
 
 **Cycle rating**: 9/10 - Key lemma PROVED, one infrastructure sorry acceptable
 
-### Cycle 24 Phase 2 - PLANNED: Evaluation Map Construction
-- **Active edge**: Construct φ and prove `instance : LocalGapBound R K`
-- **Status**: Planning complete
+### Cycle 24 Phase 2 Session 3 - isSimpleModule PROVED - PARTIAL COMPLETE
+- **Active edge**: Fix `residueFieldAtPrime.isSimpleModule` blocker
+- **Status**: ✅ linearEquiv and isSimpleModule PROVED
 
-#### Tasks
-1. Define uniformizerAt using DVR structure
-2. Construct evaluationMapAt : L(D+v) → κ(v)
-3. Prove kernel condition: ker(evaluationMapAt) = range(inclusion)
-4. Fill `residueFieldAtPrime.isSimpleModule` sorry
-5. Define `instance : LocalGapBound R K`
+#### Results
+| Definition/Lemma | Status | Notes |
+|-----------------|--------|-------|
+| `residueFieldAtPrime.linearEquiv` | ✅ **PROVED** | R ⧸ v.asIdeal ≃ₗ[R] κ(v) via bijective algebraMap |
+| `residueFieldAtPrime.isSimpleModule` | ✅ **PROVED** | Uses linearEquiv + isSimpleModule_iff_quot_maximal |
 
-#### Blockers
-- uniformizerAt needs mathlib DVR API exploration
-- isSimpleModule needs κ(v) ≃ₗ[R] R/v.asIdeal construction
+#### Key Discovery: `Ideal.bijective_algebraMap_quotient_residueField`
+Located in `Mathlib/RingTheory/LocalRing/ResidueField/Ideal.lean`:
+```lean
+lemma Ideal.bijective_algebraMap_quotient_residueField (I : Ideal R) [I.IsMaximal] :
+    Function.Bijective (algebraMap (R ⧸ I) I.ResidueField) := ...
+```
+
+This directly gives us the linear equivalence we need without IsFractionRing plumbing.
+
+#### Proof Strategy
+1. `v.asIdeal.IsMaximal` (from `HeightOneSpectrum.isMaximal`)
+2. Apply `Ideal.bijective_algebraMap_quotient_residueField v.asIdeal`
+3. Construct `LinearEquiv.ofBijective` with:
+   - `toFun := algebraMap (R ⧸ v.asIdeal) κ(v)`
+   - `map_add'` via `map_add`
+   - `map_smul'` via `IsScalarTower.algebraMap_apply`
+4. Transport simplicity: `isSimpleModule_iff_quot_maximal` + linearEquiv
+
+#### Remaining Tasks for Phase 2
+- [ ] Construct `evaluationMapAt v D : L(D+v) →ₗ[R] κ(v)`
+- [ ] Prove kernel condition: ker(evaluationMapAt) = range(inclusion)
+- [ ] Instantiate `LocalGapBound R K`
+
+#### Current Sorry Count (RR_v2.lean)
+1. Line 335: `ellV2_mono` (deprecated placeholder)
+2. Line 713: `riemann_inequality` (deprecated placeholder)
+
+**Note**: Both sorries are in deprecated code superseded by `_real` versions.
+
+**Cycle rating**: 9/10 - Infrastructure blocker resolved, clean mathematical proof
