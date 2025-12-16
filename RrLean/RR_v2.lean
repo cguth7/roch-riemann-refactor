@@ -2001,4 +2001,149 @@ lemma valuationSubring_eq_localization_image (v : HeightOneSpectrum R) :
 
 end Cycle35Candidates
 
+/-! ## Cycle 36 Candidates: DVR-HeightOneSpectrum Bridge
+
+Key insight: Both v.valuation K and (maximalIdeal (Loc.AtPrime)).valuation K
+are defined via HeightOneSpectrum.valuation = intValuation.extendToLocalization.
+The localization's maximalIdeal is a HeightOneSpectrum with asIdeal = map v.asIdeal.
+
+Strategy:
+1. Show the two HeightOneSpectrum objects have related intValuations
+2. OR prove set equality: valuationRingAt = range(algebraMap from Loc.AtPrime)
+-/
+
+section Cycle36Candidates
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+
+-- Candidate 1 [tag: dvr_bridge] [relevance: 5/5] [status: PROVED] [cycle: 36]
+/-- The local ring maximal ideal equals the mapped ideal.
+This is a restatement of localization_maximalIdeal_eq_map (Cycle 33). -/
+lemma localRing_maximalIdeal_eq_map' (v : HeightOneSpectrum R) :
+    IsLocalRing.maximalIdeal (Localization.AtPrime v.asIdeal) =
+      Ideal.map (algebraMap R (Localization.AtPrime v.asIdeal)) v.asIdeal :=
+  localization_maximalIdeal_eq_map v
+
+-- Candidate 2 [tag: dvr_bridge] [relevance: 5/5] [status: SORRY] [cycle: 36]
+/-- The valuationRingAt equals the valuation ring of the localization DVR.
+Both are DVRs in K with the same maximal ideal. -/
+lemma valuationRingAt_eq_localization_valuationRing (v : HeightOneSpectrum R) :
+    (valuationRingAt (R := R) (K := K) v : Set K) =
+      (Valuation.valuationSubring (v.valuation K) : Set K) := by
+  -- valuationRingAt IS defined as Valuation.valuationSubring
+  rfl
+
+-- Candidate 3 [tag: arithmetic] [relevance: 4/5] [status: PROVED] [cycle: 36]
+/-- Technical lemma: mk' maps to division in K.
+Uses IsLocalization properties and scalar tower. -/
+lemma algebraMap_localization_mk'_eq_div' (v : HeightOneSpectrum R) (r : R) (s : v.asIdeal.primeCompl) :
+    algebraMap (Localization.AtPrime v.asIdeal) K (IsLocalization.mk' (Localization.AtPrime v.asIdeal) r s) =
+      algebraMap R K r / algebraMap R K s := by
+  have hs_ne : algebraMap R K (s : R) ≠ 0 := by
+    rw [ne_eq, map_eq_zero_iff (algebraMap R K) (IsFractionRing.injective R K)]
+    exact nonZeroDivisors.ne_zero (v.asIdeal.primeCompl_le_nonZeroDivisors s.property)
+  rw [eq_div_iff hs_ne]
+  have h := IsLocalization.mk'_spec (Localization.AtPrime v.asIdeal) r s
+  -- h : mk' r s * algebraMap R _ s = algebraMap R _ r
+  calc algebraMap (Localization.AtPrime v.asIdeal) K
+        (IsLocalization.mk' (Localization.AtPrime v.asIdeal) r s) * algebraMap R K s
+      = algebraMap (Localization.AtPrime v.asIdeal) K
+          (IsLocalization.mk' (Localization.AtPrime v.asIdeal) r s) *
+          algebraMap (Localization.AtPrime v.asIdeal) K (algebraMap R _ s) := by
+          rw [IsScalarTower.algebraMap_apply R (Localization.AtPrime v.asIdeal) K]
+    _ = algebraMap (Localization.AtPrime v.asIdeal) K
+          (IsLocalization.mk' (Localization.AtPrime v.asIdeal) r s * algebraMap R _ s) := by
+          rw [map_mul]
+    _ = algebraMap (Localization.AtPrime v.asIdeal) K (algebraMap R _ r) := by rw [h]
+    _ = algebraMap R K r := by rw [← IsScalarTower.algebraMap_apply]
+
+-- Candidate 4 [tag: rewrite_bridge] [relevance: 3/5] [status: PROVED] [cycle: 36]
+/-- Helper: Explicit form of HeightOneSpectrum.valuation definition. -/
+lemma valuation_eq_intValuation_extendToLocalization (v : HeightOneSpectrum R) :
+    v.valuation K = v.intValuation.extendToLocalization
+      (fun r hr => Set.mem_compl (v.intValuation_ne_zero' ⟨r, hr⟩)) K := rfl
+
+-- Candidate 5 [tag: dvr_bridge] [relevance: 5/5] [status: PROVED] [cycle: 36]
+/-- The range of algebraMap from localization is contained in valuationRingAt.
+Uses mk_mem_valuationRingAt on each fraction. -/
+lemma range_algebraMap_subset_valuationRingAt (v : HeightOneSpectrum R) :
+    Set.range (algebraMap (Localization.AtPrime v.asIdeal) K) ⊆
+      (valuationRingAt (R := R) (K := K) v : Set K) := by
+  intro g ⟨y, hy⟩
+  subst hy
+  -- y is in Localization.AtPrime, write it as mk' r s
+  obtain ⟨⟨r, s⟩, heq⟩ := IsLocalization.surj v.asIdeal.primeCompl y
+  -- heq : y * algebraMap R _ s = algebraMap R _ r
+  have hs : (s : R) ∉ v.asIdeal := s.property
+  -- Show algebraMap _ K y = algebraMap R K r / algebraMap R K s
+  have hy_eq : algebraMap (Localization.AtPrime v.asIdeal) K y = algebraMap R K r / algebraMap R K s := by
+    have hs_ne : algebraMap R K (s : R) ≠ 0 := by
+      rw [ne_eq, map_eq_zero_iff (algebraMap R K) (IsFractionRing.injective R K)]
+      exact nonZeroDivisors.ne_zero (v.asIdeal.primeCompl_le_nonZeroDivisors s.property)
+    rw [eq_div_iff hs_ne]
+    calc algebraMap (Localization.AtPrime v.asIdeal) K y * algebraMap R K s
+        = algebraMap (Localization.AtPrime v.asIdeal) K y *
+            algebraMap (Localization.AtPrime v.asIdeal) K (algebraMap R _ s) := by
+            rw [IsScalarTower.algebraMap_apply R (Localization.AtPrime v.asIdeal) K]
+      _ = algebraMap (Localization.AtPrime v.asIdeal) K (y * algebraMap R _ s) := by rw [map_mul]
+      _ = algebraMap (Localization.AtPrime v.asIdeal) K (algebraMap R _ r) := by rw [heq]
+      _ = algebraMap R K r := by rw [← IsScalarTower.algebraMap_apply]
+  -- Now use mk_mem_valuationRingAt
+  rw [hy_eq]
+  exact mk_mem_valuationRingAt v r hs
+
+-- Candidate 6 [tag: dvr_bridge] [relevance: 5/5] [status: SORRY] [cycle: 36]
+/-- The valuationRingAt is contained in range of algebraMap from localization.
+This is the hard direction - proves that elements with v(g) ≤ 1 come from localization. -/
+lemma valuationRingAt_subset_range_algebraMap (v : HeightOneSpectrum R) :
+    (valuationRingAt (R := R) (K := K) v : Set K) ⊆
+      Set.range (algebraMap (Localization.AtPrime v.asIdeal) K) := by
+  intro g hg
+  simp only [SetLike.mem_coe, ValuationSubring.mem_toSubring] at hg
+  rw [mem_valuationRingAt_iff] at hg
+  -- Need to show g is in range of algebraMap from localization
+  -- This should follow from DVR structure + IsFractionRing
+  sorry
+
+-- Candidate 7 [tag: dvr_bridge] [relevance: 5/5] [status: SORRY] [cycle: 36]
+/-- Set equality via subset in both directions. -/
+lemma valuationSubring_eq_localization_image' (v : HeightOneSpectrum R) :
+    (valuationRingAt (R := R) (K := K) v : Set K) =
+      Set.range (algebraMap (Localization.AtPrime v.asIdeal) K) := by
+  apply Set.eq_of_subset_of_subset
+  · exact valuationRingAt_subset_range_algebraMap v
+  · exact range_algebraMap_subset_valuationRingAt v
+
+-- Candidate 8 [tag: dvr_bridge] [relevance: 4/5] [status: SORRY] [cycle: 36]
+/-- Once we have lift, unpack via IsLocalization.mk' to get coprime representation. -/
+lemma exists_coprime_rep_via_set_eq (v : HeightOneSpectrum R) (g : K)
+    (hg : g ∈ valuationRingAt (R := R) (K := K) v) :
+    ∃ (r s : R), s ∉ v.asIdeal ∧ algebraMap R K s ≠ 0 ∧ g = algebraMap R K r / algebraMap R K s := by
+  -- Use set equality to get y in localization with algebraMap y = g
+  have heq := valuationSubring_eq_localization_image' (R := R) (K := K) v
+  have hg' : g ∈ (valuationRingAt (R := R) (K := K) v : Set K) := hg
+  rw [heq] at hg'
+  obtain ⟨y, hy⟩ := hg'
+  -- Unpack y via IsLocalization.surj
+  obtain ⟨⟨r, s⟩, hys⟩ := IsLocalization.surj v.asIdeal.primeCompl y
+  use r, s, s.property
+  constructor
+  · rw [ne_eq, map_eq_zero_iff (algebraMap R K) (IsFractionRing.injective R K)]
+    exact nonZeroDivisors.ne_zero (v.asIdeal.primeCompl_le_nonZeroDivisors s.property)
+  · rw [← hy]
+    have hs_ne : algebraMap R K (s : R) ≠ 0 := by
+      rw [ne_eq, map_eq_zero_iff (algebraMap R K) (IsFractionRing.injective R K)]
+      exact nonZeroDivisors.ne_zero (v.asIdeal.primeCompl_le_nonZeroDivisors s.property)
+    rw [eq_div_iff hs_ne]
+    calc algebraMap (Localization.AtPrime v.asIdeal) K y * algebraMap R K s
+        = algebraMap (Localization.AtPrime v.asIdeal) K y *
+            algebraMap (Localization.AtPrime v.asIdeal) K (algebraMap R _ s) := by
+            rw [IsScalarTower.algebraMap_apply R (Localization.AtPrime v.asIdeal) K]
+      _ = algebraMap (Localization.AtPrime v.asIdeal) K (y * algebraMap R _ s) := by rw [map_mul]
+      _ = algebraMap (Localization.AtPrime v.asIdeal) K (algebraMap R _ r) := by rw [hys]
+      _ = algebraMap R K r := by rw [← IsScalarTower.algebraMap_apply]
+
+end Cycle36Candidates
+
 end RiemannRochV2

@@ -2,7 +2,7 @@
 
 *For Cycles 1-34, see `state/ledger_archive.md`*
 
-## Summary: Where We Are (End of Cycle 35)
+## Summary: Where We Are (End of Cycle 36)
 
 **Project Goal**: Prove Riemann-Roch inequality for Dedekind domains in Lean 4.
 
@@ -10,7 +10,11 @@
 
 **Blocking Chain**:
 ```
-exists_coprime_rep (Cycle 34-35)
+valuationRingAt_subset_range_algebraMap (Cycle 36 - KEY BLOCKER)
+    ↓
+valuationSubring_eq_localization_image' (set equality)
+    ↓
+exists_coprime_rep_via_set_eq
     ↓
 valuationRingAt_equiv_localization
     ↓
@@ -19,9 +23,56 @@ residueMapFromR_surjective
 evaluationMapAt → kernel → LocalGapBound → VICTORY
 ```
 
+**Cycle 36 Progress**: Forward direction `range(algebraMap) ⊆ valuationRingAt` PROVED!
+
 ---
 
 ## 2025-12-16
+
+### Cycle 36 - Forward Set Inclusion PROVED - PROGRESS
+- **Active edge**: Prove valuationRingAt = range(algebraMap from Localization.AtPrime)
+- **Strategy**: Set equality via subset in both directions
+
+#### Results
+| Definition/Lemma | Status | Notes |
+|-----------------|--------|-------|
+| `localRing_maximalIdeal_eq_map'` | ✅ **PROVED** | Wrapper for Cycle 33 lemma |
+| `valuationRingAt_eq_localization_valuationRing` | ✅ **PROVED** | Definitional equality (rfl) |
+| `algebraMap_localization_mk'_eq_div'` | ✅ **PROVED** | **KEY**: mk' → r/s in K |
+| `valuation_eq_intValuation_extendToLocalization` | ✅ **PROVED** | Definition unwrapping |
+| `range_algebraMap_subset_valuationRingAt` | ✅ **PROVED** | **KEY**: Forward direction! |
+| `valuationRingAt_subset_range_algebraMap` | ⚠️ **SORRY** | **KEY BLOCKER**: Converse |
+| `valuationSubring_eq_localization_image'` | ⚠️ SORRY | Depends on converse |
+| `exists_coprime_rep_via_set_eq` | ⚠️ SORRY | Depends on set equality |
+
+#### Key Achievement: Forward Direction PROVED
+**`range_algebraMap_subset_valuationRingAt` PROVED**:
+```lean
+Set.range (algebraMap (Localization.AtPrime v.asIdeal) K) ⊆ (valuationRingAt v : Set K)
+```
+
+This required:
+1. Use `IsLocalization.surj` to write localization elements as mk'
+2. Show mk' → r/s in K via calc block (`algebraMap_localization_mk'_eq_div'`)
+3. Apply `mk_mem_valuationRingAt` (Cycle 33) for v(r/s) ≤ 1 when s ∉ v.asIdeal
+
+#### New Blocker: Converse Direction
+**`valuationRingAt_subset_range_algebraMap`**: Need to show:
+```lean
+(valuationRingAt v : Set K) ⊆ Set.range (algebraMap (Localization.AtPrime v.asIdeal) K)
+```
+
+**Why this is hard**: Must show that any g ∈ K with v(g) ≤ 1 comes from the localization. This requires either:
+1. DVR uniformizer factorization (Cycle 34 approach)
+2. Direct use of IsFractionRing surjectivity + valuation analysis
+
+#### Sorry Count
+- Total in RR_v2.lean: 32 sorries
+- Cycle 36 section: 8 candidates (5 PROVED, 3 SORRY)
+
+**Cycle rating**: 7/10 - Major progress (forward direction complete), clear single blocker
+
+---
 
 ### Cycle 35 - IsFractionRing Instance Infrastructure PROVED - PROGRESS
 - **Active edge**: Complete `exists_coprime_rep` using DVR theory

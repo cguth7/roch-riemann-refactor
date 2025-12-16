@@ -1,197 +1,131 @@
 {
-  "active_edge": "Cycle 35: Prove exists_coprime_rep via IsFractionRing + exists_lift_of_le_one",
-  "cycle_35_results": {
-    "goal": "Complete exists_coprime_rep using DVR theory",
+  "active_edge": "Cycle 36: Prove valuationRingAt = range(algebraMap from Localization.AtPrime)",
+  "cycle_36_results": {
+    "goal": "Set equality via subset in both directions",
     "status": "PROGRESS",
-    "proved_count": 7,
-    "sorry_count": 5,
+    "proved_count": 5,
+    "sorry_count": 3,
     "candidates": [
       {
-        "name": "primeCompl_isUnit_in_K",
-        "type": "PROVE",
-        "status": "PROVED",
-        "score": "5/5",
-        "notes": "primeCompl elements become units in K"
-      },
-      {
-        "name": "localizationToK",
-        "type": "DEF",
-        "status": "PROVED",
-        "score": "5/5",
-        "notes": "Ring hom Loc.AtPrime → K via lift"
-      },
-      {
-        "name": "algebraLocalizationK",
-        "type": "INSTANCE",
-        "status": "PROVED",
-        "score": "5/5",
-        "notes": "Algebra K over Loc.AtPrime"
-      },
-      {
-        "name": "scalarTowerLocalizationK",
-        "type": "INSTANCE",
-        "status": "PROVED",
-        "score": "5/5",
-        "notes": "Scalar tower R → Loc.AtPrime → K"
-      },
-      {
-        "name": "localization_isFractionRing",
-        "type": "INSTANCE",
-        "status": "PROVED",
-        "score": "5/5",
-        "notes": "KEY: IsFractionRing (Loc.AtPrime v.asIdeal) K"
-      },
-      {
-        "name": "dvr_valuation_eq_height_one",
-        "type": "PROVE",
-        "status": "SORRY",
-        "score": "5/5",
-        "notes": "KEY BLOCKER: DVR valuation equals HeightOneSpectrum valuation"
-      },
-      {
-        "name": "exists_localization_lift",
-        "type": "PROVE",
-        "status": "SORRY",
-        "score": "5/5",
-        "notes": "Depends on valuation comparison - uses exists_lift_of_le_one"
-      },
-      {
-        "name": "localization_surj_representation",
-        "type": "PROVE",
-        "status": "PROVED",
-        "score": "4/5",
-        "notes": "IsLocalization.surj wrapper"
-      },
-      {
-        "name": "exists_coprime_rep_via_lift",
-        "type": "PROVE",
-        "status": "SORRY",
-        "score": "5/5",
-        "notes": "MAIN TARGET: coprime representation - depends on lift"
-      },
-      {
-        "name": "primeCompl_iff_not_mem",
+        "name": "localRing_maximalIdeal_eq_map'",
         "type": "PROVE",
         "status": "PROVED",
         "score": "3/5",
-        "notes": "Trivial helper"
+        "notes": "Wrapper for Cycle 33 lemma"
       },
       {
-        "name": "algebraMap_localization_mk'_eq_div",
+        "name": "valuationRingAt_eq_localization_valuationRing",
         "type": "PROVE",
-        "status": "SORRY",
-        "score": "4/5",
-        "notes": "Division formula - technical"
+        "status": "PROVED",
+        "score": "3/5",
+        "notes": "Definitional equality (rfl)"
       },
       {
-        "name": "valuationSubring_eq_localization_image",
+        "name": "algebraMap_localization_mk'_eq_div'",
+        "type": "PROVE",
+        "status": "PROVED",
+        "score": "5/5",
+        "notes": "KEY: mk' → r/s division in K"
+      },
+      {
+        "name": "valuation_eq_intValuation_extendToLocalization",
+        "type": "PROVE",
+        "status": "PROVED",
+        "score": "3/5",
+        "notes": "Definition unwrapping (rfl)"
+      },
+      {
+        "name": "range_algebraMap_subset_valuationRingAt",
+        "type": "PROVE",
+        "status": "PROVED",
+        "score": "5/5",
+        "notes": "KEY: Forward direction PROVED!"
+      },
+      {
+        "name": "valuationRingAt_subset_range_algebraMap",
         "type": "PROVE",
         "status": "SORRY",
-        "score": "4/5",
-        "notes": "Alternative approach: sets are equal"
+        "score": "5/5",
+        "notes": "KEY BLOCKER: Converse direction"
+      },
+      {
+        "name": "valuationSubring_eq_localization_image'",
+        "type": "PROVE",
+        "status": "SORRY",
+        "score": "5/5",
+        "notes": "Set equality (depends on converse)"
+      },
+      {
+        "name": "exists_coprime_rep_via_set_eq",
+        "type": "PROVE",
+        "status": "SORRY",
+        "score": "5/5",
+        "notes": "Main target (depends on set equality)"
       }
     ],
-    "key_insight": "IsFractionRing instance for Localization.AtPrime over K is now PROVED. This required constructing the algebra structure via IsLocalization.lift. The new blocker is proving that the DVR's maximal ideal valuation equals the HeightOneSpectrum valuation."
+    "key_insight": "Forward direction range(algebraMap) ⊆ valuationRingAt is now PROVED. The proof uses IsLocalization.surj + algebraMap_localization_mk'_eq_div' + mk_mem_valuationRingAt. Single blocker is the converse direction."
   },
-  "cycle_36_plan": {
-    "goal": "Prove dvr_valuation_eq_height_one and complete exists_coprime_rep",
+  "cycle_37_plan": {
+    "goal": "Prove valuationRingAt_subset_range_algebraMap",
     "tasks": [
-      "Prove dvr_valuation_eq_height_one (KEY BLOCKER)",
-      "Complete exists_localization_lift using exists_lift_of_le_one",
-      "Cascade to exists_coprime_rep_via_lift",
+      "Prove converse: v(g) ≤ 1 implies g ∈ range(algebraMap from Loc.AtPrime)",
+      "Complete valuationSubring_eq_localization_image'",
+      "Cascade to exists_coprime_rep_via_set_eq",
       "Complete valuationRingAt_equiv_localization"
     ],
-    "approach": "Show both valuations are defined from the same prime ideal v.asIdeal. The DVR's maximalIdeal equals the image of v.asIdeal under the localization map, so both valuations should agree.",
+    "approach": "Use DVR uniformizer factorization (Cycle 34) or IsFractionRing surjectivity. Write g = a/b as fraction, then analyze cases based on whether b ∈ v.asIdeal.",
     "key_lemmas_needed": [
-      "dvr_valuation_eq_height_one: valuation comparison",
-      "localization_maximalIdeal_eq_map: already PROVED in Cycle 33"
+      "valuationRingAt_subset_range_algebraMap: converse direction",
+      "Possibly need uniformizer_factorization from Cycle 34"
     ],
-    "fallback": "If valuation comparison too hard, try proving valuationSubring_eq_localization_image directly by showing set equality"
+    "fallback": "Use DVR structure directly: Localization.AtPrime is DVR with fraction field K. Elements with valuation ≤ 1 are in the DVR by definition."
   },
   "architecture": {
-    "instance_chain": [
-      "primeCompl_isUnit_in_K: elements invertible in K (PROVED)",
-      "localizationToK: lift ring hom (PROVED)",
-      "algebraLocalizationK: algebra instance (PROVED)",
-      "scalarTowerLocalizationK: tower R → Loc → K (PROVED)",
-      "localization_isFractionRing: IsFractionRing instance (PROVED)"
+    "forward_direction_proved": [
+      "mk_mem_valuationRingAt: fractions r/s with s ∉ v.asIdeal have v ≤ 1 (Cycle 33)",
+      "algebraMap_localization_mk'_eq_div': mk' → r/s in K (Cycle 36)",
+      "range_algebraMap_subset_valuationRingAt: forward inclusion (Cycle 36)"
     ],
-    "proof_chain_blocked": [
-      "dvr_valuation_eq_height_one: valuation comparison (BLOCKER)",
-      "exists_localization_lift: apply exists_lift_of_le_one (BLOCKED)",
-      "exists_coprime_rep_via_lift: main target (BLOCKED)",
-      "valuationRingAt_equiv_localization: ring equiv (BLOCKED)",
-      "residueMapFromR_surjective: final target (BLOCKED)"
+    "converse_blocked": [
+      "valuationRingAt_subset_range_algebraMap: v(g) ≤ 1 → g from localization (BLOCKER)",
+      "valuationSubring_eq_localization_image': set equality (BLOCKED)",
+      "exists_coprime_rep_via_set_eq: coprime representation (BLOCKED)"
     ]
   },
   "remaining_sorries": {
     "active": [
       {
-        "name": "dvr_valuation_eq_height_one",
-        "line": 1950,
+        "name": "valuationRingAt_subset_range_algebraMap",
+        "line": 2099,
         "status": "KEY BLOCKER",
-        "notes": "Valuation comparison"
-      },
-      {
-        "name": "exists_localization_lift",
-        "line": 1958,
-        "status": "BLOCKED",
-        "notes": "Depends on valuation"
-      },
-      {
-        "name": "exists_coprime_rep_via_lift",
-        "line": 1975,
-        "status": "BLOCKED",
-        "notes": "Main target"
-      },
-      {
-        "name": "algebraMap_localization_mk'_eq_div",
-        "line": 1988,
-        "status": "TECHNICAL",
-        "notes": "Division formula"
-      },
-      {
-        "name": "valuationSubring_eq_localization_image",
-        "line": 2004,
-        "status": "ALTERNATIVE",
-        "notes": "Backup approach"
+        "notes": "Converse direction"
       }
     ],
-    "proved_cycle_35": [
+    "proved_cycle_36": [
       {
-        "name": "primeCompl_isUnit_in_K",
-        "line": 1911,
-        "notes": "primeCompl → unit in K"
+        "name": "localRing_maximalIdeal_eq_map'",
+        "line": 2023,
+        "notes": "wrapper"
       },
       {
-        "name": "localizationToK",
-        "line": 1920,
-        "notes": "Ring hom via lift"
+        "name": "valuationRingAt_eq_localization_valuationRing",
+        "line": 2031,
+        "notes": "rfl"
       },
       {
-        "name": "algebraLocalizationK",
-        "line": 1926,
-        "notes": "Algebra instance"
+        "name": "algebraMap_localization_mk'_eq_div'",
+        "line": 2041,
+        "notes": "KEY: mk' → division"
       },
       {
-        "name": "scalarTowerLocalizationK",
-        "line": 1932,
-        "notes": "Scalar tower"
+        "name": "valuation_eq_intValuation_extendToLocalization",
+        "line": 2064,
+        "notes": "rfl"
       },
       {
-        "name": "localization_isFractionRing",
-        "line": 1942,
-        "notes": "IsFractionRing instance"
-      },
-      {
-        "name": "localization_surj_representation",
-        "line": 1966,
-        "notes": "surj wrapper"
-      },
-      {
-        "name": "primeCompl_iff_not_mem",
-        "line": 1982,
-        "notes": "trivial iff"
+        "name": "range_algebraMap_subset_valuationRingAt",
+        "line": 2070,
+        "notes": "KEY: forward direction"
       }
     ]
   }

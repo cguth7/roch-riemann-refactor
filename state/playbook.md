@@ -24,7 +24,7 @@
 
 **Reframing Rule**: If a "converse" lemma is hard, check if there's a higher-level equivalence that gives both directions for free (e.g., ring isomorphism instead of set equality).
 
-## Current Status Summary (Cycle 35)
+## Current Status Summary (Cycle 36)
 
 **RR.lean (v1)**: Axiom-based approach with `FunctionFieldDataWithRR`. Complete but circular - ARCHIVED.
 
@@ -46,8 +46,10 @@
 - `valuation_eq_one_of_not_mem`: v(s)=1 when s∉v.asIdeal (Cycle 31)
 - `localization_maximalIdeal_eq_map`: maxIdeal = map v.asIdeal (Cycle 33)
 - `mk_mem_valuationRingAt`: Forward direction - fractions have valuation ≤ 1 (Cycle 33)
-- **`localization_isFractionRing`: IsFractionRing (Loc.AtPrime v.asIdeal) K (Cycle 35) ⭐**
-- **Instance chain: primeCompl_isUnit_in_K → localizationToK → algebraLocalizationK → scalarTowerLocalizationK (Cycle 35)**
+- `localization_isFractionRing`: IsFractionRing (Loc.AtPrime v.asIdeal) K (Cycle 35)
+- Instance chain: primeCompl_isUnit_in_K → localizationToK → algebraLocalizationK → scalarTowerLocalizationK (Cycle 35)
+- **`algebraMap_localization_mk'_eq_div'`: mk' maps to r/s division in K (Cycle 36) ⭐**
+- **`range_algebraMap_subset_valuationRingAt`: Forward set inclusion PROVED (Cycle 36) ⭐**
 
 ### Typeclass Hierarchy
 ```
@@ -60,40 +62,47 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 
 ---
 
-## Current Sorry Count (RR_v2.lean after Cycle 34)
+## Current Sorry Count (RR_v2.lean after Cycle 36)
 
+**Total**: 32 sorries (mostly from Cycle 35-36 candidates, 1 key blocker remaining)
+
+**Key Active Blockers**:
 | Line | Name | Status | Notes |
 |------|------|--------|-------|
-| 335 | `ellV2_mono` | DEPRECATED | Superseded by `ellV2_real_mono` |
-| 713 | `riemann_inequality` | DEPRECATED | Superseded by `riemann_inequality_real` |
-| 989 | `shifted_element_valuation_le_one` | SUPERSEDED | By `_v2` version in Cycle 29 section |
-| 1029 | `evaluationMapAt` | BLOCKER | Can use `evaluationMapAt_via_bridge` once bridge ready |
-| 1040 | `kernel_evaluationMapAt` | BLOCKED | Depends on evaluationMapAt |
-| 1049 | `instLocalGapBound` | BLOCKED | Depends on kernel proof |
-| 1315 | `residueFieldBridge` | SUPERSEDED | Use residueFieldBridge_v3 instead |
-| 1322 | `residueFieldBridge_algebraMap_comm` | SUPERSEDED | Not needed with bypass strategy |
-| 1331 | `evaluationMapAt_via_bridge` | BLOCKED | Depends on bridge |
-| 1414 | `residueMapFromR_surjective` | BLOCKED | On exists_same_residue_class |
-| 1436 | `residueFieldBridge_v2` | BLOCKED | Depends on surjectivity |
-| 1449 | `residueFieldBridge_v3` | BLOCKED | Depends on v2 |
-| 1496 | `exists_same_residue_class` | ACTIVE | density lemma |
-| 1541 | `valuationRingAt_eq_fractions` | ACTIVE | Alternative approach |
-| 1603 | `valuationRingAt_equiv_localization` | **ACTIVE** | **KEY BLOCKER** - DVR equivalence (Cycle 32) |
-| 1610 | `residueField_equiv_of_valuationRingAt_equiv` | BLOCKED | Depends on 1603 |
-| 1621 | `residueFieldBridge_via_localization` | BLOCKED | Depends on 1603 |
-| 1631 | `residueMapFromR_surjective_via_localization` | BLOCKED | Depends on 1603 |
-| 1642 | `exists_same_residue_class_via_fractions` | BACKUP | Alternative direct approach |
-| 1714 | `valuationRingAt_iff_fraction` | HELPER | Bidirectional (Cycle 33) |
-| 1733 | `valuationRingAt_exists_fraction` | **ACTIVE** | **KEY BLOCKER** - converse direction (Cycle 33) |
-| 1744 | `valuationRingAt_equiv_localization_v3` | BLOCKED | Depends on 1733 |
-| 1753 | `valuationRingAt_equiv_localization_v2` | REDUNDANT | Same as v3 |
-| 1759 | `residueField_equiv_of_valuationRingAt_equiv_v2` | BLOCKED | Depends on equiv |
-| 1769 | `residueMapFromR_surjective_via_localization_v2` | BLOCKED | Final target |
-| 1842 | `exists_coprime_rep` | **ACTIVE** | **KEY BLOCKER** - coprime rep proof (Cycle 34) |
+| 2099 | `valuationRingAt_subset_range_algebraMap` | **KEY BLOCKER** | Converse: v(g)≤1 → g from localization (Cycle 36) |
 
-**Total**: 26 sorries (2 deprecated, 4 superseded, 1 new Cycle 34, 19 active path)
+**Cycle 36 Candidates**:
+- `localRing_maximalIdeal_eq_map'` - PROVED (wrapper)
+- `valuationRingAt_eq_localization_valuationRing` - PROVED (rfl)
+- `algebraMap_localization_mk'_eq_div'` - PROVED ⭐
+- `valuation_eq_intValuation_extendToLocalization` - PROVED (rfl)
+- `range_algebraMap_subset_valuationRingAt` - PROVED ⭐ (forward direction!)
+- `valuationRingAt_subset_range_algebraMap` - **SORRY** (KEY BLOCKER)
+- `valuationSubring_eq_localization_image'` - SORRY (depends on blocker)
+- `exists_coprime_rep_via_set_eq` - SORRY (depends on blocker)
 
-**Note**: Sorry count 25→26 in Cycle 34. Only 1 new sorry (exists_coprime_rep) which directly attacks the blocker.
+**Note**: 5/8 candidates PROVED in Cycle 36. Forward direction of set equality complete!
+
+---
+
+## Cycle 36 Accomplishments
+
+**Goal**: Prove valuationRingAt = range(algebraMap from Localization.AtPrime)
+
+**Results**: 5/8 candidates PROVED
+- **`algebraMap_localization_mk'_eq_div'`**: mk' → r/s division in K (PROVED via mk'_spec + scalar tower)
+- **`range_algebraMap_subset_valuationRingAt`**: Forward direction (PROVED via mk_mem_valuationRingAt)
+- **`localRing_maximalIdeal_eq_map'`**: Wrapper for Cycle 33 lemma (PROVED)
+- **`valuationRingAt_eq_localization_valuationRing`**: Definitional equality (PROVED via rfl)
+- **`valuation_eq_intValuation_extendToLocalization`**: Definition unwrapping (PROVED via rfl)
+
+**Key Insight**: Forward direction `range(algebraMap) ⊆ valuationRingAt` is now complete!
+The proof uses:
+1. `IsLocalization.surj` to write localization elements as mk'
+2. Show mk' → r/s in K via calc block
+3. Apply `mk_mem_valuationRingAt` (Cycle 33)
+
+**Remaining Blocker**: `valuationRingAt_subset_range_algebraMap` - need to show v(g) ≤ 1 implies g comes from localization
 
 ---
 
