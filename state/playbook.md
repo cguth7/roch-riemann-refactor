@@ -24,7 +24,7 @@
 
 **Reframing Rule**: If a "converse" lemma is hard, check if there's a higher-level equivalence that gives both directions for free (e.g., ring isomorphism instead of set equality).
 
-## Current Status Summary (Cycle 38)
+## Current Status Summary (Cycle 39)
 
 **RR.lean (v1)**: Axiom-based approach with `FunctionFieldDataWithRR`. Complete but circular - ARCHIVED.
 
@@ -53,6 +53,8 @@
 - **`dvr_valuationSubring_eq_range`: DVR range = valuationSubring (Cycle 37) ⭐**
 - **`valuationRingAt_subset_range_algebraMap'`: Converse (conditional on valuation eq) (Cycle 37) ⭐**
 - **`dvr_maximalIdeal_asIdeal_eq'`: DVR HeightOneSpectrum asIdeal = IsLocalRing.maximalIdeal (Cycle 38) ⭐**
+- **`ideal_span_map_singleton`: Ideal.map(span {r}) = span {algebraMap r} (Cycle 39) ⭐**
+- **`dvr_intValuation_unfold`: DVR intValuation = intValuationDef by rfl (Cycle 39) ⭐**
 
 ### Typeclass Hierarchy
 ```
@@ -65,27 +67,34 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 
 ---
 
-## Current Sorry Count (RR_v2.lean after Cycle 38)
+## Current Sorry Count (RR_v2.lean after Cycle 39)
 
-**Total**: 34 sorries (+1 from Cycle 38 candidates)
+**Total**: ~40 sorries (includes Cycle 39 candidates)
 
 **Key Active Blockers**:
 | Line | Name | Status | Notes |
 |------|------|--------|-------|
-| 2312 | `dvr_intValuation_of_algebraMap` | **NEW KEY HELPER** | DVR intVal = v.intVal on R (Cycle 38) |
-| 2176 | `dvr_valuation_eq_height_one'` | **KEY BLOCKER** | DVR valuation = HeightOneSpectrum valuation (Cycle 37) |
+| 2455 | `mem_asIdeal_iff_mem_maxIdeal` | **CRITICAL** | Foundation: r ∈ v.asIdeal ↔ algebraMap r ∈ maxIdeal |
+| 2523 | `dvr_intValuation_unit` | **CRITICAL** | Unit case: r ∉ v.asIdeal ⟹ DVR.intVal = 1 |
+| 2478 | `dvr_intValuation_of_algebraMap'` | **CYCLE 39 TARGET** | DVR intVal = v.intVal on R |
+| 2312 | `dvr_intValuation_of_algebraMap` | **KEY HELPER** | Same target (Cycle 38) |
+| 2176 | `dvr_valuation_eq_height_one'` | **ORIGINAL BLOCKER** | DVR valuation = HeightOneSpectrum valuation (Cycle 37) |
 
-**Cycle 38 Candidates**:
-- `dvr_maximalIdeal_asIdeal_eq'` - PROVED (rfl)
-- `dvr_valuation_eq_on_R` - SORRY (reduces to intValuation bridge)
-- `dvr_intValuation_of_algebraMap` - **SORRY** (KEY HELPER)
-- `dvr_valuation_via_scalar_tower` - SORRY (alternative approach)
-- `dvr_valuation_isEquiv_height_one` - SORRY (equivalence approach)
-- `dvr_valuationSubring_eq` - SORRY (circular)
-- `dvr_valuation_eq_height_one'_via_mk` - SORRY (via fractions)
-- `dvr_intValuation_of_mk'` - SORRY (partial progress)
+**Cycle 39 Candidates** (8 total, 2 PROVED):
+- `ideal_span_map_singleton` - **PROVED** (Ideal.map_span + Set.image_singleton)
+- `algebraMap_uniformizer_dvr_uniformizer` - SORRY (uniformizer maps to uniformizer)
+- `dvr_intValuation_unfold` - **PROVED** (rfl)
+- `mem_asIdeal_iff_mem_maxIdeal` - SORRY (**CRITICAL** - foundation)
+- `dvr_intValuation_of_algebraMap'` - SORRY (**TARGET**)
+- `mem_asIdeal_pow_iff_mem_maxIdeal_pow` - SORRY (generalizes to powers)
+- `dvr_intValuation_uniformizer_pow` - SORRY (uniformizer power case)
+- `dvr_intValuation_unit` - SORRY (**CRITICAL** - unit case)
 
-**Note**: 1/8 candidates PROVED. Key helper `dvr_intValuation_of_algebraMap` identified as next target.
+**Reflector Ranking (Top 2)**:
+1. `mem_asIdeal_iff_mem_maxIdeal` (9.5/10) - foundation for all
+2. `dvr_intValuation_unit` (8.5/10) - unit base case
+
+**Note**: 2/8 candidates PROVED (Cycle 39). Next priority: prove Candidates 4 and 8.
 
 ---
 

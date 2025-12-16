@@ -2,7 +2,7 @@
 
 *For Cycles 1-34, see `state/ledger_archive.md`*
 
-## Summary: Where We Are (End of Cycle 38)
+## Summary: Where We Are (End of Cycle 39)
 
 **Project Goal**: Prove Riemann-Roch inequality for Dedekind domains in Lean 4.
 
@@ -10,7 +10,13 @@
 
 **Blocking Chain**:
 ```
-dvr_intValuation_of_algebraMap (Cycle 38 - NEW KEY HELPER)
+mem_asIdeal_iff_mem_maxIdeal (Cycle 39 - CRITICAL)
+    ↓
+dvr_intValuation_unit (Cycle 39 - CRITICAL)
+    ↓
+dvr_intValuation_of_algebraMap' (Cycle 39 - TARGET)
+    ↓
+dvr_intValuation_of_algebraMap (Cycle 38)
     ↓
 dvr_valuation_eq_on_R (Cycle 38)
     ↓
@@ -29,11 +35,49 @@ residueMapFromR_surjective
 evaluationMapAt → kernel → LocalGapBound → VICTORY
 ```
 
-**Cycle 38 Progress**: 8 candidates generated, 1 PROVED (rfl), 7 SORRY. Identified key helper: `dvr_intValuation_of_algebraMap`.
+**Cycle 39 Progress**: 8 candidates generated, 2 PROVED, 6 SORRY. Key insight: ideal membership foundation lemmas (`mem_asIdeal_iff_mem_maxIdeal`, `dvr_intValuation_unit`) are critical path.
 
 ---
 
 ## 2025-12-16
+
+### Cycle 39 - intValuation Foundation Candidates - PROGRESS
+- **Active edge**: Prove dvr_intValuation_of_algebraMap (DVR intVal = v.intVal on R)
+- **Strategy**: Foundation approach via ideal membership preservation + unit case
+
+#### Results
+| Definition/Lemma | Status | Notes |
+|-----------------|--------|-------|
+| `ideal_span_map_singleton` | ✅ **PROVED** | Ideal.map(span {r}) = span {algebraMap r} |
+| `algebraMap_uniformizer_dvr_uniformizer` | ⚠️ SORRY | Uniformizer maps to uniformizer |
+| `dvr_intValuation_unfold` | ✅ **PROVED** | DVR intValuation = intValuationDef (rfl) |
+| `mem_asIdeal_iff_mem_maxIdeal` | ⚠️ **SORRY** | **CRITICAL**: r ∈ v.asIdeal ↔ algebraMap r ∈ maxIdeal |
+| `dvr_intValuation_of_algebraMap'` | ⚠️ **SORRY** | **TARGET**: DVR intVal = v.intVal on R |
+| `mem_asIdeal_pow_iff_mem_maxIdeal_pow` | ⚠️ SORRY | Generalizes membership to powers |
+| `dvr_intValuation_uniformizer_pow` | ⚠️ SORRY | Special case for uniformizer powers |
+| `dvr_intValuation_unit` | ⚠️ **SORRY** | **CRITICAL**: r ∉ v.asIdeal ⟹ DVR.intVal = 1 |
+
+#### Key Discovery: Foundation Approach
+Instead of directly attacking the valuation equality, decompose into:
+1. **Ideal membership equivalence** (`mem_asIdeal_iff_mem_maxIdeal`): r ∈ v.asIdeal ↔ algebraMap r ∈ maxIdeal
+2. **Unit case** (`dvr_intValuation_unit`): r ∉ v.asIdeal ⟹ intValuation = 1
+
+These two together characterize intValuation behavior completely.
+
+#### Reflector Analysis (Top 2)
+1. **mem_asIdeal_iff_mem_maxIdeal** (Score 9.5/10) - Foundation for all membership-based proofs
+2. **dvr_intValuation_unit** (Score 8.5/10) - Establishes unit base case
+
+#### Recommended Proving Order
+1. `mem_asIdeal_iff_mem_maxIdeal` → 2. `dvr_intValuation_unit` → 3. `dvr_intValuation_of_algebraMap'`
+
+#### Sorry Count
+- Total in RR_v2.lean: ~40 sorries (includes Cycle 39 candidates)
+- Cycle 39 section: 8 candidates (2 PROVED, 6 SORRY)
+
+**Cycle rating**: 6/10 - Good exploration, identified foundation lemmas, 2 PROVED
+
+---
 
 ### Cycle 38 - intValuation Bridge Candidates - PROGRESS
 - **Active edge**: Prove dvr_valuation_eq_height_one' (DVR valuation = HeightOneSpectrum valuation)

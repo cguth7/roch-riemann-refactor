@@ -1,110 +1,130 @@
 {
-  "active_edge": "Cycle 38: Prove dvr_intValuation_of_algebraMap (intValuation bridge)",
-  "cycle_38_results": {
-    "goal": "Prove dvr_valuation_eq_height_one' (DVR valuation = HeightOneSpectrum valuation)",
+  "active_edge": "Cycle 39: Prove dvr_intValuation_of_algebraMap (intValuation bridge)",
+  "cycle_39_results": {
+    "goal": "Prove dvr_intValuation_of_algebraMap (DVR intValuation = v.intValuation on R)",
     "status": "PROGRESS",
-    "proved_count": 1,
-    "sorry_count": 7,
+    "proved_count": 2,
+    "sorry_count": 6,
     "candidates": [
       {
-        "name": "dvr_maximalIdeal_asIdeal_eq'",
+        "name": "ideal_span_map_singleton",
+        "type": "PROVE",
+        "status": "PROVED",
+        "score": "5/5",
+        "notes": "Ideal.map (span {r}) = span {algebraMap r} - foundational identity"
+      },
+      {
+        "name": "algebraMap_uniformizer_dvr_uniformizer",
+        "type": "PROVE",
+        "status": "SORRY",
+        "score": "5/5",
+        "notes": "Uniformizer maps to uniformizer: DVR.intVal(algebraMap π) = exp(-1)"
+      },
+      {
+        "name": "dvr_intValuation_unfold",
         "type": "PROVE",
         "status": "PROVED",
         "score": "4/5",
-        "notes": "Simple rfl - DVR HeightOneSpectrum's asIdeal = IsLocalRing.maximalIdeal"
+        "notes": "DVR intValuation = intValuationDef (trivial by rfl)"
       },
       {
-        "name": "dvr_valuation_eq_on_R",
+        "name": "mem_asIdeal_iff_mem_maxIdeal",
+        "type": "PROVE",
+        "status": "SORRY",
+        "score": "9.5/10",
+        "notes": "CRITICAL: r ∈ v.asIdeal ↔ algebraMap r ∈ maxIdeal (foundation for all)",
+        "recommended_priority": 1
+      },
+      {
+        "name": "dvr_intValuation_of_algebraMap'",
+        "type": "PROVE",
+        "status": "SORRY",
+        "score": "10/10",
+        "notes": "TARGET LEMMA: DVR intValuation on algebraMap r = v.intValuation r"
+      },
+      {
+        "name": "mem_asIdeal_pow_iff_mem_maxIdeal_pow",
         "type": "PROVE",
         "status": "SORRY",
         "score": "5/5",
-        "notes": "Valuations agree on algebraMap R K r. Reduces to intValuation bridge."
+        "notes": "Generalizes mem_asIdeal_iff_mem_maxIdeal to powers"
       },
       {
-        "name": "dvr_intValuation_of_algebraMap",
+        "name": "dvr_intValuation_uniformizer_pow",
         "type": "PROVE",
         "status": "SORRY",
         "score": "5/5",
-        "notes": "KEY HELPER: DVR intValuation on algebraMap R Loc r = v.intValuation r"
+        "notes": "Special case for uniformizer powers: DVR.intVal(algebraMap π^n) = v.intVal(π^n)"
       },
       {
-        "name": "dvr_valuation_via_scalar_tower",
+        "name": "dvr_intValuation_unit",
         "type": "PROVE",
         "status": "SORRY",
-        "score": "5/5",
-        "notes": "Alternative approach via scalar tower R → Loc.AtPrime → K"
-      },
-      {
-        "name": "dvr_valuation_isEquiv_height_one",
-        "type": "PROVE",
-        "status": "SORRY",
-        "score": "4/5",
-        "notes": "Show valuations are equivalent (same ordering)"
-      },
-      {
-        "name": "dvr_valuationSubring_eq",
-        "type": "PROVE",
-        "status": "SORRY",
-        "score": "3/5",
-        "notes": "Show valuationSubrings are equal (circular with blocker)"
-      },
-      {
-        "name": "dvr_valuation_eq_height_one'_via_mk",
-        "type": "PROVE",
-        "status": "SORRY",
-        "score": "4/5",
-        "notes": "Direct approach via fraction decomposition"
-      },
-      {
-        "name": "dvr_intValuation_of_mk'",
-        "type": "PROVE",
-        "status": "SORRY",
-        "score": "5/5",
-        "notes": "Partial progress: has proof that v.intValuation s = 1 for s in primeCompl"
+        "score": "8.5/10",
+        "notes": "CRITICAL: r ∉ v.asIdeal ⟹ DVR.intVal(algebraMap r) = 1 (unit case)",
+        "recommended_priority": 2
       }
     ],
-    "key_insight": "The key helper is dvr_intValuation_of_algebraMap. It shows the two intValuations agree on elements from R. Both measure divisibility by v.asIdeal, and the DVR's maximal ideal = Ideal.map v.asIdeal."
+    "key_insight": "Both intValuations measure divisibility by v.asIdeal. Candidates 4 (mem_asIdeal_iff) and 8 (dvr_intValuation_unit) establish the foundation: ideal membership equivalence and unit case.",
+    "recommended_order": [
+      "mem_asIdeal_iff_mem_maxIdeal (Candidate 4) - foundation",
+      "dvr_intValuation_unit (Candidate 8) - unit case",
+      "dvr_intValuation_of_algebraMap' (Candidate 5) - target"
+    ]
   },
-  "cycle_39_plan": {
-    "goal": "Prove dvr_intValuation_of_algebraMap",
+  "cycle_40_plan": {
+    "goal": "Prove remaining Cycle 39 candidates, complete intValuation bridge",
     "priority_candidates": [
-      "dvr_intValuation_of_algebraMap (PRIMARY)",
-      "dvr_intValuation_of_mk' (SECONDARY)"
+      "mem_asIdeal_iff_mem_maxIdeal (PRIMARY - establishes ideal membership)",
+      "dvr_intValuation_unit (SECONDARY - establishes unit case)"
     ],
     "approach": [
-      "Use localization_maximalIdeal_eq_map to show both maximal ideals are the same",
-      "Both intValuations measure powers of v.asIdeal (one directly, one via map)",
-      "Search mathlib for lemmas connecting intValuation with ideal membership"
-    ],
-    "key_lemmas_to_search": [
-      "HeightOneSpectrum.intValuationDef",
-      "Ideal.associatedPrime definitions",
-      "count_spec for ideal factorization"
+      "For mem_asIdeal_iff_mem_maxIdeal: use Ideal.mem_map_iff_of_mem with localization injectivity",
+      "For dvr_intValuation_unit: use IsLocalization.atPrime_isUnit_of_mem_compl + intValuation_eq_one_of_isUnit"
     ]
   },
   "architecture": {
     "cascade_structure": [
-      "dvr_intValuation_of_algebraMap (NEW KEY HELPER - Cycle 38)",
-      "  └─→ dvr_valuation_eq_on_R",
-      "        └─→ dvr_valuation_eq_height_one' (BLOCKER)",
-      "              └─→ exists_lift_from_dvr_valuation",
-      "              └─→ dvr_valuationSubring_eq_valuationRingAt",
-      "                    └─→ valuationRingAt_subset_range_algebraMap' (TARGET)",
-      "                          └─→ valuationSubring_eq_localization_image_complete"
+      "mem_asIdeal_iff_mem_maxIdeal (Cycle 39 - NEW)",
+      "dvr_intValuation_unit (Cycle 39 - NEW)",
+      "  └─→ dvr_intValuation_of_algebraMap' (Cycle 39 TARGET)",
+      "        └─→ dvr_intValuation_of_algebraMap (Cycle 38)",
+      "              └─→ dvr_valuation_eq_on_R (Cycle 38)",
+      "                    └─→ dvr_valuation_eq_height_one' (ORIGINAL BLOCKER)",
+      "                          └─→ valuationRingAt_subset_range_algebraMap' (TARGET)",
+      "                                └─→ valuationSubring_eq_localization_image_complete"
     ]
   },
   "remaining_sorries": {
     "active": [
       {
+        "name": "mem_asIdeal_iff_mem_maxIdeal",
+        "line": 2455,
+        "status": "NEW - CRITICAL",
+        "notes": "Foundation lemma: ideal membership under algebraMap"
+      },
+      {
+        "name": "dvr_intValuation_unit",
+        "line": 2523,
+        "status": "NEW - CRITICAL",
+        "notes": "Unit case: r ∉ v.asIdeal ⟹ intVal = 1"
+      },
+      {
+        "name": "dvr_intValuation_of_algebraMap'",
+        "line": 2478,
+        "status": "CYCLE 39 TARGET",
+        "notes": "DVR intValuation on algebraMap r = v.intValuation r"
+      },
+      {
         "name": "dvr_intValuation_of_algebraMap",
         "line": 2312,
-        "status": "NEW KEY HELPER",
-        "notes": "DVR intValuation on algebraMap R Loc r = v.intValuation r"
+        "status": "KEY HELPER (Cycle 38)",
+        "notes": "Same as dvr_intValuation_of_algebraMap' - needs resolution"
       },
       {
         "name": "dvr_valuation_eq_height_one'",
         "line": 2176,
-        "status": "KEY BLOCKER",
+        "status": "KEY BLOCKER (Cycle 37)",
         "notes": "DVR maximalIdeal valuation = HeightOneSpectrum valuation"
       }
     ],

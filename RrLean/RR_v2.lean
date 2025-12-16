@@ -2395,4 +2395,137 @@ lemma dvr_intValuation_of_mk' (v : HeightOneSpectrum R) (r : R) (s : v.asIdeal.p
 
 end Cycle38Candidates
 
+/-! ## Cycle 39 Candidates: Prove dvr_intValuation_of_algebraMap
+
+The key blocker is `dvr_intValuation_of_algebraMap`: showing that the DVR's intValuation
+agrees with v.intValuation on elements from R.
+
+**Mathematical insight**: Both intValuations measure divisibility by the same prime:
+- `v.intValuation r` counts powers of v.asIdeal in Ideal.span {r}
+- DVR's intValuation on `algebraMap R Loc r` counts powers of maxIdeal in Ideal.span {algebraMap R Loc r}
+- We know maxIdeal = Ideal.map v.asIdeal (localization_maximalIdeal_eq_map)
+- Key fact: Ideal.map preserves the count under localization at the prime
+
+**Approaches**:
+1. Direct proof via span mapping and ideal map properties
+2. Proof via uniformizer: both valuations measure powers of the same uniformizer
+3. Proof via ideal membership: r ∈ v.asIdeal^n ↔ algebraMap r ∈ maxIdeal^n
+4. Inductive proof on the valuation count
+5. Alternative via DVR additive valuation (addVal) equality
+-/
+
+section Cycle39Candidates
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+
+-- Candidate 1 [tag: dvr_bridge] [relevance: 5/5] [status: TBD] [cycle: 39]
+/-- Ideal.span commutes with algebraMap: map (span {r}) = span {algebraMap r}.
+This is the key identity for relating the two intValuations. -/
+lemma ideal_span_map_singleton (v : HeightOneSpectrum R) (r : R) :
+    Ideal.map (algebraMap R (Localization.AtPrime v.asIdeal)) (Ideal.span {r}) =
+      Ideal.span {algebraMap R (Localization.AtPrime v.asIdeal) r} := by
+  rw [Ideal.map_span]
+  congr 1
+  exact Set.image_singleton
+
+-- Candidate 2 [tag: dvr_bridge] [relevance: 5/5] [status: TBD] [cycle: 39]
+/-- The uniformizer at v remains a uniformizer after mapping to the localization.
+More precisely, algebraMap π generates the maximal ideal of Loc.AtPrime. -/
+lemma algebraMap_uniformizer_dvr_uniformizer (v : HeightOneSpectrum R) :
+    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).intValuation
+      (algebraMap R (Localization.AtPrime v.asIdeal) (uniformizerAt v)) = WithZero.exp (-1 : ℤ) := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  -- The DVR's uniformizer should equal the image of v's uniformizer
+  -- Both generate the same maximal ideal (up to units)
+  sorry
+
+-- Candidate 3 [tag: dvr_bridge] [relevance: 5/5] [status: TBD] [cycle: 39]
+/-- The DVR's intValuation definition unpacks using intValuationDef.
+Both DVR and v's intValuation use the same underlying definition. -/
+lemma dvr_intValuation_unfold (v : HeightOneSpectrum R) (r : Localization.AtPrime v.asIdeal) :
+    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).intValuation r =
+    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).intValuationDef r := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  rfl
+
+-- Candidate 4 [tag: dvr_bridge] [relevance: 5/5] [status: TBD] [cycle: 39]
+/-- Ideal membership is preserved under localization: r ∈ v.asIdeal ↔ algebraMap r ∈ maxIdeal.
+This is the base case that drives the intValuation equality. -/
+lemma mem_asIdeal_iff_mem_maxIdeal (v : HeightOneSpectrum R) (r : R) :
+    r ∈ v.asIdeal ↔
+      algebraMap R (Localization.AtPrime v.asIdeal) r ∈
+        IsLocalRing.maximalIdeal (Localization.AtPrime v.asIdeal) := by
+  -- maxIdeal = Ideal.map v.asIdeal
+  have hmax : IsLocalRing.maximalIdeal (Localization.AtPrime v.asIdeal) =
+      Ideal.map (algebraMap R (Localization.AtPrime v.asIdeal)) v.asIdeal :=
+    localization_maximalIdeal_eq_map v
+  rw [hmax]
+  -- r ∈ v.asIdeal ↔ algebraMap r ∈ Ideal.map v.asIdeal
+  -- Use properties of Ideal.map and IsLocalization
+  sorry
+
+-- Candidate 5 [tag: arithmetic] [relevance: 5/5] [status: TBD] [cycle: 39]
+/-- Direct proof of dvr_intValuation_of_algebraMap using count preservation.
+Combines the span mapping and count preservation lemmas. -/
+lemma dvr_intValuation_of_algebraMap' (v : HeightOneSpectrum R) (r : R) :
+    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).intValuation
+      (algebraMap R (Localization.AtPrime v.asIdeal) r) = v.intValuation r := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  by_cases hr : r = 0
+  · simp only [hr, map_zero]
+  · -- Use the definition of intValuation in terms of Associates.count
+    -- v.intValuation r = exp(-count v.asIdeal in factors of span {r})
+    -- DVR.intValuation (algebraMap r) = exp(-count maxIdeal in factors of span {algebraMap r})
+    -- These are equal by associates_count_preserved_at_prime
+    sorry
+
+-- Candidate 6 [tag: dvr_bridge] [relevance: 4/5] [status: TBD] [cycle: 39]
+/-- Alternative proof via ideal membership: r ∈ v.asIdeal^n ↔ algebraMap r ∈ maxIdeal^n.
+This establishes the key ideal membership preservation that powers both intValuations. -/
+lemma mem_asIdeal_pow_iff_mem_maxIdeal_pow (v : HeightOneSpectrum R) (r : R) (n : ℕ) :
+    r ∈ v.asIdeal ^ n ↔
+      algebraMap R (Localization.AtPrime v.asIdeal) r ∈
+        (IsLocalRing.maximalIdeal (Localization.AtPrime v.asIdeal)) ^ n := by
+  -- The maximal ideal of Loc.AtPrime = Ideal.map v.asIdeal
+  have hmax : IsLocalRing.maximalIdeal (Localization.AtPrime v.asIdeal) =
+      Ideal.map (algebraMap R (Localization.AtPrime v.asIdeal)) v.asIdeal :=
+    localization_maximalIdeal_eq_map v
+  rw [hmax]
+  -- Now use properties of Ideal.map and membership
+  sorry
+
+-- Candidate 7 [tag: dvr_bridge] [relevance: 5/5] [status: TBD] [cycle: 39]
+/-- For powers of the uniformizer, the DVR intValuation agrees with v.intValuation.
+This is a special case that might be easier to prove first. -/
+lemma dvr_intValuation_uniformizer_pow (v : HeightOneSpectrum R) (n : ℕ) :
+    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).intValuation
+      (algebraMap R (Localization.AtPrime v.asIdeal) ((uniformizerAt v) ^ n)) =
+    v.intValuation ((uniformizerAt v) ^ n) := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  -- Both should equal exp(-n)
+  -- Use uniformizerAt_pow_val for v.intValuation
+  -- Use algebraMap_uniformizer_dvr_uniformizer for the DVR side
+  rw [map_pow, uniformizerAt_pow_val]
+  -- Now show DVR.intValuation (algebraMap π)^n = exp(-n)
+  sorry
+
+-- Candidate 8 [tag: rewrite_bridge] [relevance: 4/5] [status: TBD] [cycle: 39]
+/-- Elements not in v.asIdeal remain units in the localization, with intValuation = 1.
+This establishes the base case for elements coprime to v. -/
+lemma dvr_intValuation_unit (v : HeightOneSpectrum R) (r : R) (hr : r ∉ v.asIdeal) :
+    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).intValuation
+      (algebraMap R (Localization.AtPrime v.asIdeal) r) = 1 := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  -- r ∉ v.asIdeal means algebraMap r is a unit in Loc.AtPrime
+  -- Units have intValuation = 1 in a DVR
+  have hunit : IsUnit (algebraMap R (Localization.AtPrime v.asIdeal) r) := by
+    -- algebraMap r is in the complement of maxIdeal
+    -- In a local ring, complement of maxIdeal = units
+    sorry
+  -- Use that units have intValuation = 1
+  sorry
+
+end Cycle39Candidates
+
 end RiemannRochV2
