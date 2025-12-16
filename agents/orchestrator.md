@@ -46,7 +46,8 @@ and normal edge-splitting resumes.
 ## Loop (single cycle)
 
 1) **Build/test**:
-   - Run `lake build` and capture errors.
+   - Run `lake env lean RrLean/RR.lean 2>&1` for fast single-file check (~5-20s).
+   - Only use `lake build` for full sanity checks after Curator step or dependency changes.
 
 2) **Define active edge** A ⟶ B:
    - If main theorem stub doesn't elaborate, set A = current context, B = "make theorem statement elaborate".
@@ -55,12 +56,19 @@ and normal edge-splitting resumes.
 
 3) **Discovery hook** (10–30 sec max):
    - Run targeted searches using `./scripts/rg_mathlib.sh "<query>"`.
-   - Suggested queries for Riemann-Roch:
+   - **IMPORTANT**: Use standard regex, NOT grep-style. Use `|` for alternation, not `\|`.
+   - Sanity check: `rg -n "finrank" .lake/packages/mathlib/Mathlib | head -5` should return results.
+   - Suggested queries for Riemann-Roch (run separately, don't combine with alternation):
+     - `./scripts/rg_mathlib.sh "Riemann"` (check for existing RR)
+     - `./scripts/rg_mathlib.sh "RiemannRoch"`
      - `./scripts/rg_mathlib.sh "Divisor"`
-     - `./scripts/rg_mathlib.sh "canonical"`
-     - `./scripts/rg_mathlib.sh "Serre duality"`
+     - `./scripts/rg_mathlib.sh "WeilDivisor"`
+     - `./scripts/rg_mathlib.sh "CartierDivisor"`
+     - `./scripts/rg_mathlib.sh "Cohomology"`
      - `./scripts/rg_mathlib.sh "genus"`
-     - `./scripts/rg_mathlib.sh "sheaf cohomology"`
+     - `./scripts/rg_mathlib.sh "canonical"`
+     - `rg -n "Cohomology" .lake/packages/mathlib/Mathlib/AlgebraicGeometry | head -20`
+   - Also search file paths: `find .lake/packages/mathlib/Mathlib -name "*Divisor*" -o -name "*Cohomology*"`
    - Feed results into Generator context.
 
 4) **Generator task**:
@@ -69,8 +77,14 @@ and normal edge-splitting resumes.
 
 5) **Integration test** (with preflight gate):
    - **PREFLIGHT**: Check Generator output for `axiom|constant|opaque`. If found, REJECT and rerun.
-   - Paste OK candidates as stubs into RrLean/RR.lean (below a `-- Candidates` section).
-   - Run build again; record which typecheck.
+   - **RELEVANCE FILTER**: Only write candidates to RR.lean if they:
+     - (a) typecheck, AND
+     - (b) mention at least one target concept: curve, divisor, canonical, degree, genus, cohomology, sheaf, H0, H1
+   - Do NOT insert generic linear algebra trivia (e.g., `finrank K W = finrank K W`).
+   - If ALL candidates are BLOCKED or fail relevance filter, do NOT edit RR.lean.
+     Instead, skip to Curator step and record findings in ledger.
+   - Paste OK+relevant candidates as stubs into RrLean/RR.lean (below a `-- Candidates` section).
+   - Run `lake env lean RrLean/RR.lean 2>&1`; record which typecheck.
 
 6) **Reflector task**:
    - Score candidates, propose mutations, pick top 2.
