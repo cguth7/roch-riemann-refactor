@@ -1,100 +1,106 @@
 {
-  "active_edge": "Cycle 37: Prove dvr_valuation_eq_height_one' (DVR valuation = HeightOneSpectrum valuation)",
-  "cycle_37_results": {
-    "goal": "Complete the converse direction valuationRingAt_subset_range_algebraMap",
+  "active_edge": "Cycle 38: Prove dvr_intValuation_of_algebraMap (intValuation bridge)",
+  "cycle_38_results": {
+    "goal": "Prove dvr_valuation_eq_height_one' (DVR valuation = HeightOneSpectrum valuation)",
     "status": "PROGRESS",
-    "proved_count": 7,
-    "sorry_count": 1,
+    "proved_count": 1,
+    "sorry_count": 7,
     "candidates": [
       {
-        "name": "dvr_maximalIdeal_asIdeal_eq",
+        "name": "dvr_maximalIdeal_asIdeal_eq'",
         "type": "PROVE",
         "status": "PROVED",
-        "score": "3/5",
-        "notes": "Simple rfl"
+        "score": "4/5",
+        "notes": "Simple rfl - DVR HeightOneSpectrum's asIdeal = IsLocalRing.maximalIdeal"
       },
       {
-        "name": "dvr_valuation_eq_height_one'",
+        "name": "dvr_valuation_eq_on_R",
         "type": "PROVE",
         "status": "SORRY",
         "score": "5/5",
-        "notes": "KEY BLOCKER: DVR valuation = HeightOneSpectrum valuation"
+        "notes": "Valuations agree on algebraMap R K r. Reduces to intValuation bridge."
       },
       {
-        "name": "exists_lift_from_dvr_valuation",
+        "name": "dvr_intValuation_of_algebraMap",
         "type": "PROVE",
-        "status": "PROVED*",
-        "score": "4/5",
-        "notes": "Uses exists_lift_of_le_one, depends on valuation equality"
-      },
-      {
-        "name": "dvr_valuationSubring_eq_range",
-        "type": "PROVE",
-        "status": "PROVED",
-        "score": "4/5",
-        "notes": "Uses mathlib's map_algebraMap_eq_valuationSubring"
-      },
-      {
-        "name": "dvr_valuationSubring_eq_valuationRingAt",
-        "type": "PROVE",
-        "status": "PROVED*",
-        "score": "4/5",
-        "notes": "DVR's valuationSubring = valuationRingAt, depends on valuation equality"
-      },
-      {
-        "name": "valuationRingAt_subset_range_algebraMap'",
-        "type": "PROVE",
-        "status": "PROVED*",
+        "status": "SORRY",
         "score": "5/5",
-        "notes": "TARGET LEMMA: 2-line proof via rewrites"
+        "notes": "KEY HELPER: DVR intValuation on algebraMap R Loc r = v.intValuation r"
       },
       {
-        "name": "valuationRingAt_mem_implies_range",
+        "name": "dvr_valuation_via_scalar_tower",
         "type": "PROVE",
-        "status": "PROVED*",
-        "score": "4/5",
-        "notes": "Alternative path via exists_lift_from_dvr_valuation"
+        "status": "SORRY",
+        "score": "5/5",
+        "notes": "Alternative approach via scalar tower R → Loc.AtPrime → K"
       },
       {
-        "name": "valuationSubring_eq_localization_image_complete",
+        "name": "dvr_valuation_isEquiv_height_one",
         "type": "PROVE",
-        "status": "PROVED*",
+        "status": "SORRY",
         "score": "4/5",
-        "notes": "Full set equality combining forward and reverse"
+        "notes": "Show valuations are equivalent (same ordering)"
+      },
+      {
+        "name": "dvr_valuationSubring_eq",
+        "type": "PROVE",
+        "status": "SORRY",
+        "score": "3/5",
+        "notes": "Show valuationSubrings are equal (circular with blocker)"
+      },
+      {
+        "name": "dvr_valuation_eq_height_one'_via_mk",
+        "type": "PROVE",
+        "status": "SORRY",
+        "score": "4/5",
+        "notes": "Direct approach via fraction decomposition"
+      },
+      {
+        "name": "dvr_intValuation_of_mk'",
+        "type": "PROVE",
+        "status": "SORRY",
+        "score": "5/5",
+        "notes": "Partial progress: has proof that v.intValuation s = 1 for s in primeCompl"
       }
     ],
-    "key_insight": "Complete proof structure! Only dvr_valuation_eq_height_one' blocks the cascade. Once proved, 7 dependent lemmas automatically complete."
+    "key_insight": "The key helper is dvr_intValuation_of_algebraMap. It shows the two intValuations agree on elements from R. Both measure divisibility by v.asIdeal, and the DVR's maximal ideal = Ideal.map v.asIdeal."
   },
-  "cycle_38_plan": {
-    "goal": "Prove dvr_valuation_eq_height_one'",
-    "tasks": [
-      "Study how HeightOneSpectrum.valuation is defined (intValuation.extendToLocalization)",
-      "Study how IsDiscreteValuationRing.maximalIdeal.valuation is defined",
-      "Show both valuations extend from the same intValuation on R",
-      "Use function extensionality to prove equality on K"
+  "cycle_39_plan": {
+    "goal": "Prove dvr_intValuation_of_algebraMap",
+    "priority_candidates": [
+      "dvr_intValuation_of_algebraMap (PRIMARY)",
+      "dvr_intValuation_of_mk' (SECONDARY)"
     ],
-    "approach": "Both valuations are defined from the same prime ideal v.asIdeal. The DVR's maximalIdeal = Ideal.map v.asIdeal. Show intValuation definitions agree.",
-    "key_lemmas_needed": [
-      "Understand HeightOneSpectrum.valuation definition",
-      "Understand IsDiscreteValuationRing.maximalIdeal as HeightOneSpectrum",
-      "Valuation extensionality lemmas"
+    "approach": [
+      "Use localization_maximalIdeal_eq_map to show both maximal ideals are the same",
+      "Both intValuations measure powers of v.asIdeal (one directly, one via map)",
+      "Search mathlib for lemmas connecting intValuation with ideal membership"
+    ],
+    "key_lemmas_to_search": [
+      "HeightOneSpectrum.intValuationDef",
+      "Ideal.associatedPrime definitions",
+      "count_spec for ideal factorization"
     ]
   },
   "architecture": {
     "cascade_structure": [
-      "dvr_valuation_eq_height_one' (BLOCKER)",
-      "  └─→ exists_lift_from_dvr_valuation",
-      "  └─→ dvr_valuationSubring_eq_valuationRingAt",
-      "        └─→ valuationRingAt_subset_range_algebraMap' (TARGET)",
-      "              └─→ valuationSubring_eq_localization_image_complete"
-    ],
-    "independent_proofs": [
-      "dvr_maximalIdeal_asIdeal_eq (rfl)",
-      "dvr_valuationSubring_eq_range (uses mathlib)"
+      "dvr_intValuation_of_algebraMap (NEW KEY HELPER - Cycle 38)",
+      "  └─→ dvr_valuation_eq_on_R",
+      "        └─→ dvr_valuation_eq_height_one' (BLOCKER)",
+      "              └─→ exists_lift_from_dvr_valuation",
+      "              └─→ dvr_valuationSubring_eq_valuationRingAt",
+      "                    └─→ valuationRingAt_subset_range_algebraMap' (TARGET)",
+      "                          └─→ valuationSubring_eq_localization_image_complete"
     ]
   },
   "remaining_sorries": {
     "active": [
+      {
+        "name": "dvr_intValuation_of_algebraMap",
+        "line": 2312,
+        "status": "NEW KEY HELPER",
+        "notes": "DVR intValuation on algebraMap R Loc r = v.intValuation r"
+      },
       {
         "name": "dvr_valuation_eq_height_one'",
         "line": 2176,

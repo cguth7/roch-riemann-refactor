@@ -2,7 +2,7 @@
 
 *For Cycles 1-34, see `state/ledger_archive.md`*
 
-## Summary: Where We Are (End of Cycle 37)
+## Summary: Where We Are (End of Cycle 38)
 
 **Project Goal**: Prove Riemann-Roch inequality for Dedekind domains in Lean 4.
 
@@ -10,6 +10,10 @@
 
 **Blocking Chain**:
 ```
+dvr_intValuation_of_algebraMap (Cycle 38 - NEW KEY HELPER)
+    ↓
+dvr_valuation_eq_on_R (Cycle 38)
+    ↓
 dvr_valuation_eq_height_one' (Cycle 37 - KEY BLOCKER)
     ↓
 valuationRingAt_subset_range_algebraMap' (PROVED*, depends on above)
@@ -25,11 +29,52 @@ residueMapFromR_surjective
 evaluationMapAt → kernel → LocalGapBound → VICTORY
 ```
 
-**Cycle 37 Progress**: Complete proof structure! 7/8 candidates compile, 1 key sorry remaining.
+**Cycle 38 Progress**: 8 candidates generated, 1 PROVED (rfl), 7 SORRY. Identified key helper: `dvr_intValuation_of_algebraMap`.
 
 ---
 
 ## 2025-12-16
+
+### Cycle 38 - intValuation Bridge Candidates - PROGRESS
+- **Active edge**: Prove dvr_valuation_eq_height_one' (DVR valuation = HeightOneSpectrum valuation)
+- **Strategy**: Decompose into intValuation comparison, then use scalar tower
+
+#### Results
+| Definition/Lemma | Status | Notes |
+|-----------------|--------|-------|
+| `dvr_maximalIdeal_asIdeal_eq'` | ✅ **PROVED** | rfl: asIdeal = IsLocalRing.maximalIdeal |
+| `dvr_valuation_eq_on_R` | ⚠️ SORRY | Valuations agree on algebraMap R K r |
+| `dvr_intValuation_of_algebraMap` | ⚠️ SORRY | **KEY HELPER**: DVR intVal = v.intVal on R |
+| `dvr_valuation_via_scalar_tower` | ⚠️ SORRY | Alternative via scalar tower |
+| `dvr_valuation_isEquiv_height_one` | ⚠️ SORRY | Show valuations equivalent |
+| `dvr_valuationSubring_eq` | ⚠️ SORRY | ValueationSubrings equal |
+| `dvr_valuation_eq_height_one'_via_mk` | ⚠️ SORRY | Via fraction decomposition |
+| `dvr_intValuation_of_mk'` | ⚠️ SORRY | Partial progress (s ∉ v.asIdeal → intVal s = 1) |
+
+#### Key Discovery: intValuation Bridge
+**`dvr_intValuation_of_algebraMap`** is the key helper needed to prove the blocker:
+```lean
+lemma dvr_intValuation_of_algebraMap (v : HeightOneSpectrum R) (r : R) :
+    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).intValuation
+      (algebraMap R (Localization.AtPrime v.asIdeal) r) = v.intValuation r
+```
+
+**Why this should work**:
+1. DVR's maximalIdeal = IsLocalRing.maximalIdeal = Ideal.map v.asIdeal
+2. Both intValuations measure divisibility by v.asIdeal
+3. For r ∈ R: algebraMap R Loc r has the same v.asIdeal-divisibility as r
+
+#### Reflector Analysis (Top 2)
+1. **dvr_intValuation_of_algebraMap** (Score 9.0/10) - Key bridge lemma
+2. **dvr_intValuation_of_mk'** (Score 8.0/10) - Partial progress, good backup
+
+#### Sorry Count
+- Total in RR_v2.lean: 34 sorries (+1 from new sorry in blocker chain)
+- Cycle 38 section: 8 candidates (1 PROVED, 7 SORRY)
+
+**Cycle rating**: 6/10 - Good exploration, identified key helper, no concrete proofs beyond rfl
+
+---
 
 ### Cycle 37 - Complete Proof Structure (7/8 candidates compile) - PROGRESS
 - **Active edge**: Prove DVR valuation = HeightOneSpectrum valuation

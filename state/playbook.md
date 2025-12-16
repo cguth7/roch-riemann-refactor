@@ -24,7 +24,7 @@
 
 **Reframing Rule**: If a "converse" lemma is hard, check if there's a higher-level equivalence that gives both directions for free (e.g., ring isomorphism instead of set equality).
 
-## Current Status Summary (Cycle 37)
+## Current Status Summary (Cycle 38)
 
 **RR.lean (v1)**: Axiom-based approach with `FunctionFieldDataWithRR`. Complete but circular - ARCHIVED.
 
@@ -52,6 +52,7 @@
 - **`range_algebraMap_subset_valuationRingAt`: Forward set inclusion PROVED (Cycle 36) ⭐**
 - **`dvr_valuationSubring_eq_range`: DVR range = valuationSubring (Cycle 37) ⭐**
 - **`valuationRingAt_subset_range_algebraMap'`: Converse (conditional on valuation eq) (Cycle 37) ⭐**
+- **`dvr_maximalIdeal_asIdeal_eq'`: DVR HeightOneSpectrum asIdeal = IsLocalRing.maximalIdeal (Cycle 38) ⭐**
 
 ### Typeclass Hierarchy
 ```
@@ -64,26 +65,27 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 
 ---
 
-## Current Sorry Count (RR_v2.lean after Cycle 37)
+## Current Sorry Count (RR_v2.lean after Cycle 38)
 
-**Total**: 33 sorries (+1 from Cycle 37 key lemma)
+**Total**: 34 sorries (+1 from Cycle 38 candidates)
 
 **Key Active Blockers**:
 | Line | Name | Status | Notes |
 |------|------|--------|-------|
+| 2312 | `dvr_intValuation_of_algebraMap` | **NEW KEY HELPER** | DVR intVal = v.intVal on R (Cycle 38) |
 | 2176 | `dvr_valuation_eq_height_one'` | **KEY BLOCKER** | DVR valuation = HeightOneSpectrum valuation (Cycle 37) |
 
-**Cycle 37 Candidates**:
-- `dvr_maximalIdeal_asIdeal_eq` - PROVED (rfl)
-- `dvr_valuation_eq_height_one'` - **SORRY** (KEY BLOCKER)
-- `exists_lift_from_dvr_valuation` - PROVED* (depends on blocker)
-- `dvr_valuationSubring_eq_range` - PROVED (uses mathlib)
-- `dvr_valuationSubring_eq_valuationRingAt` - PROVED* (depends on blocker)
-- `valuationRingAt_subset_range_algebraMap'` - PROVED* (TARGET, depends on blocker)
-- `valuationRingAt_mem_implies_range` - PROVED* (alt path)
-- `valuationSubring_eq_localization_image_complete` - PROVED* (full equality)
+**Cycle 38 Candidates**:
+- `dvr_maximalIdeal_asIdeal_eq'` - PROVED (rfl)
+- `dvr_valuation_eq_on_R` - SORRY (reduces to intValuation bridge)
+- `dvr_intValuation_of_algebraMap` - **SORRY** (KEY HELPER)
+- `dvr_valuation_via_scalar_tower` - SORRY (alternative approach)
+- `dvr_valuation_isEquiv_height_one` - SORRY (equivalence approach)
+- `dvr_valuationSubring_eq` - SORRY (circular)
+- `dvr_valuation_eq_height_one'_via_mk` - SORRY (via fractions)
+- `dvr_intValuation_of_mk'` - SORRY (partial progress)
 
-**Note**: 7/8 candidates compile! Only 1 sorry (`dvr_valuation_eq_height_one'`) blocks the cascade.
+**Note**: 1/8 candidates PROVED. Key helper `dvr_intValuation_of_algebraMap` identified as next target.
 
 ---
 

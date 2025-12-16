@@ -2268,4 +2268,131 @@ lemma valuationSubring_eq_localization_image_complete (v : HeightOneSpectrum R) 
 
 end Cycle37Candidates
 
+/-! ## Cycle 38 Candidates: Prove dvr_valuation_eq_height_one'
+
+The key blocker is proving that the DVR valuation equals the HeightOneSpectrum valuation.
+Both are extensions of intValuation from different rings to K.
+
+**Key insight**: Both valuations measure divisibility by v.asIdeal.
+The maximal ideal of Loc.AtPrime v.asIdeal is exactly Ideal.map v.asIdeal.
+-/
+
+section Cycle38Candidates
+
+-- Candidate 1 [tag: dvr_bridge] [relevance: 5/5] [status: TBD] [cycle: 38]
+/-- The maximal ideal of Localization.AtPrime v.asIdeal, as a HeightOneSpectrum,
+has asIdeal = IsLocalRing.maximalIdeal. This is trivial by definition. -/
+lemma dvr_maximalIdeal_asIdeal_eq' (v : HeightOneSpectrum R) :
+    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).asIdeal =
+      IsLocalRing.maximalIdeal (Localization.AtPrime v.asIdeal) := rfl
+
+-- Candidate 2 [tag: rewrite_bridge] [relevance: 5/5] [status: TBD] [cycle: 38]
+/-- For elements in R, both valuations agree after coercion to K.
+This is a special case but foundational for the general proof. -/
+lemma dvr_valuation_eq_on_R (v : HeightOneSpectrum R) (r : R) :
+    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K
+      (algebraMap R K r) = v.valuation K (algebraMap R K r) := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  -- Both sides should reduce to intValuation r
+  rw [HeightOneSpectrum.valuation_of_algebraMap]
+  -- Need to show DVR valuation on algebraMap R K r equals v.intValuation r
+  -- The algebra map R → K factors through Loc.AtPrime → K
+  have hcomp : algebraMap R K r = algebraMap (Localization.AtPrime v.asIdeal) K
+      (algebraMap R (Localization.AtPrime v.asIdeal) r) := by
+    simp only [← IsScalarTower.algebraMap_apply R (Localization.AtPrime v.asIdeal) K]
+  rw [hcomp]
+  rw [HeightOneSpectrum.valuation_of_algebraMap]
+  -- Now we need: DVR.intValuation (algebraMap R Loc r) = v.intValuation r
+  sorry
+
+-- Candidate 3 [tag: dvr_bridge] [relevance: 5/5] [status: TBD] [cycle: 38]
+/-- The DVR's intValuation on algebraMap R (Loc.AtPrime) r equals v.intValuation r.
+This is the key bridge connecting the two intValuations. -/
+lemma dvr_intValuation_of_algebraMap (v : HeightOneSpectrum R) (r : R) :
+    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).intValuation
+      (algebraMap R (Localization.AtPrime v.asIdeal) r) = v.intValuation r := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  -- intValuation is defined via ideal membership
+  -- Both measure: how many times does the prime divide r?
+  -- For the DVR, the maximal ideal = map v.asIdeal
+  sorry
+
+-- Candidate 4 [tag: rewrite_bridge] [relevance: 5/5] [status: TBD] [cycle: 38]
+/-- Alternative proof via scalar tower: for y in Loc.AtPrime, valuations agree.
+Combined with IsFractionRing surjectivity, this gives the result. -/
+lemma dvr_valuation_via_scalar_tower (v : HeightOneSpectrum R) (y : Localization.AtPrime v.asIdeal) :
+    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K
+      (algebraMap (Localization.AtPrime v.asIdeal) K y) =
+    v.valuation K (algebraMap (Localization.AtPrime v.asIdeal) K y) := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  -- Write y as mk' r s for r : R, s : primeCompl
+  obtain ⟨⟨r, s⟩, hy⟩ := IsLocalization.surj v.asIdeal.primeCompl y
+  -- hy : algebraMap R _ r = y * algebraMap R _ s
+  sorry
+
+-- Candidate 5 [tag: dvr_bridge] [relevance: 5/5] [status: TBD] [cycle: 38]
+/-- Show valuations are equivalent via IsEquiv. If they agree on < relation, they're equiv.
+Then we can potentially derive equality. -/
+lemma dvr_valuation_isEquiv_height_one (v : HeightOneSpectrum R) :
+    Valuation.IsEquiv
+      ((IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K)
+      (v.valuation K) := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  -- IsEquiv means: ∀ x y, v1 x ≤ v1 y ↔ v2 x ≤ v2 y
+  intro x y
+  sorry
+
+-- Candidate 6 [tag: rewrite_bridge] [relevance: 4/5] [status: TBD] [cycle: 38]
+/-- Use the fact that valuations on fields are determined by their valuationSubring.
+If valuationSubrings are equal, valuations are equal. -/
+lemma dvr_valuationSubring_eq (v : HeightOneSpectrum R) :
+    ((IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K).valuationSubring =
+    (v.valuation K).valuationSubring := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  ext g
+  simp only [Valuation.mem_valuationSubring_iff]
+  -- Both say: g is in the subring iff valuation ≤ 1
+  -- We already know valuationRingAt v = range(algebraMap Loc K) = DVR valuationSubring
+  -- by the Cycle 37 lemmas (conditional on dvr_valuation_eq_height_one')
+  sorry
+
+-- Candidate 7 [tag: dvr_bridge] [relevance: 5/5] [status: TBD] [cycle: 38]
+/-- Direct approach: use valuation_of_mk' on both sides to reduce to intValuation comparison. -/
+lemma dvr_valuation_eq_height_one'_via_mk (v : HeightOneSpectrum R) (g : K) :
+    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K g =
+      v.valuation K g := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  -- Write g as r/s for r : R, s : nonZeroDivisors R
+  obtain ⟨r, s, hs, hg⟩ := IsFractionRing.div_surjective (A := R) g
+  -- The RHS via valuation_of_mk': v.intValuation r / v.intValuation s
+  -- For LHS, need to decompose through the scalar tower R → Loc.AtPrime → K
+  -- Both measure divisibility by v.asIdeal, so should be equal
+  sorry
+
+-- Candidate 8 [tag: rewrite_bridge] [relevance: 4/5] [status: TBD] [cycle: 38]
+/-- The intValuation of DVR on Loc.AtPrime elements is determined by the v.intValuation
+applied to numerator/denominator of mk' representation. -/
+lemma dvr_intValuation_of_mk' (v : HeightOneSpectrum R) (r : R) (s : v.asIdeal.primeCompl) :
+    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).intValuation
+      (IsLocalization.mk' (Localization.AtPrime v.asIdeal) r s) =
+    v.intValuation r / v.intValuation s := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  -- The DVR intValuation measures membership in powers of the maximal ideal
+  -- The maximal ideal of Loc.AtPrime = Ideal.map v.asIdeal
+  -- So we measure: how many times does (map v.asIdeal) divide mk' r s?
+  -- This should equal: (how many times v.asIdeal divides r) - (how many times v.asIdeal divides s)
+  -- But s ∈ primeCompl means s ∉ v.asIdeal, so v.intValuation s = 1
+  have hs : v.intValuation s = 1 := by
+    rw [HeightOneSpectrum.intValuation_eq_one_iff]
+    exact s.property
+  rw [hs, div_one]
+  sorry
+
+end Cycle38Candidates
+
 end RiemannRochV2
