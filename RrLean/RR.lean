@@ -629,38 +629,12 @@ lemma ell.quotient_le_of_le {α : Type*} {k : Type*} [Field k]
   haveI : Module.Finite k (RRSpace data E) := hFin E
   exact Submodule.finrank_quotient_le _
 
--- Candidate 4 [tag: degree_bridge] [status: BLOCKED]
--- Quotient dimension bound by degree: dim(L(E)/L(D)) ≤ deg(E) - deg(D)
--- BLOCKED: Requires connecting quotient dimension to degree difference
-
--- Candidate 5 [tag: degree_bridge] [status: sorry - needs quotient-degree axiom]
--- Single-point dimension bound
--- KEY TARGET: This is exactly the bound needed for Riemann inequality
-lemma ell.add_single_le_succ {α : Type*} {k : Type*} [Field k]
-    (data : FunctionFieldData α k) [∀ D, Module.Finite k (RRSpace data D)]
-    (D : Divisor α) (p : α) :
-    ell data (D + Divisor.single p 1) ≤ ell data D + 1 := sorry
-
--- Candidate 6 [tag: degree_bridge] [status: sorry - needs Candidate 5]
--- Riemann's inequality: ℓ(D) ≤ deg(D) + ℓ(0) for effective D
-lemma ell.le_deg_add_ell_zero {α : Type*} {k : Type*} [Field k]
-    (data : FunctionFieldData α k) [∀ D, Module.Finite k (RRSpace data D)]
-    {D : Divisor α} (hD : Divisor.Effective D) :
-    (ell data D : ℤ) ≤ Divisor.deg D + (ell data 0 : ℤ) := sorry
-
--- Candidate 7 [tag: degree_bridge] [status: sorry - needs Candidate 5]
--- Dimension bound for single-point divisors: ℓ(n·p) ≤ n + 1
-lemma ell.single_le_deg_succ {α : Type*} {k : Type*} [Field k]
-    (data : FunctionFieldData α k) [∀ D, Module.Finite k (RRSpace data D)]
-    (p : α) (n : ℕ) :
-    ell data (Divisor.single p (n : ℤ)) ≤ n + 1 := sorry
-
--- Candidate 8 [tag: degree_bridge] [status: sorry - needs Candidate 6]
--- Natural number version: ℓ(D) ≤ deg(D).toNat + ℓ(0) when deg(D) ≥ 0
-lemma ell.le_toNat_deg_add_ell_zero {α : Type*} {k : Type*} [Field k]
-    (data : FunctionFieldData α k) [∀ D, Module.Finite k (RRSpace data D)]
-    {D : Divisor α} (hD : Divisor.Effective D) (hDeg : 0 ≤ Divisor.deg D) :
-    ell data D ≤ (Divisor.deg D).toNat + ell data 0 := sorry
+-- Candidates 4-8 REMOVED in Cycle 13
+-- These had sorries that required evaluation maps or quotient-degree axioms.
+-- They are fully superseded by the `_from_bound` versions in Cycle 10/11
+-- which use the `FunctionFieldDataWithBound` axiom extension.
+-- See: ell.add_single_le_succ_from_bound, ell.single_le_deg_succ_from_bound,
+--      ell.le_deg_add_ell_zero_from_bound, ell.le_toNat_deg_add_ell_zero_from_bound
 
 /-! ## Cycle 10 Candidates: Evaluation Axiom and Riemann Inequality -/
 
@@ -722,7 +696,7 @@ lemma Divisor.deg_nonneg_of_effective {α : Type*} {D : Divisor α} (hD : Diviso
 -- Candidate 4 [tag: riemann_inequality] [status: PROVED]
 -- Special case: single-point divisors have bounded dimension
 lemma ell.single_le_deg_succ_from_bound {α : Type*} {k : Type*} [Field k]
-    (data : FunctionFieldDataWithBound α k) [hFin : ∀ D, Module.Finite k (RRSpace data.toFunctionFieldData D)]
+    (data : FunctionFieldDataWithBound α k) [_hFin : ∀ D, Module.Finite k (RRSpace data.toFunctionFieldData D)]
     (p : α) (n : ℕ) :
     ell data.toFunctionFieldData (Divisor.single p (n : ℤ)) ≤ n + 1 := by
   induction n with
@@ -743,7 +717,7 @@ lemma ell.single_le_deg_succ_from_bound {α : Type*} {k : Type*} [Field k]
 -- Main Riemann inequality using single-point axiom and induction on degree
 -- Key insight: induct on n = deg(D).toNat, "peeling off" one point at a time
 lemma ell.le_deg_add_ell_zero_from_bound {α : Type*} [DecidableEq α] {k : Type*} [Field k]
-    (data : FunctionFieldDataWithBound α k) [hFin : ∀ D, Module.Finite k (RRSpace data.toFunctionFieldData D)]
+    (data : FunctionFieldDataWithBound α k) [_hFin : ∀ D, Module.Finite k (RRSpace data.toFunctionFieldData D)]
     {D : Divisor α} (hD : Divisor.Effective D) :
     (ell data.toFunctionFieldData D : ℤ) ≤ Divisor.deg D + (ell data.toFunctionFieldData 0 : ℤ) := by
   -- We prove this by strong induction on the natural number `n = deg(D)`

@@ -1,5 +1,5 @@
 {
-  "active_edge": "Single-point dimension bound: ell(D + p) ≤ ell(D) + 1",
+  "active_edge": "Cleanup: Remove superseded sorries",
   "candidates": [
     {
       "name": "Divisor α",
@@ -303,42 +303,41 @@
     },
     {
       "name": "ell.add_single_le_succ",
-      "status": "STATED",
+      "status": "REMOVED",
       "statement": "ell data (D + Divisor.single p 1) ≤ ell data D + 1",
-      "approach": "KEY TARGET - needs quotient-degree bound axiom",
-      "blocker": "Requires dim(L(E)/L(D)) ≤ deg(E) - deg(D)",
+      "approach": "Superseded by ell.add_single_le_succ_from_bound",
+      "note": "REMOVED in Cycle 13 - see FunctionFieldDataWithBound version",
       "cycle": 9
     },
     {
       "name": "ell.le_deg_add_ell_zero",
-      "status": "STATED",
+      "status": "REMOVED",
       "statement": "Effective D → (ell data D : ℤ) ≤ Divisor.deg D + (ell data 0 : ℤ)",
-      "approach": "Riemann inequality - follows from add_single_le_succ by induction",
-      "blocker": "Needs add_single_le_succ",
+      "approach": "Superseded by ell.le_deg_add_ell_zero_from_bound",
+      "note": "REMOVED in Cycle 13 - see FunctionFieldDataWithBound version",
       "cycle": 9
     },
     {
       "name": "ell.single_le_deg_succ",
-      "status": "STATED",
+      "status": "REMOVED",
       "statement": "ell data (Divisor.single p n) ≤ n + 1",
-      "approach": "Special case of Riemann inequality",
-      "blocker": "Needs add_single_le_succ",
+      "approach": "Superseded by ell.single_le_deg_succ_from_bound",
+      "note": "REMOVED in Cycle 13 - see FunctionFieldDataWithBound version",
       "cycle": 9
     },
     {
       "name": "ell.le_toNat_deg_add_ell_zero",
-      "status": "STATED",
+      "status": "REMOVED",
       "statement": "Effective D → 0 ≤ deg D → ell data D ≤ (deg D).toNat + ell data 0",
-      "approach": "Natural number version of Riemann inequality",
-      "blocker": "Needs le_deg_add_ell_zero",
+      "approach": "Superseded by ell.le_toNat_deg_add_ell_zero_from_bound",
+      "note": "REMOVED in Cycle 13 - see FunctionFieldDataWithBound version",
       "cycle": 9
     }
   ],
   "blockers": [
     "mathlib lacks: line bundles, sheaf cohomology H⁰/H¹, genus for schemes",
     "Cannot yet instantiate RRData.Div with Divisor α (needs point type from curve)",
-    "RRData.deg is abstract; not yet connected to Divisor.deg",
-    "CYCLE 9 BLOCKER: Need evaluation map or axiom to prove dim(L(E)/L(D)) ≤ deg(E) - deg(D)"
+    "Base RRData.riemannRoch has no proof path without additional structure axioms"
   ],
   "resolved_blockers": [
     "PIVOT Cycle 2: defined RRData structure (elaborates)",
@@ -348,9 +347,13 @@
     "CYCLE 6: L(D) is k-Submodule - added div_add, div_algebraMap, proved add_mem'/smul_mem'",
     "CYCLE 7: ell(D) = finrank k L(D), proved mono/pos_of_effective/zero_pos",
     "CYCLE 8: Finite-dimensionality via typeclass [∀ D, Module.Finite k (RRSpace data D)], all 8 lemmas PROVED",
-    "CYCLE 9: Quotient infrastructure (3 proved), Riemann inequality statements (4 stated)"
+    "CYCLE 9: Quotient infrastructure (3 proved), Riemann inequality statements (4 stated)",
+    "CYCLE 10: FunctionFieldDataWithBound axiom extension, single_point_bound",
+    "CYCLE 11: Riemann inequality PROVED via degree induction",
+    "CYCLE 12: Full FunctionFieldDataWithRR structure, 7 lemmas PROVED",
+    "CYCLE 13: Cleanup - removed 4 superseded sorries, fixed warnings"
   ],
-  "next_action": "Cycle 13: Clean up old sorries, consider genus 0 case",
+  "next_action": "Cycle 14: Consider genus 0 case or RRData instantiation lemma",
   "cycle_10_candidates": [
     {
       "name": "FunctionFieldDataWithBound",

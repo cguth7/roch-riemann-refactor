@@ -80,20 +80,21 @@
 
 **7 new lemmas PROVED, 1 structure DEFINED**
 
-## Next Steps (Cycle 13)
+## Status - Cycle 13 (SUCCESS: Cleanup)
+- **REMOVED**: 4 superseded sorry lemmas (ell.add_single_le_succ, ell.le_deg_add_ell_zero, ell.single_le_deg_succ, ell.le_toNat_deg_add_ell_zero)
+- **FIXED**: 2 unused variable warnings (hFin → _hFin)
+- **REMAINING SORRIES**: Only 2 (base RRData.riemannRoch, RRData.riemannRoch') - no proof path without additional assumptions
+
+**Key insight**: The superseded lemmas required quotient-degree axioms that were replaced by the FunctionFieldDataWithBound approach in Cycle 10.
+
+## Next Steps (Cycle 14)
 
 **WARNING**: Do NOT touch Schemes or Sheaf Cohomology. Complexity cliff.
 
-**Goal**: Clean up old sorries and strengthen the theory.
-
-### Remaining Sorries
-1. `riemannRoch` / `riemannRoch'` in base `RRData` - no proof path without more assumptions
-2. Old `ell.add_single_le_succ` etc. without `_from_bound` suffix - superseded by axiom versions
-
-### Options for Cycle 13
-1. **Remove or deprecate old sorries** that are superseded by `_from_bound` versions
-2. **Add instantiation lemma** showing FunctionFieldDataWithRR can produce RRData instance
-3. **Prove genus 0 case** - for genus 0, RR simplifies significantly
+### Options for Cycle 14
+1. **Add instantiation lemma** showing FunctionFieldDataWithRR can produce RRData instance
+2. **Prove genus 0 case** - for genus 0, RR simplifies: ℓ(D) = deg(D) + 1 when deg D ≥ -1
+3. **Add more derived lemmas** from the RR axiom (e.g., Clifford's theorem bounds)
 
 ### Do NOT do
 - Schemes, sheaves, cohomology

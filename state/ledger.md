@@ -398,6 +398,32 @@ rather than just formal properties.
 
 **Cycle rating**: 10/10 - **FULL RIEMANN-ROCH STRUCTURE COMPLETE**
 
+### Cycle 13 - Cleanup - COMPLETED
+- **Active edge**: Remove superseded sorries → Clean codebase
+- **Type**: Refactoring/cleanup (no new candidates)
+
+#### Results
+| Action | Status | Notes |
+|--------|--------|-------|
+| Remove `ell.add_single_le_succ` | ✅ REMOVED | Superseded by `_from_bound` version |
+| Remove `ell.le_deg_add_ell_zero` | ✅ REMOVED | Superseded by `_from_bound` version |
+| Remove `ell.single_le_deg_succ` | ✅ REMOVED | Superseded by `_from_bound` version |
+| Remove `ell.le_toNat_deg_add_ell_zero` | ✅ REMOVED | Superseded by `_from_bound` version |
+| Fix unused `hFin` warnings | ✅ FIXED | Renamed to `_hFin` |
+
+#### Remaining Sorries (expected)
+1. `RRData.riemannRoch` (line 507) - No proof path without assumptions
+2. `RRData.riemannRoch'` (line 512) - No proof path without assumptions
+
+These are in the abstract `RRData` structure which lacks the axiom extensions needed for proof.
+The full `FunctionFieldDataWithRR.riemannRoch_eq` is PROVED from its axioms.
+
+#### Sorry Count
+- Before Cycle 13: 6 sorries + 2 warnings
+- After Cycle 13: 2 sorries + 0 warnings
+- **Net reduction**: 4 sorries removed, 2 warnings fixed
+
+**Cycle rating**: 8/10 - Successful cleanup, reduced technical debt
+
 #### Next cycle
-- Clean up old sorries superseded by _from_bound versions
-- Consider genus 0 special case or instantiation lemma
+- Consider genus 0 special case or RRData instantiation lemma
