@@ -1162,3 +1162,63 @@ This may require working through `HeightOneSpectrum.integers K` or localization 
 3. **Priority 3**: Construct full `evaluationMapAt` and kernel proof
 
 **Cycle rating**: 8/10 - Strong infrastructure, clear path, one gap remaining (residue field bridge)
+
+### Cycle 27 - Partial Residue Map Infrastructure - PARTIAL
+- **Active edge**: Close the Residue Field Bridge via partialResidueMap construction
+- **Status**: ⚠️ PARTIAL - 5 candidates OK/PROVED, 3 candidates SORRY
+
+#### Results
+| Definition/Lemma | Status | Notes |
+|-----------------|--------|-------|
+| `withzero_exp_le_exp` | ✅ **PROVED** | Simp wrapper for exp_le_exp |
+| `withzero_exp_mul_le_one` | ✅ **PROVED** | Key arithmetic helper |
+| `algebraMap_valuationRingAt_comm` | ✅ **PROVED** | Embedding compatibility |
+| `partialResidueMap` | ✅ DEFINED | Maps K-element (v(g) ≤ 1) to valuationRingAt.residueField |
+| `mem_range_iff_valuation_le_one_everywhere` | ✅ **PROVED** | Mathlib wrapper - explains local approach |
+| `partialResidueMap_zero` | ⚠️ SORRY | Subtype coercion issue |
+| `partialResidueMap_add` | ⚠️ SORRY | Subtype addition issue |
+| `partialResidueMap_smul` | ⚠️ SORRY | Scalar multiplication issue |
+
+#### Key Insight: Why Local Approach is Necessary
+The lemma `mem_range_iff_valuation_le_one_everywhere` (mathlib wrapper for
+`HeightOneSpectrum.mem_integers_of_valuation_le_one`) shows:
+- Element is in R iff v(g) ≤ 1 for ALL height-1 primes
+- Shifted elements may have poles at OTHER primes w ≠ v
+- So shifted element is NOT in R, but IS in valuationRingAt v
+- This validates the valuation ring approach
+
+#### Architectural Status
+```
+partialResidueMap : K → (v(g) ≤ 1 proof) → valuationRingAt.residueField v   ✅ DEFINED
+    ↓ (linearity proofs)
+evaluationMapAt : L(D+v) →ₗ[R] κ(v)                                          ❌ BLOCKED
+    ↓ (residue field bridge still needed)
+residueFieldAtPrime R v = valuationRingAt.residueField v                      ❌ GAP REMAINS
+```
+
+#### Root Cause Analysis (3 Sorries)
+All three linearity proofs fail on the same pattern:
+1. Goal involves `(valuationRingAt.residue v).toFun ⟨g, h⟩`
+2. Need to show subtype equality `⟨g₁ + g₂, h_sum⟩ = ⟨g₁, h₁⟩ + ⟨g₂, h₂⟩`
+3. Then apply `map_add` (or `map_zero`, `map_mul`)
+4. Proof blocked on matching membership proof terms
+
+**Mutation Suggested**: Reformulate lemmas with explicit subtype equality helper
+or use `Subtype.ext` pattern.
+
+#### Reflector Assessment
+- **Provability Score**: 6.5/10 (5 good, 3 with same blocker)
+- **Coherence Score**: 7/10 (correct approach, but bridge not closed)
+- **Risk**: LOW (no fake types, no axioms)
+- **Payoff**: MEDIUM (enables evaluation map path)
+
+#### Cycle 28 Plan
+**Priority 1**: Fix partialResidueMap linearity proofs
+- Root cause: subtype coercion + ring homomorphism interaction
+- Approach: Use `Subtype.ext` or explicit equality lemmas
+
+**Priority 2**: Begin residue field bridge investigation
+- Need: `valuationRingAt.residueField v ≃ residueFieldAtPrime R v`
+- Explore: mathlib Localization.AtPrime ↔ ValuationSubring connection
+
+**Cycle rating**: 7/10 - Good infrastructure, clear path, linearity proofs need completion

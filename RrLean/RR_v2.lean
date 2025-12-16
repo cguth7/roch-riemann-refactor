@@ -1128,4 +1128,94 @@ noncomputable def valuationRingAt.residue (v : HeightOneSpectrum R) :
 
 end Cycle26Candidates
 
+/-! ## Cycle 27 Candidates: Completing the Residue Field Bridge
+
+The goal is to:
+1. Complete shifted_element_valuation_le_one using WithZero.exp arithmetic
+2. Establish the bridge between valuationRingAt.residueField and residueFieldAtPrime
+3. Construct evaluationMapAt using this bridge
+-/
+
+section Cycle27Candidates
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+
+-- Candidate 1 [tag: coercion_simplify] [status: OK]
+/-- Inverse relationship for WithZero.exp: exp(a) ≤ exp(b) ↔ a ≤ b.
+This is a key simplification needed for shifted_element_valuation_le_one. -/
+lemma withzero_exp_le_exp (a b : ℤ) :
+    WithZero.exp a ≤ WithZero.exp b ↔ a ≤ b :=
+  WithZero.exp_le_exp
+
+-- Candidate 2 [tag: coercion_simplify] [status: OK]
+/-- Transitivity helper: if exp(a) * exp(b) ≤ 1 and exp(a) * exp(b) = exp(a+b), then a+b ≤ 0.
+Needed to complete shifted_element_valuation_le_one. -/
+lemma withzero_exp_mul_le_one (a b : ℤ) (h : WithZero.exp a * WithZero.exp b ≤ 1) :
+    a + b ≤ 0 := by
+  rw [← WithZero.exp_add] at h
+  rw [← WithZero.exp_zero] at h
+  exact WithZero.exp_le_exp.mp h
+
+-- Candidate 3 [tag: bundle_divisor_bridge] [status: OK]
+/-- For Dedekind domains, the algebra map R → valuationRingAt v factors through
+the canonical embedding R → K and the inclusion valuationRingAt v ⊆ K.
+This establishes that R embeds compatibly into the valuation ring. -/
+lemma algebraMap_valuationRingAt_comm (v : HeightOneSpectrum R) (r : R) :
+    ((⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩ :
+      valuationRingAt (R := R) (K := K) v) : K) = algebraMap R K r :=
+  rfl
+
+-- Candidate 4 [tag: rr_bundle_bridge] [status: OK]
+/-- The composition: embed K-element into valuation ring, then apply residue map.
+This defines a partial residue map from K to κ(v) for elements with v(g) ≤ 1.
+Preparatory step for constructing evaluationMapAt. -/
+noncomputable def partialResidueMap (v : HeightOneSpectrum R) (g : K) (h : v.valuation K g ≤ 1) :
+    valuationRingAt.residueField (R := R) (K := K) v :=
+  (valuationRingAt.residue (R := R) (K := K) v).toFun ⟨g, (mem_valuationRingAt_iff v g).mpr h⟩
+
+-- Candidate 5 [tag: rr_bundle_bridge] [status: OK]
+/-- Global integrality criterion: if v(g) ≤ 1 for ALL height-1 primes, then g ∈ R.
+This explains why we need the local (valuation ring) approach - shifted elements
+may have poles at OTHER primes, so they're not in R globally. -/
+lemma mem_range_iff_valuation_le_one_everywhere (g : K)
+    (h : ∀ (w : HeightOneSpectrum R), w.valuation K g ≤ 1) :
+    g ∈ (algebraMap R K).range :=
+  HeightOneSpectrum.mem_integers_of_valuation_le_one K g h
+
+-- Candidate 6 [tag: rr_bundle_bridge] [status: SORRY]
+/-- The partialResidueMap sends 0 to 0.
+
+Technical note: Proof requires showing that the subtype ⟨0, h⟩ = 0 in the valuation ring,
+then applying ring hom map_zero. -/
+lemma partialResidueMap_zero (v : HeightOneSpectrum R) :
+    partialResidueMap (R := R) (K := K) v 0 (by simp only [map_zero]; exact zero_le') = 0 := by
+  sorry
+
+-- Candidate 7 [tag: rr_bundle_bridge] [status: SORRY]
+/-- The partialResidueMap is additive for elements both with v(g) ≤ 1.
+
+Technical note: Proof requires showing subtype addition equals K-addition,
+then applying ring hom map_add. -/
+lemma partialResidueMap_add (v : HeightOneSpectrum R) (g₁ g₂ : K)
+    (h₁ : v.valuation K g₁ ≤ 1) (h₂ : v.valuation K g₂ ≤ 1)
+    (h_sum : v.valuation K (g₁ + g₂) ≤ 1) :
+    partialResidueMap v (g₁ + g₂) h_sum = partialResidueMap v g₁ h₁ + partialResidueMap v g₂ h₂ := by
+  sorry
+
+-- Candidate 8 [tag: rr_bundle_bridge] [status: SORRY]
+/-- The partialResidueMap respects scalar multiplication by R.
+
+Technical note: Proof requires showing subtype multiplication equals K-multiplication,
+then applying ring hom map_mul. -/
+lemma partialResidueMap_smul (v : HeightOneSpectrum R) (r : R) (g : K)
+    (h : v.valuation K g ≤ 1)
+    (h_smul : v.valuation K (algebraMap R K r * g) ≤ 1) :
+    partialResidueMap v (algebraMap R K r * g) h_smul =
+    ((valuationRingAt.residue (R := R) (K := K) v) ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩) *
+    partialResidueMap v g h := by
+  sorry
+
+end Cycle27Candidates
+
 end RiemannRochV2
