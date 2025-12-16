@@ -1062,4 +1062,70 @@ instance instLocalGapBound (R : Type*) [CommRing R] [IsDomain R] [IsDedekindDoma
 
 end EvaluationMapConstruction
 
+/-! ## Cycle 26 Candidates: Evaluation Map Construction via Valuation Ring
+
+The strategy is to use the valuation ring at v as an intermediate object:
+1. Shifted element g = f · π^{D(v)+1} has v(g) ≤ 1
+2. g belongs to valuation ring at v (not necessarily to R)
+3. Valuation ring ≃ Localization.AtPrime v.asIdeal (DVR)
+4. Use DVR residue structure to map to κ(v)
+-/
+
+section Cycle26Candidates
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+
+-- Candidate 1 [tag: coercion_simplify] [status: OK]
+/-- WithZero.exp arithmetic: exp(a) * exp(b) = exp(a+b).
+This is the key identity needed for shifted_element_valuation_le_one. -/
+lemma withzero_exp_mul (a b : ℤ) :
+    WithZero.exp a * WithZero.exp b = WithZero.exp (a + b) :=
+  (WithZero.exp_add a b).symm
+
+-- Candidate 2 [tag: coercion_simplify] [status: OK]
+/-- Exp of negation: exp(-a) is the inverse of exp(a). -/
+lemma withzero_exp_neg (a : ℤ) :
+    WithZero.exp (-a) = (WithZero.exp a)⁻¹ := by
+  rw [WithZero.exp_neg]
+
+-- Candidate 3 [tag: bundle_divisor_bridge] [status: OK]
+/-- The valuation ring of v in K: {g ∈ K : v(g) ≤ 1}.
+This is the natural domain for the residue map to κ(v). -/
+noncomputable def valuationRingAt (v : HeightOneSpectrum R) : ValuationSubring K :=
+  (v.valuation K).valuationSubring
+
+-- Candidate 4 [tag: bundle_divisor_bridge] [status: PROVED]
+/-- Elements with v-valuation ≤ 1 belong to the valuation ring at v. -/
+lemma mem_valuationRingAt_iff (v : HeightOneSpectrum R) (g : K) :
+    g ∈ valuationRingAt v ↔ v.valuation K g ≤ 1 :=
+  Valuation.mem_valuationSubring_iff (v.valuation K) g
+
+-- Candidate 5 [tag: bundle_divisor_bridge] [status: PROVED]
+/-- R embeds into the valuation ring at any prime v.
+Elements of R have v-valuation ≤ 1 for all v. -/
+lemma algebraMap_mem_valuationRingAt (v : HeightOneSpectrum R) (r : R) :
+    algebraMap R K r ∈ valuationRingAt v := by
+  rw [mem_valuationRingAt_iff]
+  exact v.valuation_le_one r
+
+-- Candidate 6 [tag: rr_bundle_bridge] [status: PROVED]
+/-- The valuation ring at v is a local ring with maximal ideal {g : v(g) < 1}. -/
+instance valuationRingAt.isLocalRing (v : HeightOneSpectrum R) :
+    IsLocalRing (valuationRingAt (R := R) (K := K) v) :=
+  ValuationSubring.isLocalRing (valuationRingAt v)
+
+-- Candidate 7 [tag: rr_bundle_bridge] [status: OK]
+/-- The residue field of the valuation ring at v. -/
+noncomputable abbrev valuationRingAt.residueField (v : HeightOneSpectrum R) :=
+  IsLocalRing.ResidueField (valuationRingAt (R := R) (K := K) v)
+
+-- Candidate 8 [tag: rr_bundle_bridge] [status: OK]
+/-- The residue map from the valuation ring at v to its residue field. -/
+noncomputable def valuationRingAt.residue (v : HeightOneSpectrum R) :
+    valuationRingAt (R := R) (K := K) v →+* valuationRingAt.residueField (R := R) (K := K) v :=
+  IsLocalRing.residue (valuationRingAt (R := R) (K := K) v)
+
+end Cycle26Candidates
+
 end RiemannRochV2

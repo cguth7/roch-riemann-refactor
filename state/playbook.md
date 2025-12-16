@@ -86,12 +86,13 @@ lemma local_gap_bound_of_exists_map
 
 ### Key Technical Blockers
 1. **evaluationMapAt**: Need to construct R-linear map L(D+v) → κ(v)
-   - Strategy: shift by π^{D(v)+1}, map to integers, then to κ(v) via residue
-   - Needs: intermediate lemma showing shifted element lands in integers
+   - Strategy: shift by π^{D(v)+1}, map to valuation ring, then to κ(v) via residue
+   - **Cycle 26**: Valuation ring infrastructure established (valuationRingAt)
+   - **Gap**: Need isomorphism `valuationRingAt.residueField ≃ residueFieldAtPrime`
 
-2. **shifted_element_valuation_le_one**: SORRY due to WithZero.exp arithmetic issues
-   - Math is straightforward but type coercions are finicky
-   - Can proceed with sorry, proof is well-understood
+2. **shifted_element_valuation_le_one**: Technical WithZero.exp arithmetic
+   - **Cycle 26**: Added `withzero_exp_mul` and `withzero_exp_neg` helpers
+   - Proof path now clear using WithZero.exp_add
 
 ### Victory Condition for Cycle 25+
 - [ ] instance : LocalGapBound R K (making riemann_inequality_affine unconditional)
@@ -99,10 +100,17 @@ lemma local_gap_bound_of_exists_map
 ### Current Sorry Count (RR_v2.lean)
 1. Line 335: `ellV2_mono` (deprecated placeholder)
 2. Line 713: `riemann_inequality` (deprecated placeholder)
-3. Line 989: `shifted_element_valuation_le_one` (technical WithZero.exp arithmetic)
-4. Line 1029: `evaluationMapAt` (linear map construction - MAIN BLOCKER)
+3. Line 989: `shifted_element_valuation_le_one` (technical - proof path clear with Cycle 26)
+4. Line 1029: `evaluationMapAt` (linear map construction - needs residue field bridge)
 5. Line 1040: `kernel_evaluationMapAt` (depends on #4)
 6. Line 1049: `instLocalGapBound` (depends on #5)
+
+### Cycle 26 Infrastructure (NEW)
+- `valuationRingAt v` - valuation ring at prime v
+- `mem_valuationRingAt_iff` - membership characterization
+- `valuationRingAt.isLocalRing` - KEY: unlocks residue field machinery
+- `valuationRingAt.residueField` - residue field of valuation ring
+- `valuationRingAt.residue` - residue map from valuation ring
 
 ---
 

@@ -1105,3 +1105,60 @@ This may require working through `HeightOneSpectrum.integers K` or localization 
 - Path to victory is visible, just requires careful API work
 
 **Cycle rating**: 7/10 - Infrastructure integrated, blocker clearly identified, path forward known
+
+### Cycle 26 - Valuation Ring Infrastructure - COMPLETED
+- **Active edge**: Construct evaluationMapAt via valuation ring residue approach
+- **Status**: ✅ 8/8 candidates typecheck, valuation ring infrastructure established
+
+#### Results
+| Definition/Lemma | Status | Notes |
+|-----------------|--------|-------|
+| `withzero_exp_mul` | ✅ **PROVED** | exp(a) * exp(b) = exp(a+b) via WithZero.exp_add |
+| `withzero_exp_neg` | ✅ **PROVED** | exp(-a) = (exp a)⁻¹ via WithZero.exp_neg |
+| `valuationRingAt` | ✅ DEFINED | ValuationSubring K at prime v |
+| `mem_valuationRingAt_iff` | ✅ **PROVED** | g ∈ valRing ↔ v(g) ≤ 1 |
+| `algebraMap_mem_valuationRingAt` | ✅ **PROVED** | R embeds into valuation ring |
+| `valuationRingAt.isLocalRing` | ✅ **PROVED** | **KEY**: unlocks residue machinery |
+| `valuationRingAt.residueField` | ✅ DEFINED | Residue field of valuation ring |
+| `valuationRingAt.residue` | ✅ DEFINED | Residue map from valuation ring |
+
+#### Architectural Breakthrough
+
+**Valuation Ring Approach**: Instead of requiring shifted element to land in R (impossible - may have poles at other primes), we show it lands in `valuationRingAt v`:
+- `valuationRingAt v` = { g ∈ K : v.valuation K g ≤ 1 }
+- This is a LOCAL condition (only cares about prime v)
+- `valuationRingAt v` is a LOCAL RING with residue field
+- Residue map `valuationRingAt.residue` gives path to κ(v)
+
+#### Gap Analysis
+
+**Still Missing for evaluationMapAt**:
+1. **Residue Field Bridge**: `valuationRingAt.residueField v` ≠ `residueFieldAtPrime R v` definitionally
+   - Need isomorphism or direct construction showing they're the same
+   - Expected to exist for Dedekind domains but not yet constructed
+
+2. **Shifted Element Landing**: With `shifted_element_valuation_le_one`, element lands in `valuationRingAt v`
+   - Then apply `valuationRingAt.residue` to get residue class
+   - Bridge to `residueFieldAtPrime R v` (our target κ(v))
+
+#### Reflector Scores
+| Candidate | Score | Notes |
+|-----------|-------|-------|
+| `valuationRingAt.isLocalRing` | 5/5 | Architectural breakthrough - unlocks residue field |
+| `valuationRingAt` | 4/5 | Foundational definition |
+| `mem_valuationRingAt_iff` | 4/5 | Essential interface |
+| `valuationRingAt.residueField` | 4/5 | Target codomain |
+| `valuationRingAt.residue` | 4/5 | Almost the map we need |
+| WithZero.exp helpers | 3/5 | Supporting infrastructure |
+
+#### Structural Safety ✅
+- All definitions use real mathlib objects (`ValuationSubring`, `IsLocalRing.ResidueField`)
+- No fake types or axioms introduced
+- Clean integration with existing infrastructure
+
+#### Cycle 27 Plan
+1. **Priority 1**: Establish residue field bridge (isomorphism or direct proof)
+2. **Priority 2**: Complete `shifted_element_valuation_le_one` using WithZero.exp helpers
+3. **Priority 3**: Construct full `evaluationMapAt` and kernel proof
+
+**Cycle rating**: 8/10 - Strong infrastructure, clear path, one gap remaining (residue field bridge)
