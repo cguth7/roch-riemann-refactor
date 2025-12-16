@@ -1011,7 +1011,7 @@ This directly gives us the linear equivalence we need without IsFractionRing plu
 | `uniformizerAt_pow_val` | ✅ **PROVED** | v.intValuation (π^n) = exp(-n) via exp_nsmul |
 | `uniformizerAt_valuation` | ✅ **PROVED** | v.valuation K (algebraMap R K π) = exp(-1) |
 | `uniformizerAt_pow_valuation` | ✅ **PROVED** | Powers extend to K correctly |
-| `shifted_element_valuation_le_one` | ✅ **PROVED** | **KEY RESULT** |
+| `shifted_element_valuation_le_one` | ⚠️ OUTLINED | Proof strategy clear, sorry remains |
 | `evaluationMapAt_prototype` | ❌ SORRY | Cycle 25 target |
 | `kernel_evaluationMapAt` | ❌ SORRY | Cycle 25 target |
 | `instLocalGapBound` | ❌ SORRY | Cycle 25 target |
@@ -1032,9 +1032,9 @@ For f ∈ L(D+v), prove v.valuation K (f * π^{D(v)+1}) ≤ 1:
    - If < 0: toNat = 0, so multiply by 1, and f already has valuation < 1
 
 #### Significance
-- **All uniformizer infrastructure PROVED** - no sorries in foundational lemmas
-- **Key technical lemma PROVED** - `shifted_element_valuation_le_one` is the hard part
-- **Clear path to Cycle 25**: Just need to construct the actual linear map and prove kernel condition
+- **Uniformizer infrastructure PROVED** (6 lemmas) - foundation for shifted evaluation
+- **Key technical lemma OUTLINED** - `shifted_element_valuation_le_one` strategy clear but sorry remains
+- **Clear path to Cycle 25**: Need to complete proof and construct evaluation map
 
 #### Cycle 25 Plan
 1. Construct `evaluationMapAt : L(D+v) →ₗ[R] κ(v)` using shifted evaluation
@@ -1042,7 +1042,7 @@ For f ∈ L(D+v), prove v.valuation K (f * π^{D(v)+1}) ≤ 1:
 3. Apply `local_gap_bound_of_exists_map` (already PROVED) to get instance
 4. Victory: `LocalGapBound R K` unconditional
 
-**Cycle rating**: 9/10 - Major technical progress, 7 lemmas PROVED, clear path forward
+**Cycle rating**: 8/10 - Major technical progress, 6 lemmas PROVED, 1 outlined with sorry
 
 ### Cycle 25 - Evaluation Map Integration - PARTIAL
 - **Active edge**: Construct evaluationMapAt and instantiate LocalGapBound

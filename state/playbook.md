@@ -6,17 +6,22 @@
 - Keep lemma statements small: fewer binders, fewer coercions, fewer implicit arguments.
 - When stuck on coercions, introduce explicit `let` bindings for objects (e.g. `L : LineBundle X`).
 
-## Current Status Summary
+## Current Status Summary (Cycle 26)
 
-**RR.lean (v1)**: Axiom-based approach with `FunctionFieldDataWithRR`. Complete but circular.
+**RR.lean (v1)**: Axiom-based approach with `FunctionFieldDataWithRR`. Complete but circular - ARCHIVED.
 
-**RR_v2.lean (v2)**: Constructive Dedekind domain approach. Key results:
-- `RRModuleV2_real`: Valuation-based L(D) definition (PROVED)
-- `ellV2_real_mono`: Monotonicity via Module.length (PROVED)
-- `riemann_inequality_real`: Conditional on `[SinglePointBound R K]` (PROVED)
-- `riemann_inequality_affine`: Conditional on `[LocalGapBound R K] [BaseDim R K]` (PROVED) ✅ NEW
+**RR_v2.lean (v2)**: Constructive Dedekind domain approach. Active development.
 
-**Typeclass Hierarchy (Cycle 23)**:
+### Key Results PROVED
+- `RRModuleV2_real`: Valuation-based L(D) definition (Cycle 19)
+- `ellV2_real_mono`: Monotonicity via Module.length (Cycle 20)
+- `riemann_inequality_real`: Conditional on `[SinglePointBound R K]` (Cycle 21)
+- `riemann_inequality_affine`: Conditional on `[LocalGapBound R K] [BaseDim R K]` (Cycle 23)
+- `local_gap_bound_of_exists_map`: Linear Algebra Bridge (Cycle 24)
+- Uniformizer infrastructure: 7 lemmas (Cycle 24.2)
+- Valuation ring infrastructure: 5 lemmas (Cycle 26)
+
+### Typeclass Hierarchy
 ```
 LocalGapBound R K          -- PROVABLE (gap ≤ 1 via evaluation map)
     ↑ extends
@@ -27,109 +32,106 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 
 ---
 
-## CYCLE 24 RESULTS: Phase 1 - Linear Algebra Bridge PROVED
+## Current Sorry Count (RR_v2.lean)
 
-### Summary
-Cycle 24 was split into two phases per strategic override. Phase 1 implemented the **Linear Algebra Bridge** - a conditional lemma that establishes the bound assuming an evaluation map exists.
+| Line | Name | Status | Notes |
+|------|------|--------|-------|
+| 337 | `ellV2_mono` | DEPRECATED | Superseded by `ellV2_real_mono` |
+| 715 | `riemann_inequality` | DEPRECATED | Superseded by `riemann_inequality_real` |
+| 1001 | `shifted_element_valuation_le_one` | ACTIVE | WithZero.exp arithmetic (proof path clear) |
+| 1030 | `evaluationMapAt` | **BLOCKER** | Needs residue field bridge |
+| 1042 | `kernel_evaluationMapAt` | BLOCKED | Depends on evaluationMapAt |
+| 1061 | `instLocalGapBound` | BLOCKED | Depends on kernel proof |
 
-### Phase 1 Results (COMPLETED)
-| Definition/Lemma | Status | Notes |
-|-----------------|--------|-------|
-| `divisor_le_add_single` | ✅ **PROVED** | D ≤ D + single v 1 |
-| `HeightOneSpectrum.isMaximal` | ✅ **PROVED** | Height-1 primes are maximal in Dedekind domains |
-| `residueFieldAtPrime.linearEquiv` | ✅ **PROVED** | R ⧸ v.asIdeal ≃ₗ[R] κ(v) via bijective algebraMap |
-| `residueFieldAtPrime.isSimpleModule` | ✅ **PROVED** | κ(v) is simple R-module (uses linearEquiv) |
-| `residueFieldAtPrime.length_eq_one` | ✅ **PROVED** | Module.length R (κ(v)) = 1 |
-| `local_gap_bound_of_exists_map` | ✅ **PROVED** | **LINEAR ALGEBRA BRIDGE** |
-
-### Key Lemma (PROVED)
-```lean
-lemma local_gap_bound_of_exists_map
-    (D : DivisorV2 R) (v : HeightOneSpectrum R)
-    (φ : ↥(RRModuleV2_real R K (D + DivisorV2.single v 1)) →ₗ[R] residueFieldAtPrime R v)
-    (h_ker : LinearMap.ker φ = LinearMap.range (Submodule.inclusion ...)) :
-    ellV2_real_extended R K (D + DivisorV2.single v 1) ≤ ellV2_real_extended R K D + 1
-```
-
-**Mathematical Content**: IF there exists φ : L(D+v) → κ(v) with ker φ = L(D), THEN ℓ(D+v) ≤ ℓ(D) + 1.
-
-**Proof Strategy**:
-1. Exact sequence: length(L(D+v)) = length(L(D)) + length(range φ)
-2. Since range φ ⊆ κ(v) and κ(v) is simple, length(range φ) ≤ 1
-3. Therefore: ℓ(D+v) ≤ ℓ(D) + 1
-
-### Phase 2 Results (Cycle 24 Session 3-4) - UNIFORMIZER INFRASTRUCTURE COMPLETE
-- ✅ `residueFieldAtPrime.linearEquiv` PROVED via bijective algebraMap
-- ✅ `residueFieldAtPrime.isSimpleModule` PROVED using the linearEquiv
-- ✅ `uniformizerAt` DEFINED - uniformizer π ∈ R at height-1 prime v
-- ✅ `uniformizerAt_val` PROVED - v.intValuation π = exp(-1)
-- ✅ `uniformizerAt_ne_zero` PROVED - π ≠ 0
-- ✅ `uniformizerAt_pow_val` PROVED - v.intValuation (π^n) = exp(-n)
-- ✅ `uniformizerAt_valuation` PROVED - v.valuation K (algebraMap R K π) = exp(-1)
-- ✅ `uniformizerAt_pow_valuation` PROVED - v.valuation K (algebraMap R K (π^n)) = exp(-n)
-- ✅ `shifted_element_valuation_le_one` PROVED - **KEY**: f ∈ L(D+v) ⟹ v(f·π^{D(v)+1}) ≤ 1
-
-**Key Discovery**: `WithZero.exp_nsmul` and `WithZero.exp_add` enable clean valuation arithmetic.
-
-**Shifted Evaluation Strategy** (from Gemini):
-1. For f ∈ L(D+v), multiply by π^{D(v)+1} to "shift" the pole
-2. The shifted element f·π^{D(v)+1} has valuation ≤ 1 at v (PROVED)
-3. Map to κ(v) via residue structure
-4. The kernel captures exactly L(D)
-
-### Cycle 25 Status (IN PROGRESS)
-- [x] Integrated uniformizer infrastructure from Cycle 24.2 into RR_v2.lean
-- [x] Added `evaluationMapAt`, `kernel_evaluationMapAt`, `instLocalGapBound` stubs
-- [ ] **BLOCKER**: `evaluationMapAt` construction (shifted evaluation linear map)
-- [ ] **BLOCKED**: `kernel_evaluationMapAt` (depends on evaluationMapAt)
-- [ ] **BLOCKED**: `instLocalGapBound` (depends on kernel proof)
-
-### Key Technical Blockers
-1. **evaluationMapAt**: Need to construct R-linear map L(D+v) → κ(v)
-   - Strategy: shift by π^{D(v)+1}, map to valuation ring, then to κ(v) via residue
-   - **Cycle 26**: Valuation ring infrastructure established (valuationRingAt)
-   - **Gap**: Need isomorphism `valuationRingAt.residueField ≃ residueFieldAtPrime`
-
-2. **shifted_element_valuation_le_one**: Technical WithZero.exp arithmetic
-   - **Cycle 26**: Added `withzero_exp_mul` and `withzero_exp_neg` helpers
-   - Proof path now clear using WithZero.exp_add
-
-### Victory Condition for Cycle 25+
-- [ ] instance : LocalGapBound R K (making riemann_inequality_affine unconditional)
-
-### Current Sorry Count (RR_v2.lean)
-1. Line 335: `ellV2_mono` (deprecated placeholder)
-2. Line 713: `riemann_inequality` (deprecated placeholder)
-3. Line 989: `shifted_element_valuation_le_one` (technical - proof path clear with Cycle 26)
-4. Line 1029: `evaluationMapAt` (linear map construction - needs residue field bridge)
-5. Line 1040: `kernel_evaluationMapAt` (depends on #4)
-6. Line 1049: `instLocalGapBound` (depends on #5)
-
-### Cycle 26 Infrastructure (NEW)
-- `valuationRingAt v` - valuation ring at prime v
-- `mem_valuationRingAt_iff` - membership characterization
-- `valuationRingAt.isLocalRing` - KEY: unlocks residue field machinery
-- `valuationRingAt.residueField` - residue field of valuation ring
-- `valuationRingAt.residue` - residue map from valuation ring
+**Total**: 6 sorries (2 deprecated, 4 active)
 
 ---
 
-## Historical Cycles (Summary)
+## Active Edge: Residue Field Bridge
+
+**Goal**: Construct `evaluationMapAt : L(D+v) →ₗ[R] κ(v)`
+
+**Current Strategy** (Cycle 26):
+1. For f ∈ L(D+v), compute g = f · π^{D(v)+1}
+2. Show v(g) ≤ 1 → g ∈ `valuationRingAt v` (LOCAL condition)
+3. Apply `valuationRingAt.residue` to get element in `valuationRingAt.residueField v`
+4. **GAP**: Bridge to `residueFieldAtPrime R v` (our target κ(v))
+
+**Why Valuation Ring Approach Works**:
+- Shifted element may have poles at OTHER primes (so g ∉ R in general)
+- But g has valuation ≤ 1 at v specifically (local condition)
+- Valuation ring is LOCAL - only cares about single prime v
+- Can apply residue map locally without global integrality
+
+**Gap to Close**:
+- `valuationRingAt.residueField v` ≠ `residueFieldAtPrime R v` definitionally
+- Need isomorphism or proof they're equivalent for Dedekind domains
+- Both are "residue field at v" but constructed differently
+
+---
+
+## Infrastructure Summary
+
+### Cycle 24-26 Infrastructure (All PROVED unless noted)
+
+**Residue Field (Cycle 24.1)**:
+- `residueFieldAtPrime v` = v.asIdeal.ResidueField
+- `residueFieldAtPrime.linearEquiv` : R ⧸ v.asIdeal ≃ₗ[R] κ(v)
+- `residueFieldAtPrime.isSimpleModule` : κ(v) is simple R-module
+- `residueFieldAtPrime.length_eq_one` : Module.length R κ(v) = 1
+
+**Uniformizer (Cycle 24.2)**:
+- `uniformizerAt v` : R - uniformizer at v
+- `uniformizerAt_val` : v.intValuation π = exp(-1)
+- `uniformizerAt_pow_valuation` : v.valuation K (π^n) = exp(-n)
+
+**Linear Algebra Bridge (Cycle 24.1)**:
+- `local_gap_bound_of_exists_map` : IF φ exists with right kernel THEN bound holds
+
+**Valuation Ring (Cycle 26)**:
+- `valuationRingAt v` : ValuationSubring K
+- `mem_valuationRingAt_iff` : g ∈ valRing ↔ v(g) ≤ 1
+- `valuationRingAt.isLocalRing` : valuation ring is local
+- `valuationRingAt.residueField` : residue field of valuation ring
+- `valuationRingAt.residue` : residue map
+
+**Helpers (Cycle 26)**:
+- `withzero_exp_mul` : exp(a) * exp(b) = exp(a+b)
+- `withzero_exp_neg` : exp(-a) = (exp a)⁻¹
+
+---
+
+## Victory Condition
+
+- [ ] `instance : LocalGapBound R K` (makes riemann_inequality_affine unconditional)
+
+This requires:
+1. Fix `shifted_element_valuation_le_one` (use WithZero.exp helpers)
+2. Construct `evaluationMapAt` (bridge residue fields)
+3. Prove `kernel_evaluationMapAt`
+4. Apply `local_gap_bound_of_exists_map`
+
+---
+
+## Historical Cycles
 
 | Cycle | Achievement |
 |-------|-------------|
 | 1-3 | RRData structure, statement elaborates |
 | 4-6 | Divisor, FunctionFieldData, RRSpace as k-Submodule |
 | 7-9 | ell = finrank, quotient infrastructure |
-| 10-11 | SinglePointBound axiom, **Riemann inequality PROVED** |
-| 12-16 | Full RR structure, Clifford's theorem |
+| 10-11 | SinglePointBound axiom, **Riemann inequality PROVED** (v1) |
+| 12-16 | Full RR structure, Clifford's theorem (v1) |
 | 17 | **PIVOT**: Created RR_v2.lean with Dedekind domains |
 | 18-19 | Valuation-based L(D), RRModuleV2_real complete |
 | 20 | ellV2_real_mono PROVED |
 | 21 | SinglePointBound typeclass, riemann_inequality_real PROVED |
-| 22 | **DISCOVERY**: Affine model limitation, residue field infrastructure |
+| 22 | **DISCOVERY**: Affine model limitation (ℓ(0) ≠ 1) |
 | 23 | **LocalGapBound hierarchy, riemann_inequality_affine PROVED** |
-| 24 | (PLANNED) LocalGapBound instance via evaluation map |
+| 24.1 | Linear Algebra Bridge PROVED (local_gap_bound_of_exists_map) |
+| 24.2 | Uniformizer infrastructure PROVED (7 lemmas) |
+| 25 | Integration, blocker identified (residue field bridge) |
+| 26 | **Valuation ring infrastructure** (5 lemmas, gap narrowed) |
 
 ---
 
@@ -137,3 +139,4 @@ lemma local_gap_bound_of_exists_map
 - mathlib: `RingTheory.DedekindDomain.*`
 - mathlib: `RingTheory.Length` (Module.length_eq_add_of_exact)
 - mathlib: `Ideal.ResidueField` for κ(v)
+- mathlib: `ValuationSubring` for valuation ring
