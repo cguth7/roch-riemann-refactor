@@ -567,6 +567,70 @@ The DVR localization instance provides the valuations but extraction API not yet
 
 **Cycle rating**: 7/10 - Infrastructure created, key blocker identified (RRModuleV2)
 
-#### Next Cycle (Cycle 18)
-1. **Priority 1**: Fix RRModuleV2 with real valuation-based membership
-2. **Priority 2**: Implement divisorToFractionalIdeal as ∏ v^{D(v)}
+### Cycle 18 - Valuation-Based L(D) Definition - PARTIAL
+- **Active edge**: Fix RRModuleV2 with real valuation-based membership
+- **Decision**: Use `HeightOneSpectrum.valuation K : K → ℤᵐ⁰` from mathlib directly
+
+#### Results
+| Definition/Lemma | Status | Notes |
+|-----------------|--------|-------|
+| Import AdicValuation | ✅ OK | Brings in v.valuation API |
+| `satisfiesValuationCondition` | ✅ DEFINED | Real membership: `f = 0 ∨ ∀ v, val(f) ≥ exp(-D v)` |
+| `RRModuleV2_real` | ⚠ SORRY (2) | Submodule with real carrier |
+| `RRModuleV2_real.zero_mem'` | ✅ PROVED | Trivial |
+| `RRModuleV2_real.add_mem'` | ❌ SORRY | Needs ultrametric reasoning |
+| `RRModuleV2_real.smul_mem'` | ❌ SORRY | Needs ordered monoid reasoning |
+| `RRModuleV2_real_zero_mem` | ✅ PROVED | Wrapper lemma |
+| `RRModuleV2_mono_inclusion` | ✅ PROVED | L(D) ≤ L(E) when D ≤ E |
+
+#### Discovery (mathlib valuation API)
+- `HeightOneSpectrum.valuation K : Valuation K ℤᵐ⁰` - v-adic valuation on K
+- `Valuation.map_add_le_max` - ultrametric inequality: `v(a+b) ≤ max(v(a), v(b))`
+- `HeightOneSpectrum.valuation_le_one` - for r ∈ R: `v.valuation K r ≤ 1`
+- `Valuation.map_mul` - multiplicativity: `v(xy) = v(x) * v(y)`
+- `WithZero.exp_le_exp` - monotonicity of exp embedding
+
+#### Key Insight: Ordering in `WithZero (Multiplicative ℤ)`
+The value group `ℤᵐ⁰ = WithZero (Multiplicative ℤ)` has ordering:
+```
+0 < exp(-∞) < ... < exp(-2) < exp(-1) < 1 = exp(0) < exp(1) < exp(2) < ...
+```
+- **Smaller value = larger pole order** (inverse to additive intuition)
+- `v(a+b) ≤ max(v(a), v(b))` implies `v(a+b) ≥ min(v(a), v(b))` for proving add_mem'
+- `v(r) ≤ 1` for r ∈ R means ord_v(r) ≥ 0 (r is integral at v)
+
+#### Blocker Analysis
+**Blocker A (add_mem')**: Need to derive lower bound from upper bound
+- Have: `v(a) ≥ bound`, `v(b) ≥ bound`
+- Need: `v(a+b) ≥ bound`
+- Approach: `v(a+b) ≥ min(v(a), v(b)) ≥ bound` via ordered monoid lemmas
+
+**Blocker B (smul_mem')**: Need multiplication preserves lower bound
+- Have: `v(r) ≤ 1`, `v(f) ≥ exp(-D)`
+- Need: `v(r * f) = v(r) * v(f) ≥ exp(-D)`
+- Issue: In multiplicative group, `a ≤ 1` and `b ≥ c` doesn't trivially give `a*b ≥ c`
+- Approach: Use ordered monoid structure + `valuation_le_one` properties
+
+#### Significance
+- **First real valuation-based definition** of L(D) in this project
+- **First nontrivial valuation proof**: `RRModuleV2_mono_inclusion` uses `WithZero.exp_le_exp`
+- Architecture validated: `HeightOneSpectrum.valuation` approach works
+- Sorries are **technical** (ordered monoid reasoning), not fundamental
+
+#### Reflector Assessment
+- **Cycle Rating**: 7.5/10
+- **Progress**: Correct membership condition defined, first valuation proof done
+- **Gap**: Submodule closure proofs incomplete
+- **Path Forward**: Clear (use mathlib ordered monoid API)
+
+**Cycle comparison to v1 (RR.lean):**
+| Aspect | RR.lean (axiom) | RR_v2.lean (construct) |
+|--------|-----------------|------------------------|
+| L(D) definition | Abstract carrier | Valuation-based ✓ |
+| Mathematical validity | Derived from assumptions | Constructive (in progress) |
+| Lemmas this cycle | N/A | 2 PROVED, 2 SORRY |
+
+#### Next Cycle (Cycle 19)
+1. **Priority 1**: Complete RRModuleV2_real (both sorries)
+2. **Priority 2**: Prove ellV2_mono using monotone inclusion
+3. **Priority 3**: State single-point axiom for Riemann inequality

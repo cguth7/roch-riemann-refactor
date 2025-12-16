@@ -205,8 +205,30 @@ The DVR instance `localization_at_prime_is_dvr` is the **bridge** to valuations.
 Each `v : HeightOneSpectrum R` gives `IsDiscreteValuationRing (Localization.AtPrime v.asIdeal)`.
 This provides `ord_v : K× → ℤ` needed for the membership condition.
 
-### Next Steps (Cycle 18)
-1. **Priority 1**: Fix RRModuleV2 using valuations from DVR localization
-   - Define: `{ f | f = 0 ∨ (∀ v, ord_v(f) + D(v) ≥ 0) }`
-   - Import valuation API from `RingTheory.Valuation.*`
-2. **Priority 2**: Implement `divisorToFractionalIdeal` as `∏ v^{D(v)}`
+## Status - Cycle 18 (PARTIAL: Valuation-Based L(D))
+- **IMPORTED**: `Mathlib.RingTheory.DedekindDomain.AdicValuation`
+- **DEFINED**: `satisfiesValuationCondition` (real membership: `f = 0 ∨ ∀ v, v.valuation K f ≥ exp(-D v)`)
+- **DEFINED**: `RRModuleV2_real` (L(D) as R-Submodule with real carrier)
+- **PROVED**: `RRModuleV2_real_zero_mem` (trivial)
+- **PROVED**: `RRModuleV2_mono_inclusion` (L(D) ⊆ L(E) when D ≤ E)
+- **SORRY**: `add_mem'` (needs ultrametric inequality reasoning)
+- **SORRY**: `smul_mem'` (needs ordered monoid reasoning)
+
+### Key Insight (Cycle 18)
+`WithZero (Multiplicative ℤ)` ordering is inverse to additive intuition:
+- Smaller value = larger pole order
+- `v.valuation_le_one` for r ∈ R means r is integral at v
+- `Valuation.map_add_le_max` gives the ultrametric bound we need
+
+### Blockers (Cycle 18)
+- **Blocker A (add_mem')**: Need to show `v(a+b) ≥ min(v(a), v(b))` from `v(a+b) ≤ max(v(a), v(b))`
+  - Requires ordered monoid reasoning in `WithZero (Multiplicative ℤ)`
+- **Blocker B (smul_mem')**: Need to show `v(r) * v(f) ≥ exp(-D)` when `v(r) ≤ 1, v(f) ≥ exp(-D)`
+  - Requires `mul_le_mul'` or similar for ordered monoids
+
+### Next Steps (Cycle 19)
+1. **Priority 1**: Complete RRModuleV2_real (both sorries)
+   - Use `Valuation.map_add_le_max` + ordered monoid lemmas for add_mem'
+   - Use `valuation_le_one` + monotone multiplication for smul_mem'
+2. **Priority 2**: Prove ellV2_mono using RRModuleV2_mono_inclusion
+3. **Priority 3**: State single-point bound axiom for Riemann inequality

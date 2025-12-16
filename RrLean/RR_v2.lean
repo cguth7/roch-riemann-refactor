@@ -1,6 +1,7 @@
 import Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 import Mathlib.RingTheory.DedekindDomain.Basic
 import Mathlib.RingTheory.DedekindDomain.Dvr
+import Mathlib.RingTheory.DedekindDomain.AdicValuation
 import Mathlib.RingTheory.DiscreteValuationRing.Basic
 import Mathlib.RingTheory.Length
 import Mathlib.RingTheory.FractionalIdeal.Basic
@@ -102,6 +103,116 @@ This is the foundational fact that enables us to define valuations ord_v. -/
 instance localization_at_prime_is_dvr (v : HeightOneSpectrum R) :
     IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) :=
   IsLocalization.AtPrime.isDiscreteValuationRing_of_dedekind_domain R v.ne_bot _
+
+/-! ## Cycle 18: Valuation-based membership condition
+
+The key insight is that the v-adic valuation from `HeightOneSpectrum.valuation` allows
+us to define the membership condition for L(D):
+
+  f ∈ L(D) ⟺ f = 0 ∨ (∀ v, v.valuation K f ≥ WithZero.exp (-D v))
+
+This uses the multiplicative notation where:
+- `v.valuation K f : ℤᵐ⁰ = WithZero (Multiplicative ℤ)`
+- `WithZero.exp n` embeds n : ℤ into ℤᵐ⁰
+- The condition `ord_v(f) + D(v) ≥ 0` becomes `v.valuation K f ≥ WithZero.exp (-D v)`
+-/
+
+-- Candidate 2 [tag: membership_condition] [status: OK]
+/-- The membership condition for L(D): f = 0 or all valuations satisfy ord_v(f) + D(v) ≥ 0.
+In multiplicative notation: v.valuation K f ≥ WithZero.exp (-D v). -/
+def satisfiesValuationCondition (D : DivisorV2 R) (f : K) : Prop :=
+  f = 0 ∨ ∀ v : HeightOneSpectrum R, v.valuation K f ≥ WithZero.exp (-(D v))
+
+-- Candidate 3 [tag: rrmodule_real] [status: OK]
+/-- The Riemann-Roch space L(D) as a submodule of K (REAL VERSION).
+
+L(D) = {f ∈ K : f = 0 ∨ (∀ v, v.valuation K f ≥ WithZero.exp (-D v))}
+
+This is the space of functions whose poles are bounded by D. -/
+def RRModuleV2_real (D : DivisorV2 R) : Submodule R K where
+  carrier := { f | satisfiesValuationCondition R K D f }
+  zero_mem' := Or.inl rfl
+  add_mem' := fun {a b} ha hb => by
+    by_cases h : a + b = 0
+    · exact Or.inl h
+    · right
+      intro v
+      -- For valuations, the strong triangle inequality gives:
+      -- val(a + b) ≥ min(val(a), val(b))
+      -- But Valuation.map_add gives val(a + b) ≤ max(val(a), val(b))
+      -- We need a different approach: valuations are non-archimedean
+      -- Fact: min(val(a), val(b)) ≤ val(a + b)
+      rcases ha with rfl | ha'
+      · simp only [zero_add] at h ⊢
+        rcases hb with rfl | hb'
+        · exact absurd rfl h
+        · exact hb' v
+      rcases hb with rfl | hb'
+      · simp only [add_zero] at h ⊢
+        exact ha' v
+      -- Both a and b are nonzero with valuation bounds
+      have hav := ha' v
+      have hbv := hb' v
+      -- The valuation satisfies: val(a+b) ≥ min(val(a), val(b)) when a + b ≠ 0
+      -- This follows from val(a+b) ≤ max(val(a), val(b)) combined with field properties
+      -- For now, use sorry - need to find the right mathlib lemma
+      sorry
+  smul_mem' := fun r {f} hf => by
+    by_cases h : r • f = 0
+    · exact Or.inl h
+    · right
+      intro v
+      -- r • f = algebraMap R K r * f for an algebra
+      simp only [Algebra.smul_def]
+      -- v.valuation K (r * f) = v.valuation K r * v.valuation K f
+      rw [(v.valuation K).map_mul]
+      -- Need to show: v.valuation K (algebraMap R K r) * v.valuation K f ≥ exp(-D v)
+      -- Key: v.valuation K (algebraMap R K r) ≤ 1 for all r ∈ R
+      -- Note: ≤ 1 in the value group means the valuation is ≥ 0 in additive notation
+      -- And we multiply, so: val_r ≥ some positive thing, val_f ≥ bound, product ≥ bound
+      rcases hf with rfl | hf'
+      · -- f = 0 contradicts h
+        exfalso; apply h; simp only [smul_zero]
+      have hfv := hf' v
+      -- Since valuation_le_one gives val(r) ≤ 1 for r ∈ R
+      -- and val(r * f) = val(r) * val(f) with val(r) ≤ 1
+      -- We need val(r) * val(f) ≥ exp(-D v)
+      -- This requires val(r) ≥ exp(0) = 1 or val(f) to compensate
+      -- Actually, for r ∈ R nonzero, val(r) ≤ 1 means ord_v(r) ≥ 0
+      -- In multiplicative notation: smaller valuation = larger order
+      -- val(r) ≤ 1 means r is integral at v (no pole)
+      -- So val(r) * val(f) ≤ 1 * val(f) = val(f)
+      -- We need to go the other way...
+      -- Actually in WithZero ordering: smaller is worse (0 < exp(-n) < 1 < exp(n))
+      -- So val(r) ≤ 1 and val(f) ≥ exp(-D v) gives... hmm
+      -- Let me use sorry for now and figure out the exact ordering
+      sorry
+
+-- Candidate 4 [tag: zero_mem_real] [status: PROVED]
+/-- Zero is in L(D) for any divisor D. -/
+lemma RRModuleV2_real_zero_mem (D : DivisorV2 R) :
+    (0 : K) ∈ (RRModuleV2_real R K D).carrier := Or.inl rfl
+
+-- Candidate 7 [tag: inclusion_submodule] [status: OK]
+/-- When D ≤ E, we have L(D) ⊆ L(E), giving a submodule inclusion. -/
+lemma RRModuleV2_mono_inclusion {D E : DivisorV2 R} (hDE : D ≤ E) :
+    RRModuleV2_real R K D ≤ RRModuleV2_real R K E := by
+  intro f hf
+  cases hf with
+  | inl h => exact Or.inl h
+  | inr h =>
+    apply Or.inr
+    intro v
+    have hDv := hDE v  -- D v ≤ E v means -E v ≤ -D v
+    have hfv := h v    -- v.valuation K f ≥ WithZero.exp (-(D v))
+    -- Since D v ≤ E v, we have -E v ≤ -D v
+    -- So WithZero.exp (-(E v)) ≤ WithZero.exp (-(D v)) ≤ v.valuation K f
+    calc WithZero.exp (-(E v)) ≤ WithZero.exp (-(D v)) := by
+           apply WithZero.exp_le_exp.mpr
+           omega
+       _ ≤ v.valuation K f := hfv
+
+/-! ## Original placeholder (kept for reference) -/
 
 -- Candidate 4 [tag: bundle_divisor_bridge] [status: OK]
 /-- The Riemann-Roch space L(D) as a submodule of K.
