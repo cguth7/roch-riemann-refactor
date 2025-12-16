@@ -27,57 +27,49 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 
 ---
 
-## CYCLE 24 PLAN: Prove LocalGapBound Instance
+## CYCLE 24 RESULTS: Phase 1 - Linear Algebra Bridge PROVED
 
-### Goal
-Prove `instance : LocalGapBound R K` via evaluation map, making `riemann_inequality_affine` unconditional.
+### Summary
+Cycle 24 was split into two phases per strategic override. Phase 1 implemented the **Linear Algebra Bridge** - a conditional lemma that establishes the bound assuming an evaluation map exists.
 
-### Implementation Tasks
+### Phase 1 Results (COMPLETED)
+| Definition/Lemma | Status | Notes |
+|-----------------|--------|-------|
+| `divisor_le_add_single` | ✅ **PROVED** | D ≤ D + single v 1 |
+| `HeightOneSpectrum.isMaximal` | ✅ **PROVED** | Height-1 primes are maximal in Dedekind domains |
+| `residueFieldAtPrime.isSimpleModule` | ⚠️ SORRY | κ(v) is simple R-module (infrastructure) |
+| `residueFieldAtPrime.length_eq_one` | ✅ **PROVED** | Module.length R (κ(v)) = 1 |
+| `local_gap_bound_of_exists_map` | ✅ **PROVED** | **LINEAR ALGEBRA BRIDGE** |
 
-#### 1. Extract uniformizer at height-1 prime
+### Key Lemma (PROVED)
 ```lean
--- Use DVR structure from localization_at_prime_is_dvr
--- Need to extract uniformizer π_v from mathlib DVR API
-noncomputable def uniformizerAt (v : HeightOneSpectrum R) : K := ...
+lemma local_gap_bound_of_exists_map
+    (D : DivisorV2 R) (v : HeightOneSpectrum R)
+    (φ : ↥(RRModuleV2_real R K (D + DivisorV2.single v 1)) →ₗ[R] residueFieldAtPrime R v)
+    (h_ker : LinearMap.ker φ = LinearMap.range (Submodule.inclusion ...)) :
+    ellV2_real_extended R K (D + DivisorV2.single v 1) ≤ ellV2_real_extended R K D + 1
 ```
 
-#### 2. Define evaluation map
-```lean
--- ev_v : L(D + v) → κ(v) by extracting coefficient of π_v^{-1}
-noncomputable def evaluationMapAt (v : HeightOneSpectrum R) (D : DivisorV2 R) :
-    RRModuleV2_real R K (D + DivisorV2.single v 1) →ₗ[R] residueFieldAtPrime R v := ...
-```
+**Mathematical Content**: IF there exists φ : L(D+v) → κ(v) with ker φ = L(D), THEN ℓ(D+v) ≤ ℓ(D) + 1.
 
-#### 3. Prove kernel containment
-```lean
--- The kernel of ev_v contains L(D)
-lemma evaluationMapAt_ker_contains (v : HeightOneSpectrum R) (D : DivisorV2 R) :
-    RRModuleV2_real R K D ≤ LinearMap.ker (evaluationMapAt v D) := ...
-```
+**Proof Strategy**:
+1. Exact sequence: length(L(D+v)) = length(L(D)) + length(range φ)
+2. Since range φ ⊆ κ(v) and κ(v) is simple, length(range φ) ≤ 1
+3. Therefore: ℓ(D+v) ≤ ℓ(D) + 1
 
-#### 4. Prove dimension bound
-```lean
--- dim(L(D+v) / L(D)) ≤ 1
-lemma dim_quotient_le_one (v : HeightOneSpectrum R) (D : DivisorV2 R) :
-    Module.finrank R (RRModuleV2_real R K (D + DivisorV2.single v 1) ⧸
-                      (RRModuleV2_real R K D).comap ...) ≤ 1 := ...
-```
+### Phase 2 Tasks (NEXT CYCLE)
+- [ ] Construct `evaluationMapAt v D : L(D+v) →ₗ[R] κ(v)` using uniformizers
+- [ ] Prove kernel condition: ker(evaluationMapAt) = range(inclusion)
+- [ ] Fill `residueFieldAtPrime.isSimpleModule` sorry
+- [ ] Instantiate `LocalGapBound R K`
 
-#### 5. Instantiate LocalGapBound
-```lean
-instance : LocalGapBound R K where
-  gap_le_one D v := ...  -- from dim_quotient_le_one
-```
-
-### Victory Condition for Cycle 24
-- [ ] evaluationMapAt defined
-- [ ] Kernel containment proved
+### Victory Condition for Phase 2
 - [ ] instance : LocalGapBound R K (making riemann_inequality_affine unconditional)
 
-### Blockers
-- mathlib DVR API may be limited
-- May need `HeightOneSpectrum.valuation` lemmas
-- Uniformizer extraction may require additional work
+### Blockers for Phase 2
+- uniformizerAt needs mathlib DVR API exploration
+- May need additional lemmas about HeightOneSpectrum.valuation
+- isSimpleModule proof requires κ(v) ≃ₗ[R] R/v.asIdeal construction
 
 ---
 

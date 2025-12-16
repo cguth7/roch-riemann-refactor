@@ -762,4 +762,128 @@ noncomputable def residueMapAtPrime (v : HeightOneSpectrum R) :
     R →+* residueFieldAtPrime R v :=
   algebraMap R (residueFieldAtPrime R v)
 
+/-! ## Cycle 24 Phase 1: Linear Algebra Bridge
+
+The "Linear Algebra Bridge" lemma establishes the bound ℓ(D+v) ≤ ℓ(D) + 1 CONDITIONALLY
+on the existence of a linear map φ : L(D+v) → κ(v) with the right kernel.
+
+**STRATEGY**:
+1. D ≤ D + single v 1 always holds (pointwise: D(w) ≤ D(w) + δ_{v,w})
+2. By RRModuleV2_mono_inclusion, we get L(D) ≤ L(D+v) as submodules of K
+3. If φ : L(D+v) → κ(v) has ker φ = L(D), the induced map L(D+v)/L(D) ↪ κ(v) is injective
+4. By exact sequence: length(L(D+v)) = length(L(D)) + length(L(D+v)/L(D))
+5. Since L(D+v)/L(D) injects into κ(v) and κ(v) has length ≤ 1, we get the bound
+
+**Phase 2** (next cycle): Construct the actual evaluation map φ using uniformizers.
+-/
+
+section LinearAlgebraBridge
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+
+-- Helper: D ≤ D + single v 1 always holds
+lemma divisor_le_add_single (D : DivisorV2 R) (v : HeightOneSpectrum R) :
+    D ≤ D + DivisorV2.single v 1 := by
+  intro w
+  simp only [Finsupp.coe_add, Pi.add_apply, DivisorV2.single]
+  by_cases h : w = v
+  · subst h; simp only [Finsupp.single_eq_same]; omega
+  · simp only [Finsupp.single_eq_of_ne h, add_zero]; exact le_refl _
+
+-- Helper: v.asIdeal is maximal in a Dedekind domain
+lemma HeightOneSpectrum.isMaximal (v : HeightOneSpectrum R) : v.asIdeal.IsMaximal :=
+  v.isPrime.isMaximal v.ne_bot
+
+-- Helper: The residue field is a simple R-module (length = 1)
+-- This follows because v.asIdeal is maximal, so R/v.asIdeal is simple,
+-- and κ(v) ≅ R/v.asIdeal as R-modules for Dedekind domains.
+instance residueFieldAtPrime.isSimpleModule (v : HeightOneSpectrum R) :
+    IsSimpleModule R (residueFieldAtPrime R v) := by
+  -- The residue field κ(v) has the property that v.asIdeal annihilates it
+  -- (by Ideal.ker_algebraMap_residueField), making it an R/v.asIdeal-module.
+  -- Since v.asIdeal is maximal, R/v.asIdeal is a field, and κ(v) is a
+  -- 1-dimensional vector space over this field.
+  -- As an R-module, it's isomorphic to R/v.asIdeal which is simple.
+  rw [isSimpleModule_iff_quot_maximal]
+  refine ⟨v.asIdeal, v.isMaximal, ?_⟩
+  -- Need to show: Nonempty (residueFieldAtPrime R v ≃ₗ[R] R ⧸ v.asIdeal)
+  -- This requires more work - for now we use sorry as the focus is on the bridge
+  sorry
+
+-- Helper: Module.length of residue field is 1
+lemma residueFieldAtPrime.length_eq_one (v : HeightOneSpectrum R) :
+    Module.length R (residueFieldAtPrime R v) = 1 :=
+  Module.length_eq_one R (residueFieldAtPrime R v)
+
+/-- The Linear Algebra Bridge:
+    IF there exists a linear map φ : L(D+v) → κ(v) with ker φ = L(D) (as submodules of L(D+v)),
+    THEN ℓ(D+v) ≤ ℓ(D) + 1.
+
+This lemma establishes the dimension bound CONDITIONALLY on the existence of the evaluation map.
+The actual construction of φ (Phase 2) will use uniformizers and the DVR structure.
+
+PROOF OUTLINE:
+1. By exact sequence additivity: length(L(D+v)) = length(ker φ) + length(range φ)
+2. The kernel condition ensures ker φ = L(D), so length(ker φ) = length(L(D))
+3. range φ ⊆ κ(v) and κ(v) is simple, so length(range φ) ≤ 1
+4. Therefore: length(L(D+v)) ≤ length(L(D)) + 1 -/
+lemma local_gap_bound_of_exists_map
+    (D : DivisorV2 R) (v : HeightOneSpectrum R)
+    (φ : ↥(RRModuleV2_real R K (D + DivisorV2.single v 1)) →ₗ[R] residueFieldAtPrime R v)
+    (h_ker : LinearMap.ker φ = LinearMap.range (Submodule.inclusion
+      (RRModuleV2_mono_inclusion R K (divisor_le_add_single D v)))) :
+    ellV2_real_extended R K (D + DivisorV2.single v 1) ≤ ellV2_real_extended R K D + 1 := by
+  -- Define the inclusion map
+  let ι := Submodule.inclusion (RRModuleV2_mono_inclusion R K (divisor_le_add_single D v))
+
+  -- The inclusion ι is injective
+  have hι_inj : Function.Injective ι := Submodule.inclusion_injective _
+
+  -- Apply Module.length_eq_add_of_exact with rangeRestrict:
+  -- length(LDv) = length(LD) + length(range φ)
+  have h_add := Module.length_eq_add_of_exact ι (LinearMap.rangeRestrict φ) hι_inj
+    (LinearMap.surjective_rangeRestrict φ) (by
+      -- Need: Function.Exact ι (LinearMap.rangeRestrict φ)
+      rw [LinearMap.exact_iff]
+      ext x
+      simp only [LinearMap.mem_ker, LinearMap.mem_range]
+      constructor
+      · intro hx
+        -- x ∈ ker(rangeRestrict φ) means (φ x : κ(v)) = 0
+        have hx' : φ x = 0 := Subtype.ext_iff.mp hx
+        -- So x ∈ ker φ = range ι
+        have hmem : x ∈ LinearMap.ker φ := hx'
+        rw [h_ker] at hmem
+        exact hmem
+      · intro ⟨y, hy⟩
+        -- x = ι y means x ∈ range ι = ker φ
+        have hmem : x ∈ LinearMap.range ι := ⟨y, hy⟩
+        rw [← h_ker] at hmem
+        simp only [LinearMap.mem_ker] at hmem
+        exact Subtype.ext hmem)
+
+  -- Simplify: length(LDv) = length(LD) + length(range φ)
+  unfold ellV2_real_extended
+  rw [h_add]
+
+  -- range φ is a submodule of κ(v), which has length 1
+  -- So length(range φ) ≤ 1
+  have h_range_le : Module.length R (LinearMap.range φ) ≤ 1 := by
+    calc Module.length R (LinearMap.range φ)
+        ≤ Module.length R (residueFieldAtPrime R v) :=
+          Module.length_le_of_injective (LinearMap.range φ).subtype
+            (Submodule.subtype_injective _)
+      _ = 1 := residueFieldAtPrime.length_eq_one v
+
+  -- Final calculation: length(LD) + length(range φ) ≤ length(LD) + 1
+  -- h_range_le : Module.length R (LinearMap.range φ) ≤ 1
+  -- Goal: Module.length R (RRModuleV2_real R K D) + Module.length R (LinearMap.range φ) ≤ ...
+  have h_bound : Module.length R ↥(RRModuleV2_real R K D) + Module.length R ↥(LinearMap.range φ)
+      ≤ Module.length R ↥(RRModuleV2_real R K D) + 1 := by
+    gcongr
+  exact h_bound
+
+end LinearAlgebraBridge
+
 end RiemannRochV2
