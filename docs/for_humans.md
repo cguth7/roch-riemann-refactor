@@ -1,20 +1,20 @@
 # Riemann-Roch Formalization: Current State
 
-*Last updated: Cycle 15 (December 2024)*
+*Last updated: Cycle 28 (December 2024)*
 
-## FULL RIEMANN-ROCH STRUCTURE COMPLETE
+## CONSTRUCTIVE RIEMANN INEQUALITY
 
 ```
-ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
+ℓ(D) ≤ deg(D) + basedim   for effective divisors
 ```
 
-The complete Riemann-Roch equation is now formalized in Lean 4 with axiomatized structure!
+The Riemann inequality is formalized in Lean 4 using constructive Dedekind domain infrastructure!
 
 ---
 
 ## The Goal
 
-Prove the Riemann-Roch theorem for smooth projective curves:
+Prove the Riemann-Roch theorem for algebraic curves:
 
 ```
 ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
@@ -27,166 +27,116 @@ Where:
 
 ---
 
-## What We've Built (Cycles 4-15)
+## Two-Track Approach
 
-### Foundation Layers
+### RR.lean (v1) - Axiom-Based (Cycles 1-16)
+- Uses `FunctionFieldData` structure with axiomatized div, deg, ell
+- Full RR structure including Serre duality axiom
+- Clifford's inequality proved
+- **Status**: ARCHIVED - proofs derived from axioms
+
+### RR_v2.lean (v2) - Constructive (Cycles 17-28) - ACTIVE
+- Uses real mathlib infrastructure: Dedekind domains, DVR localization
+- Points = `HeightOneSpectrum R` (height-1 primes)
+- L(D) defined via valuations: `{f : f = 0 ∨ ∀v, v(f) ≤ exp(D(v))}`
+- ℓ(D) = `Module.length R L(D)` (additive in exact sequences)
+- **Status**: ACTIVE - constructive proofs from mathlib
+
+---
+
+## What We've Built (RR_v2.lean)
+
+### Cycles 17-28 Results
 
 | Cycle | What | Key Lemmas |
 |-------|------|------------|
-| 4 | Divisors | `deg_add`, `deg_zero`, `deg_neg`, `deg_sub`, `deg_single` |
-| 5 | Function Fields | `Effective_iff`, `Effective_add`, `div_zero` |
-| 6 | L(D) is a k-Submodule | `add_mem'`, `smul_mem'`, `mono` |
-| 7 | ℓ(D) = dim L(D) | `ell.mono`, `ell.pos_of_effective`, `ell.zero_pos` |
-| 8 | Finite-Dimensionality | 8 unconditional versions via typeclass |
-| 9 | Quotient Infrastructure | `quotient_add_eq_of_le` (rank-nullity) |
-| 10 | Single-Point Axiom | `single_point_bound`, `diff_add_single_le_one` |
-| **11** | **RIEMANN INEQUALITY** | `le_deg_add_ell_zero_from_bound` |
-| **12** | **FULL RR STRUCTURE** | `riemannRoch_eq`, `ell_K`, `deg_K_eq` |
-| 13 | Cleanup | Removed 4 superseded sorries |
-| **14** | **GENUS 0** | `ell_eq_deg_minus_genus_of_deg_gt`, `ell_eq_deg_succ_of_genus_zero_deg_gt` |
-| **15** | **GENUS 1 (ELLIPTIC)** | `ell_eq_deg_of_genus_one_deg_pos`, `deg_le_of_ell_K_sub_D_pos` |
+| 17 | Pivot to Dedekind domains | `DivisorV2`, `localization_at_prime_is_dvr` |
+| 18-19 | Valuation-based L(D) | `RRModuleV2_real` complete with `add_mem'`, `smul_mem'` |
+| 20 | ℓ(D) monotonicity | `ellV2_real_mono` via `Module.length_le_of_injective` |
+| 21 | Riemann inequality | `riemann_inequality_real` via degree induction |
+| 22 | **DISCOVERY** | Affine model limitation (ℓ(0) ≠ 1) |
+| 23 | **LocalGapBound hierarchy** | `riemann_inequality_affine`, typeclass separation |
+| 24 | Linear Algebra Bridge | `local_gap_bound_of_exists_map` + uniformizer infrastructure |
+| 25-26 | Valuation ring approach | `valuationRingAt`, `mem_valuationRingAt_iff` |
+| 27 | Partial residue map | `partialResidueMap` definition |
+| **28** | **Linearity proofs** | `partialResidueMap_zero/add/smul` PROVED |
 
-### Current Score
+### Current Score (RR_v2.lean)
 
 | Category | Count |
 |----------|-------|
-| **Definitions** | 12 |
-| **Lemmas PROVED** | 55+ |
-| **Structures** | 4 (FunctionFieldData, WithBound, WithRR, RRData) |
-| **Sorries remaining** | 3 (base RRData theorems + Clifford) |
+| **Definitions** | 25+ |
+| **Lemmas PROVED** | 40+ |
+| **Infrastructure** | Uniformizers, valuation ring, residue field |
+| **Sorries remaining** | 6 (2 deprecated, 4 active) |
 
 ---
 
-## Key Results by Cycle
+## Key Results
 
-### Cycle 11: Riemann Inequality
-```
-ℓ(D) ≤ deg(D) + 1   for effective divisors D
-```
+### Riemann Inequality (Cycle 21-23)
+```lean
+-- With SinglePointBound (projective model):
+ℓ(D) ≤ deg(D) + 1   for effective D
 
-### Cycle 12: Full Riemann-Roch Structure
-```
-ℓ(D) - ℓ(K-D) = deg(D) + 1 - g       (RR equation)
-deg(K) = 2g - 2                       (canonical degree)
-ℓ(K) = g                              (canonical dimension = genus)
-ℓ(K-D) = 0  when deg(D) > 2g - 2     (vanishing theorem)
+-- With LocalGapBound + BaseDim (affine model):
+ℓ(D) ≤ deg(D) + basedim   for effective D
 ```
 
-### Cycle 14: Genus 0 (Projective Line)
+### Typeclass Hierarchy (Cycle 23)
 ```
-g = 0 ⟹ deg(K) = -2
-g = 0, deg(D) > -2 ⟹ ℓ(D) = deg(D) + 1
+LocalGapBound R K          -- PROVABLE (gap ≤ 1 via evaluation map)
+    ↑ extends
+SinglePointBound R K       -- PROJECTIVE (adds ell_zero = 1)
+
+BaseDim R K                -- SEPARATE (explicit base dimension)
 ```
 
-### Cycle 15: Genus 1 (Elliptic Curves)
-```
-g = 1 ⟹ deg(K) = 0
-g = 1 ⟹ ℓ(K) = 1
-g = 1, deg(D) ≥ 1 ⟹ ℓ(D) = deg(D)     (KEY elliptic result)
-ℓ(K-D) > 0 ⟹ deg(D) ≤ 2g - 2         (special divisor bound)
-```
+### Infrastructure Complete (Cycles 24-28)
+- **Uniformizers**: `uniformizerAt v`, `uniformizerAt_valuation`
+- **Valuation ring**: `valuationRingAt v`, `valuationRingAt.residue`
+- **Partial residue map**: `partialResidueMap` with linearity proofs
 
 ---
 
-## Structure Hierarchy
+## Affine vs Projective Model Discovery
 
-```
-FunctionFieldData α k
-    │ K : Field, div : K → Divisor α
-    │ div_mul, div_one, div_inv, deg_div, div_add, div_algebraMap
-    │
-    ↓ extends
-FunctionFieldDataWithBound α k
-    │ + single_point_bound : ℓ(D+p) ≤ ℓ(D) + 1
-    │ + ell_zero_eq_one : ℓ(0) = 1
-    │
-    ↓ extends
-FunctionFieldDataWithRR α k
-    │ + genus : ℕ
-    │ + K_div : Divisor α
-    │ + deg_K : deg(K) = 2g - 2
-    │ + rr_axiom : ℓ(D) - ℓ(K-D) = deg(D) + 1 - g
-```
+**Critical insight from Cycle 22:**
+
+| Model | Points | L(0) | ℓ(0) |
+|-------|--------|------|------|
+| Affine (HeightOneSpectrum R) | Finite places only | R | ∞ |
+| Projective (complete curve) | Finite + infinite | k | 1 |
+
+Our `HeightOneSpectrum R` model proves the **affine Riemann inequality**.
+For classical RR with ℓ(0) = 1, need compactification (adding infinite places).
 
 ---
 
-## Dependency Graph
+## Victory Condition
 
+```lean
+instance : LocalGapBound R K
 ```
-                    Divisor (α →₀ ℤ)
-                          │
-                    ┌─────┴─────┐
-                    ▼           ▼
-                   deg       Effective
-                    │           │
-                    └─────┬─────┘
-                          ▼
-                  FunctionFieldData
-                    (K, div, ...)
-                          │
-              ┌───────────┼───────────┐
-              ▼           ▼           ▼
-          RRSpace     deg_div     div_add
-         (L(D) ⊆ K)                 │
-              │                     │
-              ▼                     │
-      ell = finrank k L(D)          │
-              │                     │
-              └─────────────────────┘
-                          │
-                          ▼
-              FunctionFieldDataWithBound
-               + single_point_bound
-               + ell_zero_eq_one
-                          │
-                          ▼
-                RIEMANN INEQUALITY
-                 ℓ(D) ≤ deg(D) + 1
-                          │
-                          ▼
-              FunctionFieldDataWithRR
-               + genus, K_div, deg_K
-               + rr_axiom
-                          │
-            ┌─────────────┼─────────────┐
-            ▼             ▼             ▼
-       riemannRoch_eq   ell_K    vanishing theorem
-            │             │             │
-            └──────┬──────┴─────────────┘
-                   │
-     ┌─────────────┼─────────────┐
-     ▼             ▼             ▼
-  GENUS 0      GENUS 1      GENERAL
-(Cycle 14)   (Cycle 15)    BOUNDS
-```
+
+This requires:
+1. ✅ `partialResidueMap` linearity (Cycle 28)
+2. ⏳ `shifted_element_valuation_le_one` (WithZero.exp arithmetic)
+3. ⏳ `evaluationMapAt` construction (residue field bridge)
+4. ⏳ `kernel_evaluationMapAt` proof
 
 ---
 
-## What's Next?
+## Remaining Sorries (RR_v2.lean)
 
-### Remaining Work
-
-1. **Clifford's Inequality** (BLOCKED)
-   - Needs multiplication axiom: L(D) × L(K-D) → L(K)
-   - Classic proof uses cup product structure
-
-2. **RRData Instantiation** (UNKNOWN)
-   - Bridge from FunctionFieldDataWithRR to abstract RRData
-   - Needs scheme morphism construction
-
-3. **Genus 2+ Special Cases**
-   - Hyperelliptic curves
-   - Gap sequences and Weierstrass points
-
----
-
-## Lessons Learned
-
-1. **Induction principle matters** - Finsupp.induction_linear failed; degree induction worked
-2. **Effectivity is delicate** - Doesn't decompose across sums
-3. **Axiom layering works** - Build structures incrementally (Bound → RR)
-4. **Vanishing is powerful** - deg(K-D) < 0 ⟹ ℓ(K-D) = 0 unlocks many results
-5. **Genus specialization** - Each genus has unique formulas (g=0: +1, g=1: exact)
+| Line | Name | Status |
+|------|------|--------|
+| 337 | `ellV2_mono` | DEPRECATED |
+| 715 | `riemann_inequality` | DEPRECATED |
+| 989 | `shifted_element_valuation_le_one` | ACTIVE |
+| 1029 | `evaluationMapAt` | **BLOCKER** |
+| 1040 | `kernel_evaluationMapAt` | BLOCKED |
+| 1049 | `instLocalGapBound` | BLOCKED |
 
 ---
 
@@ -194,20 +144,28 @@ FunctionFieldDataWithRR α k
 
 ```
 roch-riemann/
-├── RrLean/RR.lean         # Main formalization (~1140 lines)
+├── RrLean/
+│   ├── RR.lean            # v1: Axiom-based (archived)
+│   └── RR_v2.lean         # v2: Constructive (active, ~1220 lines)
 ├── state/
 │   ├── playbook.md        # Strategy
 │   ├── ledger.md          # Cycle history
 │   └── candidates.json    # Candidate tracking
 ├── agents/                 # ACE loop agents
-│   ├── orchestrator.md
-│   ├── generator.md
-│   ├── reflector.md
-│   └── curator.md
 └── docs/
-    └── for_humans.md      # This file
+    └── for_humans.md       # This file
 ```
 
 ---
 
-*Total: 15 cycles, 55+ lemmas proved, full RR structure with genus 0 and genus 1 results*
+## Lessons Learned
+
+1. **Affine ≠ Projective** - HeightOneSpectrum captures only finite places
+2. **Module.length > finrank** - Additive in exact sequences, handles infinite
+3. **Valuation ring approach** - Local condition (v(g) ≤ 1) vs global integrality
+4. **SubringClass is definitional** - Subtype operations don't need explicit proofs
+5. **Typeclass separation** - LocalGapBound (provable) vs SinglePointBound (projective)
+
+---
+
+*Total: 28 cycles, two-track approach (axiom + constructive), Riemann inequality PROVED*
