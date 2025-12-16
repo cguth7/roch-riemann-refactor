@@ -1,150 +1,197 @@
 {
-  "active_edge": "Cycle 33: Prove valuationRingAt_exists_fraction (converse for DVR equiv)",
-  "cycle_33_results": {
-    "goal": "Prove DVR equivalence via fraction characterization",
+  "active_edge": "Cycle 35: Prove exists_coprime_rep via IsFractionRing + exists_lift_of_le_one",
+  "cycle_35_results": {
+    "goal": "Complete exists_coprime_rep using DVR theory",
     "status": "PROGRESS",
-    "proved_count": 2,
-    "sorry_count": 6,
+    "proved_count": 7,
+    "sorry_count": 5,
     "candidates": [
       {
-        "name": "localization_maximalIdeal_eq_map",
+        "name": "primeCompl_isUnit_in_K",
         "type": "PROVE",
         "status": "PROVED",
         "score": "5/5",
-        "notes": "maxIdeal (Loc.AtPrime) = map v.asIdeal via AtPrime.map_eq_maximalIdeal"
+        "notes": "primeCompl elements become units in K"
       },
       {
-        "name": "valuationRingAt_iff_fraction",
+        "name": "localizationToK",
+        "type": "DEF",
+        "status": "PROVED",
+        "score": "5/5",
+        "notes": "Ring hom Loc.AtPrime → K via lift"
+      },
+      {
+        "name": "algebraLocalizationK",
+        "type": "INSTANCE",
+        "status": "PROVED",
+        "score": "5/5",
+        "notes": "Algebra K over Loc.AtPrime"
+      },
+      {
+        "name": "scalarTowerLocalizationK",
+        "type": "INSTANCE",
+        "status": "PROVED",
+        "score": "5/5",
+        "notes": "Scalar tower R → Loc.AtPrime → K"
+      },
+      {
+        "name": "localization_isFractionRing",
+        "type": "INSTANCE",
+        "status": "PROVED",
+        "score": "5/5",
+        "notes": "KEY: IsFractionRing (Loc.AtPrime v.asIdeal) K"
+      },
+      {
+        "name": "dvr_valuation_eq_height_one",
         "type": "PROVE",
         "status": "SORRY",
+        "score": "5/5",
+        "notes": "KEY BLOCKER: DVR valuation equals HeightOneSpectrum valuation"
+      },
+      {
+        "name": "exists_localization_lift",
+        "type": "PROVE",
+        "status": "SORRY",
+        "score": "5/5",
+        "notes": "Depends on valuation comparison - uses exists_lift_of_le_one"
+      },
+      {
+        "name": "localization_surj_representation",
+        "type": "PROVE",
+        "status": "PROVED",
         "score": "4/5",
-        "notes": "Bidirectional characterization via fractions"
+        "notes": "IsLocalization.surj wrapper"
       },
       {
-        "name": "mk_mem_valuationRingAt",
+        "name": "exists_coprime_rep_via_lift",
+        "type": "PROVE",
+        "status": "SORRY",
+        "score": "5/5",
+        "notes": "MAIN TARGET: coprime representation - depends on lift"
+      },
+      {
+        "name": "primeCompl_iff_not_mem",
         "type": "PROVE",
         "status": "PROVED",
-        "score": "5/5",
-        "notes": "Forward direction: r/s with s ∉ v.asIdeal has valuation ≤ 1"
-      },
-      {
-        "name": "valuationRingAt_exists_fraction",
-        "type": "PROVE",
-        "status": "SORRY",
-        "score": "5/5",
-        "notes": "KEY BLOCKER: Converse - every v(g)≤1 has fraction representation"
-      },
-      {
-        "name": "valuationRingAt_equiv_localization_v3",
-        "type": "DEF",
-        "status": "SORRY",
-        "score": "5/5",
-        "notes": "MAIN GOAL: DVR equivalence - depends on Candidate 4"
-      },
-      {
-        "name": "valuationRingAt_equiv_localization_v2",
-        "type": "DEF",
-        "status": "SORRY",
         "score": "3/5",
-        "notes": "Redundant with v3"
+        "notes": "Trivial helper"
       },
       {
-        "name": "residueField_equiv_of_valuationRingAt_equiv_v2",
-        "type": "DEF",
-        "status": "SORRY",
-        "score": "4/5",
-        "notes": "Transport residue fields along equiv"
-      },
-      {
-        "name": "residueMapFromR_surjective_via_localization_v2",
+        "name": "algebraMap_localization_mk'_eq_div",
         "type": "PROVE",
         "status": "SORRY",
-        "score": "5/5",
-        "notes": "FINAL TARGET: surjectivity - depends on equiv"
+        "score": "4/5",
+        "notes": "Division formula - technical"
+      },
+      {
+        "name": "valuationSubring_eq_localization_image",
+        "type": "PROVE",
+        "status": "SORRY",
+        "score": "4/5",
+        "notes": "Alternative approach: sets are equal"
       }
     ],
-    "key_insight": "Discovery: mk_mem_valuationRingAt PROVED the forward direction (fractions have valuation ≤ 1). The new blocker is proving the converse: every element with valuation ≤ 1 can be written as r/s with s ∉ v.asIdeal. This uses IsFractionRing to write g = a/b, then analyze v(a) and v(b)."
+    "key_insight": "IsFractionRing instance for Localization.AtPrime over K is now PROVED. This required constructing the algebra structure via IsLocalization.lift. The new blocker is proving that the DVR's maximal ideal valuation equals the HeightOneSpectrum valuation."
   },
-  "cycle_34_plan": {
-    "goal": "Complete valuationRingAt_exists_fraction and cascade to DVR equiv",
+  "cycle_36_plan": {
+    "goal": "Prove dvr_valuation_eq_height_one and complete exists_coprime_rep",
     "tasks": [
-      "Prove valuationRingAt_exists_fraction (KEY BLOCKER)",
-      "Complete valuationRingAt_equiv_localization_v3",
-      "Complete residue field transport",
-      "Prove surjectivity of residueMapFromR"
+      "Prove dvr_valuation_eq_height_one (KEY BLOCKER)",
+      "Complete exists_localization_lift using exists_lift_of_le_one",
+      "Cascade to exists_coprime_rep_via_lift",
+      "Complete valuationRingAt_equiv_localization"
     ],
-    "approach": "Use IsFractionRing.div_surjective to write g = a/b. Then v(g) ≤ 1 means v(a) ≤ v(b). If v(b) < 1 (b ∈ v.asIdeal), need to find c ∈ v.asIdeal with v(c) = v(b), then g = (a/c) / (b/c) where b/c ∉ v.asIdeal.",
+    "approach": "Show both valuations are defined from the same prime ideal v.asIdeal. The DVR's maximalIdeal equals the image of v.asIdeal under the localization map, so both valuations should agree.",
     "key_lemmas_needed": [
-      "valuationRingAt_exists_fraction: converse direction",
-      "Maybe: HeightOneSpectrum.exists_eq_pow_uniformizer for factorization"
+      "dvr_valuation_eq_height_one: valuation comparison",
+      "localization_maximalIdeal_eq_map: already PROVED in Cycle 33"
     ],
-    "fallback": "If converse too hard, axiomatize valuationRingAt ≃ Localization.AtPrime directly"
+    "fallback": "If valuation comparison too hard, try proving valuationSubring_eq_localization_image directly by showing set equality"
   },
   "architecture": {
-    "hierarchy": [
-      "LocalGapBound R K          -- TARGET: needs evaluationMapAt",
-      "    ↑ extends",
-      "SinglePointBound R K       -- PROJECTIVE (adds ell_zero = 1)",
-      "",
-      "BaseDim R K                -- SEPARATE (explicit base dimension)"
+    "instance_chain": [
+      "primeCompl_isUnit_in_K: elements invertible in K (PROVED)",
+      "localizationToK: lift ring hom (PROVED)",
+      "algebraLocalizationK: algebra instance (PROVED)",
+      "scalarTowerLocalizationK: tower R → Loc → K (PROVED)",
+      "localization_isFractionRing: IsFractionRing instance (PROVED)"
     ],
-    "key_bridge": "local_gap_bound_of_exists_map connects evaluation map to typeclass",
-    "fraction_characterization_chain": [
-      "mk_mem_valuationRingAt: r/s ∈ valuationRingAt when s ∉ v.asIdeal (PROVED)",
-      "valuationRingAt_exists_fraction: converse (BLOCKER)",
-      "valuationRingAt_equiv_localization: ring equiv (depends on above)",
-      "residueMapFromR_surjective: final target (depends on equiv)"
+    "proof_chain_blocked": [
+      "dvr_valuation_eq_height_one: valuation comparison (BLOCKER)",
+      "exists_localization_lift: apply exists_lift_of_le_one (BLOCKED)",
+      "exists_coprime_rep_via_lift: main target (BLOCKED)",
+      "valuationRingAt_equiv_localization: ring equiv (BLOCKED)",
+      "residueMapFromR_surjective: final target (BLOCKED)"
     ]
   },
   "remaining_sorries": {
     "active": [
       {
-        "name": "valuationRingAt_iff_fraction",
-        "line": 1714,
-        "status": "HELPER",
-        "notes": "Bidirectional - might be redundant"
-      },
-      {
-        "name": "valuationRingAt_exists_fraction",
-        "line": 1733,
+        "name": "dvr_valuation_eq_height_one",
+        "line": 1950,
         "status": "KEY BLOCKER",
-        "notes": "Converse direction - unlocks everything"
+        "notes": "Valuation comparison"
       },
       {
-        "name": "valuationRingAt_equiv_localization_v3",
-        "line": 1744,
+        "name": "exists_localization_lift",
+        "line": 1958,
         "status": "BLOCKED",
-        "notes": "Depends on fraction converse"
+        "notes": "Depends on valuation"
       },
       {
-        "name": "valuationRingAt_equiv_localization_v2",
-        "line": 1753,
-        "status": "REDUNDANT",
-        "notes": "Same as v3"
-      },
-      {
-        "name": "residueField_equiv_of_valuationRingAt_equiv_v2",
-        "line": 1759,
+        "name": "exists_coprime_rep_via_lift",
+        "line": 1975,
         "status": "BLOCKED",
-        "notes": "Depends on equiv"
+        "notes": "Main target"
       },
       {
-        "name": "residueMapFromR_surjective_via_localization_v2",
-        "line": 1769,
-        "status": "BLOCKED",
-        "notes": "Depends on equiv - FINAL TARGET"
+        "name": "algebraMap_localization_mk'_eq_div",
+        "line": 1988,
+        "status": "TECHNICAL",
+        "notes": "Division formula"
+      },
+      {
+        "name": "valuationSubring_eq_localization_image",
+        "line": 2004,
+        "status": "ALTERNATIVE",
+        "notes": "Backup approach"
       }
     ],
-    "proved_cycle_33": [
+    "proved_cycle_35": [
       {
-        "name": "localization_maximalIdeal_eq_map",
-        "line": 1704,
-        "notes": "maxIdeal (Loc.AtPrime) = map v.asIdeal"
+        "name": "primeCompl_isUnit_in_K",
+        "line": 1911,
+        "notes": "primeCompl → unit in K"
       },
       {
-        "name": "mk_mem_valuationRingAt",
-        "line": 1722,
-        "notes": "Forward direction: fractions have valuation ≤ 1"
+        "name": "localizationToK",
+        "line": 1920,
+        "notes": "Ring hom via lift"
+      },
+      {
+        "name": "algebraLocalizationK",
+        "line": 1926,
+        "notes": "Algebra instance"
+      },
+      {
+        "name": "scalarTowerLocalizationK",
+        "line": 1932,
+        "notes": "Scalar tower"
+      },
+      {
+        "name": "localization_isFractionRing",
+        "line": 1942,
+        "notes": "IsFractionRing instance"
+      },
+      {
+        "name": "localization_surj_representation",
+        "line": 1966,
+        "notes": "surj wrapper"
+      },
+      {
+        "name": "primeCompl_iff_not_mem",
+        "line": 1982,
+        "notes": "trivial iff"
       }
     ]
   }

@@ -1635,3 +1635,80 @@ residueMapFromR_surjective: final target
 - After Cycle 33: 25 sorries (8 new candidates, 2 proved)
 
 **Cycle rating**: 6/10 - Made progress with forward direction, but converse remains challenging
+
+### Cycle 35 - IsFractionRing Instance Infrastructure PROVED - PROGRESS
+- **Active edge**: Complete `exists_coprime_rep` using DVR theory
+- **Strategy**: Path A - Use `IsDiscreteValuationRing.exists_lift_of_le_one`
+
+#### Results
+| Definition/Lemma | Status | Notes |
+|-----------------|--------|-------|
+| `primeCompl_isUnit_in_K` | ✅ **PROVED** | Elements of primeCompl become units in K |
+| `localizationToK` | ✅ **PROVED** | Ring hom Loc.AtPrime → K via lift |
+| `algebraLocalizationK` | ✅ **PROVED** | Algebra instance K over Loc.AtPrime |
+| `scalarTowerLocalizationK` | ✅ **PROVED** | Scalar tower R → Loc.AtPrime → K |
+| `localization_isFractionRing` | ✅ **PROVED** | **KEY**: IsFractionRing Loc.AtPrime K |
+| `dvr_valuation_eq_height_one` | ⚠️ SORRY | **BLOCKER**: Valuation comparison |
+| `exists_localization_lift` | ⚠️ SORRY | Depends on valuation comparison |
+| `localization_surj_representation` | ✅ **PROVED** | IsLocalization.surj wrapper |
+| `exists_coprime_rep_via_lift` | ⚠️ SORRY | Main target |
+| `primeCompl_iff_not_mem` | ✅ **PROVED** | Trivial helper |
+| `algebraMap_localization_mk'_eq_div` | ⚠️ SORRY | Division formula (technical) |
+| `valuationSubring_eq_localization_image` | ⚠️ SORRY | Alternative approach |
+
+#### Key Achievement: IsFractionRing Instance
+**`localization_isFractionRing` PROVED**:
+```lean
+instance : IsFractionRing (Localization.AtPrime v.asIdeal) K
+```
+
+This required:
+1. Proving primeCompl elements become units in K
+2. Defining the lift ring hom via `IsLocalization.lift`
+3. Setting up Algebra and ScalarTower instances
+4. Applying `IsFractionRing.isFractionRing_of_isDomain_of_isLocalization`
+
+#### New Blocker: Valuation Comparison
+**`dvr_valuation_eq_height_one`**: Need to show:
+```lean
+(IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K g =
+  v.valuation K g
+```
+
+**Why this matters**: To apply `exists_lift_of_le_one`, we need to know that the DVR's maximal ideal valuation equals our HeightOneSpectrum valuation.
+
+#### Architecture Summary
+```
+Instance Chain (Cycle 35):
+primeCompl_isUnit_in_K → localizationToK → algebraLocalizationK
+                                              ↓
+                             scalarTowerLocalizationK
+                                              ↓
+                             localization_isFractionRing ✅
+```
+
+```
+Proof Chain (still blocked):
+localization_isFractionRing ✅
+         ↓
+dvr_valuation_eq_height_one ❌ BLOCKER
+         ↓
+exists_localization_lift
+         ↓
+exists_coprime_rep_via_lift
+         ↓
+valuationRingAt_equiv_localization
+         ↓
+residueMapFromR_surjective (FINAL TARGET)
+```
+
+#### Sorry Count
+- Before Cycle 35: ~26 sorries
+- After Cycle 35: 31 sorries (12 new candidates with 7 PROVED, 5 SORRY)
+- Net progress: 7 lemmas PROVED (infrastructure), 5 still SORRY (proof chain blocked)
+
+#### Next Cycle (Cycle 36) Plan
+1. **Priority 1**: Prove `dvr_valuation_eq_height_one` - show both valuations arise from same ideal
+2. **Priority 2**: Alternative - prove `valuationSubring_eq_localization_image` directly
+
+**Cycle rating**: 7/10 - Major infrastructure progress (IsFractionRing instance), clear blocker identified

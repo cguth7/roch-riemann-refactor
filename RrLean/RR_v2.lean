@@ -1885,4 +1885,120 @@ lemma valuationRingAt_exists_fraction_v2 (v : HeightOneSpectrum R) (g : K)
 
 end Cycle34Candidates
 
+/-! ## Cycle 35 Candidates: exists_lift_of_le_one Strategy
+
+Goal: Prove `exists_coprime_rep` using DVR theory.
+
+Strategy (Path A from Playbook):
+1. Get `IsFractionRing (Localization.AtPrime v.asIdeal) K`
+2. Connect v.valuation K to the DVR's maximal ideal valuation
+3. Apply `IsDiscreteValuationRing.exists_lift_of_le_one`
+4. Unpack the result to get coprime representation
+
+Key mathlib lemmas:
+- `IsDiscreteValuationRing.exists_lift_of_le_one`: If DVR valuation ≤ 1, element lifts to DVR
+- `IsFractionRing.isFractionRing_of_isDomain_of_isLocalization`: IsFractionRing for localizations
+-/
+
+section Cycle35Candidates
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+
+-- Candidate 0 [tag: instance_setup] [relevance: 5/5] [status: PROVED] [cycle: 35]
+/-- Elements of primeCompl become units in the fraction field K.
+This is needed to construct the algebra map Localization.AtPrime → K. -/
+lemma primeCompl_isUnit_in_K (v : HeightOneSpectrum R) (y : v.asIdeal.primeCompl) :
+    IsUnit (algebraMap R K y) := by
+  apply IsUnit.mk0
+  rw [ne_eq, map_eq_zero_iff (algebraMap R K) (IsFractionRing.injective R K)]
+  exact nonZeroDivisors.ne_zero (v.asIdeal.primeCompl_le_nonZeroDivisors y.2)
+
+-- Candidate 0b [tag: instance_setup] [relevance: 5/5] [status: PROVED] [cycle: 35]
+/-- The ring homomorphism from Localization.AtPrime to the fraction field K.
+Lifts the algebra map R → K via the universal property of localization. -/
+noncomputable def localizationToK (v : HeightOneSpectrum R) :
+    Localization.AtPrime v.asIdeal →+* K :=
+  IsLocalization.lift (fun y => primeCompl_isUnit_in_K v y)
+
+-- Candidate 0c [tag: instance_setup] [relevance: 5/5] [status: PROVED] [cycle: 35]
+/-- The algebra structure on K over Localization.AtPrime v.asIdeal. -/
+noncomputable instance algebraLocalizationK (v : HeightOneSpectrum R) :
+    Algebra (Localization.AtPrime v.asIdeal) K :=
+  RingHom.toAlgebra (localizationToK v)
+
+-- Candidate 0d [tag: instance_setup] [relevance: 5/5] [status: PROVED] [cycle: 35]
+/-- The scalar tower R → Localization.AtPrime → K. -/
+instance scalarTowerLocalizationK (v : HeightOneSpectrum R) :
+    IsScalarTower R (Localization.AtPrime v.asIdeal) K :=
+  IsScalarTower.of_algebraMap_eq (fun x => by
+    simp only [localizationToK, RingHom.algebraMap_toAlgebra]
+    exact (IsLocalization.lift_eq (fun y => primeCompl_isUnit_in_K v y) x).symm)
+
+-- Candidate 1 [tag: dvr_bridge] [relevance: 5/5] [status: PROVED] [cycle: 35]
+/-- Get IsFractionRing instance for Localization.AtPrime with abstract field K.
+This uses the tower R → Localization.AtPrime → K and the fact that K is
+a fraction field of R. -/
+noncomputable instance localization_isFractionRing (v : HeightOneSpectrum R) :
+    IsFractionRing (Localization.AtPrime v.asIdeal) K :=
+  IsFractionRing.isFractionRing_of_isDomain_of_isLocalization v.asIdeal.primeCompl
+    (Localization.AtPrime v.asIdeal) K
+
+-- Candidate 2 [tag: dvr_bridge] [relevance: 5/5] [status: SORRY] [cycle: 35]
+/-- Connect DVR valuation to HeightOneSpectrum valuation.
+Both valuations should agree because they're defined from the same prime ideal. -/
+lemma dvr_valuation_eq_height_one (v : HeightOneSpectrum R) (g : K) :
+    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K g =
+      v.valuation K g := by
+  sorry
+
+-- Candidate 3 [tag: dvr_bridge] [relevance: 5/5] [status: SORRY] [cycle: 35]
+/-- Apply exists_lift_of_le_one to get element in Localization.AtPrime.
+Requires: IsFractionRing instance and valuation agreement. -/
+lemma exists_localization_lift (v : HeightOneSpectrum R) (g : K)
+    (hg : g ∈ valuationRingAt (R := R) (K := K) v) :
+    ∃ y : Localization.AtPrime v.asIdeal, algebraMap (Localization.AtPrime v.asIdeal) K y = g := by
+  sorry
+
+-- Candidate 4 [tag: arithmetic] [relevance: 4/5] [status: PROVED] [cycle: 35]
+/-- Unpack Localization element via IsLocalization.surj.
+y * s = r in the localization when s comes from primeCompl. -/
+lemma localization_surj_representation (v : HeightOneSpectrum R)
+    (y : Localization.AtPrime v.asIdeal) :
+    ∃ (r : R) (s : v.asIdeal.primeCompl),
+      y * algebraMap R (Localization.AtPrime v.asIdeal) s = algebraMap R (Localization.AtPrime v.asIdeal) r := by
+  obtain ⟨⟨r, s⟩, h⟩ := IsLocalization.surj v.asIdeal.primeCompl y
+  exact ⟨r, s, h⟩
+
+-- Candidate 5 [tag: dvr_bridge] [relevance: 5/5] [status: SORRY] [cycle: 35]
+/-- Combine lift and unpacking to prove exists_coprime_rep.
+This is the main target - should follow from Candidates 3 and 4. -/
+lemma exists_coprime_rep_via_lift (v : HeightOneSpectrum R) (g : K)
+    (hg : g ∈ valuationRingAt (R := R) (K := K) v) :
+    ∃ (r s : R), s ∉ v.asIdeal ∧ algebraMap R K s ≠ 0 ∧ g = algebraMap R K r / algebraMap R K s := by
+  sorry
+
+-- Candidate 6 [tag: arithmetic] [relevance: 4/5] [status: PROVED] [cycle: 35]
+/-- Helper: primeCompl membership means not in ideal. -/
+lemma primeCompl_iff_not_mem (v : HeightOneSpectrum R) (s : R) :
+    s ∈ v.asIdeal.primeCompl ↔ s ∉ v.asIdeal := Iff.rfl
+
+-- Candidate 7 [tag: arithmetic] [relevance: 4/5] [status: SORRY] [cycle: 35]
+/-- Helper: algebraMap from localization mk' equals division in fraction field.
+The proof is technical but mathematically clear. -/
+lemma algebraMap_localization_mk'_eq_div (v : HeightOneSpectrum R) (r : R) (s : v.asIdeal.primeCompl) :
+    algebraMap (Localization.AtPrime v.asIdeal) K (IsLocalization.mk' (Localization.AtPrime v.asIdeal) r s) =
+      algebraMap R K r / algebraMap R K s := by
+  sorry
+
+-- Candidate 8 [tag: dvr_bridge] [relevance: 4/5] [status: SORRY] [cycle: 35]
+/-- Alternative: show valuationSubrings are equal.
+If proved, this gives exists_coprime_rep immediately via localization surjectivity. -/
+lemma valuationSubring_eq_localization_image (v : HeightOneSpectrum R) :
+    (valuationRingAt (R := R) (K := K) v : Set K) =
+      Set.range (algebraMap (Localization.AtPrime v.asIdeal) K) := by
+  sorry
+
+end Cycle35Candidates
+
 end RiemannRochV2
