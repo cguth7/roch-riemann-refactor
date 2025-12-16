@@ -24,7 +24,7 @@
 
 **Reframing Rule**: If a "converse" lemma is hard, check if there's a higher-level equivalence that gives both directions for free (e.g., ring isomorphism instead of set equality).
 
-## Current Status Summary (Cycle 34)
+## Current Status Summary (Cycle 35)
 
 **RR.lean (v1)**: Axiom-based approach with `FunctionFieldDataWithRR`. Complete but circular - ARCHIVED.
 
@@ -42,16 +42,12 @@
 - `shifted_element_valuation_le_one_v2`: KEY BLOCKER RESOLVED (Cycle 29)
 - `maximalIdeal_valuationRingAt_comap`: Kernel proof (Cycle 30)
 - `residueMapFromR_ker`: ker = v.asIdeal (Cycle 30)
-- **`localizationAtPrime_isDVR`: DVR instance (Cycle 31)**
-- **`valuation_eq_one_of_not_mem`: v(s)=1 when s∉v.asIdeal (Cycle 31)**
-- **`valuation_div_eq_of_unit`: v(r/s)=v(r) when v(s)=1 (Cycle 31)**
-- **`residueFieldBridge_v2_of_surj`: First Isom Thm bridge (conditional, Cycle 31)**
-- **`residueFieldBridge_v3_of_surj`: Full bridge (conditional, Cycle 31)**
-- **`localization_residue_equiv`: R/v.asIdeal ≃ Loc.AtPrime/maxIdeal (Cycle 32)**
-- **`localization_residueField_equiv`: Loc.AtPrime.ResidueField ≃ residueFieldAtPrime (Cycle 32)**
-- **`localization_residue_surjective`: Helper lemma (Cycle 32)**
-- **`localization_maximalIdeal_eq_map`: maxIdeal = map v.asIdeal (Cycle 33)**
-- **`mk_mem_valuationRingAt`: Forward direction - fractions have valuation ≤ 1 (Cycle 33)**
+- `localizationAtPrime_isDVR`: DVR instance (Cycle 31)
+- `valuation_eq_one_of_not_mem`: v(s)=1 when s∉v.asIdeal (Cycle 31)
+- `localization_maximalIdeal_eq_map`: maxIdeal = map v.asIdeal (Cycle 33)
+- `mk_mem_valuationRingAt`: Forward direction - fractions have valuation ≤ 1 (Cycle 33)
+- **`localization_isFractionRing`: IsFractionRing (Loc.AtPrime v.asIdeal) K (Cycle 35) ⭐**
+- **Instance chain: primeCompl_isUnit_in_K → localizationToK → algebraLocalizationK → scalarTowerLocalizationK (Cycle 35)**
 
 ### Typeclass Hierarchy
 ```
@@ -409,102 +405,88 @@ If equal → exists_lift_of_le_one gives converse → equivValuationSubring give
 
 ---
 
-## Cycle 35 Tactical Guide
+## Cycle 36 Tactical Guide
 
-### Context (After Cycle 34)
+### Context (After Cycle 35)
 
-**Progress**: `exists_coprime_rep` is 80% done:
-- Easy case PROVED: b ∉ v.asIdeal
-- Hard case partial: b ∈ v.asIdeal implies a ∈ v.asIdeal (PROVED)
-- Remaining: Show can factor out uniformizers to get coprime form
+**Cycle 35 Achievement**: IsFractionRing instance chain PROVED!
+- `primeCompl_isUnit_in_K`: primeCompl elements become units in K ✅
+- `localizationToK`: Ring hom via IsLocalization.lift ✅
+- `algebraLocalizationK`: Algebra instance ✅
+- `scalarTowerLocalizationK`: Scalar tower R → Loc.AtPrime → K ✅
+- `localization_isFractionRing`: IsFractionRing (Loc.AtPrime v.asIdeal) K ✅
 
-**Key Insight**: `exists_lift_of_le_one` in mathlib IS the converse lemma we need!
+**Path A Status**: PARTIALLY COMPLETE
+- Step 1: IsFractionRing ✅ DONE (Cycle 35)
+- Step 2: Valuation comparison ❌ NEW BLOCKER
+- Step 3: exists_lift_of_le_one (ready once Step 2 done)
+- Step 4: Unpack result ✅ localization_surj_representation ready
+
+### CURRENT BLOCKER: dvr_valuation_eq_height_one
+
 ```lean
-theorem exists_lift_of_le_one {x : K} (H : ((maximalIdeal A).valuation K) x ≤ 1) :
-    ∃ a : A, algebraMap A K a = x
-```
-If we can apply this, we avoid ALL uniformizer factoring.
-
-### SINGLE OBJECTIVE: Apply exists_lift_of_le_one
-
-**Pick ONE path and commit. Do NOT mix approaches.**
-
----
-
-### Path A: Use exists_lift_of_le_one (PRIMARY - try this first)
-
-**Goal**: Get g ∈ valuationRingAt v to lift to Localization.AtPrime v.asIdeal
-
-**Setup Required**:
-1. Let `A := Localization.AtPrime v.asIdeal`
-2. Get `[IsDiscreteValuationRing A]` ← we have `localizationAtPrime_isDVR` (Cycle 31)
-3. Get `[IsFractionRing A K]` ← THIS IS THE KEY INSTANCE
-4. Show: `(maximalIdeal A).valuation K g ≤ 1` when `v.valuation K g ≤ 1`
-
-**Concrete Steps**:
-```lean
--- Step 1: Get IsFractionRing (Localization.AtPrime v.asIdeal) K
--- This requires showing K is a localization of Loc.AtPrime at nonZeroDivisors
--- OR use FractionRing (Loc.AtPrime) ≃+* K
-
--- Step 2: Rewrite membership condition
--- g ∈ valuationRingAt v ↔ v.valuation K g ≤ 1
--- Need: (maximalIdeal (Loc.AtPrime)).valuation K g ≤ 1
-
--- Step 3: Apply exists_lift_of_le_one
--- Get y : Localization.AtPrime such that algebraMap _ K y = g
-
--- Step 4: Unpack y = mk' a s for s ∉ v.asIdeal
--- Then g = algebraMap R K a / algebraMap R K s, done!
+lemma dvr_valuation_eq_height_one (v : HeightOneSpectrum R) (g : K) :
+    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K g =
+      v.valuation K g
 ```
 
-**Key Search**:
+**Why This Should Work**:
+1. `IsDiscreteValuationRing.maximalIdeal` on Loc.AtPrime is defined from `IsLocalRing.maximalIdeal`
+2. `IsLocalRing.maximalIdeal (Loc.AtPrime v.asIdeal) = map v.asIdeal` (PROVED: `localization_maximalIdeal_eq_map`)
+3. Both valuations are defined from the same underlying prime ideal v.asIdeal
+4. They should be extensionally equal on K
+
+**Search for Cycle 36**:
 ```bash
-rg -n "IsFractionRing.*Localization|Localization.*IsFractionRing" .lake/packages/mathlib
-rg -n "exists_lift_of_le_one|equivValuationSubring" .lake/packages/mathlib/Mathlib/RingTheory/Valuation/Discrete/Basic.lean
-```
+# Find valuation comparison lemmas
+./scripts/rg_mathlib.sh "HeightOneSpectrum.*valuation.*eq|valuation.*HeightOneSpectrum.*eq"
+./scripts/rg_mathlib.sh "intValuation.*IsLocalization|IsLocalization.*intValuation"
 
-**Success Criterion**: Apply `exists_lift_of_le_one` ONCE in a test lemma (even in scratch namespace).
+# Check how DVR maximalIdeal valuation is defined
+rg -n "def valuation.*maximalIdeal|maximalIdeal.*valuation" .lake/packages/mathlib/Mathlib/RingTheory/Valuation/Discrete/
+```
 
 ---
 
-### Path B: Induction on intValuation (ONLY if Path A stalls on instances)
+### Alternative: valuationSubring_eq_localization_image
 
-**Only use if**: After 30+ min, IsFractionRing instance refuses to line up.
-
-**Goal**: Well-founded induction on `v.intValuation b`.
-
-**Key Lemma Needed**:
+If valuation comparison is too complex, prove set equality directly:
 ```lean
-lemma exists_smaller_denom (a b : R) (hb : b ∈ v.asIdeal) (ha : a ∈ v.asIdeal)
-    (hle : v.intValuation a ≤ v.intValuation b) :
-    ∃ a' b', v.intValuation b' > v.intValuation b ∧
-             algebraMap R K a / algebraMap R K b = algebraMap R K a' / algebraMap R K b'
+lemma valuationSubring_eq_localization_image (v : HeightOneSpectrum R) :
+    (valuationRingAt (R := R) (K := K) v : Set K) =
+      Set.range (algebraMap (Localization.AtPrime v.asIdeal) K)
 ```
 
-**Search**:
-```bash
-./scripts/rg_mathlib.sh "eq_unit_mul_pow_irreducible"
-./scripts/rg_mathlib.sh "intValuation_mul"
-```
-
-**Success Criterion**: Prove `exists_smaller_denom` without new sorries.
+**Approach**:
+- (⊇) PROVED: `mk_mem_valuationRingAt` shows fractions are in valuationRingAt
+- (⊆) Need: If v(g) ≤ 1, then g ∈ range(algebraMap)
 
 ---
 
-### Hard Rule: NO NEW SORRIES
+### Success Criteria for Cycle 36
 
-Per Frontier Freeze Rule:
-- ❌ No new sorry lemmas that don't directly prove exists_coprime_rep
-- ❌ No "helper infrastructure" sorries
-- ✅ Only allowed sorry: the hard case of exists_coprime_rep itself (if stuck)
+**Option 1 (Preferred)**: Prove `dvr_valuation_eq_height_one`
+- Then `exists_lift_of_le_one` applies directly
+- `exists_localization_lift` follows
+- `exists_coprime_rep_via_lift` follows
 
-### After exists_coprime_rep is proved
+**Option 2 (Backup)**: Prove `valuationSubring_eq_localization_image`
+- Direct set equality bypasses valuation comparison
+- Still gives exists_coprime_rep
 
-Everything cascades automatically:
-1. `valuationRingAt_iff_fraction` → bidirectional characterization
-2. `valuationRingAt_equiv_localization` → ring equivalence
-3. `residueField_equiv_*` → bridges
-4. `residueMapFromR_surjective_*` → surjectivity
-5. `evaluationMapAt` → map to residue field
-6. `instLocalGapBound` → **VICTORY**
+### Victory Path (Once Blocker Resolved)
+```
+dvr_valuation_eq_height_one OR valuationSubring_eq_localization_image
+    ↓
+exists_coprime_rep
+    ↓
+valuationRingAt_equiv_localization
+    ↓
+residueMapFromR_surjective
+    ↓
+evaluationMapAt
+    ↓
+kernel_evaluationMapAt
+    ↓
+instLocalGapBound → VICTORY
+```
