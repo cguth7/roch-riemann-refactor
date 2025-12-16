@@ -6,7 +6,7 @@
 - Keep lemma statements small: fewer binders, fewer coercions, fewer implicit arguments.
 - When stuck on coercions, introduce explicit `let` bindings for objects (e.g. `L : LineBundle X`).
 
-## Current Status Summary (Cycle 27)
+## Current Status Summary (Cycle 28)
 
 **RR.lean (v1)**: Axiom-based approach with `FunctionFieldDataWithRR`. Complete but circular - ARCHIVED.
 
@@ -20,7 +20,7 @@
 - `local_gap_bound_of_exists_map`: Linear Algebra Bridge (Cycle 24)
 - Uniformizer infrastructure: 7 lemmas (Cycle 24.2)
 - Valuation ring infrastructure: 5 lemmas (Cycle 26)
-- Partial residue map infrastructure: 5 lemmas (Cycle 27)
+- Partial residue map infrastructure: 8 lemmas (Cycle 27-28)
 
 ### Typeclass Hierarchy
 ```
@@ -43,11 +43,21 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 | 1029 | `evaluationMapAt` | **BLOCKER** | Needs residue field bridge |
 | 1040 | `kernel_evaluationMapAt` | BLOCKED | Depends on evaluationMapAt |
 | 1049 | `instLocalGapBound` | BLOCKED | Depends on kernel proof |
-| 1191 | `partialResidueMap_zero` | ACTIVE | Subtype coercion (NEW Cycle 27) |
-| 1200 | `partialResidueMap_add` | ACTIVE | Subtype addition (NEW Cycle 27) |
-| 1211 | `partialResidueMap_smul` | ACTIVE | Scalar multiplication (NEW Cycle 27) |
 
-**Total**: 9 sorries (2 deprecated, 7 active)
+**Total**: 6 sorries (2 deprecated, 4 active)
+
+---
+
+## Cycle 28 Accomplishments
+
+**Goal**: Fix partialResidueMap linearity proofs
+
+**Results**: All 3 sorries PROVED
+- `partialResidueMap_zero`: Uses `map_zero` (5/5)
+- `partialResidueMap_add`: Definitional via `rfl` in SubringClass (5/5)
+- `partialResidueMap_smul`: Definitional via `rfl` in SubringClass (5/5)
+
+**Key Insight**: In SubringClass, subtype operations (addition, multiplication) are definitional equalities. The proofs simplify to `rfl` after unfolding definitions.
 
 ---
 
@@ -76,7 +86,7 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 
 ## Infrastructure Summary
 
-### Cycle 24-26 Infrastructure (All PROVED unless noted)
+### Cycle 24-28 Infrastructure (All PROVED unless noted)
 
 **Residue Field (Cycle 24.1)**:
 - `residueFieldAtPrime v` = v.asIdeal.ResidueField
@@ -99,17 +109,19 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 - `valuationRingAt.residueField` : residue field of valuation ring
 - `valuationRingAt.residue` : residue map
 
-**Helpers (Cycle 26)**:
+**Helpers (Cycle 26-27)**:
 - `withzero_exp_mul` : exp(a) * exp(b) = exp(a+b)
 - `withzero_exp_neg` : exp(-a) = (exp a)⁻¹
-
-**Partial Residue Map (Cycle 27)**:
-- `partialResidueMap v g h` : maps K-element with v(g) ≤ 1 to valuationRingAt.residueField v
-- `withzero_exp_le_exp` : exp(a) ≤ exp(b) ↔ a ≤ b (simp wrapper)
+- `withzero_exp_le_exp` : exp(a) ≤ exp(b) ↔ a ≤ b
 - `withzero_exp_mul_le_one` : exp(a) * exp(b) ≤ 1 → a + b ≤ 0
+
+**Partial Residue Map (Cycle 27-28)**:
+- `partialResidueMap v g h` : maps K-element with v(g) ≤ 1 to valuationRingAt.residueField v
 - `algebraMap_valuationRingAt_comm` : R embeds compatibly
-- `mem_range_iff_valuation_le_one_everywhere` : global integrality criterion (mathlib wrapper)
-- `partialResidueMap_zero/add/smul` : linearity properties (SORRY - subtype coercion issues)
+- `mem_range_iff_valuation_le_one_everywhere` : global integrality criterion
+- `partialResidueMap_zero` : PROVED (Cycle 28)
+- `partialResidueMap_add` : PROVED (Cycle 28)
+- `partialResidueMap_smul` : PROVED (Cycle 28)
 
 ---
 
@@ -145,6 +157,7 @@ This requires:
 | 25 | Integration, blocker identified (residue field bridge) |
 | 26 | **Valuation ring infrastructure** (5 lemmas, gap narrowed) |
 | 27 | **Partial residue map** (5 OK, 3 SORRY), linearity proofs pending |
+| 28 | **Linearity proofs COMPLETE** (3 PROVED via rfl) |
 
 ---
 

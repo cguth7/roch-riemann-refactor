@@ -1222,3 +1222,55 @@ or use `Subtype.ext` pattern.
 - Explore: mathlib Localization.AtPrime ↔ ValuationSubring connection
 
 **Cycle rating**: 7/10 - Good infrastructure, clear path, linearity proofs need completion
+
+### Cycle 28 - Partial Residue Map Linearity Proofs COMPLETE
+- **Active edge**: Fix the 3 sorry proofs in partialResidueMap linearity lemmas
+- **Status**: ✅ COMPLETED - All 3 proofs PROVED
+
+#### Results
+| Definition/Lemma | Status | Notes |
+|-----------------|--------|-------|
+| `partialResidueMap_zero` | ✅ **PROVED** | Uses `map_zero` after `unfold partialResidueMap` |
+| `partialResidueMap_add` | ✅ **PROVED** | Definitional via `rfl` - SubringClass addition is componentwise |
+| `partialResidueMap_smul` | ✅ **PROVED** | Definitional via `rfl` - SubringClass multiplication is componentwise |
+
+#### Key Insight: SubringClass Definitional Equality
+
+The proofs are simpler than expected. In `SubringClass`:
+- Addition on subtypes: `⟨g₁, h₁⟩ + ⟨g₂, h₂⟩ = ⟨g₁ + g₂, _⟩` is **definitional**
+- Multiplication on subtypes: `⟨g₁, h₁⟩ * ⟨g₂, h₂⟩ = ⟨g₁ * g₂, _⟩` is **definitional**
+
+This means after `unfold partialResidueMap`:
+- `partialResidueMap_add` becomes `rfl` (the subtype equality is definitional)
+- `partialResidueMap_smul` becomes `rfl` (same reason)
+- `partialResidueMap_zero` uses `map_zero` on the ring homomorphism
+
+#### Reflector Assessment
+| Candidate | Score | Reason |
+|-----------|-------|--------|
+| `partialResidueMap_zero` | 5/5 | Clean `map_zero` application |
+| `partialResidueMap_add` | 5/5 | Definitional equality |
+| `partialResidueMap_smul` | 5/5 | Definitional equality |
+
+#### Current Sorry Count (RR_v2.lean)
+1. Line 337: `ellV2_mono` (DEPRECATED - superseded by `ellV2_real_mono`)
+2. Line 715: `riemann_inequality` (DEPRECATED - superseded by `riemann_inequality_real`)
+3. Line 989: `shifted_element_valuation_le_one` (ACTIVE - WithZero.exp arithmetic)
+4. Line 1029: `evaluationMapAt` (BLOCKER - needs residue field bridge)
+5. Line 1040: `kernel_evaluationMapAt` (BLOCKED - depends on evaluationMapAt)
+6. Line 1049: `instLocalGapBound` (BLOCKED - depends on kernel proof)
+
+**Total**: 6 sorries (2 deprecated, 4 active)
+**Net change from Cycle 27**: -3 sorries (linearity proofs complete)
+
+#### Significance
+- **Partial residue map infrastructure now complete** (8 lemmas total)
+- **Clear path forward**: Next step is complete `shifted_element_valuation_le_one` then residue field bridge
+- **Validation**: SubringClass approach is correct and clean
+
+#### Cycle 29 Plan
+1. Complete `shifted_element_valuation_le_one` using WithZero.exp case analysis
+2. Investigate residue field bridge: `valuationRingAt.residueField v ≃ residueFieldAtPrime R v`
+3. Construct `evaluationMapAt` using partialResidueMap infrastructure
+
+**Cycle rating**: 10/10 - All 3 sorry proofs completed with elegant definitional proofs

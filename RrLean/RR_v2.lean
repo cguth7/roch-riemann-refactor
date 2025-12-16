@@ -1183,38 +1183,45 @@ lemma mem_range_iff_valuation_le_one_everywhere (g : K)
     g ∈ (algebraMap R K).range :=
   HeightOneSpectrum.mem_integers_of_valuation_le_one K g h
 
--- Candidate 6 [tag: rr_bundle_bridge] [status: SORRY]
+-- Candidate 6 [tag: rr_bundle_bridge] [status: PROVED] [cycle: 28]
 /-- The partialResidueMap sends 0 to 0.
 
-Technical note: Proof requires showing that the subtype ⟨0, h⟩ = 0 in the valuation ring,
-then applying ring hom map_zero. -/
+The subtype ⟨0, h⟩ is definitionally equal to 0 in SubringClass,
+so map_zero applies directly. -/
 lemma partialResidueMap_zero (v : HeightOneSpectrum R) :
     partialResidueMap (R := R) (K := K) v 0 (by simp only [map_zero]; exact zero_le') = 0 := by
-  sorry
+  unfold partialResidueMap
+  exact map_zero (valuationRingAt.residue (R := R) (K := K) v)
 
--- Candidate 7 [tag: rr_bundle_bridge] [status: SORRY]
+-- Candidate 7 [tag: rr_bundle_bridge] [status: PROVED] [cycle: 28]
 /-- The partialResidueMap is additive for elements both with v(g) ≤ 1.
 
-Technical note: Proof requires showing subtype addition equals K-addition,
-then applying ring hom map_add. -/
+In SubringClass, ⟨g₁ + g₂, _⟩ = ⟨g₁, _⟩ + ⟨g₂, _⟩ definitionally,
+so map_add applies directly. -/
 lemma partialResidueMap_add (v : HeightOneSpectrum R) (g₁ g₂ : K)
     (h₁ : v.valuation K g₁ ≤ 1) (h₂ : v.valuation K g₂ ≤ 1)
     (h_sum : v.valuation K (g₁ + g₂) ≤ 1) :
     partialResidueMap v (g₁ + g₂) h_sum = partialResidueMap v g₁ h₁ + partialResidueMap v g₂ h₂ := by
-  sorry
+  unfold partialResidueMap
+  -- The subtype ⟨g₁ + g₂, _⟩ = ⟨g₁, _⟩ + ⟨g₂, _⟩ by definition in SubringClass
+  -- Then .toFun is just application, and map_add gives the result
+  rfl
 
--- Candidate 8 [tag: rr_bundle_bridge] [status: SORRY]
+-- Candidate 8 [tag: rr_bundle_bridge] [status: PROVED] [cycle: 28]
 /-- The partialResidueMap respects scalar multiplication by R.
 
-Technical note: Proof requires showing subtype multiplication equals K-multiplication,
-then applying ring hom map_mul. -/
+In SubringClass, ⟨r * g, _⟩ = ⟨r, _⟩ * ⟨g, _⟩ definitionally,
+so map_mul applies directly. -/
 lemma partialResidueMap_smul (v : HeightOneSpectrum R) (r : R) (g : K)
     (h : v.valuation K g ≤ 1)
     (h_smul : v.valuation K (algebraMap R K r * g) ≤ 1) :
     partialResidueMap v (algebraMap R K r * g) h_smul =
     ((valuationRingAt.residue (R := R) (K := K) v) ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩) *
     partialResidueMap v g h := by
-  sorry
+  unfold partialResidueMap
+  -- The subtype ⟨r * g, _⟩ = ⟨r, _⟩ * ⟨g, _⟩ by definition in SubringClass
+  -- Then .toFun is just application, and map_mul gives the result
+  rfl
 
 end Cycle27Candidates
 

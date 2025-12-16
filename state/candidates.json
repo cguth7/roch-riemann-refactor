@@ -1,107 +1,99 @@
 {
-  "active_edge": "Cycle 25: Construct evaluation map and prove LocalGapBound instance",
-  "cycle_24_phase2_results": {
-    "goal": "Uniformizer infrastructure and shifted valuation lemma",
+  "active_edge": "Cycle 29: Complete shifted_element_valuation_le_one and residue field bridge",
+  "cycle_28_results": {
+    "goal": "Fix partialResidueMap linearity proofs",
     "status": "COMPLETE",
-    "proved_count": 7,
-    "sorry_count": 4,
+    "proved_count": 3,
+    "sorry_count": 0,
     "candidates": [
       {
-        "name": "uniformizerAt",
-        "type": "DEFINE",
-        "status": "DEFINED",
-        "score": "5/5",
-        "notes": "Classical.choose from intValuation_exists_uniformizer"
-      },
-      {
-        "name": "uniformizerAt_val",
+        "name": "partialResidueMap_zero",
         "type": "PROVE",
         "status": "PROVED",
         "score": "5/5",
-        "notes": "v.intValuation π = exp(-1)"
+        "notes": "Uses map_zero after unfold partialResidueMap"
       },
       {
-        "name": "uniformizerAt_ne_zero",
+        "name": "partialResidueMap_add",
         "type": "PROVE",
         "status": "PROVED",
         "score": "5/5",
-        "notes": "π ≠ 0 via cases on impossible eq"
+        "notes": "Definitional via rfl - SubringClass addition is componentwise"
       },
       {
-        "name": "uniformizerAt_pow_val",
+        "name": "partialResidueMap_smul",
         "type": "PROVE",
         "status": "PROVED",
         "score": "5/5",
-        "notes": "Uses WithZero.exp_nsmul"
-      },
-      {
-        "name": "uniformizerAt_valuation",
-        "type": "PROVE",
-        "status": "PROVED",
-        "score": "5/5",
-        "notes": "Bridge to K via valuation_of_algebraMap"
-      },
-      {
-        "name": "uniformizerAt_pow_valuation",
-        "type": "PROVE",
-        "status": "PROVED",
-        "score": "5/5",
-        "notes": "Powers extend to K correctly"
-      },
-      {
-        "name": "shifted_element_valuation_le_one",
-        "type": "PROVE",
-        "status": "PROVED",
-        "score": "5/5",
-        "notes": "KEY RESULT - full valuation arithmetic proof"
-      },
-      {
-        "name": "evaluationMapAt_prototype",
-        "type": "DEFINE",
-        "status": "SORRY",
-        "score": "2/5",
-        "notes": "Cycle 25 target - needs localization approach"
-      },
-      {
-        "name": "kernel_evaluationMapAt",
-        "type": "PROVE",
-        "status": "SORRY",
-        "score": "2/5",
-        "notes": "Cycle 25 target - depends on φ construction"
-      },
-      {
-        "name": "instLocalGapBound",
-        "type": "INSTANCE",
-        "status": "SORRY",
-        "score": "3/5",
-        "notes": "Cycle 25 victory condition"
+        "notes": "Definitional via rfl - SubringClass multiplication is componentwise"
       }
-    ]
-  },
-  "cycle_25_plan": {
-    "goal": "Complete LocalGapBound instance",
-    "tasks": [
-      "Construct evaluationMapAt : L(D+v) →ₗ[R] κ(v) using shifted evaluation",
-      "Prove kernel condition: ker(evaluationMapAt) = range(inclusion)",
-      "Apply local_gap_bound_of_exists_map to get LocalGapBound instance",
-      "Victory: riemann_inequality_affine becomes unconditional"
     ],
-    "approach": "Use localization at v.asIdeal - shifted element is in valuation ring, maps to κ(v)",
+    "key_insight": "In SubringClass, subtype operations (addition, multiplication) are definitional equalities. Proofs simplify to rfl after unfolding definitions."
+  },
+  "cycle_29_plan": {
+    "goal": "Complete evaluation map construction",
+    "tasks": [
+      "Fix shifted_element_valuation_le_one using WithZero.exp arithmetic",
+      "Investigate residue field bridge: valuationRingAt.residueField ≃ residueFieldAtPrime",
+      "Construct evaluationMapAt using partialResidueMap infrastructure",
+      "Prove kernel_evaluationMapAt"
+    ],
+    "approach": "Use WithZero.exp case analysis for shifted valuation, then compose partialResidueMap with field bridge",
     "key_lemmas_available": [
-      "shifted_element_valuation_le_one (PROVED)",
-      "local_gap_bound_of_exists_map (PROVED)",
-      "residueFieldAtPrime.isSimpleModule (PROVED)",
-      "residueFieldAtPrime.length_eq_one (PROVED)"
+      "partialResidueMap_zero/add/smul (PROVED)",
+      "withzero_exp_le_exp (simp wrapper)",
+      "withzero_exp_mul_le_one (helper)",
+      "local_gap_bound_of_exists_map (PROVED)"
     ]
   },
   "architecture": {
     "hierarchy": [
-      "LocalGapBound R K          -- TARGET: Cycle 25 (gap ≤ 1 via evaluation map)",
+      "LocalGapBound R K          -- TARGET: needs evaluationMapAt",
       "    ↑ extends",
       "SinglePointBound R K       -- PROJECTIVE (adds ell_zero = 1)",
       "",
       "BaseDim R K                -- SEPARATE (explicit base dimension)"
     ],
     "key_bridge": "local_gap_bound_of_exists_map connects evaluation map to typeclass"
+  },
+  "remaining_sorries": {
+    "active": [
+      {
+        "name": "shifted_element_valuation_le_one",
+        "line": 989,
+        "status": "ACTIVE",
+        "notes": "WithZero.exp arithmetic - proof path clear"
+      },
+      {
+        "name": "evaluationMapAt",
+        "line": 1029,
+        "status": "BLOCKER",
+        "notes": "Needs residue field bridge"
+      },
+      {
+        "name": "kernel_evaluationMapAt",
+        "line": 1040,
+        "status": "BLOCKED",
+        "notes": "Depends on evaluationMapAt"
+      },
+      {
+        "name": "instLocalGapBound",
+        "line": 1049,
+        "status": "BLOCKED",
+        "notes": "Depends on kernel proof"
+      }
+    ],
+    "deprecated": [
+      {
+        "name": "ellV2_mono",
+        "line": 337,
+        "notes": "Superseded by ellV2_real_mono"
+      },
+      {
+        "name": "riemann_inequality",
+        "line": 715,
+        "notes": "Superseded by riemann_inequality_real"
+      }
+    ]
   }
 }
