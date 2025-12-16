@@ -89,52 +89,6 @@ valuation ring modulo maximalIdeal.
 
 ---
 
-## Cycle 32 Tactical Guide
-
-### Task 1: Prove `exists_same_residue_class` (Priority: CRITICAL)
-
-**Location**: Line 1496 in RR_v2.lean
-
-**Goal**: Show R is "dense" in valuationRingAt v modulo maximalIdeal
-
-**Proof Strategy**:
-```lean
-lemma exists_same_residue_class (v : HeightOneSpectrum R)
-    (g : valuationRingAt v) :
-    ∃ r : R, (embeddingToValuationRingAt v r) - g ∈ maximalIdeal (valuationRingAt v)
-```
-
-**Approach A: Use IsFractionRing.div_surjective**
-1. Write g.val = a/b for a, b ∈ R (via `IsFractionRing.div_surjective`)
-2. Since v(g) ≤ 1, we have v(a)/v(b) ≤ 1
-3. **Case b ∉ v.asIdeal**: v(b) = 1, so v(a) ≤ 1 (always true for a ∈ R)
-   - Take r = a
-   - Need: v(a - g·b) < 1, i.e., v(a - a) = 0 ... this doesn't work directly
-4. **Case b ∈ v.asIdeal**: v(b) < 1, so need different approach
-
-**Approach B: Use Localization.AtPrime structure**
-- Localization.AtPrime v.asIdeal consists of r/s for r ∈ R, s ∉ v.asIdeal
-- For such elements, v(r/s) = v(r) (since v(s) = 1)
-- If v(g) ≤ 1, can we express g as r/s with s ∉ v.asIdeal?
-- This is essentially `valuationRingAt_eq_fractions`
-
-**Approach C: Use DVR equivalence**
-- `Localization.AtPrime v.asIdeal ≃+* valuationRingAt v` (via IsDiscreteValuationRing.equivValuationSubring)
-- The residue field of Localization.AtPrime is R/v.asIdeal
-- Bijective_algebraMap_quotient_residueField gives surjectivity for the localization
-- Transport via the equivalence
-
-**Decision Point**: Try Approach C first (uses existing mathlib results).
-
-### Fallback: Alternative formulation
-
-If `exists_same_residue_class` proves too hard, consider:
-1. Prove `valuationRingAt_eq_fractions` first (every element is r/s with s ∉ v.asIdeal)
-2. Then for g = r/s, take r as the approximation
-3. Show algebraMap(r) - g = algebraMap(r) - r/s = r(s-1)/s lies in maximalIdeal
-
----
-
 ## Cycle 30 Accomplishments
 
 **Goal**: Construct residueFieldBridge via bypass strategy
@@ -191,26 +145,31 @@ modulo the maximal ideal. This is a real mathematical property of Dedekind domai
 
 ---
 
-## Active Edge: Residue Field Bridge
+## Active Edge: Density Lemma (Cycle 31→32)
 
-**Goal**: Construct `evaluationMapAt : L(D+v) →ₗ[R] κ(v)`
+**Goal**: Prove `exists_same_residue_class` to unlock the residue field bridge
 
-**Current Strategy** (Cycle 26):
-1. For f ∈ L(D+v), compute g = f · π^{D(v)+1}
-2. Show v(g) ≤ 1 → g ∈ `valuationRingAt v` (LOCAL condition)
-3. Apply `valuationRingAt.residue` to get element in `valuationRingAt.residueField v`
-4. **GAP**: Bridge to `residueFieldAtPrime R v` (our target κ(v))
+**Current State** (after Cycle 31):
+```
+R ──residueMapFromR──▶ valuationRingAt.residueField v
+        │                          ≃ (once surjective)
+        ▼                          ▼
+   R/v.asIdeal ◀────────────── residueFieldAtPrime R v
+```
 
-**Why Valuation Ring Approach Works**:
-- Shifted element may have poles at OTHER primes (so g ∉ R in general)
-- But g has valuation ≤ 1 at v specifically (local condition)
-- Valuation ring is LOCAL - only cares about single prime v
-- Can apply residue map locally without global integrality
+**What We Have**:
+- ✅ `residueMapFromR_ker = v.asIdeal` (Cycle 30)
+- ✅ Conditional bridges: `residueFieldBridge_v2_of_surj`, `residueFieldBridge_v3_of_surj` (Cycle 31)
+- ✅ Helper lemmas: `valuation_eq_one_of_not_mem`, `valuation_div_eq_of_unit` (Cycle 31)
 
-**Gap to Close**:
-- `valuationRingAt.residueField v` ≠ `residueFieldAtPrime R v` definitionally
-- Need isomorphism or proof they're equivalent for Dedekind domains
-- Both are "residue field at v" but constructed differently
+**What We Need**:
+- ❌ `exists_same_residue_class`: ∀ g ∈ valuationRingAt, ∃ r ∈ R, embedding(r) ≡ g (mod maxIdeal)
+
+**Why This Unlocks Everything**:
+1. `exists_same_residue_class` → `residueMapFromR_surjective`
+2. surjective + ker = v.asIdeal → First Isomorphism Theorem applies
+3. bridges become unconditional → `evaluationMapAt` can be constructed
+4. kernel proof → `LocalGapBound` instance → victory
 
 ---
 
@@ -259,135 +218,13 @@ modulo the maximal ideal. This is a real mathematical property of Dedekind domai
 
 - [ ] `instance : LocalGapBound R K` (makes riemann_inequality_affine unconditional)
 
-This requires:
-1. Fix `shifted_element_valuation_le_one` (use WithZero.exp helpers)
-2. Construct `evaluationMapAt` (bridge residue fields)
-3. Prove `kernel_evaluationMapAt`
-4. Apply `local_gap_bound_of_exists_map`
-
----
-
-## Cycle 30 Tactical Guide
-
-### Task 1: Construct `residueFieldBridge` (Priority: HIGH, Risk: MEDIUM)
-
-**Location**: Line 1315 in RR_v2.lean
-
-**Goal**: Prove `valuationRingAt.residueField v ≃+* residueFieldAtPrime R v`
-
-**Path A: Use DVR isomorphism (RECOMMENDED)**
-```
-For Dedekind domains at height-1 prime v:
-1. Localization.AtPrime v.asIdeal is a DVR (already known)
-2. DVRs have unique valuation → valuation ring = ring itself
-3. IsDiscreteValuationRing.equivValuationSubring gives: DVR A ≃+* valuationSubring
-4. Compose: Localization.AtPrime ≃ valuationRingAt v
-5. Residue fields are functorial → residueFieldAtPrime ≃ valuationRingAt.residueField
-```
-
-**Key Mathlib Lemma** (discovered Cycle 29):
-```
-IsDiscreteValuationRing.equivValuationSubring :
-    A ≃+* ((maximalIdeal A).valuation K).valuationSubring
-```
-Located in: `Mathlib/RingTheory/Valuation/Discrete/Basic.lean:503`
-
-**Path B: Direct construction via quotient isomorphism**
-Both residue fields are quotients of local rings by their maximal ideals:
-- `residueFieldAtPrime R v` = R / v.asIdeal
-- `valuationRingAt.residueField v` = valuationRingAt / maxIdeal
-
-Show the maximal ideals correspond under the embedding.
-
-**Path C (Fallback): Bypass bridge entirely**
-If bridge is too hard, redefine target to use `valuationRingAt.residueField` directly:
-1. Define `evaluationMapAt' : L(D+v) →ₗ[R] valuationRingAt.residueField v`
-2. Prove `Module.length R (valuationRingAt.residueField v) = 1` (DVR residue field is simple)
-3. Use `local_gap_bound_of_exists_map` variant targeting `valuationRingAt.residueField`
-
-**Decision Point**: If Path A takes >45 min, switch to Path C.
-
----
-
-### Task 2: Residue Field Bridge (COMPLETED in Cycle 29)
-
-**The Problem**:
-- We have `valuationRingAt.residueField v` (from ValuationSubring)
-- We need `residueFieldAtPrime R v` (= `v.asIdeal.ResidueField`)
-- `local_gap_bound_of_exists_map` expects the latter
-
-**Investigation Paths** (try in order):
-
-**Path A: Find existing isomorphism in mathlib**
-```
-Search queries:
-- "ValuationSubring.*residue.*Localization"
-- "equivValuationSubring" (in RingTheory/Valuation/Discrete/Basic.lean)
-- "IsDiscreteValuationRing.*residue"
-```
-
-For Dedekind domains at height-1 primes:
-- `Localization.AtPrime v.asIdeal` is a DVR
-- DVRs have unique valuation → their valuation ring = themselves
-- So `valuationRingAt v ≃ Localization.AtPrime v.asIdeal`?
-
-**Path B: Reformulate target to use valuationRingAt.residueField**
-If the bridge is hard, consider:
-1. Redefine `residueFieldAtPrime` as `valuationRingAt.residueField`
-2. OR prove `residueFieldAtPrime.isSimpleModule` for `valuationRingAt.residueField` directly
-3. This avoids the bridge entirely
-
-**Path C: Direct construction**
-Build `evaluationMapAt` targeting `valuationRingAt.residueField v`:
-```lean
-def evaluationMapAt' (v : HeightOneSpectrum R) (D : DivisorV2 R) :
-    RRModuleV2_real R K (D + DivisorV2.single v 1) →ₗ[R]
-    valuationRingAt.residueField (R := R) (K := K) v := ...
-```
-Then prove `valuationRingAt.residueField` has length 1 (it should, as residue field of a DVR).
-
-**Decision Point**: If Path A takes >30 min of searching, switch to Path B or C.
-
----
-
-### Task 3: evaluationMapAt Construction (after Task 2 resolved)
-
-**Once residue field target is decided**, the construction is:
-```lean
-def evaluationMapAt v D : L(D+v) →ₗ[R] target_residue_field := {
-  toFun := fun ⟨f, hf⟩ =>
-    let g := f * algebraMap R K (uniformizerAt v ^ (D v + 1).toNat)
-    let hg : v.valuation K g ≤ 1 := shifted_element_valuation_le_one v D f hf
-    partialResidueMap v g hg  -- or composed with bridge
-  map_add' := ... -- use partialResidueMap_add
-  map_smul' := ... -- use partialResidueMap_smul
-}
-```
-
-**Key Challenge**: The linearity proofs need to show that shifting by π^n is compatible with addition/scalar multiplication. This should follow from:
-- `algebraMap` is a ring homomorphism
-- Multiplication distributes
-
----
-
-### Fallback Strategy
-
-If both residue field approaches prove difficult:
-
-**Option: Axiomatize the evaluation map temporarily**
-Add to a new typeclass `HasEvaluationMap R K`:
-```lean
-class HasEvaluationMap ... where
-  evaluationMapAt : ∀ v D, L(D+v) →ₗ[R] residueFieldAtPrime R v
-  kernel_condition : ∀ v D, ker (evaluationMapAt v D) = range (inclusion ...)
-```
-
-This would let us:
-1. Complete `instLocalGapBound` conditionally
-2. Make `riemann_inequality_affine` work with `[HasEvaluationMap R K]`
-3. Defer the construction to a future cycle
-
-**Risk**: Adds another assumption layer. Use only if stuck >2 cycles.
+**Current Path** (after Cycle 31):
+1. ~~Fix `shifted_element_valuation_le_one`~~ ✅ DONE (Cycle 29)
+2. ~~ker(residueMapFromR) = v.asIdeal~~ ✅ DONE (Cycle 30)
+3. ~~Conditional bridges ready~~ ✅ DONE (Cycle 31)
+4. **BLOCKER**: Prove `exists_same_residue_class` (density lemma)
+5. Then `residueMapFromR_surjective` follows
+6. Then bridges become unconditional → evaluationMapAt → kernel → LocalGapBound
 
 ---
 
@@ -412,6 +249,9 @@ This would let us:
 | 26 | **Valuation ring infrastructure** (5 lemmas, gap narrowed) |
 | 27 | **Partial residue map** (5 OK, 3 SORRY), linearity proofs pending |
 | 28 | **Linearity proofs COMPLETE** (3 PROVED via rfl) |
+| 29 | **shifted_element_valuation_le_one_v2 PROVED** (key blocker resolved) |
+| 30 | **Bypass strategy**: ker(residueMapFromR) = v.asIdeal PROVED |
+| 31 | **Conditional bridges**: First Isom Thm approach ready, density lemma blocking |
 
 ---
 
@@ -420,3 +260,49 @@ This would let us:
 - mathlib: `RingTheory.Length` (Module.length_eq_add_of_exact)
 - mathlib: `Ideal.ResidueField` for κ(v)
 - mathlib: `ValuationSubring` for valuation ring
+
+---
+
+## Cycle 32 Tactical Guide
+
+### Task 1: Prove `exists_same_residue_class` (Priority: CRITICAL)
+
+**Location**: Line 1496 in RR_v2.lean
+
+**Goal**: Show R is "dense" in valuationRingAt v modulo maximalIdeal
+
+**Proof Strategy**:
+```lean
+lemma exists_same_residue_class (v : HeightOneSpectrum R)
+    (g : valuationRingAt v) :
+    ∃ r : R, (embeddingToValuationRingAt v r) - g ∈ maximalIdeal (valuationRingAt v)
+```
+
+**Approach A: Use IsFractionRing.div_surjective**
+1. Write g.val = a/b for a, b ∈ R (via `IsFractionRing.div_surjective`)
+2. Since v(g) ≤ 1, we have v(a)/v(b) ≤ 1
+3. **Case b ∉ v.asIdeal**: v(b) = 1, so v(a) ≤ 1 (always true for a ∈ R)
+   - Take r = a
+   - Need: v(a - g·b) < 1, i.e., v(a - a) = 0 ... this doesn't work directly
+4. **Case b ∈ v.asIdeal**: v(b) < 1, so need different approach
+
+**Approach B: Use Localization.AtPrime structure**
+- Localization.AtPrime v.asIdeal consists of r/s for r ∈ R, s ∉ v.asIdeal
+- For such elements, v(r/s) = v(r) (since v(s) = 1)
+- If v(g) ≤ 1, can we express g as r/s with s ∉ v.asIdeal?
+- This is essentially `valuationRingAt_eq_fractions`
+
+**Approach C: Use DVR equivalence**
+- `Localization.AtPrime v.asIdeal ≃+* valuationRingAt v` (via IsDiscreteValuationRing.equivValuationSubring)
+- The residue field of Localization.AtPrime is R/v.asIdeal
+- Bijective_algebraMap_quotient_residueField gives surjectivity for the localization
+- Transport via the equivalence
+
+**Decision Point**: Try Approach C first (uses existing mathlib results).
+
+### Fallback: Alternative formulation
+
+If `exists_same_residue_class` proves too hard, consider:
+1. Prove `valuationRingAt_eq_fractions` first (every element is r/s with s ∉ v.asIdeal)
+2. Then for g = r/s, take r as the approximation
+3. Show algebraMap(r) - g = algebraMap(r) - r/s = r(s-1)/s lies in maximalIdeal
