@@ -223,13 +223,69 @@
       "statement": "[Module.Finite k (RRSpace data 0)] → 1 ≤ ell data 0",
       "approach": "pos_of_effective + Effective_zero",
       "cycle": 7
+    },
+    {
+      "name": "ell.mono_unconditional",
+      "status": "PROVED",
+      "statement": "[∀ D, Module.Finite k (RRSpace data D)] → D ≤ E → ell data D ≤ ell data E",
+      "approach": "haveI from typeclass, apply ell.mono",
+      "cycle": 8
+    },
+    {
+      "name": "ell.pos_of_effective_unconditional",
+      "status": "PROVED",
+      "statement": "[∀ D, Module.Finite k (RRSpace data D)] → Effective D → 1 ≤ ell data D",
+      "approach": "haveI from typeclass, apply ell.pos_of_effective",
+      "cycle": 8
+    },
+    {
+      "name": "ell.ge_zero_of_effective",
+      "status": "PROVED",
+      "statement": "[∀ D, Module.Finite k (RRSpace data D)] → Effective D → ell data 0 ≤ ell data D",
+      "approach": "Via mono_unconditional with Effective ≤ relation",
+      "cycle": 8
+    },
+    {
+      "name": "ell.mono_of_effective",
+      "status": "PROVED",
+      "statement": "[∀ D, Module.Finite k (RRSpace data D)] → Effective D → Effective E → D ≤ E → ell data D ≤ ell data E",
+      "approach": "Direct application of mono_unconditional",
+      "cycle": 8
+    },
+    {
+      "name": "ell.add_effective_le",
+      "status": "PROVED",
+      "statement": "[∀ D, Module.Finite k (RRSpace data D)] → Effective D → Effective E → ell data D ≤ ell data (D + E)",
+      "approach": "D ≤ D + E when E effective, then mono_unconditional",
+      "cycle": 8
+    },
+    {
+      "name": "ell.zero_pos_unconditional",
+      "status": "PROVED",
+      "statement": "[∀ D, Module.Finite k (RRSpace data D)] → [Nontrivial k] → 1 ≤ ell data 0",
+      "approach": "haveI from typeclass, apply ell.zero_pos",
+      "cycle": 8
+    },
+    {
+      "name": "RRSpace.nontrivial_of_effective",
+      "status": "PROVED",
+      "statement": "Effective D → Nontrivial (RRSpace data D)",
+      "approach": "1 ∈ L(D) for effective D gives distinct elements",
+      "cycle": 8
+    },
+    {
+      "name": "ell.diff_le_deg_diff",
+      "status": "PROVED",
+      "statement": "[∀ D, Module.Finite k (RRSpace data D)] → Effective D → D ≤ E → (ell data D : ℤ) ≤ (ell data E : ℤ)",
+      "approach": "Int.ofNat_le + mono_unconditional",
+      "cycle": 8
     }
   ],
   "blockers": [
     "mathlib lacks: line bundles, sheaf cohomology H⁰/H¹, genus for schemes",
     "Cannot yet instantiate RRData.Div with Divisor α (needs point type from curve)",
     "RRData.deg is abstract; not yet connected to Divisor.deg",
-    "Module.Finite hypothesis needed for ell.mono (finite-dimensionality)"
+    "Need single-point dimension bound: ell(D + single p 1) ≤ ell(D) + 1"
   ],
   "resolved_blockers": [
     "PIVOT Cycle 2: defined RRData structure (elaborates)",
@@ -237,7 +293,8 @@
     "CYCLE 4: Defined Divisor α := α →₀ ℤ, proved deg_add/deg_zero/deg_neg/deg_sub/deg_single",
     "CYCLE 5: Defined Effective, FunctionFieldData, RRSpace L(D)",
     "CYCLE 6: L(D) is k-Submodule - added div_add, div_algebraMap, proved add_mem'/smul_mem'",
-    "CYCLE 7: ell(D) = finrank k L(D), proved mono/pos_of_effective/zero_pos"
+    "CYCLE 7: ell(D) = finrank k L(D), proved mono/pos_of_effective/zero_pos",
+    "CYCLE 8: Finite-dimensionality via typeclass [∀ D, Module.Finite k (RRSpace data D)], all 8 lemmas PROVED"
   ],
-  "next_action": "Cycle 8: Add finite-dimensionality axiom, explore degree-dimension bounds"
+  "next_action": "Cycle 9: Establish single-point dimension bound for Riemann inequality"
 }

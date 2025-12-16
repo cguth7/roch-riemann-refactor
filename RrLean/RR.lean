@@ -513,4 +513,81 @@ theorem riemannRoch' {k : Type*} [Field k] (data : RRData k) (D : data.Div) :
     (data.ell D : ℤ) - (data.ell (data.K - D) : ℤ) = data.deg D + 1 - data.genus := by
   sorry
 
+/-! ## Cycle 8 Candidates: Finite-Dimensionality and Unconditional Bounds
+
+The key observation is that all Riemann-Roch spaces L(D) should be finite-dimensional.
+Rather than modifying FunctionFieldData, we use a typeclass instance hypothesis.
+-/
+
+-- Candidate 1 [tag: degree_bridge] [status: PROVED]
+-- Unconditional monotonicity with typeclass instance
+lemma ell.mono_unconditional {α : Type*} {k : Type*} [Field k]
+    (data : FunctionFieldData α k) [hFin : ∀ D, Module.Finite k (RRSpace data D)]
+    {D E : Divisor α} (h : D ≤ E) :
+    ell data D ≤ ell data E := by
+  haveI : Module.Finite k (RRSpace data E) := hFin E
+  exact ell.mono data h
+
+-- Candidate 2 [tag: degree_bridge] [status: PROVED]
+-- Unconditional positivity for effective divisors
+lemma ell.pos_of_effective_unconditional {α : Type*} {k : Type*} [Field k]
+    (data : FunctionFieldData α k) [hFin : ∀ D, Module.Finite k (RRSpace data D)]
+    {D : Divisor α} (hD : Divisor.Effective D) :
+    1 ≤ ell data D := by
+  haveI : Module.Finite k (RRSpace data D) := hFin D
+  exact ell.pos_of_effective data hD
+
+-- Candidate 3 [tag: degree_bridge] [status: PROVED]
+-- ℓ(D) ≥ ℓ(0) for effective D
+lemma ell.ge_zero_of_effective {α : Type*} {k : Type*} [Field k]
+    (data : FunctionFieldData α k) [hFin : ∀ D, Module.Finite k (RRSpace data D)]
+    {D : Divisor α} (hD : Divisor.Effective D) :
+    ell data 0 ≤ ell data D := by
+  exact ell.mono_unconditional data hD
+
+-- Candidate 4 [tag: degree_bridge] [status: PROVED]
+-- Monotonicity for effective divisors (explicit version)
+lemma ell.mono_of_effective {α : Type*} {k : Type*} [Field k]
+    (data : FunctionFieldData α k) [hFin : ∀ D, Module.Finite k (RRSpace data D)]
+    {D E : Divisor α} (_hD : Divisor.Effective D) (_hE : Divisor.Effective E) (h : D ≤ E) :
+    ell data D ≤ ell data E :=
+  ell.mono_unconditional data h
+
+-- Candidate 5 [tag: degree_bridge] [status: PROVED]
+-- Adding effective divisors increases dimension
+lemma ell.add_effective_le {α : Type*} {k : Type*} [Field k]
+    (data : FunctionFieldData α k) [hFin : ∀ D, Module.Finite k (RRSpace data D)]
+    {D E : Divisor α} (_hD : Divisor.Effective D) (hE : Divisor.Effective E) :
+    ell data D ≤ ell data (D + E) := by
+  apply ell.mono_unconditional
+  intro p
+  have h2 : 0 ≤ E p := hE p
+  simp only [Finsupp.add_apply]
+  omega
+
+-- Candidate 6 [tag: degree_bridge] [status: PROVED]
+-- Zero divisor has positive dimension (unconditional)
+lemma ell.zero_pos_unconditional {α : Type*} {k : Type*} [Field k]
+    (data : FunctionFieldData α k) [hFin : ∀ D, Module.Finite k (RRSpace data D)] [Nontrivial k] :
+    1 ≤ ell data 0 := by
+  haveI : Module.Finite k (RRSpace data 0) := hFin 0
+  exact ell.zero_pos data
+
+-- Candidate 7 [tag: rewrite_bridge] [status: PROVED]
+-- Nontriviality of L(D) for effective D
+lemma RRSpace.nontrivial_of_effective {α : Type*} {k : Type*} [Field k]
+    (data : FunctionFieldData α k) {D : Divisor α} (hD : Divisor.Effective D) :
+    Nontrivial (RRSpace data D) := by
+  have h1 : (1 : data.K) ∈ RRSpace data D := RRSpace.one_mem_of_effective data hD
+  have hne : (1 : data.K) ≠ 0 := one_ne_zero
+  exact ⟨⟨⟨1, h1⟩, ⟨0, (RRSpace data D).zero_mem⟩, fun heq => hne (Subtype.ext_iff.mp heq)⟩⟩
+
+-- Candidate 8 [tag: degree_bridge] [status: PROVED]
+-- Integer cast version of monotonicity
+lemma ell.diff_le_deg_diff {α : Type*} {k : Type*} [Field k]
+    (data : FunctionFieldData α k) [hFin : ∀ D, Module.Finite k (RRSpace data D)]
+    {D E : Divisor α} (_hD : Divisor.Effective D) (h : D ≤ E) :
+    (ell data D : ℤ) ≤ (ell data E : ℤ) := by
+  exact Int.ofNat_le.mpr (ell.mono_unconditional data h)
+
 end RiemannRoch

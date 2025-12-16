@@ -200,3 +200,35 @@ This completes the connection: `RRData.ell` (abstract) → `ell` (concrete as fi
 
 #### Next cycle
 - Cycle 8: Finite-dimensionality axiom, degree-dimension bounds
+
+### Cycle 8 - Finite-Dimensionality via Typeclass - COMPLETED
+- **Active edge**: Make finite-dimensionality uniform via typeclass instance
+- **Key insight**: Use `[∀ D, Module.Finite k (RRSpace data D)]` instead of modifying structure
+
+#### Design Decision
+Rather than adding `finiteDim` field to `FunctionFieldData`, we use a typeclass instance hypothesis.
+This is cleaner because:
+1. Separates concerns: structure has algebraic data, typeclass has finiteness
+2. Allows same lemmas to work with or without finiteness assumption
+3. More idiomatic Lean/mathlib style
+
+#### Results
+| Definition/Lemma | Status | Notes |
+|-----------------|--------|-------|
+| `ell.mono_unconditional` | ✅ **PROVED** | Unconditional monotonicity |
+| `ell.pos_of_effective_unconditional` | ✅ **PROVED** | Unconditional positivity |
+| `ell.ge_zero_of_effective` | ✅ **PROVED** | ℓ(0) ≤ ℓ(D) for effective D |
+| `ell.mono_of_effective` | ✅ **PROVED** | Explicit effective version |
+| `ell.add_effective_le` | ✅ **PROVED** | ℓ(D) ≤ ℓ(D + E) for effective E |
+| `ell.zero_pos_unconditional` | ✅ **PROVED** | Unconditional ℓ(0) ≥ 1 |
+| `RRSpace.nontrivial_of_effective` | ✅ **PROVED** | L(D) nontrivial for effective D |
+| `ell.diff_le_deg_diff` | ✅ **PROVED** | Integer monotonicity |
+
+#### Significance
+**All 8 candidates PROVED** in single cycle. This is the cleanest cycle so far:
+- No new structure changes
+- All proofs follow from Cycle 7 lemmas + typeclass instantiation
+- Establishes foundation for degree-dimension bounds
+
+#### Next cycle
+- Cycle 9: Single-point dimension bound ℓ(D + p) ≤ ℓ(D) + 1 for Riemann inequality

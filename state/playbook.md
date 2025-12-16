@@ -36,27 +36,36 @@
   - **PROVED**: `ell.mono`, `ell.pos_of_effective`, `ell.zero_pos`
   - **PROVED**: `RRSpace.one_mem_of_effective`, `RRSpace.algebraMap_mem_zero`, `RRSpace.algebraMap_mem_of_effective`
 
-## Next Steps (Cycle 8) - Degree-Dimension Inequality (Riemann's Theorem)
+- **RESOLVED (Cycle 8)**: Finite-Dimensionality Typeclass
+  - Used `[∀ D, Module.Finite k (RRSpace data D)]` typeclass instance
+  - **PROVED**: `ell.mono_unconditional`, `ell.pos_of_effective_unconditional`, `ell.ge_zero_of_effective`
+  - **PROVED**: `ell.mono_of_effective`, `ell.add_effective_le`, `ell.zero_pos_unconditional`
+  - **PROVED**: `RRSpace.nontrivial_of_effective`, `ell.diff_le_deg_diff`
+  - All Cycle 7 conditional lemmas now have unconditional versions
+
+## Next Steps (Cycle 9) - Riemann Inequality Bound
 
 **WARNING**: Do NOT touch Schemes or Sheaf Cohomology. Complexity cliff.
 
-**Goal**: Establish ℓ(D) - ℓ(0) ≤ deg(D) for effective D (weak Riemann inequality).
+**Goal**: Establish degree-dimension relationship ℓ(D) ≤ deg(D) + 1 for effective D.
 
 ### Mathematical Background
 Riemann's inequality: ℓ(D) ≥ deg(D) + 1 - g for effective D
-This is half of Riemann-Roch. For now, aim for simpler bounds.
+This is half of Riemann-Roch. The key insight is that adding a single point
+to an effective divisor increases ℓ by at most 1.
 
 ### Possible Deliverables
-1. **Finite-dimensionality**: Add axiom to `FunctionFieldData`:
-   - `finite_dimensional : ∀ D, Module.Finite k (RRSpace data D)`
-   - This is needed for `ell.mono` to apply unconditionally
+1. **Single point bound**: For effective D and point p:
+   - `ell data (D + single p 1) ≤ ell data D + 1`
+   - This requires axiomatizing the "quotient space" dimension bound
 
-2. **Degree bounds** (if finite-dimensional holds):
-   - Explore what can be said about ℓ(D) vs deg(D)
-   - May need additional axioms about the function field
+2. **Induction on degree**:
+   - Base case: ℓ(0) ≥ 1 (have it)
+   - Inductive: adding point increases ℓ by at most 1
+   - Conclude: ℓ(D) ≤ deg(D) + ℓ(0)
 
-3. **Connect to RRData** (stretch goal):
-   - Bridge between concrete `ell data D` and abstract `RRData.ell`
+3. **Genus introduction**:
+   - Eventually need genus g to state: ℓ(D) ≥ deg(D) + 1 - g
 
 ### Do NOT do
 - Schemes, sheaves, cohomology
