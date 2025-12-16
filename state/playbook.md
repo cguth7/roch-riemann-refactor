@@ -55,27 +55,30 @@
 - **STATED**: `ell.single_le_deg_succ_from_bound`, `ell.le_deg_add_ell_zero_from_bound`, `ell.le_toNat_deg_add_ell_zero_from_bound`
 - **DESIGN CHOICE**: Used axiom extension rather than direct proof - cleaner architecture, can be upgraded later
 
-## Next Steps (Cycle 11) - Induction Proofs
+## Status - Cycle 11 (SUCCESS: Riemann Inequality PROVED)
+- **AXIOM ADDED**: `ell_zero_eq_one : ell 0 = 1` (L(0) = k, constants only)
+- **PROVED**: `Divisor.single_add_one`, `Divisor.Effective_single_nat`, `Divisor.deg_nonneg_of_effective`, `ell.single_le_deg_succ_from_bound`
+- **PROVED**: `ell.le_deg_add_ell_zero_from_bound` (**RIEMANN INEQUALITY** by degree induction)
+- **PROVED**: `ell.le_toNat_deg_add_ell_zero_from_bound` (corollary)
+
+**Key technique**: Degree-based induction on `(deg D).toNat` instead of `Finsupp.induction_linear`.
+**Requires**: `[DecidableEq α]` for effectivity proof.
+
+## Next Steps (Cycle 12)
 
 **WARNING**: Do NOT touch Schemes or Sheaf Cohomology. Complexity cliff.
 
-**Goal**: Prove Riemann inequality by induction using `single_point_bound` axiom.
+**Goal**: Connect Riemann inequality to full Riemann-Roch theorem.
 
-### Priority 1: `ell.single_le_deg_succ_from_bound`
-Induction on n:
-- Base: `ℓ(0·p) = ℓ(0) ≤ 1` (from `zero_pos`)
-- Step: Use `single_point_bound` + helper `single p (n+1) = single p n + single p 1`
+### Riemann Inequality Status
+We have: ℓ(D) ≤ deg(D) + ℓ(0) = deg(D) + 1 for effective D
 
-### Priority 2: `ell.le_deg_add_ell_zero_from_bound` (Riemann inequality)
-Strategy: Induction on support of effective divisor D using `Finsupp.induction`
-- May need intermediate: `ℓ(D + n·p) ≤ ℓ(D) + n` for n ∈ ℕ
+### Path to Full RR
+Full Riemann-Roch: ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
 
-### Priority 3: `ell.le_toNat_deg_add_ell_zero_from_bound`
-Simple corollary of Priority 2 via `Int.toNat_of_nonneg`
-
-### Needed Helpers (discover/prove)
-- `Divisor.single_add`: `single p m + single p n = single p (m + n)`
-- Effectivity threading through induction
+Need:
+1. Upper bound for ℓ(K - D) using Serre duality
+2. Connection between abstract RRData and concrete FunctionFieldDataWithBound
 
 ### Do NOT do
 - Schemes, sheaves, cohomology

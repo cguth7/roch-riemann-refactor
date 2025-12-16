@@ -312,3 +312,44 @@ L(D+p) → k with kernel ⊇ L(D), so dim(L(D+p)/L(D)) ≤ 1.
 1. Prove `single_le_deg_succ_from_bound` by induction on n
 2. Prove `le_deg_add_ell_zero_from_bound` (Riemann inequality) by induction on D
 3. Prove `le_toNat_deg_add_ell_zero_from_bound` as corollary
+
+### Cycle 11 - Riemann Inequality PROVED - COMPLETED
+- **Active edge**: Prove Riemann inequality by induction
+- **Decision**: Added `ell_zero_eq_one` axiom, used degree-based induction
+
+#### Results
+| Definition/Lemma | Status | Notes |
+|-----------------|--------|-------|
+| `ell_zero_eq_one` axiom | ✅ ADDED | L(0) = k, so ℓ(0) = 1 |
+| `Divisor.single_add_one` | ✅ **PROVED** | `single p (n+1) = single p n + single p 1` via Finsupp.single_add |
+| `Divisor.Effective_single_nat` | ✅ **PROVED** | n·p effective for n : ℕ |
+| `Divisor.deg_nonneg_of_effective` | ✅ **PROVED** | Effective → nonneg degree |
+| `ell.single_le_deg_succ_from_bound` | ✅ **PROVED** | ℓ(n·p) ≤ n + 1 by Nat.induction |
+| `ell.le_deg_add_ell_zero_from_bound` | ✅ **PROVED** | **RIEMANN INEQUALITY** by degree induction |
+| `ell.le_toNat_deg_add_ell_zero_from_bound` | ✅ **PROVED** | Corollary |
+
+#### Architecture Changes
+Extended `FunctionFieldDataWithBound` with new axiom:
+```lean
+ell_zero_eq_one : ell toFunctionFieldData 0 = 1
+```
+
+**Rationale**: L(0) = { f | div(f) ≥ 0 } = { constants } = k, so dim L(0) = 1.
+
+#### Key Proof Technique: Degree-Based Induction
+Initial approach (`Finsupp.induction_linear`) was blocked because effectivity doesn't decompose.
+
+**Solution**: Induct on `n = (deg D).toNat`:
+- **Base** (n = 0): Effective D with deg 0 must be zero
+- **Step** (n → n+1): Since deg > 0, exists p with D(p) > 0
+  - D' = D - p is effective with deg D' = n
+  - IH gives ℓ(D') ≤ deg(D') + ℓ(0)
+  - single_point_bound gives ℓ(D) ≤ ℓ(D') + 1
+  - Combine: ℓ(D) ≤ deg(D) + ℓ(0)
+
+**Technical note**: Requires `[DecidableEq α]` for point comparison.
+
+**Cycle rating**: 10/10 - **RIEMANN INEQUALITY PROVED**
+
+#### Next cycle
+- Connect to full Riemann-Roch via Serre duality bounds

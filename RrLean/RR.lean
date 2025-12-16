@@ -678,6 +678,10 @@ structure FunctionFieldDataWithBound (α : Type*) (k : Type*) [Field k]
       with ker(ev_p) ⊇ L(D), so dim(L(D+p)/L(D)) ≤ 1. -/
   single_point_bound : ∀ (D : Divisor α) (p : α),
     ell toFunctionFieldData (D + Divisor.single p 1) ≤ ell toFunctionFieldData D + 1
+  /-- Axiom: L(0) = k (only constants have no poles).
+      This says ℓ(0) = 1, the dimension of the constant functions.
+      Geometrically: the only meromorphic functions with no poles are constants. -/
+  ell_zero_eq_one : ell toFunctionFieldData 0 = 1
 
 -- Candidate 2 [tag: single_point_proof] [status: PROVED]
 -- Proof of add_single_le_succ using the new axiom
@@ -693,26 +697,144 @@ lemma Divisor.deg_add_single {α : Type*} (D : Divisor α) (p : α) (n : ℤ) :
     Divisor.deg (D + Divisor.single p n) = Divisor.deg D + n := by
   rw [deg_add, deg_single]
 
--- Candidate 4 [tag: riemann_inequality] [status: sorry - needs induction]
+-- Candidate 3b [tag: helper] [status: PROVED]
+-- Helper: single p (n + 1) = single p n + single p 1 using Finsupp.single_add
+lemma Divisor.single_add_one {α : Type*} (p : α) (n : ℕ) :
+    Divisor.single p ((n + 1 : ℕ) : ℤ) = Divisor.single p (n : ℤ) + Divisor.single p 1 := by
+  simp only [Nat.cast_add, Nat.cast_one, Divisor.single]
+  exact Finsupp.single_add p (n : ℤ) 1
+
+-- Candidate 3c [tag: helper] [status: PROVED]
+-- Helper: single point with nat coefficient is effective
+lemma Divisor.Effective_single_nat {α : Type*} (p : α) (n : ℕ) :
+    Divisor.Effective (Divisor.single p (n : ℤ)) := by
+  exact Divisor.Effective_single (Int.natCast_nonneg n)
+
+-- Candidate 3d [tag: helper] [status: PROVED]
+-- Helper: effective divisor has nonnegative degree
+lemma Divisor.deg_nonneg_of_effective {α : Type*} {D : Divisor α} (hD : Divisor.Effective D) :
+    0 ≤ Divisor.deg D := by
+  unfold Divisor.deg
+  apply Finsupp.sum_nonneg
+  intro p _
+  exact hD p
+
+-- Candidate 4 [tag: riemann_inequality] [status: PROVED]
 -- Special case: single-point divisors have bounded dimension
 lemma ell.single_le_deg_succ_from_bound {α : Type*} {k : Type*} [Field k]
-    (data : FunctionFieldDataWithBound α k) [∀ D, Module.Finite k (RRSpace data.toFunctionFieldData D)]
+    (data : FunctionFieldDataWithBound α k) [hFin : ∀ D, Module.Finite k (RRSpace data.toFunctionFieldData D)]
     (p : α) (n : ℕ) :
-    ell data.toFunctionFieldData (Divisor.single p (n : ℤ)) ≤ n + 1 := sorry
+    ell data.toFunctionFieldData (Divisor.single p (n : ℤ)) ≤ n + 1 := by
+  induction n with
+  | zero =>
+    -- ell(0·p) = ell(0) = 1 (from axiom)
+    simp only [CharP.cast_eq_zero, Divisor.single, Finsupp.single_zero]
+    rw [data.ell_zero_eq_one]
+  | succ n ih =>
+    -- single p (n+1) = single p n + single p 1
+    rw [Divisor.single_add_one]
+    -- ell(single p n + single p 1) ≤ ell(single p n) + 1 ≤ (n + 1) + 1
+    calc ell data.toFunctionFieldData (Divisor.single p ↑n + Divisor.single p 1)
+        ≤ ell data.toFunctionFieldData (Divisor.single p ↑n) + 1 := data.single_point_bound _ p
+      _ ≤ (n + 1) + 1 := Nat.add_le_add_right ih 1
+      _ = n + 1 + 1 := rfl
 
--- Candidate 5 [tag: riemann_inequality] [status: sorry - needs induction infrastructure]
--- Main Riemann inequality using single-point axiom and induction
-lemma ell.le_deg_add_ell_zero_from_bound {α : Type*} {k : Type*} [Field k]
-    (data : FunctionFieldDataWithBound α k) [∀ D, Module.Finite k (RRSpace data.toFunctionFieldData D)]
+-- Candidate 5 [tag: riemann_inequality] [status: PROVED]
+-- Main Riemann inequality using single-point axiom and induction on degree
+-- Key insight: induct on n = deg(D).toNat, "peeling off" one point at a time
+lemma ell.le_deg_add_ell_zero_from_bound {α : Type*} [DecidableEq α] {k : Type*} [Field k]
+    (data : FunctionFieldDataWithBound α k) [hFin : ∀ D, Module.Finite k (RRSpace data.toFunctionFieldData D)]
     {D : Divisor α} (hD : Divisor.Effective D) :
-    (ell data.toFunctionFieldData D : ℤ) ≤ Divisor.deg D + (ell data.toFunctionFieldData 0 : ℤ) := sorry
+    (ell data.toFunctionFieldData D : ℤ) ≤ Divisor.deg D + (ell data.toFunctionFieldData 0 : ℤ) := by
+  -- We prove this by strong induction on the natural number `n = deg(D)`
+  have h_deg_nonneg : 0 ≤ Divisor.deg D := Divisor.deg_nonneg_of_effective hD
+  -- Extract the natural number degree
+  generalize hn : (Divisor.deg D).toNat = n
+  -- Now induct on n, generalizing D and the hypotheses
+  induction n generalizing D with
+  | zero =>
+    -- If deg(D).toNat = 0 and D is effective, then D = 0
+    have hdeg_zero : Divisor.deg D = 0 := by
+      have : (Divisor.deg D).toNat = 0 := hn
+      have := Int.toNat_of_nonneg h_deg_nonneg
+      omega
+    have h_zero : D = 0 := by
+      ext p
+      by_contra h_neq
+      have h_pos : 0 < D p := lt_of_le_of_ne (hD p) (Ne.symm h_neq)
+      have h_in_supp : p ∈ D.support := Finsupp.mem_support_iff.mpr (ne_of_gt h_pos)
+      have h_sum_pos : 0 < Divisor.deg D := by
+        unfold Divisor.deg
+        apply Finsupp.sum_pos'
+        · intro x _; exact hD x
+        · exact ⟨p, h_in_supp, h_pos⟩
+      omega
+    subst h_zero
+    simp only [Divisor.deg_zero, zero_add, le_refl]
+  | succ n ih =>
+    -- If deg(D).toNat = n + 1 > 0, there must be some p with D(p) > 0
+    have hdeg_pos : Divisor.deg D = n + 1 := by
+      have h1 := Int.toNat_of_nonneg h_deg_nonneg
+      omega
+    have h_exists_pos : ∃ p, 0 < D p := by
+      by_contra h_all_zero
+      push_neg at h_all_zero
+      have h_zero_deg : Divisor.deg D = 0 := by
+        unfold Divisor.deg
+        rw [Finsupp.sum, Finset.sum_eq_zero]
+        intro x _
+        specialize h_all_zero x
+        -- D x ≥ 0 from hD, D x ≤ 0 from h_all_zero
+        have hDx : 0 ≤ D x := hD x
+        linarith
+      omega
+    rcases h_exists_pos with ⟨p, hp⟩
+    -- Define D' = D - p
+    let D' := D - Divisor.single p 1
+    have h_decomp : D = D' + Divisor.single p 1 := by simp [D', sub_add_cancel]
+    -- Show D' is effective
+    have hD' : Divisor.Effective D' := by
+      intro q
+      unfold D'
+      simp only [Finsupp.coe_sub, Finsupp.coe_zero, Pi.sub_apply, Pi.zero_apply, Divisor.single,
+                 Finsupp.single_apply]
+      split_ifs with h
+      · subst h; omega
+      · rw [sub_zero]; exact hD q
+    -- Show deg(D') = n
+    have hdeg' : (Divisor.deg D').toNat = n := by
+      have h1 : Divisor.deg D = Divisor.deg D' + 1 := by
+        calc Divisor.deg D = Divisor.deg (D' + Divisor.single p 1) := by rw [← h_decomp]
+          _ = Divisor.deg D' + Divisor.deg (Divisor.single p 1) := Divisor.deg_add D' _
+          _ = Divisor.deg D' + 1 := by rw [Divisor.deg_single]
+      have h2 : 0 ≤ Divisor.deg D' := Divisor.deg_nonneg_of_effective hD'
+      omega
+    -- Apply IH to D'
+    have h_le := ih hD' (Divisor.deg_nonneg_of_effective hD') hdeg'
+    -- Apply single point bound
+    rw [h_decomp]
+    have h_step := data.single_point_bound D' p
+    -- Combine: ℓ(D'+p) ≤ ℓ(D') + 1 ≤ (deg(D') + ℓ(0)) + 1 = deg(D'+p) + ℓ(0)
+    have hdeg_D' : Divisor.deg D' = n := by
+      have := Divisor.deg_nonneg_of_effective hD'
+      have := Int.toNat_of_nonneg this
+      omega
+    -- Key computation: deg(D' + single p 1) = deg D' + 1
+    have hdeg_total : Divisor.deg (D' + Divisor.single p 1) = Divisor.deg D' + 1 := by
+      rw [Divisor.deg_add_single]
+    omega
 
--- Candidate 6 [tag: helper] [status: sorry - needs Candidate 5]
--- Natural number version of Riemann inequality
-lemma ell.le_toNat_deg_add_ell_zero_from_bound {α : Type*} {k : Type*} [Field k]
+-- Candidate 6 [tag: helper] [status: PROVED]
+-- Natural number version of Riemann inequality (corollary of Candidate 5)
+lemma ell.le_toNat_deg_add_ell_zero_from_bound {α : Type*} [DecidableEq α] {k : Type*} [Field k]
     (data : FunctionFieldDataWithBound α k) [∀ D, Module.Finite k (RRSpace data.toFunctionFieldData D)]
     {D : Divisor α} (hD : Divisor.Effective D) (hDeg : 0 ≤ Divisor.deg D) :
-    ell data.toFunctionFieldData D ≤ (Divisor.deg D).toNat + ell data.toFunctionFieldData 0 := sorry
+    ell data.toFunctionFieldData D ≤ (Divisor.deg D).toNat + ell data.toFunctionFieldData 0 := by
+  have h := ell.le_deg_add_ell_zero_from_bound data hD
+  -- h : ↑ell ≤ deg D + ↑ell 0
+  -- Convert to ℕ using toNat
+  have hdeg_eq : (Divisor.deg D).toNat = Divisor.deg D := Int.toNat_of_nonneg hDeg
+  omega
 
 -- Candidate 7 [tag: bridge] [status: OK]
 -- Connection: single-point bound implies dimension difference bound

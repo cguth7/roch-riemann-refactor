@@ -1,5 +1,7 @@
 # Riemann-Roch Formalization: Current State
 
+*Last updated: Cycle 9 (December 2024)*
+
 ## The Goal
 
 Prove the Riemann-Roch theorem for smooth projective curves:
@@ -9,172 +11,171 @@ Prove the Riemann-Roch theorem for smooth projective curves:
 ```
 
 Where:
-- `ℓ(D)` = dim H⁰(X, O_X(D))
+- `ℓ(D)` = dim H⁰(X, O_X(D)) - dimension of global sections
 - `K` = canonical divisor
 - `g` = genus = dim H¹(X, O_X)
 
 ---
 
-## Current Status: Axiomatized Interface (NOT a Proof)
+## Project Architecture: Two Parallel Tracks
 
-**We do NOT have a proof of Riemann-Roch.**
+### Track A: Axiomatized Interface (Cycles 1-3)
+We built an abstract interface that captures the *shape* of Riemann-Roch:
+- `RRData` → `RRDataWithCohomology` → `RRDataWithEuler`
+- The "theorem" `RRDataWithEuler.riemannRoch` is **DERIVED FROM ASSUMPTIONS** (circular)
+- `eulerChar_formula` IS Riemann-Roch in disguise
 
-What we have is an **axiomatized theory interface** - a Lean file that captures the *shape* of RR but assumes the key mathematical content as structure fields.
-
-| What we claimed | What it actually is |
-|-----------------|---------------------|
-| "PROVED" | **DERIVED FROM ASSUMPTIONS** |
-| Riemann-Roch theorem | Algebraic consequence of assumed fields |
-| `eulerChar_formula` | This IS Riemann-Roch in disguise |
-
-The derivation is **circular**: we assumed RR (as `eulerChar_formula`) and derived RR.
+### Track B: Real Foundations (Cycles 4-9) ✅ ACTIVE
+We're building real mathematical infrastructure from scratch:
+- Divisors, function fields, Riemann-Roch spaces
+- Eventually will instantiate Track A with these real objects
 
 ---
 
-## The Problem: mathlib Gaps
+## What We've Built (Cycles 4-9)
 
-mathlib (as of Dec 2024) **lacks**:
+### Cycle 4: Divisor Foundations ✅
+```lean
+abbrev Divisor (α : Type*) := α →₀ ℤ  -- Finitely supported functions
+def deg (D : Divisor α) : ℤ := D.sum (fun _ n => n)  -- Sum of coefficients
+```
+**PROVED**: `deg_add`, `deg_zero`, `deg_neg`, `deg_sub`, `deg_single`
+
+### Cycle 5: Function Field Interface ✅
+```lean
+structure FunctionFieldData (α : Type*) (k : Type*) [Field k] where
+  K : Type*              -- The function field
+  div : K → Divisor α    -- Principal divisor map
+  div_mul : div(f*g) = div(f) + div(g)
+  deg_div : deg(div f) = 0  -- Principal divisors have degree 0
+  ...
+```
+**PROVED**: `Effective_iff`, `Effective_zero`, `Effective_add`, `div_zero`
+
+### Cycle 6: L(D) is a Vector Space ✅
+```lean
+def RRSpace (data : FunctionFieldData α k) (D : Divisor α) : Submodule k data.K
+-- L(D) = { f ∈ K | f = 0 or div(f) + D ≥ 0 }
+```
+**PROVED**: `zero_mem'`, `add_mem'`, `smul_mem'`, `mono`
+
+### Cycle 7: Dimension ℓ(D) ✅
+```lean
+def ell (data : FunctionFieldData α k) (D : Divisor α) : ℕ :=
+  Module.finrank k (RRSpace data D)
+```
+**PROVED**: `ell.mono`, `ell.pos_of_effective`, `ell.zero_pos`
+
+### Cycle 8: Finite-Dimensionality ✅
+Using typeclass `[∀ D, Module.Finite k (RRSpace data D)]`:
+**PROVED**: All 8 unconditional versions of Cycle 7 lemmas
+
+### Cycle 9: Quotient Infrastructure ✅
+```lean
+lemma ell.quotient_add_eq_of_le (h : D ≤ E) :
+    finrank k (L(E) / L(D)) + ℓ(D) = ℓ(E)
+```
+**PROVED**: `submodule_inclusion_injective`, `quotient_add_eq_of_le`, `quotient_le_of_le`
+**STATED**: `add_single_le_succ`, `le_deg_add_ell_zero` (Riemann inequality)
+
+---
+
+## Current Score
+
+| Category | Count |
+|----------|-------|
+| **Definitions** | 7 (Divisor, deg, single, Effective, FunctionFieldData, RRSpace, ell) |
+| **Lemmas PROVED** | 28 |
+| **Lemmas STATED (sorry)** | 4 (Riemann inequality chain) |
+| **Axiomatized interface** | Exists but circular |
+
+---
+
+## The Current Blocker
+
+To prove **Riemann's inequality** `ℓ(D) ≤ deg(D) + ℓ(0)`, we need:
+
+```
+ℓ(D + p) ≤ ℓ(D) + 1   (single-point dimension bound)
+```
+
+This requires: `dim(L(E)/L(D)) ≤ deg(E) - deg(D)`
+
+**Why we can't prove this yet:**
+- Need an **evaluation map** `eval_p : L(D + p) → k`
+- With kernel `ker(eval_p) = L(D)`
+- First isomorphism theorem gives: `L(D+p)/L(D) ≅ im(eval_p) ⊆ k`
+- Therefore dimension ≤ 1
+
+**Options for Cycle 10:**
+1. Axiomatize `single_point_bound` as structure field (simple)
+2. Add evaluation map to `FunctionFieldData` (principled)
+3. Add valuations `v_p : K* → ℤ` (general)
+
+---
+
+## Dependency Graph
+
+```
+                    Divisor (α →₀ ℤ)
+                          │
+                    ┌─────┴─────┐
+                    ▼           ▼
+                   deg       Effective
+                    │           │
+                    └─────┬─────┘
+                          ▼
+                  FunctionFieldData
+                    (K, div, ...)
+                          │
+                          ▼
+                  RRSpace (L(D) ⊆ K)
+                          │
+              ┌───────────┼───────────┐
+              ▼           ▼           ▼
+           mono       add_mem     smul_mem
+              │           │           │
+              └─────┬─────┴───────────┘
+                    ▼
+            ell = finrank k L(D)
+                    │
+         ┌──────────┼──────────┐
+         ▼          ▼          ▼
+    ell.mono   pos_of_eff   zero_pos
+         │          │          │
+         └────┬─────┴──────────┘
+              ▼
+      quotient_add_eq_of_le
+        dim(L(E)/L(D)) + ℓ(D) = ℓ(E)
+              │
+              ▼
+      ??? BLOCKER: eval map ???
+              │
+              ▼
+      add_single_le_succ
+        ℓ(D+p) ≤ ℓ(D) + 1
+              │
+              ▼
+      le_deg_add_ell_zero
+        ℓ(D) ≤ deg(D) + ℓ(0)   (Riemann inequality!)
+```
+
+---
+
+## mathlib Gaps (Still True)
+
+mathlib **lacks**:
 - Divisors on schemes (Weil or Cartier)
 - Line bundles / invertible sheaves
-- Genus of a curve
-- Degree of a divisor
+- Genus, canonical divisor, canonical sheaf
 - Sheaf cohomology H⁰, H¹
 - Serre duality
-- Canonical sheaf
 
-mathlib **has**:
-- `Scheme` type
-- `IsSmooth`, `IsProper` morphism properties
-- General homological algebra
-
-**Without the foundational objects, we cannot state or prove RR from first principles.**
-
----
-
-## Structure Hierarchy
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        RRData                               │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │  X : Scheme           (the curve)                     │  │
-│  │  Div : Type           (abstract, NOT connected to X)  │  │
-│  │  deg : Div → ℤ        (abstract degree function)      │  │
-│  │  ell : Div → ℕ        (abstract ℓ(D) = dim H⁰)        │  │
-│  │  genus : ℕ            (abstract genus)                │  │
-│  │  K : Div              (abstract canonical divisor)    │  │
-│  └───────────────────────────────────────────────────────┘  │
-│                     STATUS: Abstract interface              │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              │ extends (adds ASSUMPTIONS)
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                  RRDataWithCohomology                       │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │  h1 : Div → ℕ                   (dim H¹(O_X(D)))      │  │
-│  │  serreDuality : ℓ(K-D) = h1(D)  ⚠️ ASSUMPTION        │  │
-│  └───────────────────────────────────────────────────────┘  │
-│         STATUS: serreDuality is a deep theorem we assume    │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              │ extends (adds MORE ASSUMPTIONS)
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    RRDataWithEuler                          │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │  eulerChar : Div → ℤ             (χ(D))               │  │
-│  │  eulerChar_def : χ(D) = ℓ(D) - h1(D)   (definition)   │  │
-│  │  eulerChar_formula : χ(D) = deg(D)+1-g ⚠️ = RR!!!    │  │
-│  └───────────────────────────────────────────────────────┘  │
-│         STATUS: eulerChar_formula IS Riemann-Roch          │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## The "Derivation" (Circular)
-
-```
-                    ASSUMED STRUCTURE FIELDS
-                    ════════════════════════
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        │                     │                     │
-        ▼                     ▼                     ▼
-  serreDuality         eulerChar_def        eulerChar_formula
-  ℓ(K-D) = h1(D)      χ(D) = ℓ(D) - h1(D)   χ(D) = deg(D)+1-g
-  ⚠️ ASSUMED          (definition)          ⚠️ THIS IS RR!
-        │                     │                     │
-        │                     └──────────┬──────────┘
-        │                                │
-        │                                ▼
-        │                      ell_sub_h1_eq_deg
-        │                   ℓ(D) - h1(D) = deg(D)+1-g
-        │                     (algebra from assumptions)
-        │                                │
-        └────────────────┬───────────────┘
-                         │
-                         ▼
-               ell_sub_ell_K_sub_D
-            ℓ(D) - ℓ(K-D) = deg(D)+1-g
-              (substitution, algebra)
-                         │
-                         ▼
-              ┌─────────────────────────┐
-              │                         │
-              │  riemannRoch            │
-              │  DERIVED FROM           │
-              │  ASSUMPTIONS            │
-              │  (not proved!)          │
-              │                         │
-              └─────────────────────────┘
-```
-
-**The "proof" is valid algebra, but we assumed the answer (`eulerChar_formula`).**
-
----
-
-## Semantic Status Table
-
-| Component | Status | Notes |
-|-----------|--------|-------|
-| `RRData` | Abstract interface | No assumptions, just structure |
-| `RRDataWithCohomology.serreDuality` | **ASSUMPTION** | Serre duality is a deep theorem |
-| `RRDataWithEuler.eulerChar_def` | Definition | Harmless |
-| `RRDataWithEuler.eulerChar_formula` | **ASSUMPTION = RR** | This IS the target theorem! |
-| `RRDataWithEuler.riemannRoch` | **DERIVED** | Circular - derived from above |
-| `RRData.riemannRoch` | `sorry` | No proof path |
-
----
-
-## What Would a Real Proof Require?
-
-To **actually prove** Riemann-Roch, someone needs to build in Lean:
-
-1. **Divisors** (Weil or Cartier) on schemes/varieties
-2. **Line bundles** / invertible sheaves with `O_X(D)`
-3. **Sheaf cohomology** H⁰, H¹ for coherent sheaves
-4. **Degree** of a divisor
-5. **Genus** as dim H¹(O_X)
-6. **Serre duality theorem** (a major result itself)
-7. **Riemann-Roch** (the goal)
-
-This represents **thousands of lines** of foundational Lean code and **months of expert work**.
-
----
-
-## Next Steps: Option 3
-
-We've chosen to **build the foundations ourselves**.
-
-This means:
-- Start defining Weil divisors on curves
-- Build toward sheaf cohomology
-- Eventually instantiate `RRData` with real objects
-- Then actually prove the assumed fields
-
-This is a long-term project.
+mathlib **has** (and we use):
+- `Finsupp` - finitely supported functions (our `Divisor`)
+- `Submodule` - vector subspaces
+- `Module.finrank` - dimension
+- `Submodule.finrank_quotient_add_finrank` - rank-nullity
 
 ---
 
@@ -183,27 +184,42 @@ This is a long-term project.
 ```
 roch-riemann/
 ├── RrLean/
-│   └── RR.lean              # Axiomatized interface (NOT a proof)
+│   └── RR.lean              # Main formalization (659 lines)
 ├── problem/
 │   └── problem.md           # Mathematical target (READ-ONLY)
 ├── state/
-│   ├── playbook.md          # Heuristics and status
-│   ├── candidates.json      # Candidates with honest status labels
-│   └── ledger.md            # Cycle history with Assumption Accounting
+│   ├── playbook.md          # Strategy and heuristics
+│   ├── candidates.json      # All candidates with status
+│   └── ledger.md            # Cycle-by-cycle history
 ├── agents/
-│   ├── orchestrator.md      # Main loop controller
+│   ├── orchestrator.md      # ACE loop controller
 │   ├── generator.md         # Proposes candidates
 │   ├── reflector.md         # Scores candidates
 │   └── curator.md           # Updates state files
+├── scripts/
+│   ├── rg_mathlib.sh        # Search mathlib
+│   └── commit_cycle.sh      # Commit helper
 └── docs/
-    └── for_humans.md        # This file
+    ├── for_humans.md        # This file
+    └── explainer.html       # Visual explainer
 ```
 
 ---
 
 ## Lessons Learned
 
-1. **"No sorry" ≠ "proved"** - A theorem with no sorry can still be derived from assumed axioms
-2. **Structure fields are assumptions** - Prop fields in structures are mathematically axioms
-3. **Semantic honesty matters** - Label things correctly: DERIVED_FROM_ASSUMPTIONS, not PROVED
-4. **mathlib gaps are real** - Algebraic geometry in Lean 4 is still being built
+1. **Build foundations first** - Abstract interfaces are useful scaffolding but not proofs
+2. **Use mathlib idioms** - `Finsupp`, `Submodule`, typeclasses work well
+3. **Track dependencies** - Know what blocks what
+4. **Fail fast, recover faster** - Don't delete working code (see Cycle 9 recovery)
+5. **Semantic honesty** - Label PROVED vs STATED vs DERIVED_FROM_ASSUMPTIONS
+
+---
+
+## What's Next?
+
+**Cycle 10**: Add evaluation machinery and prove Riemann inequality
+
+**Eventually**: Connect `FunctionFieldData` to `RRData` and complete the circle
+
+**Dream**: A real, verified proof of Riemann-Roch in Lean 4
