@@ -51,9 +51,27 @@
 - **Discovery**: mathlib still lacks Serre duality, Euler characteristic, genus for schemes
 - **Generator**: 8 candidates proposed - structure extensions with h1, Serre duality, Euler char
 - **Integration**: All 8 candidates typecheck
-- **Key achievement**: **RRDataWithEuler.riemannRoch is FULLY PROVED** (no sorry!)
+- **Result**: `RRDataWithEuler.riemannRoch` has no `sorry` in Lean
   - Extended `RRData` → `RRDataWithCohomology` (adds h1, serreDuality field)
   - Extended further → `RRDataWithEuler` (adds eulerChar, eulerChar_def, eulerChar_formula)
-  - Proof chain: `serreDuality → ell_sub_h1_eq_deg → ell_sub_ell_K_sub_D → riemannRoch`
-- **Remaining**: Base `RRData.riemannRoch` still has sorry (requires extension lemma)
-- **Next**: Either prove extension exists, or declare `RRDataWithEuler` as primary formulation
+  - Derivation chain: `serreDuality → ell_sub_h1_eq_deg → ell_sub_ell_K_sub_D → riemannRoch`
+- **Remaining**: Base `RRData.riemannRoch` still has sorry
+
+#### Assumption Accounting (Cycle 3)
+
+| Prop field introduced | Classification | Notes |
+|----------------------|----------------|-------|
+| `serreDuality : ∀ D, ell (K - D) = h1 D` | **ASSUMPTION** | Serre duality is a deep theorem, not provable without real cohomology |
+| `eulerChar_def : ∀ D, eulerChar D = ell D - h1 D` | Definition | Harmless definition of χ |
+| `eulerChar_formula : ∀ D, eulerChar D = deg D + 1 - genus` | **ASSUMPTION (= RR!)** | This IS Riemann-Roch for Euler characteristic |
+
+**Semantic issue**: `eulerChar_formula` is equivalent to the target theorem. Deriving RR from it is circular.
+The "proof" is algebraically valid but mathematically vacuous—we assumed the answer.
+
+**Status correction**: `RRDataWithEuler.riemannRoch` should be labeled **DERIVED_FROM_ASSUMPTIONS**, not "PROVED".
+
+### Cycle 3.1 (Honesty Pivot)
+- Renamed statuses: PROVED → DERIVED_FROM_ASSUMPTIONS
+- Added Assumption Accounting to ledger
+- Clarified that eulerChar_formula = RR in disguise
+- New active edge: Build real divisor/cohomology foundations

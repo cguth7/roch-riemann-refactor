@@ -1,42 +1,53 @@
 {
-  "active_edge": "RRDataWithEuler proven → base RRData.riemannRoch",
+  "active_edge": "Axiomatized RR theory → build real divisor/cohomology foundations",
   "candidates": [
     {
       "name": "RRDataWithEuler.riemannRoch",
-      "status": "PROVED",
+      "status": "DERIVED_FROM_ASSUMPTIONS",
       "statement": "∀ D, ℓ(D) - ℓ(K-D) = deg(D) + 1 - g",
-      "approach": "Derived from Serre duality + Euler characteristic fields",
-      "energy": 10
+      "approach": "Algebraic derivation from structure fields",
+      "assumptions": [
+        "serreDuality : ∀ D, ell (K - D) = h1 D",
+        "eulerChar_def : ∀ D, eulerChar D = ell D - h1 D",
+        "eulerChar_formula : ∀ D, eulerChar D = deg D + 1 - genus"
+      ],
+      "note": "eulerChar_formula IS Riemann-Roch for Euler characteristic; this derivation is circular"
     },
     {
       "name": "ell_sub_ell_K_sub_D",
-      "status": "PROVED",
-      "statement": "ℓ(D) - ℓ(K-D) = deg(D) + 1 - g (via Serre duality substitution)",
-      "approach": "Core lemma combining serreDuality and ell_sub_h1_eq_deg",
-      "energy": 10
+      "status": "DERIVED_FROM_ASSUMPTIONS",
+      "statement": "ℓ(D) - ℓ(K-D) = deg(D) + 1 - g",
+      "approach": "Combines serreDuality and ell_sub_h1_eq_deg",
+      "assumptions": [
+        "serreDuality",
+        "eulerChar_def",
+        "eulerChar_formula"
+      ]
     },
     {
       "name": "RRDataWithCohomology",
-      "status": "ELABORATES",
+      "status": "STRUCTURE_WITH_AXIOMS",
       "statement": "structure extending RRData with h1, serreDuality",
-      "approach": "Adds H¹ dimension and Serre duality as Prop field",
-      "energy": 9
+      "axioms_introduced": ["serreDuality : ∀ D, ell (K - D) = h1 D"]
     },
     {
       "name": "RRDataWithEuler",
-      "status": "ELABORATES",
+      "status": "STRUCTURE_WITH_AXIOMS",
       "statement": "structure extending RRDataWithCohomology with eulerChar",
-      "approach": "Adds Euler characteristic and its two key properties",
-      "energy": 9
+      "axioms_introduced": [
+        "eulerChar_def : ∀ D, eulerChar D = ell D - h1 D",
+        "eulerChar_formula : ∀ D, eulerChar D = deg D + 1 - genus"
+      ]
     }
   ],
   "blockers": [
-    "Base RRData.riemannRoch still has sorry - need to extend RRData to RRDataWithEuler"
+    "mathlib lacks: divisors, line bundles, sheaf cohomology H⁰/H¹, genus, degree",
+    "Cannot instantiate RRData/RRDataWithEuler with real mathlib objects",
+    "eulerChar_formula assumes RR; derivation is circular"
   ],
   "resolved_blockers": [
-    "PIVOT: defined RRData structure per Progress Gate (Cycle 2)",
-    "RR statement now elaborates without axioms",
-    "PROVED: RRDataWithEuler.riemannRoch via Serre duality + Euler char (Cycle 3)"
+    "PIVOT Cycle 2: defined RRData structure (elaborates)",
+    "PIVOT Cycle 3: extended to RRDataWithEuler (RR derivable from fields)"
   ],
-  "next_action": "Either prove RRData → RRDataWithEuler extension, or accept RRDataWithEuler as primary formulation"
+  "next_action": "Option 3: Begin building divisor/cohomology foundations in Lean to enable real instantiation"
 }

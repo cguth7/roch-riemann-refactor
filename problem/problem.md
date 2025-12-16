@@ -1,1 +1,32 @@
-Target theorem (informal but precise):Let $k$ be an algebraically closed field and $X$ a smooth projective curve over $k$.Let $D$ be a divisor on $X$, and let $K$ be a canonical divisor on $X$.Assume that for any divisor $Z$, the cohomology groups $H^i(X, \mathcal{O}_X(Z))$ are finite-dimensional over $k$.Define $\ell(D) = \dim_k H^0(X, \mathcal{O}_X(D))$ as a natural number.Define $g(X) = \dim_k H^1(X, \mathcal{O}_X)$ as a natural number.Then the following equality holds in $\mathbb{Z}$:$$(\ell(D) : \mathbb{Z}) - (\ell(K - D) : \mathbb{Z}) = \deg(D) + 1 - g(X)$$Definitions:$\mathcal{O}_X(D)$: The invertible sheaf associated to the divisor $D$.$K$: A divisor such that $\mathcal{O}_X(K) \cong \Omega^1_{X/k}$ (the sheaf of differentials).$\deg(D)$: The degree of divisor $D$ (integer-valued).$(\cdot : \mathbb{Z})$ denotes the coercion from natural numbers to integers.Allowed internal reformulations:Line bundle / invertible sheaf formulation.Canonical divisor $\leftrightarrow$ canonical sheaf.Use of Serre duality to identify $H^1$ terms if necessary to prove the existence of $K$.Disallowed changes:Changing hypotheses (smoothness, projectivity, algebraic closedness).Removing the divisor formulation from the final statement.Omitting the integer coercion logic.Priority:Correctness > formalizability > elegance
+# Target theorem (informal but precise)
+
+Let k be an algebraically closed field and X a smooth projective curve over k.
+Let D be a divisor on X, and let K be a canonical divisor on X.
+
+Assume: for any divisor Z, the cohomology groups H^i(X, O_X(Z)) are finite-dimensional over k.
+
+Define:
+- ℓ(D) = dim_k H^0(X, O_X(D)) as a natural number.
+- g(X) = dim_k H^1(X, O_X) as a natural number.
+
+Then, in ℤ:
+(ℓ(D) : ℤ) - (ℓ(K - D) : ℤ) = deg(D) + 1 - g(X)
+
+## Definitions
+- O_X(D): the invertible sheaf associated to divisor D.
+- K: a divisor such that O_X(K) ≅ Ω¹_{X/k}.
+- deg(D): the degree of divisor D (integer-valued).
+- (· : ℤ): coercion ℕ → ℤ.
+
+## Allowed internal reformulations
+- Line bundle / invertible sheaf formulation.
+- Canonical divisor ↔ canonical sheaf.
+- Use Serre duality to identify H¹ terms if necessary.
+
+## Disallowed changes
+- Changing hypotheses (smoothness, projectivity, algebraic closedness).
+- Removing the divisor formulation from the final statement.
+- Omitting the integer coercion logic.
+
+## Priority
+Correctness > formalizability > elegance
