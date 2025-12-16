@@ -1563,4 +1563,116 @@ lemma valuation_div_eq_of_unit (v : HeightOneSpectrum R) {r s : R} (hs : s ∉ v
 
 end Cycle31Candidates
 
+/-! ## Cycle 32 Candidates: Bypass via Localization Machinery
+
+Key discovery: `IsLocalization.AtPrime.equivQuotMaximalIdeal` provides
+R ⧸ p ≃+* Rₚ ⧸ maximalIdeal Rₚ with FULL surjectivity built in.
+
+Strategy: Instead of proving `exists_same_residue_class` directly,
+compose equivalences:
+1. R ⧸ v.asIdeal ≃+* (Loc.AtPrime v.asIdeal) ⧸ maxIdeal (from equivQuotMaximalIdeal)
+2. valuationRingAt v ≃+* Loc.AtPrime v.asIdeal (both are DVRs)
+3. Hence the residue field bridge follows.
+-/
+
+section Cycle32Candidates
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+
+-- Candidate 1 [tag: rr_bundle_bridge] [status: OK] [cycle: 32]
+/-- For DVR Localization.AtPrime v.asIdeal, there is a canonical ring isomorphism
+from R/v.asIdeal to (Localization.AtPrime v.asIdeal) / maximalIdeal.
+This is IsLocalization.AtPrime.equivQuotMaximalIdeal from mathlib,
+which has full surjectivity of the residue map built in. -/
+noncomputable def localization_residue_equiv (v : HeightOneSpectrum R) :
+    (R ⧸ v.asIdeal) ≃+*
+      ((Localization.AtPrime v.asIdeal) ⧸
+        IsLocalRing.maximalIdeal (Localization.AtPrime v.asIdeal)) := by
+  haveI : v.asIdeal.IsMaximal := v.isMaximal
+  exact IsLocalization.AtPrime.equivQuotMaximalIdeal v.asIdeal (Localization.AtPrime v.asIdeal)
+
+-- Candidate 2 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 32]
+/-- The valuation subring (v.valuation K).valuationSubring is ring-isomorphic
+to the DVR Localization.AtPrime v.asIdeal.
+This connects valuationRingAt (defined as valuationSubring) to the localization.
+
+Mathematical content: Both are the "integers at v" in K. The localization approach
+constructs fractions a/s with s ∉ v. The valuation approach takes {g : v(g) ≤ 1}.
+These are the same subset of K for Dedekind domains. -/
+noncomputable def valuationRingAt_equiv_localization (v : HeightOneSpectrum R) :
+    valuationRingAt (R := R) (K := K) v ≃+* Localization.AtPrime v.asIdeal := by
+  sorry
+
+-- Candidate 3 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 32]
+/-- Given the equivalence from Candidate 2, the residue fields are isomorphic.
+Transport the residue field structure along the ring equivalence. -/
+noncomputable def residueField_equiv_of_valuationRingAt_equiv (v : HeightOneSpectrum R)
+    (e : valuationRingAt (R := R) (K := K) v ≃+* Localization.AtPrime v.asIdeal) :
+    valuationRingAt.residueField (R := R) (K := K) v ≃+*
+      IsLocalRing.ResidueField (Localization.AtPrime v.asIdeal) := by
+  sorry
+
+-- Candidate 4 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 32]
+/-- Compose the chain:
+R ⧸ v.asIdeal ≃ Loc.AtPrime / maxIdeal ≃ valuationRingAt.residueField
+The first equivalence is localization_residue_equiv.
+The second comes from valuationRingAt ≃ Loc.AtPrime (Candidate 2). -/
+noncomputable def residueFieldBridge_via_localization (v : HeightOneSpectrum R)
+    (e : valuationRingAt (R := R) (K := K) v ≃+* Localization.AtPrime v.asIdeal) :
+    (R ⧸ v.asIdeal) ≃+* valuationRingAt.residueField (R := R) (K := K) v := by
+  sorry
+
+-- Candidate 5 [tag: main_proof] [status: SORRY] [cycle: 32]
+/-- Once we have the equivalences, surjectivity follows immediately.
+The chain R → valuationRingAt → residueField factors through:
+R → Loc.AtPrime → Loc.AtPrime / maxIdeal ≃ R / v.asIdeal (inverse direction)
+The mathlib equivalence equivQuotMaximalIdeal has surjectivity built in. -/
+lemma residueMapFromR_surjective_via_localization (v : HeightOneSpectrum R)
+    (e : valuationRingAt (R := R) (K := K) v ≃+* Localization.AtPrime v.asIdeal) :
+    Function.Surjective (residueMapFromR (R := R) (K := K) v) := by
+  sorry
+
+-- Candidate 6 [tag: core_lemma] [status: SORRY] [cycle: 32]
+/-- Alternative: Prove exists_same_residue_class using the fraction representation.
+Every g ∈ valuationRingAt v can be written as a/b with a, b ∈ R, b ∉ v.asIdeal.
+Since b ∉ v.asIdeal, v(b) = 1. Since v(g) ≤ 1, v(a) = v(g·b) ≤ 1.
+Take r = a. Then embedding(a) - g = a - a/b = a(b-1)/b.
+For this to be in maxIdeal, need v(a(b-1)/b) < 1. -/
+lemma exists_same_residue_class_via_fractions (v : HeightOneSpectrum R)
+    (g : valuationRingAt (R := R) (K := K) v) :
+    ∃ r : R, (embeddingToValuationRingAt (R := R) (K := K) v r) - g ∈
+      IsLocalRing.maximalIdeal (valuationRingAt (R := R) (K := K) v) := by
+  sorry
+
+-- Candidate 7 [tag: helper] [status: PROVED] [cycle: 32]
+/-- The residue map from Localization.AtPrime to its residue field is surjective.
+This is standard: residue is a quotient map, hence surjective.
+Note: IsLocalRing.residue_surjective takes the local ring as implicit argument. -/
+lemma localization_residue_surjective (v : HeightOneSpectrum R) :
+    Function.Surjective
+      (IsLocalRing.residue (Localization.AtPrime v.asIdeal)) :=
+  IsLocalRing.residue_surjective
+
+-- Candidate 8 [tag: helper] [status: PROVED] [cycle: 32]
+/-- The residue field of Localization.AtPrime v.asIdeal is isomorphic to
+the residue field at prime (R/v.asIdeal), via equivQuotMaximalIdeal
+composed with the quotient-to-residueField bijection.
+
+Note: IsLocalRing.ResidueField (Loc.AtPrime) = (Loc.AtPrime) / maxIdeal
+This is DEFINITIONALLY equal to the target of localization_residue_equiv. -/
+noncomputable def localization_residueField_equiv (v : HeightOneSpectrum R) :
+    IsLocalRing.ResidueField (Localization.AtPrime v.asIdeal) ≃+*
+      residueFieldAtPrime R v := by
+  haveI : v.asIdeal.IsMaximal := v.isMaximal
+  -- ResidueField (Loc.AtPrime) = (Loc.AtPrime) / maxIdeal (definitionally)
+  -- localization_residue_equiv gives: R / v.asIdeal ≃ (Loc.AtPrime) / maxIdeal
+  -- So symm gives: ResidueField ≃ R / v.asIdeal
+  -- Then R / v.asIdeal ≃ residueFieldAtPrime via bijective_algebraMap_quotient
+  have h2 : (R ⧸ v.asIdeal) ≃+* residueFieldAtPrime R v :=
+    RingEquiv.ofBijective _ (Ideal.bijective_algebraMap_quotient_residueField v.asIdeal)
+  exact (localization_residue_equiv v).symm.trans h2
+
+end Cycle32Candidates
+
 end RiemannRochV2

@@ -6,7 +6,7 @@
 - Keep lemma statements small: fewer binders, fewer coercions, fewer implicit arguments.
 - When stuck on coercions, introduce explicit `let` bindings for objects (e.g. `L : LineBundle X`).
 
-## Current Status Summary (Cycle 31)
+## Current Status Summary (Cycle 32)
 
 **RR.lean (v1)**: Axiom-based approach with `FunctionFieldDataWithRR`. Complete but circular - ARCHIVED.
 
@@ -29,6 +29,9 @@
 - **`valuation_div_eq_of_unit`: v(r/s)=v(r) when v(s)=1 (Cycle 31)**
 - **`residueFieldBridge_v2_of_surj`: First Isom Thm bridge (conditional, Cycle 31)**
 - **`residueFieldBridge_v3_of_surj`: Full bridge (conditional, Cycle 31)**
+- **`localization_residue_equiv`: R/v.asIdeal ≃ Loc.AtPrime/maxIdeal (Cycle 32)**
+- **`localization_residueField_equiv`: Loc.AtPrime.ResidueField ≃ residueFieldAtPrime (Cycle 32)**
+- **`localization_residue_surjective`: Helper lemma (Cycle 32)**
 
 ### Typeclass Hierarchy
 ```
@@ -41,7 +44,7 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 
 ---
 
-## Current Sorry Count (RR_v2.lean after Cycle 31)
+## Current Sorry Count (RR_v2.lean after Cycle 32)
 
 | Line | Name | Status | Notes |
 |------|------|--------|-------|
@@ -57,10 +60,41 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 | 1414 | `residueMapFromR_surjective` | BLOCKED | On exists_same_residue_class |
 | 1436 | `residueFieldBridge_v2` | BLOCKED | Depends on surjectivity |
 | 1449 | `residueFieldBridge_v3` | BLOCKED | Depends on v2 |
-| 1496 | `exists_same_residue_class` | **ACTIVE** | **KEY BLOCKER** - density lemma |
+| 1496 | `exists_same_residue_class` | ACTIVE | density lemma |
 | 1541 | `valuationRingAt_eq_fractions` | ACTIVE | Alternative approach |
+| 1603 | `valuationRingAt_equiv_localization` | **ACTIVE** | **KEY BLOCKER** - DVR equivalence |
+| 1610 | `residueField_equiv_of_valuationRingAt_equiv` | BLOCKED | Depends on 1603 |
+| 1621 | `residueFieldBridge_via_localization` | BLOCKED | Depends on 1603 |
+| 1631 | `residueMapFromR_surjective_via_localization` | BLOCKED | Depends on 1603 |
+| 1642 | `exists_same_residue_class_via_fractions` | BACKUP | Alternative direct approach |
 
-**Total**: 14 sorries (2 deprecated, 3 superseded, 9 active path)
+**Total**: 19 sorries (2 deprecated, 4 superseded, 5 new Cycle 32, 8 active path)
+
+---
+
+## Cycle 32 Accomplishments
+
+**Goal**: Bypass `exists_same_residue_class` via localization machinery
+
+**Key Discovery**: `IsLocalization.AtPrime.equivQuotMaximalIdeal` provides R ⧸ p ≃+* Rₚ ⧸ maxIdeal with built-in surjectivity!
+
+**Results**: 3/8 candidates PROVED
+- **`localization_residue_equiv`**: R/v.asIdeal ≃ Loc.AtPrime/maxIdeal (PROVED via equivQuotMaximalIdeal)
+- **`localization_residue_surjective`**: Helper lemma (PROVED, trivial)
+- **`localization_residueField_equiv`**: Loc.AtPrime.ResidueField ≃ residueFieldAtPrime (PROVED)
+- `valuationRingAt_equiv_localization`: SORRY - **NEW KEY BLOCKER** (DVR equivalence)
+- `residueField_equiv_of_valuationRingAt_equiv`: SORRY - depends on DVR equiv
+- `residueFieldBridge_via_localization`: SORRY - depends on DVR equiv
+- `residueMapFromR_surjective_via_localization`: SORRY - depends on DVR equiv
+- `exists_same_residue_class_via_fractions`: SORRY - backup direct approach
+
+**Key Insight**: The localization path is cleaner than direct proof:
+1. R/v.asIdeal ≃ Loc.AtPrime/maxIdeal (PROVED via equivQuotMaximalIdeal)
+2. **MISSING**: valuationRingAt ≃ Loc.AtPrime (both are DVRs in K)
+3. Once #2 proved, bridges compose trivially
+
+**New Blocker**: `valuationRingAt_equiv_localization` - need to show valuationRingAt (valuation approach)
+equals Localization.AtPrime (algebraic approach). Both are DVRs with same maximal ideal.
 
 ---
 
@@ -145,31 +179,35 @@ modulo the maximal ideal. This is a real mathematical property of Dedekind domai
 
 ---
 
-## Active Edge: Density Lemma (Cycle 31→32)
+## Active Edge: DVR Equivalence (Cycle 32→33)
 
-**Goal**: Prove `exists_same_residue_class` to unlock the residue field bridge
+**Goal**: Prove `valuationRingAt_equiv_localization` to complete the localization path
 
-**Current State** (after Cycle 31):
+**Current State** (after Cycle 32):
 ```
-R ──residueMapFromR──▶ valuationRingAt.residueField v
-        │                          ≃ (once surjective)
-        ▼                          ▼
-   R/v.asIdeal ◀────────────── residueFieldAtPrime R v
+Localization Path (NEW - Cycle 32):
+R/v.asIdeal ≃ Loc.AtPrime/maxIdeal ≃ valuationRingAt.residueField
+    ✅ PROVED       ❌ MISSING           ▲
+                         │
+               valuationRingAt ≃ Loc.AtPrime
+                    ❌ KEY BLOCKER
 ```
 
 **What We Have**:
-- ✅ `residueMapFromR_ker = v.asIdeal` (Cycle 30)
-- ✅ Conditional bridges: `residueFieldBridge_v2_of_surj`, `residueFieldBridge_v3_of_surj` (Cycle 31)
-- ✅ Helper lemmas: `valuation_eq_one_of_not_mem`, `valuation_div_eq_of_unit` (Cycle 31)
+- ✅ `localization_residue_equiv`: R/v.asIdeal ≃ Loc.AtPrime/maxIdeal (Cycle 32)
+- ✅ `localization_residueField_equiv`: Loc.AtPrime.ResidueField ≃ residueFieldAtPrime (Cycle 32)
+- ✅ `localizationAtPrime_isDVR`: Localization.AtPrime is DVR (Cycle 31)
 
 **What We Need**:
-- ❌ `exists_same_residue_class`: ∀ g ∈ valuationRingAt, ∃ r ∈ R, embedding(r) ≡ g (mod maxIdeal)
+- ❌ `valuationRingAt_equiv_localization`: valuationRingAt v ≃+* Localization.AtPrime v.asIdeal
 
 **Why This Unlocks Everything**:
-1. `exists_same_residue_class` → `residueMapFromR_surjective`
-2. surjective + ker = v.asIdeal → First Isomorphism Theorem applies
-3. bridges become unconditional → `evaluationMapAt` can be constructed
-4. kernel proof → `LocalGapBound` instance → victory
+1. DVR equivalence → residue field equivalence follows trivially
+2. residue field equivalence → residueFieldBridge composition completes
+3. bridges → evaluationMapAt → kernel → LocalGapBound → victory
+
+**Alternative Path** (if DVR equiv too hard):
+- Prove `exists_same_residue_class_via_fractions` directly using IsFractionRing + CRT
 
 ---
 
@@ -218,13 +256,13 @@ R ──residueMapFromR──▶ valuationRingAt.residueField v
 
 - [ ] `instance : LocalGapBound R K` (makes riemann_inequality_affine unconditional)
 
-**Current Path** (after Cycle 31):
+**Current Path** (after Cycle 32):
 1. ~~Fix `shifted_element_valuation_le_one`~~ ✅ DONE (Cycle 29)
 2. ~~ker(residueMapFromR) = v.asIdeal~~ ✅ DONE (Cycle 30)
 3. ~~Conditional bridges ready~~ ✅ DONE (Cycle 31)
-4. **BLOCKER**: Prove `exists_same_residue_class` (density lemma)
-5. Then `residueMapFromR_surjective` follows
-6. Then bridges become unconditional → evaluationMapAt → kernel → LocalGapBound
+4. ~~Localization path discovered~~ ✅ DONE (Cycle 32)
+5. **BLOCKER**: Prove `valuationRingAt_equiv_localization` (DVR equivalence)
+6. Then residue field bridges compose → evaluationMapAt → kernel → LocalGapBound
 
 ---
 
@@ -252,6 +290,7 @@ R ──residueMapFromR──▶ valuationRingAt.residueField v
 | 29 | **shifted_element_valuation_le_one_v2 PROVED** (key blocker resolved) |
 | 30 | **Bypass strategy**: ker(residueMapFromR) = v.asIdeal PROVED |
 | 31 | **Conditional bridges**: First Isom Thm approach ready, density lemma blocking |
+| 32 | **Localization path**: equivQuotMaximalIdeal discovered, DVR equiv blocking |
 
 ---
 
@@ -263,46 +302,62 @@ R ──residueMapFromR──▶ valuationRingAt.residueField v
 
 ---
 
-## Cycle 32 Tactical Guide
+## Cycle 33 Tactical Guide
 
-### Task 1: Prove `exists_same_residue_class` (Priority: CRITICAL)
+### Task 1: Prove `valuationRingAt_equiv_localization` (Priority: CRITICAL)
 
-**Location**: Line 1496 in RR_v2.lean
+**Location**: Line 1603 in RR_v2.lean
 
-**Goal**: Show R is "dense" in valuationRingAt v modulo maximalIdeal
+**Goal**: Show valuationRingAt v ≃+* Localization.AtPrime v.asIdeal
 
 **Proof Strategy**:
 ```lean
-lemma exists_same_residue_class (v : HeightOneSpectrum R)
-    (g : valuationRingAt v) :
-    ∃ r : R, (embeddingToValuationRingAt v r) - g ∈ maximalIdeal (valuationRingAt v)
+noncomputable def valuationRingAt_equiv_localization (v : HeightOneSpectrum R) :
+    valuationRingAt (R := R) (K := K) v ≃+* Localization.AtPrime v.asIdeal
 ```
 
-**Approach A: Use IsFractionRing.div_surjective**
-1. Write g.val = a/b for a, b ∈ R (via `IsFractionRing.div_surjective`)
-2. Since v(g) ≤ 1, we have v(a)/v(b) ≤ 1
-3. **Case b ∉ v.asIdeal**: v(b) = 1, so v(a) ≤ 1 (always true for a ∈ R)
-   - Take r = a
-   - Need: v(a - g·b) < 1, i.e., v(a - a) = 0 ... this doesn't work directly
-4. **Case b ∈ v.asIdeal**: v(b) < 1, so need different approach
+**Mathematical Content**:
+- Both sides are DVRs with fraction field K
+- Both have maximal ideal corresponding to v.asIdeal
+- `valuationRingAt v` = {g ∈ K : v(g) ≤ 1} (valuation approach)
+- `Localization.AtPrime v.asIdeal` = {r/s : r, s ∈ R, s ∉ v.asIdeal} (algebraic approach)
+- These are the same subset of K for Dedekind domains
 
-**Approach B: Use Localization.AtPrime structure**
-- Localization.AtPrime v.asIdeal consists of r/s for r ∈ R, s ∉ v.asIdeal
-- For such elements, v(r/s) = v(r) (since v(s) = 1)
-- If v(g) ≤ 1, can we express g as r/s with s ∉ v.asIdeal?
-- This is essentially `valuationRingAt_eq_fractions`
+**Approach A: Use existing mathlib DVR machinery**
+1. Search for `IsDiscreteValuationRing.equivValuationSubring` or similar
+2. Apply to `Localization.AtPrime v.asIdeal` (which we proved is DVR)
+3. Check if result connects to `valuationRingAt v`
 
-**Approach C: Use DVR equivalence**
-- `Localization.AtPrime v.asIdeal ≃+* valuationRingAt v` (via IsDiscreteValuationRing.equivValuationSubring)
-- The residue field of Localization.AtPrime is R/v.asIdeal
-- Bijective_algebraMap_quotient_residueField gives surjectivity for the localization
-- Transport via the equivalence
+**Approach B: Show subset equality directly**
+1. Prove: `(valuationRingAt v : Set K) = range(algebraMap (Loc.AtPrime) K)`
+2. Use `IsFractionRing` properties
+3. Both directions:
+   - (⊇) r/s with s ∉ v.asIdeal has v(r/s) = v(r) ≤ 1
+   - (⊆) g with v(g) ≤ 1 can be written as r/s with s ∉ v.asIdeal
 
-**Decision Point**: Try Approach C first (uses existing mathlib results).
+**Approach C: Use uniqueness of DVR with given valuation**
+1. Both have same valuation restricted from K
+2. DVR with given valuation is unique
+3. Use universal property
 
-### Fallback: Alternative formulation
+**Decision Point**: Start with Approach A (search for existing lemmas).
 
-If `exists_same_residue_class` proves too hard, consider:
-1. Prove `valuationRingAt_eq_fractions` first (every element is r/s with s ∉ v.asIdeal)
-2. Then for g = r/s, take r as the approximation
-3. Show algebraMap(r) - g = algebraMap(r) - r/s = r(s-1)/s lies in maximalIdeal
+### Task 2: Complete bridge (depends on Task 1)
+
+Once `valuationRingAt_equiv_localization` is proved:
+
+```lean
+-- This should become trivial composition:
+noncomputable def residueFieldBridge_via_localization (v : HeightOneSpectrum R)
+    (e : valuationRingAt v ≃+* Localization.AtPrime v.asIdeal) :
+    (R ⧸ v.asIdeal) ≃+* valuationRingAt.residueField v := by
+  have h1 := localization_residue_equiv v       -- R/v.asIdeal ≃ Loc/max
+  have h2 := residueField_equiv_of_... e        -- Loc.ResField ≃ valRing.ResField
+  exact h1.symm.trans h2
+```
+
+### Fallback: Direct proof
+
+If DVR equiv proves too hard, fall back to direct proof:
+1. Prove `exists_same_residue_class_via_fractions` (line 1642)
+2. Use IsFractionRing + CRT approximation

@@ -1,77 +1,84 @@
 {
-  "active_edge": "Cycle 31: Prove residueMapFromR_surjective (R → valuationRingAt.residueField is surjective)",
-  "cycle_30_results": {
-    "goal": "Construct residueFieldBridge via bypass strategy",
+  "active_edge": "Cycle 32: Prove valuationRingAt_equiv_localization (DVR equivalence to unlock bridge)",
+  "cycle_32_results": {
+    "goal": "Bypass exists_same_residue_class via localization machinery",
     "status": "PROGRESS",
     "proved_count": 3,
-    "sorry_count": 3,
+    "sorry_count": 5,
     "candidates": [
       {
-        "name": "embeddingToValuationRingAt",
+        "name": "localization_residue_equiv",
         "type": "DEF",
         "status": "PROVED",
         "score": "3/5",
-        "notes": "Ring hom R →+* valuationRingAt v"
+        "notes": "R/v.asIdeal ≃ Loc.AtPrime/maxIdeal via equivQuotMaximalIdeal"
       },
       {
-        "name": "maximalIdeal_valuationRingAt_comap",
-        "type": "PROVE",
-        "status": "PROVED",
-        "score": "4/5",
-        "notes": "KEY: maximalIdeal ∩ R = v.asIdeal. Uses Valuation.mem_maximalIdeal_iff"
-      },
-      {
-        "name": "residueMapFromR",
+        "name": "valuationRingAt_equiv_localization",
         "type": "DEF",
-        "status": "OK",
+        "status": "SORRY",
+        "score": "5/5",
+        "notes": "KEY BLOCKER: DVR equivalence between valuationRingAt and Localization.AtPrime"
+      },
+      {
+        "name": "residueField_equiv_of_valuationRingAt_equiv",
+        "type": "DEF",
+        "status": "SORRY",
+        "score": "4/5",
+        "notes": "Depends on DVR equivalence (Candidate 2)"
+      },
+      {
+        "name": "residueFieldBridge_via_localization",
+        "type": "DEF",
+        "status": "SORRY",
+        "score": "4/5",
+        "notes": "Depends on DVR equivalence - THIS IS THE ACTIVE EDGE TARGET"
+      },
+      {
+        "name": "residueMapFromR_surjective_via_localization",
+        "type": "PROVE",
+        "status": "SORRY",
         "score": "3/5",
-        "notes": "Definition: R → valuationRingAt.residueField via embedding + residue"
+        "notes": "Depends on DVR equivalence"
       },
       {
-        "name": "residueMapFromR_ker",
+        "name": "exists_same_residue_class_via_fractions",
+        "type": "PROVE",
+        "status": "SORRY",
+        "score": "2/5",
+        "notes": "BACKUP: Alternative direct proof approach"
+      },
+      {
+        "name": "localization_residue_surjective",
         "type": "PROVE",
         "status": "PROVED",
-        "score": "4/5",
-        "notes": "KEY: ker(residueMapFromR) = v.asIdeal. Enables First Isomorphism Theorem."
+        "score": "2/5",
+        "notes": "Helper lemma (trivial wrapper)"
       },
       {
-        "name": "residueMapFromR_surjective",
-        "type": "PROVE",
-        "status": "SORRY",
-        "score": "5/5",
-        "notes": "BLOCKER: Needs density argument - R is dense in valuationRingAt v for Dedekind domains"
-      },
-      {
-        "name": "residueFieldBridge_v2",
+        "name": "localization_residueField_equiv",
         "type": "DEF",
-        "status": "SORRY",
-        "score": "5/5",
-        "notes": "BLOCKED: Depends on residueMapFromR_surjective"
-      },
-      {
-        "name": "residueFieldBridge_v3",
-        "type": "DEF",
-        "status": "SORRY",
-        "score": "5/5",
-        "notes": "BLOCKED: Depends on residueFieldBridge_v2"
+        "status": "PROVED",
+        "score": "3/5",
+        "notes": "Loc.AtPrime.ResidueField ≃ residueFieldAtPrime via composition"
       }
     ],
-    "key_insight": "Bypass strategy works! The bridge construction is: (1) Show ker(residueMapFromR) = v.asIdeal (DONE), (2) Show residueMapFromR is surjective (BLOCKER), (3) Apply First Isomorphism Theorem. The surjectivity requires showing R is 'dense' in the valuation ring modulo maximal ideal."
+    "key_insight": "Discovery: equivQuotMaximalIdeal provides R/p ≃ Rₚ/max with built-in surjectivity. The new blocker is proving valuationRingAt ≃ Localization.AtPrime (both are DVRs in K). Once this DVR equivalence is proved, all bridges compose trivially."
   },
-  "cycle_31_plan": {
-    "goal": "Complete residueFieldBridge and evaluationMapAt",
+  "cycle_33_plan": {
+    "goal": "Complete DVR equivalence and residue field bridge",
     "tasks": [
-      "Prove residueMapFromR_surjective using Dedekind domain properties",
-      "Complete residueFieldBridge_v2 and v3",
-      "Complete evaluationMapAt using bridge",
-      "Prove kernel_evaluationMapAt",
-      "Complete instLocalGapBound"
+      "Prove valuationRingAt_equiv_localization (KEY BLOCKER)",
+      "Complete residueField_equiv_of_valuationRingAt_equiv",
+      "Complete residueFieldBridge_via_localization",
+      "If successful: proceed to evaluationMapAt"
     ],
-    "approach": "The surjectivity of R → residueField should follow from: for Dedekind domains, every element of the localization at a prime can be written as r/s where s ∉ v. When v(g) ≤ 1, we need to find r ∈ R with g - algebraMap R K r in maximal ideal.",
+    "approach": "Search mathlib for existing DVR-ValuationSubring connections. If not found, prove subset equality: both valuationRingAt and Localization.AtPrime represent {g ∈ K : v(g) ≤ 1}.",
     "key_lemmas_needed": [
-      "residueMapFromR_surjective: surjectivity of R → residue field",
-      "Maybe: HeightOneSpectrum.mem_integers_of_valuation_le_one"
-    ]
+      "valuationRingAt_equiv_localization: DVR equivalence",
+      "Maybe: IsDiscreteValuationRing.equivValuationSubring applied to Localization.AtPrime"
+    ],
+    "fallback": "If DVR equiv proves too hard, fall back to exists_same_residue_class_via_fractions"
   },
   "architecture": {
     "hierarchy": [
@@ -82,82 +89,61 @@
       "BaseDim R K                -- SEPARATE (explicit base dimension)"
     ],
     "key_bridge": "local_gap_bound_of_exists_map connects evaluation map to typeclass",
-    "residue_bridge_chain": [
-      "R →+* valuationRingAt v (embeddingToValuationRingAt)",
-      "valuationRingAt v →+* valuationRingAt.residueField v (IsLocalRing.residue)",
-      "Compose: residueMapFromR : R →+* valuationRingAt.residueField v",
-      "ker(residueMapFromR) = v.asIdeal (PROVED)",
-      "surjective ⟹ valuationRingAt.residueField v ≃+* R/v.asIdeal (First Isomorphism Thm)",
-      "R/v.asIdeal ≃+* residueFieldAtPrime R v (mathlib)"
+    "localization_bridge_chain": [
+      "R ⧸ v.asIdeal ≃+* (Loc.AtPrime v.asIdeal) ⧸ maxIdeal (PROVED: localization_residue_equiv)",
+      "Loc.AtPrime.ResidueField ≃+* residueFieldAtPrime (PROVED: localization_residueField_equiv)",
+      "valuationRingAt v ≃+* Localization.AtPrime v.asIdeal (BLOCKER: valuationRingAt_equiv_localization)",
+      "Once above proved: bridges compose to give residueFieldBridge"
     ]
   },
   "remaining_sorries": {
     "active": [
       {
-        "name": "residueMapFromR_surjective",
-        "line": 1414,
-        "status": "BLOCKER",
-        "notes": "KEY: Needs Dedekind domain density argument"
+        "name": "valuationRingAt_equiv_localization",
+        "line": 1603,
+        "status": "KEY BLOCKER",
+        "notes": "DVR equivalence - unlocks everything"
       },
       {
-        "name": "residueFieldBridge_v2",
-        "line": 1436,
+        "name": "residueField_equiv_of_valuationRingAt_equiv",
+        "line": 1610,
         "status": "BLOCKED",
-        "notes": "Depends on residueMapFromR_surjective"
+        "notes": "Depends on DVR equiv"
       },
       {
-        "name": "residueFieldBridge_v3",
-        "line": 1449,
+        "name": "residueFieldBridge_via_localization",
+        "line": 1621,
         "status": "BLOCKED",
-        "notes": "Depends on residueFieldBridge_v2"
+        "notes": "Depends on DVR equiv - ACTIVE EDGE TARGET"
       },
       {
-        "name": "residueFieldBridge (original)",
-        "line": 1315,
-        "status": "SUPERSEDED",
-        "notes": "Use residueFieldBridge_v3 instead"
-      },
-      {
-        "name": "evaluationMapAt",
-        "line": 1029,
+        "name": "residueMapFromR_surjective_via_localization",
+        "line": 1631,
         "status": "BLOCKED",
-        "notes": "Depends on residueFieldBridge"
+        "notes": "Depends on DVR equiv"
       },
       {
-        "name": "kernel_evaluationMapAt",
-        "line": 1040,
-        "status": "BLOCKED",
-        "notes": "Depends on evaluationMapAt"
-      },
-      {
-        "name": "instLocalGapBound",
-        "line": 1049,
-        "status": "BLOCKED",
-        "notes": "Depends on kernel proof"
+        "name": "exists_same_residue_class_via_fractions",
+        "line": 1642,
+        "status": "BACKUP",
+        "notes": "Alternative direct proof approach"
       }
     ],
-    "resolved_cycle_30": [
+    "proved_cycle_32": [
       {
-        "name": "maximalIdeal_valuationRingAt_comap",
-        "line": 1374,
-        "notes": "PROVED: maximal ideal pullback = v.asIdeal"
+        "name": "localization_residue_equiv",
+        "line": 1588,
+        "notes": "R/v.asIdeal ≃ Loc.AtPrime/maxIdeal"
       },
       {
-        "name": "residueMapFromR_ker",
-        "line": 1397,
-        "notes": "PROVED: ker = v.asIdeal"
-      }
-    ],
-    "deprecated": [
-      {
-        "name": "ellV2_mono",
-        "line": 335,
-        "notes": "Superseded by ellV2_real_mono"
+        "name": "localization_residue_surjective",
+        "line": 1651,
+        "notes": "Helper lemma"
       },
       {
-        "name": "riemann_inequality",
-        "line": 713,
-        "notes": "Superseded by riemann_inequality_real"
+        "name": "localization_residueField_equiv",
+        "line": 1664,
+        "notes": "Loc.ResidueField ≃ residueFieldAtPrime"
       }
     ]
   }
