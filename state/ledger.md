@@ -23,4 +23,25 @@
   - Stated `theorem riemannRoch` and `riemannRoch'` with `sorry`
 - **Result**: RR.lean elaborates successfully (only sorry warnings)
 - **Bootstrap invariant**: DISABLED - theorem statement now typechecks
-- **Next**: Fill sorry proofs; may need to add Serre duality or other axioms to RRData
+- **Next**: Fill sorry proofs; may need to add Serre duality as Prop field to RRData (NOT axiom)
+
+#### Equivalence Audit (Trigger A, retroactive)
+| problem.md concept | RRData representation | Status |
+|---|---|---|
+| Smooth projective curve X over k | `X : Scheme`, `toSpec : X ⟶ Spec k` | GROUNDED (real mathlib) |
+| Divisor D on X | `Div : Type*`, no connection to X | ABSTRACTED (fake type concern) |
+| H^0(X, O_X(D)) | `ell : Div → ℕ` | ABSTRACTED (opaque) |
+| H^1(X, O_X) | `genus : ℕ` | ABSTRACTED (opaque) |
+| Canonical divisor K | `K : Div` | ABSTRACTED (opaque) |
+| deg(D) | `deg : Div → ℤ` | ABSTRACTED (opaque) |
+| RR equation | `riemannRochEq` | PRESERVED (structurally identical) |
+
+**Fake type concern**: `Div : Type*` has no semantic connection to `X`. To instantiate later, we need `Div` to be something like `WeilDivisor X` or `CartierDivisor X`.
+
+**Equivalence**: CONDITIONAL. The theorem statement is structurally equivalent to problem.md, but only if we can later provide an `RRData` instance where:
+- `Div` = actual divisors on X
+- `ell D` = `finrank k (H^0(X, O_X(D)))`
+- `genus` = `finrank k (H^1(X, O_X))`
+- `K` = actual canonical divisor
+
+**Verdict**: Acceptable as temporary scaffolding. Must track instantiation path.

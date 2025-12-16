@@ -14,6 +14,10 @@ These rules are absolute and must never be violated:
 
 1. **No axiom/constant/opaque**: Orchestrator MUST NOT introduce `axiom`, `constant`, or `opaque`.
 2. **No fake types**: MUST NOT "flatten" objects to `Type` just to make elaboration pass.
+   - Exception: Progress Gate option 1 allows `Div : Type*` in a structure IF:
+     - (a) It's explicitly documented as temporary scaffolding
+     - (b) An equivalence audit confirms it can be instantiated later
+     - (c) Reflector approves the abstraction level
 3. **Allowed edits only**: May edit only:
    - `import`, `open`, `namespace`
    - `variable` (with real mathlib types only)
@@ -65,6 +69,32 @@ the active edge MUST pivot to one of:
 
 The pivot decision must be recorded in ledger.md with justification.
 
+## Agent Triggers (mandatory subagent spawns)
+
+These triggers require spawning a subagent (or explicitly satisfying the check inline with clear documentation).
+
+### Trigger A: Spec/Equivalence Audit
+**When**: After ANY pivot that changes the representation of the theorem (e.g., defining RRData, switching to line bundles).
+
+**Action**: Run an "auditor" step that explicitly lists:
+1. Which parts of problem/problem.md are now **assumed as structure fields** (abstracted)
+2. Which parts are **defined from real mathlib objects** (grounded)
+3. Whether mathematical equivalence is preserved (can we instantiate the structure with real objects later?)
+4. Any "fake type" concerns (e.g., `Div : Type*` with no connection to `X`)
+
+**Output**: Add an "Equivalence Audit" subsection to ledger.md for that cycle.
+
+### Trigger B: Discovery Exhaustion
+**When**: Discovery for core objects (divisor, line bundle, genus, cohomology) fails for 2 consecutive cycles.
+
+**Action**: Before pivoting, spawn a "Searcher" agent (or do exhaustive inline search) that tries:
+- Alternate keywords: `invertible`, `Picard`, `Cartier`, `Weil`, `line bundle`, `invertible module`, `torsion-free rank 1`
+- Non-AlgebraicGeometry folders: `Mathlib/Geometry/RingedSpace`, `Mathlib/Topology/Sheaves`, `Mathlib/CategoryTheory/Sites`
+- Import graph: check what AlgebraicGeometry actually imports
+- Recent mathlib PRs: search GitHub for "divisor" or "Picard" in mathlib4
+
+**Output**: Document search attempts in ledger.md before declaring "not found."
+
 ## Loop (single cycle)
 
 1) **Build/test**:
@@ -108,8 +138,13 @@ The pivot decision must be recorded in ledger.md with justification.
    - Paste OK+relevant candidates as stubs into RrLean/RR.lean (below a `-- Candidates` section).
    - Run `lake env lean RrLean/RR.lean 2>&1`; record which typecheck.
 
-6) **Reflector task**:
+6) **Reflector task** (NEVER SKIP):
    - Score candidates, propose mutations, pick top 2.
+   - For structural pivots (e.g., new RRData), Reflector MUST check:
+     - "Is this a fake type?" (e.g., `Div : Type*` unrelated to `X`)
+     - "Does the interface violate HARD SAFETY RULES?"
+     - "Is the abstraction level appropriate?"
+   - Reflector can reject a pivot if it introduces axioms or fake types.
 
 7) **Curator task**:
    - Update playbook + candidates.json + ledger.
