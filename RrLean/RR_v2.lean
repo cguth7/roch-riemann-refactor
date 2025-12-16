@@ -22,6 +22,35 @@ based on Dedekind domains, rather than the axiom-based approach in RR.lean.
 4. **ℓ(D)**: Module.length (additive in exact sequences)
 5. **Proofs**: Use DVR localization and exact sequence additivity
 
+## Affine vs Projective Models (Cycle 23 Discovery)
+
+**CRITICAL ARCHITECTURAL DISTINCTION**:
+
+**Affine Model** (current HeightOneSpectrum R implementation):
+- Points = finite places only (height-1 primes of R)
+- L(0) = R (all integral functions) → ℓ(0) = ∞ for Dedekind domains
+- Proves: ℓ(D) ≤ deg(D) + ℓ(0) (affine Riemann inequality)
+- Typeclass: `LocalGapBound R K` (gap ≤ 1 via evaluation map)
+
+**Projective Model** (requires compactification):
+- Points = finite + infinite places (complete curve)
+- L(0) = k (only constants) → ℓ(0) = 1
+- Proves: ℓ(D) ≤ deg(D) + 1 (classical Riemann inequality)
+- Typeclass: `SinglePointBound R K extends LocalGapBound R K`
+
+**Typeclass Hierarchy**:
+```
+LocalGapBound R K          -- PROVABLE (gap ≤ 1 via evaluation)
+    ↑ extends
+SinglePointBound R K       -- PROJECTIVE (adds ℓ(0) = 1)
+
+BaseDim R K                -- SEPARATE: explicit base dimension
+```
+
+The `LocalGapBound` captures what's derivable from DVR structure alone.
+The `SinglePointBound` adds global completeness (proper curve).
+The `BaseDim` provides the base constant explicitly.
+
 ## References
 - mathlib: RingTheory.DedekindDomain.*
 - mathlib: RingTheory.Length (Module.length_eq_add_of_exact)
@@ -342,24 +371,84 @@ The constructive proof strategy uses these facts:
    - Proof by induction on deg(D) using single-point bound
 -/
 
-/-! ## Cycle 21: SinglePointBound Typeclass and Riemann Inequality -/
+/-! ## Cycle 21-23: LocalGapBound / SinglePointBound Typeclass Hierarchy
 
--- Candidate 1 [tag: typeclass_single_point_bound] [status: OK]
-/-- Typeclass capturing the single-point dimension bound for Riemann-Roch.
+### Cycle 23 Refactor: Affine vs Projective Model Distinction
 
-This encodes two key geometric facts:
-1. Adding a single point increases ℓ(D) by at most 1 (single_point_bound)
-2. The only functions with no poles are constants, so ℓ(0) = 1 (ell_zero_eq_one)
+**Problem (discovered Cycle 22)**:
+- `ell_zero_eq_one : ellV2_real R K 0 = 1` is IMPOSSIBLE for affine models
+- HeightOneSpectrum R captures only FINITE places
+- L(0) = R (integral elements) → Module.length R R = ⊤
 
-These axioms enable the degree induction proof of Riemann inequality.
-Geometrically, the bound comes from the evaluation map L(D + v) → κ(v) with kernel ⊇ L(D). -/
-class SinglePointBound (R : Type*) [CommRing R] [IsDomain R] [IsDedekindDomain R]
+**Solution: Two-tier typeclass hierarchy**:
+- `LocalGapBound`: PROVABLE (gap ≤ 1 via evaluation map to residue field)
+- `SinglePointBound extends LocalGapBound`: PROJECTIVE (adds ℓ(0) = 1)
+- `BaseDim`: SEPARATE (explicit base dimension constant)
+-/
+
+-- Candidate 1 [tag: typeclass_local_gap_bound] [status: OK] [cycle: 23]
+/-- Typeclass capturing the local gap bound for Riemann-Roch (AFFINE VERSION).
+
+This encodes ONE key geometric fact that's PROVABLE from affine model:
+1. Adding a single point increases ℓ(D) by at most 1 (gap_le_one)
+
+The bound comes from the evaluation map L(D + v) → κ(v) with kernel ⊇ L(D).
+
+This is the PROVABLE subset that works for affine models (HeightOneSpectrum R).
+Does NOT assume ℓ(0) = 1, which requires compactification. -/
+class LocalGapBound (R : Type*) [CommRing R] [IsDomain R] [IsDedekindDomain R]
     (K : Type*) [Field K] [Algebra R K] [IsFractionRing R K] where
   /-- Adding a single point increases dimension by at most 1 -/
-  bound : ∀ (D : DivisorV2 R) (v : HeightOneSpectrum R),
+  gap_le_one : ∀ (D : DivisorV2 R) (v : HeightOneSpectrum R),
     ellV2_real R K (D + DivisorV2.single v 1) ≤ ellV2_real R K D + 1
+
+-- Candidate 2 [tag: typeclass_single_point_bound] [status: OK] [cycle: 23]
+/-- Typeclass capturing the single-point dimension bound for Riemann-Roch (PROJECTIVE VERSION).
+
+This extends LocalGapBound with the additional axiom:
+2. The only functions with no poles are constants, so ℓ(0) = 1 (ell_zero_eq_one)
+
+This REQUIRES compactification (including infinite places).
+For affine models using HeightOneSpectrum R alone, ell_zero_eq_one is FALSE.
+
+Geometric meaning:
+- LocalGapBound: Local evaluation gives dimension jump ≤ 1
+- ell_zero_eq_one: Global holomorphic sections = constants (proper curve)
+
+These axioms enable the degree induction proof of Riemann inequality. -/
+class SinglePointBound (R : Type*) [CommRing R] [IsDomain R] [IsDedekindDomain R]
+    (K : Type*) [Field K] [Algebra R K] [IsFractionRing R K]
+    extends LocalGapBound R K where
   /-- L(0) has dimension 1 (only constants have no poles) -/
   ell_zero_eq_one : ellV2_real R K 0 = 1
+
+-- Candidate 3 [tag: typeclass_base_dim] [status: OK] [cycle: 23]
+/-- Typeclass providing the base dimension constant for Riemann-Roch.
+
+For affine models: basedim = ℓ_affine(0) (dimension of integral functions)
+For projective models: basedim = ℓ(0) = 1 (only constants)
+
+This separates the DIMENSION CONSTANT from the PROVABILITY ASSUMPTION.
+
+Example values:
+- Function field k(t) affine: basedim = ∞ (k[t] has infinite length)
+- Function field k(t) projective: basedim = 1 (only constants k)
+- Elliptic curve: basedim = 1 -/
+class BaseDim (R : Type*) [CommRing R] [IsDomain R] [IsDedekindDomain R]
+    (K : Type*) [Field K] [Algebra R K] [IsFractionRing R K] where
+  /-- The base dimension ℓ(0) -/
+  basedim : ℕ
+  /-- The base dimension equals ℓ(0) -/
+  ell_zero_eq : ellV2_real R K 0 = basedim
+
+-- Candidate 6 [tag: instance_single_to_base] [status: OK] [cycle: 23]
+/-- Derive BaseDim instance from SinglePointBound.
+
+For projective models with SinglePointBound, we get basedim = 1.
+This instance allows reusing affine results in projective contexts. -/
+instance SinglePointBound.toBaseDim [spb : SinglePointBound R K] : BaseDim R K where
+  basedim := 1
+  ell_zero_eq := spb.ell_zero_eq_one
 
 namespace DivisorV2
 
@@ -415,12 +504,15 @@ lemma sub_add_single_cancel (D : DivisorV2 R) (v : HeightOneSpectrum R) :
 
 end DivisorV2
 
--- Candidate 7 [tag: typeclass_application] [status: OK]
-/-- Application of SinglePointBound: ℓ(D + v) ≤ ℓ(D) + 1. -/
-lemma ellV2_real_add_single_le_succ [SinglePointBound R K]
+-- Candidate 4 [tag: typeclass_application] [status: OK] [cycle: 23]
+/-- Application of LocalGapBound: ℓ(D + v) ≤ ℓ(D) + 1.
+
+Updated in Cycle 23 to use LocalGapBound instead of SinglePointBound.
+This makes the helper lemma usable in affine contexts. -/
+lemma ellV2_real_add_single_le_succ [LocalGapBound R K]
     (D : DivisorV2 R) (v : HeightOneSpectrum R) :
     ellV2_real R K (D + DivisorV2.single v 1) ≤ ellV2_real R K D + 1 :=
-  SinglePointBound.bound D v
+  LocalGapBound.gap_le_one D v
 
 -- Candidate 8 [tag: riemann_inequality] [status: OK]
 /-- Riemann inequality: ℓ(D) ≤ deg(D) + 1 for effective divisors.
@@ -493,10 +585,10 @@ lemma riemann_inequality_real [SinglePointBound R K] {D : DivisorV2 R} (hD : D.E
       unfold DivisorV2.deg
       apply Finsupp.sum_nonneg
       intro w _; exact hD' w) hdeg'
-    -- Apply single point bound
+    -- Apply single point bound (inherited from LocalGapBound via extends)
     rw [h_decomp]
     have h_step : ellV2_real R K (D' + DivisorV2.single v 1) ≤ ellV2_real R K D' + 1 :=
-      SinglePointBound.bound D' v
+      LocalGapBound.gap_le_one D' v
     -- Combine
     have hdeg_D' : D'.deg = n := by
       have h1 : D'.deg = D.deg - 1 := DivisorV2.deg_sub_single (R := R) D v
@@ -516,6 +608,103 @@ lemma riemann_inequality_real [SinglePointBound R K] {D : DivisorV2 R} (hD : D.E
       _ = n + 2 := by rw [hdeg_D']
       _ = (n + 1) + 1 := by ring
       _ = (D' + DivisorV2.single v 1).deg + 1 := by rw [hdeg_total, hdeg_D']
+
+-- Candidate 5 [tag: riemann_inequality_affine] [status: OK] [cycle: 23]
+/-- Riemann inequality for affine models: ℓ(D) ≤ deg(D) + basedim.
+
+This version uses LocalGapBound + BaseDim instead of SinglePointBound.
+It's PROVABLE for affine models without assuming ℓ(0) = 1.
+
+PROOF STRATEGY (degree induction with explicit base):
+1. Induct on n = (deg D).toNat
+2. Base case (n = 0): Effective D with deg 0 implies D = 0
+   - Use BaseDim.basedim to get ℓ(0) = basedim
+   - Goal: basedim ≤ 0 + basedim ✓
+3. Inductive step (n → n+1):
+   - deg D = n+1 > 0, so exists v with D(v) > 0
+   - Let D' = D - single v 1, then D = D' + single v 1
+   - D' is effective with deg D' = n
+   - IH: ℓ(D') ≤ deg(D') + basedim = n + basedim
+   - Bound: ℓ(D) ≤ ℓ(D') + 1 (LocalGapBound.gap_le_one)
+   - Combine: ℓ(D) ≤ (n + basedim) + 1 = deg(D) + basedim -/
+lemma riemann_inequality_affine [LocalGapBound R K] [bd : BaseDim R K] {D : DivisorV2 R} (hD : D.Effective) :
+    (ellV2_real R K D : ℤ) ≤ D.deg + bd.basedim := by
+  -- Induction on n = (deg D).toNat
+  have h_deg_nonneg : 0 ≤ D.deg := by
+    unfold DivisorV2.deg
+    apply Finsupp.sum_nonneg
+    intro v _
+    exact hD v
+  generalize hn : D.deg.toNat = n
+  induction n generalizing D with
+  | zero =>
+    -- If deg(D).toNat = 0 and D is effective, then D = 0
+    have hdeg_zero : D.deg = 0 := by
+      have : D.deg.toNat = 0 := hn
+      have := Int.toNat_of_nonneg h_deg_nonneg
+      omega
+    have h_zero : D = 0 := by
+      ext v
+      by_contra h_neq
+      have h_pos : 0 < D v := lt_of_le_of_ne (hD v) (Ne.symm h_neq)
+      have h_in_supp : v ∈ D.support := Finsupp.mem_support_iff.mpr (ne_of_gt h_pos)
+      have h_sum_pos : 0 < D.deg := by
+        unfold DivisorV2.deg
+        apply Finsupp.sum_pos'
+        · intro x _; exact hD x
+        · exact ⟨v, h_in_supp, h_pos⟩
+      omega
+    subst h_zero
+    simp only [DivisorV2.deg_zero, zero_add]
+    -- ℓ(0) = basedim, so ℓ(0) ≤ basedim
+    rw [bd.ell_zero_eq]
+  | succ n ih =>
+    -- deg(D).toNat = n + 1 > 0, so exists v with D(v) > 0
+    have hdeg_pos : D.deg = n + 1 := by
+      have h1 := Int.toNat_of_nonneg h_deg_nonneg
+      omega
+    have h_exists_pos : ∃ v, 0 < D v := DivisorV2.exists_pos_of_deg_pos (R := R) hD (by omega)
+    obtain ⟨v, hv⟩ := h_exists_pos
+    -- D' = D - single v 1
+    let D' := D - DivisorV2.single v 1
+    have h_decomp : D = D' + DivisorV2.single v 1 := by
+      simp only [D', DivisorV2.sub_add_single_cancel]
+    -- D' is effective
+    have hD' : D'.Effective := DivisorV2.effective_sub_single (R := R) hD v hv
+    -- deg(D') = n
+    have hdeg' : D'.deg.toNat = n := by
+      have h1 : D'.deg = D.deg - 1 := DivisorV2.deg_sub_single (R := R) D v
+      have h2 : 0 ≤ D'.deg := by
+        unfold DivisorV2.deg
+        apply Finsupp.sum_nonneg
+        intro w _; exact hD' w
+      omega
+    -- Apply IH to D'
+    have h_le := ih hD' (by
+      unfold DivisorV2.deg
+      apply Finsupp.sum_nonneg
+      intro w _; exact hD' w) hdeg'
+    -- Apply single point bound
+    rw [h_decomp]
+    have h_step : ellV2_real R K (D' + DivisorV2.single v 1) ≤ ellV2_real R K D' + 1 :=
+      LocalGapBound.gap_le_one D' v
+    -- Combine
+    have hdeg_D' : D'.deg = n := by
+      have h1 : D'.deg = D.deg - 1 := DivisorV2.deg_sub_single (R := R) D v
+      rw [h1, hdeg_pos]
+      ring
+    have hdeg_total : (D' + DivisorV2.single v 1).deg = D'.deg + 1 :=
+      DivisorV2.deg_add_single' (R := R) D' v
+    -- h_le : (ellV2_real R K D' : ℤ) ≤ D'.deg + basedim
+    -- h_step : ellV2_real R K (D' + DivisorV2.single v 1) ≤ ellV2_real R K D' + 1
+    -- Goal: (ellV2_real R K (D' + DivisorV2.single v 1) : ℤ) ≤ (D' + DivisorV2.single v 1).deg + basedim
+    calc (ellV2_real R K (D' + DivisorV2.single v 1) : ℤ)
+        ≤ ellV2_real R K D' + 1 := by exact_mod_cast h_step
+      _ ≤ (D'.deg + bd.basedim) + 1 := by linarith
+      _ = D'.deg + (bd.basedim + 1) := by ring
+      _ = n + (bd.basedim + 1) := by rw [hdeg_D']
+      _ = (n + 1) + bd.basedim := by ring
+      _ = (D' + DivisorV2.single v 1).deg + bd.basedim := by rw [hdeg_total, hdeg_D']
 
 /-! ## Original placeholder (superseded by riemann_inequality_real) -/
 

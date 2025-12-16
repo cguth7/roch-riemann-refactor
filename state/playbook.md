@@ -14,94 +14,70 @@
 - `RRModuleV2_real`: Valuation-based L(D) definition (PROVED)
 - `ellV2_real_mono`: Monotonicity via Module.length (PROVED)
 - `riemann_inequality_real`: Conditional on `[SinglePointBound R K]` (PROVED)
-- **BLOCKER**: `SinglePointBound.ell_zero_eq_one` is FALSE in affine model
+- `riemann_inequality_affine`: Conditional on `[LocalGapBound R K] [BaseDim R K]` (PROVED) ✅ NEW
+
+**Typeclass Hierarchy (Cycle 23)**:
+```
+LocalGapBound R K          -- PROVABLE (gap ≤ 1 via evaluation map)
+    ↑ extends
+SinglePointBound R K       -- PROJECTIVE (adds ell_zero = 1)
+
+BaseDim R K                -- SEPARATE (explicit base dimension)
+```
 
 ---
 
-## CYCLE 23 PLAN: Typeclass Hierarchy Refactor
+## CYCLE 24 PLAN: Prove LocalGapBound Instance
 
-### The Problem (from Cycle 22)
-`SinglePointBound.ell_zero_eq_one : ellV2_real R K 0 = 1` cannot be satisfied because:
-- `HeightOneSpectrum R` captures only FINITE places
-- L(0) = R (all integrals), not k (constants)
-- Module.length R R = ∞ for Dedekind domains
-
-### The Solution: Two-Tier Typeclass Hierarchy
-
-```
-LocalGapBound R K          -- PROVABLE from finite places (gap ≤ 1)
-    ↑ extends
-SinglePointBound R K       -- PROJECTIVE north star (adds ell_zero = 1)
-
-BaseDim R K                -- SEPARATE: explicit base dimension constant
-```
+### Goal
+Prove `instance : LocalGapBound R K` via evaluation map, making `riemann_inequality_affine` unconditional.
 
 ### Implementation Tasks
 
-#### 1. Define `LocalGapBound` (the provable thing)
+#### 1. Extract uniformizer at height-1 prime
 ```lean
-/-- The local gap bound: adding a single point increases dimension by at most 1.
-This is provable from the evaluation map to the residue field κ(v).
-Does NOT require ℓ(0) = 1; works for affine curves. -/
-class LocalGapBound (R : Type*) [CommRing R] [IsDomain R] [IsDedekindDomain R]
-    (K : Type*) [Field K] [Algebra R K] [IsFractionRing R K] where
-  gap_le_one : ∀ (D : DivisorV2 R) (v : HeightOneSpectrum R),
-    ellV2_real R K (D + DivisorV2.single v 1) ≤ ellV2_real R K D + 1
+-- Use DVR structure from localization_at_prime_is_dvr
+-- Need to extract uniformizer π_v from mathlib DVR API
+noncomputable def uniformizerAt (v : HeightOneSpectrum R) : K := ...
 ```
 
-#### 2. Refactor `SinglePointBound` to extend `LocalGapBound`
+#### 2. Define evaluation map
 ```lean
-/-- Full single-point bound for PROJECTIVE/COMPLETE curves.
-Extends LocalGapBound with the base case ℓ(0) = 1.
-This requires compactification (infinite places) to instantiate. -/
-class SinglePointBound (R : Type*) [CommRing R] [IsDomain R] [IsDedekindDomain R]
-    (K : Type*) [Field K] [Algebra R K] [IsFractionRing R K]
-    extends LocalGapBound R K where
-  ell_zero_eq_one : ellV2_real R K 0 = 1
+-- ev_v : L(D + v) → κ(v) by extracting coefficient of π_v^{-1}
+noncomputable def evaluationMapAt (v : HeightOneSpectrum R) (D : DivisorV2 R) :
+    RRModuleV2_real R K (D + DivisorV2.single v 1) →ₗ[R] residueFieldAtPrime R v := ...
 ```
 
-#### 3. Define `BaseDim` for affine theorems
+#### 3. Prove kernel containment
 ```lean
-/-- Explicit base dimension for affine Riemann inequality.
-For complete curves: base = 1 (constants only)
-For affine curves: base = Module.length R R (possibly infinite, use with care) -/
-class BaseDim (R : Type*) [CommRing R] [IsDomain R] [IsDedekindDomain R]
-    (K : Type*) [Field K] [Algebra R K] [IsFractionRing R K] where
-  base : ℕ
-  ell_zero_eq : ellV2_real R K 0 = base
+-- The kernel of ev_v contains L(D)
+lemma evaluationMapAt_ker_contains (v : HeightOneSpectrum R) (D : DivisorV2 R) :
+    RRModuleV2_real R K D ≤ LinearMap.ker (evaluationMapAt v D) := ...
 ```
 
-#### 4. Add `riemann_inequality_affine`
+#### 4. Prove dimension bound
 ```lean
-/-- Affine Riemann inequality: ℓ(D) ≤ deg(D) + ℓ(0) for effective divisors.
-Uses LocalGapBound (provable) + BaseDim (explicit base).
-For complete curves with BaseDim.base = 1, recovers standard ℓ(D) ≤ deg(D) + 1. -/
-lemma riemann_inequality_affine [LocalGapBound R K] [BaseDim R K]
-    {D : DivisorV2 R} (hD : D.Effective) :
-    (ellV2_real R K D : ℤ) ≤ D.deg + BaseDim.base R K
+-- dim(L(D+v) / L(D)) ≤ 1
+lemma dim_quotient_le_one (v : HeightOneSpectrum R) (D : DivisorV2 R) :
+    Module.finrank R (RRModuleV2_real R K (D + DivisorV2.single v 1) ⧸
+                      (RRModuleV2_real R K D).comap ...) ≤ 1 := ...
 ```
 
-#### 5. Update helper lemma
+#### 5. Instantiate LocalGapBound
 ```lean
--- Change from [SinglePointBound R K] to [LocalGapBound R K]
-lemma ellV2_real_add_single_le_succ [LocalGapBound R K]
-    (D : DivisorV2 R) (v : HeightOneSpectrum R) :
-    ellV2_real R K (D + DivisorV2.single v 1) ≤ ellV2_real R K D + 1 :=
-  LocalGapBound.gap_le_one D v
+instance : LocalGapBound R K where
+  gap_le_one D v := ...  -- from dim_quotient_le_one
 ```
 
-#### 6. Keep `riemann_inequality_real` as the projective north star
-The existing proof works unchanged with `[SinglePointBound R K]`.
+### Victory Condition for Cycle 24
+- [ ] evaluationMapAt defined
+- [ ] Kernel containment proved
+- [ ] instance : LocalGapBound R K (making riemann_inequality_affine unconditional)
 
-### Victory Condition for Cycle 23
-- [ ] Clean typeclass hierarchy committed
-- [ ] `riemann_inequality_affine` stated and proved
-- [ ] Documentation explaining affine vs projective model
-- [ ] `ellV2_real_add_single_le_succ` uses `LocalGapBound`
-
-### Future Work (Cycle 24+)
-- Prove `instance : LocalGapBound R K` via evaluation map
-- Explore compactification for `SinglePointBound` instance
+### Blockers
+- mathlib DVR API may be limited
+- May need `HeightOneSpectrum.valuation` lemmas
+- Uniformizer extraction may require additional work
 
 ---
 
@@ -119,7 +95,8 @@ The existing proof works unchanged with `[SinglePointBound R K]`.
 | 20 | ellV2_real_mono PROVED |
 | 21 | SinglePointBound typeclass, riemann_inequality_real PROVED |
 | 22 | **DISCOVERY**: Affine model limitation, residue field infrastructure |
-| 23 | (PLANNED) Typeclass hierarchy refactor |
+| 23 | **LocalGapBound hierarchy, riemann_inequality_affine PROVED** |
+| 24 | (PLANNED) LocalGapBound instance via evaluation map |
 
 ---
 

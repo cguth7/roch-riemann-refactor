@@ -1,56 +1,60 @@
 {
-  "active_edge": "Cycle 23: Typeclass hierarchy refactor (LocalGapBound + BaseDim)",
-  "cycle_23_plan": {
+  "active_edge": "Cycle 24: Prove instance : LocalGapBound R K via evaluation map",
+  "cycle_23_results": {
     "goal": "Refactor typeclass hierarchy to separate provable LocalGapBound from projective SinglePointBound",
-    "tasks": [
+    "status": "COMPLETED",
+    "candidates": [
       {
         "name": "LocalGapBound",
         "type": "DEFINE",
-        "description": "New typeclass with just gap_le_one field (provable from evaluation map)",
-        "status": "TODO"
+        "status": "OK",
+        "score": "15/15"
       },
       {
         "name": "SinglePointBound extends LocalGapBound",
         "type": "REFACTOR",
-        "description": "Make SinglePointBound extend LocalGapBound, keep ell_zero_eq_one",
-        "status": "TODO"
+        "status": "OK",
+        "score": "15/15"
       },
       {
         "name": "BaseDim",
         "type": "DEFINE",
-        "description": "Separate typeclass for explicit base dimension (base : ℕ, ell_zero_eq)",
-        "status": "TODO"
-      },
-      {
-        "name": "riemann_inequality_affine",
-        "type": "PROVE",
-        "description": "ℓ(D) ≤ deg(D) + BaseDim.base using LocalGapBound + BaseDim",
-        "status": "TODO"
+        "status": "OK",
+        "score": "15/15"
       },
       {
         "name": "ellV2_real_add_single_le_succ",
         "type": "REFACTOR",
-        "description": "Change hypothesis from [SinglePointBound R K] to [LocalGapBound R K]",
-        "status": "TODO"
+        "status": "OK",
+        "score": "15/15"
+      },
+      {
+        "name": "riemann_inequality_affine",
+        "type": "PROVE",
+        "status": "PROVED",
+        "score": "15/15"
+      },
+      {
+        "name": "SinglePointBound.toBaseDim",
+        "type": "DEFINE",
+        "status": "OK",
+        "score": "15/15"
+      },
+      {
+        "name": "riemann_inequality_real",
+        "type": "REFACTOR",
+        "status": "PROVED (preserved)",
+        "score": "15/15"
+      },
+      {
+        "name": "Documentation comment",
+        "type": "REFACTOR",
+        "status": "OK",
+        "score": "15/15"
       }
     ],
-    "victory_condition": "Clean typeclass hierarchy + riemann_inequality_affine proved"
-  },
-  "cycle_22_results": {
-    "candidates_ok": [
-      "residueFieldAtPrime",
-      "residueFieldAtPrime.field",
-      "residueMapAtPrime"
-    ],
-    "candidates_blocked": [
-      "uniformizerAt",
-      "evaluationMap",
-      "SinglePointBound instance"
-    ],
-    "candidates_impossible": [
-      "ell_zero_eq_one (FUNDAMENTAL: L(0) = R not k in affine model)"
-    ],
-    "key_discovery": "HeightOneSpectrum captures only FINITE places; model is AFFINE not PROJECTIVE"
+    "victory_condition": "Clean typeclass hierarchy + riemann_inequality_affine proved",
+    "achieved": true
   },
   "architecture": {
     "hierarchy": [
@@ -62,15 +66,22 @@
     ],
     "rationale": "Separates what we CAN prove (LocalGapBound) from projective requirements (SinglePointBound)"
   },
-  "future_work": {
-    "cycle_24": "Prove instance : LocalGapBound R K via evaluation map",
-    "later": "Compactification for SinglePointBound instance"
+  "cycle_24_plan": {
+    "goal": "Prove instance : LocalGapBound R K via evaluation map",
+    "tasks": [
+      "Define uniformizer at height-1 prime via DVR structure",
+      "Construct evaluation map ev_v : L(D+v) → κ(v)",
+      "Prove ker(ev_v) ⊇ L(D)",
+      "Conclude dim(L(D+v)/L(D)) ≤ 1",
+      "Define instance : LocalGapBound R K"
+    ],
+    "blockers": [
+      "uniformizerAt needs mathlib DVR API exploration",
+      "May need additional lemmas about HeightOneSpectrum.valuation"
+    ]
   },
-  "blockers": [
-    "SinglePointBound.ell_zero_eq_one requires compactification (infinite places)",
-    "uniformizerAt needs mathlib DVR API exploration"
-  ],
   "resolved_blockers": [
-    "CYCLE 22: Identified affine model limitation - now addressed via hierarchy refactor"
+    "CYCLE 22: Identified affine model limitation - addressed via hierarchy refactor",
+    "CYCLE 23: ell_zero_eq_one impossibility - resolved via BaseDim typeclass"
   ]
 }

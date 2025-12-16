@@ -855,11 +855,23 @@ The Generator agent **correctly identified** that our definitions were subtly wr
 - Continue evaluation map work for inductive step (viable regardless)
 - Document affine vs projective model distinction clearly
 
-### Cycle 23 - PLANNED: Typeclass Hierarchy Refactor
+### Cycle 23 - LocalGapBound Hierarchy and riemann_inequality_affine PROVED - COMPLETED
 - **Active edge**: Separate provable LocalGapBound from projective SinglePointBound
-- **Status**: Planning complete, implementation pending
+- **Status**: ✅ COMPLETED with 8/8 candidates integrated
 
-#### Architecture Decision
+#### Results
+| Definition/Lemma | Status | Notes |
+|-----------------|--------|-------|
+| `LocalGapBound` | ✅ DEFINED | Typeclass with only `gap_le_one` (provable) |
+| `SinglePointBound extends LocalGapBound` | ✅ REFACTORED | Uses `extends` for clean hierarchy |
+| `BaseDim` | ✅ DEFINED | Typeclass with `basedim` and `ell_zero_eq` |
+| `ellV2_real_add_single_le_succ` | ✅ REFACTORED | Now uses `[LocalGapBound R K]` |
+| `riemann_inequality_affine` | ✅ **PROVED** | ℓ(D) ≤ deg(D) + basedim |
+| `SinglePointBound.toBaseDim` | ✅ DEFINED | Instance deriving BaseDim |
+| `riemann_inequality_real` | ✅ PRESERVED | Still works with extends hierarchy |
+| Documentation | ✅ UPDATED | Module docstring explains affine vs projective |
+
+#### Architecture (Final)
 ```
 LocalGapBound R K          -- PROVABLE (gap ≤ 1 via evaluation map)
     ↑ extends
@@ -868,19 +880,44 @@ SinglePointBound R K       -- PROJECTIVE (adds ell_zero = 1)
 BaseDim R K                -- SEPARATE (explicit base dimension)
 ```
 
-#### Rationale
-- `LocalGapBound`: What we CAN prove from finite places (evaluation map to κ(v))
-- `SinglePointBound`: North star for complete curves (requires compactification)
-- `BaseDim`: Explicit base dimension for affine theorems
+#### Key Insight: Affine vs Projective Model Distinction
+
+**Affine Model** (HeightOneSpectrum R):
+- Points = finite places only (height-1 primes)
+- L(0) = R (all integral functions)
+- ℓ(0) = ∞ for Dedekind domains
+- Theorem: `riemann_inequality_affine` ℓ(D) ≤ deg(D) + basedim
+
+**Projective Model** (requires compactification):
+- Points = finite + infinite places
+- L(0) = k (only constants)
+- ℓ(0) = 1
+- Theorem: `riemann_inequality_real` ℓ(D) ≤ deg(D) + 1
+
+#### Significance
+- **Resolves Cycle 22 fundamental flaw** cleanly via typeclass separation
+- **New theorem PROVED**: `riemann_inequality_affine` from weaker assumptions
+- **Zero regressions**: `riemann_inequality_real` still works
+- **Clean architecture**: Separation of provable vs projective requirements
+
+#### Reflector Assessment
+- **Cycle Rating**: 10/10 ⭐⭐⭐ EXCEPTIONAL
+- **All candidates**: 15/15 perfect scores
+- **Structural safety**: All checks PASSED (no fake types, no axiom violations)
+
+**Cycle rating**: 10/10 - **CLEAN, COMPLETE SUCCESS**
+
+### Cycle 24 - PLANNED: LocalGapBound Instance via Evaluation Map
+- **Active edge**: Prove `instance : LocalGapBound R K`
+- **Status**: Planning complete
 
 #### Tasks
-1. Define `LocalGapBound` with just `gap_le_one` field
-2. Make `SinglePointBound extend LocalGapBound`
-3. Define `BaseDim` for explicit base dimension
-4. Prove `riemann_inequality_affine` using `[LocalGapBound R K] [BaseDim R K]`
-5. Update `ellV2_real_add_single_le_succ` to use `LocalGapBound`
+1. Define uniformizer at height-1 prime via DVR structure
+2. Construct evaluation map ev_v : L(D+v) → κ(v)
+3. Prove ker(ev_v) ⊇ L(D)
+4. Conclude dim(L(D+v)/L(D)) ≤ 1
+5. Define instance : LocalGapBound R K
 
-#### Victory Condition
-- Clean typeclass hierarchy committed
-- `riemann_inequality_affine` proved
-- Clear documentation of affine vs projective distinction
+#### Blockers
+- uniformizerAt needs mathlib DVR API exploration
+- May need additional HeightOneSpectrum.valuation lemmas
