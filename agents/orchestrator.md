@@ -95,6 +95,20 @@ These triggers require spawning a subagent (or explicitly satisfying the check i
 
 **Output**: Document search attempts in ledger.md before declaring "not found."
 
+## Agent Spawn Policy
+
+Context hygiene is critical for long-running formalization loops. Spawning agents
+creates "garbage collection" - search logs and failed attempts die with the agent.
+
+- **Generator**: ALWAYS SPAWN via Task tool. (Garbage collection - keep search logs out of main context)
+- **Reflector**: SHOULD SPAWN via Task tool. (Quality control - fresh eyes reduce bias)
+- **Curator**: Always orchestrator inline. (Just updating files, minimal garbage)
+- **Exception**: If discovery found zero results or the step is purely formatting, may inline.
+
+**Rationale**: Generator produces the most "garbage" (verbose search results, failed regex,
+unused candidates). Spawning it keeps the Orchestrator's context clean. By Cycle 10+,
+an Orchestrator that inlined Generator will be "senile" - context full of old grep output.
+
 ## Loop (single cycle)
 
 1) **Build/test**:
