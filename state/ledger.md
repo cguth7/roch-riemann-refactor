@@ -1274,3 +1274,85 @@ This means after `unfold partialResidueMap`:
 3. Construct `evaluationMapAt` using partialResidueMap infrastructure
 
 **Cycle rating**: 10/10 - All 3 sorry proofs completed with elegant definitional proofs
+
+### Cycle 29 - shifted_element_valuation_le_one PROVED - MAJOR PROGRESS
+- **Active edge**: Complete `shifted_element_valuation_le_one` (HIGH priority) and residue field bridge infrastructure
+- **Status**: ✅ MAJOR PROGRESS - Key blocker resolved, 5/8 candidates PROVED
+
+#### Results
+| Definition/Lemma | Status | Notes |
+|-----------------|--------|-------|
+| `toNat_nonneg_case` | ✅ **PROVED** | Int.toNat_of_nonneg wrapper |
+| `toNat_neg_case` | ✅ **PROVED** | Int.toNat_eq_zero wrapper |
+| `shifted_element_valuation_le_one_v2` | ✅ **PROVED** | **KEY BLOCKER RESOLVED** via case analysis |
+| `valuationRingAt_embedding_compatible` | ✅ **PROVED** | Simple wrapper using mem_valuationRingAt_iff |
+| `residueFieldBridge` | ⚠️ SORRY | RingEquiv - DVR residue field isomorphism (next cycle focus) |
+| `residueFieldBridge_algebraMap_comm` | ⚠️ SORRY | Depends on residueFieldBridge |
+| `evaluationMapAt_via_bridge` | ⚠️ SORRY | Depends on residueFieldBridge |
+| `valuation_algebraMap_mul` | ✅ **PROVED** | map_mul wrapper |
+
+#### Key Achievement: shifted_element_valuation_le_one_v2 PROVED
+
+**Proof Strategy**:
+```
+Given: f ∈ L(D+v), so v(f) ≤ exp(D(v) + 1)
+Goal: v(f * π^n) ≤ 1 where n = (D(v) + 1).toNat
+
+Case 1: D(v) + 1 ≥ 0
+  - n = D(v) + 1 (as ℕ)
+  - v(π^n) = exp(-n) = exp(-(D(v)+1))
+  - v(f * π^n) = v(f) * exp(-(D(v)+1))
+              ≤ exp(D(v)+1) * exp(-(D(v)+1))
+              = exp(0) = 1 ✓
+
+Case 2: D(v) + 1 < 0
+  - n = 0 (toNat of negative is 0)
+  - v(π^0) = 1
+  - v(f * 1) = v(f) ≤ exp(D(v)+1) < exp(0) = 1 ✓
+```
+
+**Key Lemmas Used**:
+- `Int.toNat_of_nonneg` / `Int.toNat_eq_zero`
+- `uniformizerAt_pow_valuation` (from Cycle 24.2)
+- `WithZero.exp_add`, `WithZero.exp_lt_exp`
+
+#### Architectural Note: Residue Field Bridge
+The residue field bridge uses `RingEquiv` (not `LinearEquiv`) to avoid Module instance issues:
+```lean
+noncomputable def residueFieldBridge (v : HeightOneSpectrum R) :
+    valuationRingAt.residueField (R := R) (K := K) v ≃+* residueFieldAtPrime R v := sorry
+```
+
+#### Current Sorry Count (RR_v2.lean)
+| Line | Name | Status | Notes |
+|------|------|--------|-------|
+| 335 | `ellV2_mono` | DEPRECATED | Superseded by `ellV2_real_mono` |
+| 713 | `riemann_inequality` | DEPRECATED | Superseded by `riemann_inequality_real` |
+| 989 | `shifted_element_valuation_le_one` | SUPERSEDED | By `_v2` version in Cycle 29 section |
+| 1029 | `evaluationMapAt` | BLOCKER | Can use `evaluationMapAt_via_bridge` once bridge ready |
+| 1040 | `kernel_evaluationMapAt` | BLOCKED | Depends on evaluationMapAt |
+| 1049 | `instLocalGapBound` | BLOCKED | Depends on kernel proof |
+| 1315 | `residueFieldBridge` | **ACTIVE** | Next cycle focus |
+| 1322 | `residueFieldBridge_algebraMap_comm` | BLOCKED | Depends on bridge |
+| 1331 | `evaluationMapAt_via_bridge` | BLOCKED | Depends on bridge |
+
+**Total**: 9 sorries (2 deprecated, 1 superseded, 6 active path)
+
+#### Reflector Assessment
+| Candidate | Score | Notes |
+|-----------|-------|-------|
+| `shifted_element_valuation_le_one_v2` | 5/5 ⭐⭐ | Key blocker resolved |
+| `residueFieldBridge` | 5/5 ⭐ | Critical next target |
+| `evaluationMapAt_via_bridge` | 5/5 ⭐ | Victory once bridge done |
+| Others | 3-4/5 | Supporting infrastructure |
+
+**Structural Safety**: All checks PASSED (no axioms, no fake types, real mathlib objects)
+
+#### Cycle 30 Plan
+1. **Priority 1**: Prove `residueFieldBridge` using DVR isomorphism (Path A: `IsDiscreteValuationRing.equivValuationSubring`)
+2. **Path B**: Composition via `Localization.AtPrime`
+3. **Path C (fallback)**: Bypass bridge entirely - target `valuationRingAt.residueField` directly, prove `Module.length = 1`
+4. Complete `evaluationMapAt_via_bridge` once bridge resolved
+5. Prove `kernel_evaluationMapAt` and instantiate `LocalGapBound`
+
+**Cycle rating**: 9/10 - Major blocker resolved, clear path to victory visible

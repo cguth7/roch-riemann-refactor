@@ -1225,4 +1225,121 @@ lemma partialResidueMap_smul (v : HeightOneSpectrum R) (r : R) (g : K)
 
 end Cycle27Candidates
 
+/-! ## Cycle 29 Candidates: shifted_element proof and residue field bridge -/
+
+section Cycle29Candidates
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+
+-- Candidate 1 [tag: coercion_simplify] [status: OK]
+/-- Case analysis for Int.toNat: when n ≥ 0, toNat n = n as natural number.
+Helper for shifted_element_valuation_le_one. -/
+lemma toNat_nonneg_case (n : ℤ) (hn : 0 ≤ n) :
+    WithZero.exp (-(n.toNat : ℤ)) = WithZero.exp (-n) := by
+  rw [Int.toNat_of_nonneg hn]
+
+-- Candidate 2 [tag: coercion_simplify] [status: OK]
+/-- Case analysis for Int.toNat: when n < 0, toNat n = 0.
+Helper for shifted_element_valuation_le_one when D(v)+1 < 0. -/
+lemma toNat_neg_case (n : ℤ) (hn : n < 0) :
+    n.toNat = 0 := by
+  exact Int.toNat_eq_zero.mpr (le_of_lt hn)
+
+-- Candidate 3 [tag: bundle_divisor_bridge] [status: PROVED]
+/-- Complete proof of shifted_element_valuation_le_one using case analysis on D(v)+1.
+This is the KEY lemma for evaluation map construction. -/
+lemma shifted_element_valuation_le_one_v2
+    (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    (f : K) (hf : f ∈ RRModuleV2_real R K (D + DivisorV2.single v 1)) :
+    v.valuation K (f * algebraMap R K ((uniformizerAt v) ^ (D v + 1).toNat)) ≤ 1 := by
+  -- Handle f = 0 case
+  rcases hf with rfl | hf'
+  · simp only [zero_mul, map_zero, zero_le']
+  -- f ≠ 0 case: use membership condition and uniformizer properties
+  have hfv := hf' v
+  simp only [Finsupp.add_apply, DivisorV2.single, Finsupp.single_eq_same] at hfv
+  -- hfv : v.valuation K f ≤ WithZero.exp (D v + 1)
+  rw [Valuation.map_mul]
+  -- Goal: v(f) * v(π^n) ≤ 1 where n = (D v + 1).toNat
+  by_cases h_nonneg : 0 ≤ D v + 1
+  · -- Case 1: D(v) + 1 ≥ 0
+    -- n = D(v) + 1 as ℕ
+    have hn_eq : ((D v + 1).toNat : ℤ) = D v + 1 := Int.toNat_of_nonneg h_nonneg
+    -- v(π^n) = exp(-n) = exp(-(D(v)+1))
+    rw [uniformizerAt_pow_valuation]
+    -- v(f) * exp(-n) ≤ exp(D(v)+1) * exp(-(D(v)+1)) = exp(0) = 1
+    calc v.valuation K f * WithZero.exp (-(D v + 1).toNat : ℤ)
+        ≤ WithZero.exp (D v + 1) * WithZero.exp (-(D v + 1).toNat : ℤ) := by
+          apply mul_le_mul' hfv (le_refl _)
+      _ = WithZero.exp (D v + 1) * WithZero.exp (-(D v + 1)) := by
+          rw [hn_eq]
+      _ = WithZero.exp ((D v + 1) + (-(D v + 1))) := by
+          rw [← WithZero.exp_add]
+      _ = WithZero.exp 0 := by ring_nf
+      _ = 1 := WithZero.exp_zero
+  · -- Case 2: D(v) + 1 < 0
+    push_neg at h_nonneg
+    -- n = 0 (toNat of negative is 0)
+    have hn_zero : (D v + 1).toNat = 0 := toNat_neg_case (D v + 1) h_nonneg
+    rw [hn_zero, pow_zero]
+    simp only [map_one, mul_one]
+    -- v(f) ≤ exp(D(v)+1) < exp(0) = 1
+    have h_exp_lt : WithZero.exp (D v + 1) < WithZero.exp (0 : ℤ) := by
+      rw [WithZero.exp_lt_exp]
+      exact h_nonneg
+    have h_lt : v.valuation K f < 1 := by
+      calc v.valuation K f
+          ≤ WithZero.exp (D v + 1) := hfv
+        _ < WithZero.exp (0 : ℤ) := h_exp_lt
+        _ = 1 := WithZero.exp_zero
+    exact le_of_lt h_lt
+
+-- Candidate 4 [tag: rr_bundle_bridge] [status: PROVED]
+/-- The valuation ring at v embeds into K, and this embedding is compatible
+with the algebra structure. Elements have valuation ≤ 1 by definition. -/
+lemma valuationRingAt_embedding_compatible (v : HeightOneSpectrum R)
+    (g : valuationRingAt (R := R) (K := K) v) :
+    v.valuation K (g : K) ≤ 1 := by
+  rw [← mem_valuationRingAt_iff]
+  exact g.property
+
+-- Candidate 5 [tag: rr_bundle_bridge] [status: SORRY]
+/-- For Dedekind domains, the residue field of the valuation ring at v
+is ring-isomorphic to the residue field at the prime v.asIdeal.
+This is the KEY bridge for constructing evaluationMapAt.
+
+Note: This requires showing that valuationRingAt v ≃ Localization.AtPrime v.asIdeal
+and that their residue fields are compatible.
+Uses RingEquiv instead of LinearEquiv to avoid Module instance issues. -/
+noncomputable def residueFieldBridge (v : HeightOneSpectrum R) :
+    valuationRingAt.residueField (R := R) (K := K) v ≃+* residueFieldAtPrime R v := sorry
+
+-- Candidate 6 [tag: rr_bundle_bridge] [status: SORRY]
+/-- The residue field bridge commutes with the natural residue maps:
+algebraMap R → valuationRingAt v → residue field at valuation ring
+is equivalent to algebraMap R → residue field at prime. -/
+lemma residueFieldBridge_algebraMap_comm (v : HeightOneSpectrum R) (r : R) :
+    (residueFieldBridge (R := R) (K := K) v) ((valuationRingAt.residue (R := R) (K := K) v)
+      ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩) =
+    (residueMapAtPrime R v) r := sorry
+
+-- Candidate 7 [tag: rr_bundle_bridge] [status: SORRY]
+/-- Construct evaluationMapAt using the residue field bridge.
+For f ∈ L(D+v), compute g = f · π^{D(v)+1}, use shifted_element_valuation_le_one
+to show g ∈ valuationRingAt v, apply residue, then bridge to residueFieldAtPrime. -/
+noncomputable def evaluationMapAt_via_bridge (v : HeightOneSpectrum R) (D : DivisorV2 R) :
+    RRModuleV2_real R K (D + DivisorV2.single v 1) →ₗ[R] residueFieldAtPrime R v := sorry
+
+-- Candidate 8 [tag: coercion_simplify] [status: PROVED]
+/-- Valuation multiplicativity with explicit algebraMap coercion.
+For r ∈ R and f ∈ K: v(r·f) = v(r) * v(f).
+Helper for showing evaluation map respects R-module structure. -/
+lemma valuation_algebraMap_mul (v : HeightOneSpectrum R) (r : R) (f : K) :
+    v.valuation K (algebraMap R K r * f) =
+    v.valuation K (algebraMap R K r) * v.valuation K f :=
+  (v.valuation K).map_mul (algebraMap R K r) f
+
+end Cycle29Candidates
+
 end RiemannRochV2

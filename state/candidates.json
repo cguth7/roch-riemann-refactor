@@ -1,49 +1,84 @@
 {
-  "active_edge": "Cycle 29: Complete shifted_element_valuation_le_one and residue field bridge",
-  "cycle_28_results": {
-    "goal": "Fix partialResidueMap linearity proofs",
-    "status": "COMPLETE",
-    "proved_count": 3,
-    "sorry_count": 0,
+  "active_edge": "Cycle 30: Construct residueFieldBridge (valuationRingAt.residueField ≃+* residueFieldAtPrime)",
+  "cycle_29_results": {
+    "goal": "Complete shifted_element_valuation_le_one and residue field bridge infrastructure",
+    "status": "MAJOR_PROGRESS",
+    "proved_count": 5,
+    "sorry_count": 3,
     "candidates": [
       {
-        "name": "partialResidueMap_zero",
+        "name": "toNat_nonneg_case",
         "type": "PROVE",
         "status": "PROVED",
-        "score": "5/5",
-        "notes": "Uses map_zero after unfold partialResidueMap"
+        "score": "3/5",
+        "notes": "Int.toNat_of_nonneg wrapper"
       },
       {
-        "name": "partialResidueMap_add",
+        "name": "toNat_neg_case",
         "type": "PROVE",
         "status": "PROVED",
-        "score": "5/5",
-        "notes": "Definitional via rfl - SubringClass addition is componentwise"
+        "score": "3/5",
+        "notes": "Int.toNat_eq_zero wrapper"
       },
       {
-        "name": "partialResidueMap_smul",
+        "name": "shifted_element_valuation_le_one_v2",
         "type": "PROVE",
         "status": "PROVED",
         "score": "5/5",
-        "notes": "Definitional via rfl - SubringClass multiplication is componentwise"
+        "notes": "KEY: Complete proof via case analysis on D(v)+1. Resolves HIGH priority blocker."
+      },
+      {
+        "name": "valuationRingAt_embedding_compatible",
+        "type": "PROVE",
+        "status": "PROVED",
+        "score": "3/5",
+        "notes": "Simple wrapper using mem_valuationRingAt_iff"
+      },
+      {
+        "name": "residueFieldBridge",
+        "type": "DEF",
+        "status": "SORRY",
+        "score": "5/5",
+        "notes": "KEY: Uses RingEquiv not LinearEquiv. Next cycle focus."
+      },
+      {
+        "name": "residueFieldBridge_algebraMap_comm",
+        "type": "PROVE",
+        "status": "SORRY",
+        "score": "4/5",
+        "notes": "Depends on residueFieldBridge"
+      },
+      {
+        "name": "evaluationMapAt_via_bridge",
+        "type": "DEF",
+        "status": "SORRY",
+        "score": "5/5",
+        "notes": "Depends on residueFieldBridge"
+      },
+      {
+        "name": "valuation_algebraMap_mul",
+        "type": "PROVE",
+        "status": "PROVED",
+        "score": "3/5",
+        "notes": "map_mul wrapper"
       }
     ],
-    "key_insight": "In SubringClass, subtype operations (addition, multiplication) are definitional equalities. Proofs simplify to rfl after unfolding definitions."
+    "key_insight": "shifted_element_valuation_le_one PROVED via case analysis on Int.toNat. Two cases: D(v)+1 >= 0 uses exp arithmetic; D(v)+1 < 0 uses toNat=0 and strict inequality."
   },
-  "cycle_29_plan": {
-    "goal": "Complete evaluation map construction",
+  "cycle_30_plan": {
+    "goal": "Construct residueFieldBridge and complete evaluationMapAt",
     "tasks": [
-      "Fix shifted_element_valuation_le_one using WithZero.exp arithmetic",
-      "Investigate residue field bridge: valuationRingAt.residueField ≃ residueFieldAtPrime",
-      "Construct evaluationMapAt using partialResidueMap infrastructure",
+      "Prove residueFieldBridge: valuationRingAt.residueField ≃+* residueFieldAtPrime",
+      "Alternative Path C: Prove Module.length R (valuationRingAt.residueField v) = 1 directly",
+      "Complete evaluationMapAt using bridge or direct approach",
       "Prove kernel_evaluationMapAt"
     ],
-    "approach": "Use WithZero.exp case analysis for shifted valuation, then compose partialResidueMap with field bridge",
+    "approach": "Path A: Use IsDiscreteValuationRing.equivValuationSubring. Path B: Composition via Localization.AtPrime. Path C: Bypass bridge entirely.",
     "key_lemmas_available": [
+      "shifted_element_valuation_le_one_v2 (PROVED)",
       "partialResidueMap_zero/add/smul (PROVED)",
-      "withzero_exp_le_exp (simp wrapper)",
-      "withzero_exp_mul_le_one (helper)",
-      "local_gap_bound_of_exists_map (PROVED)"
+      "local_gap_bound_of_exists_map (PROVED)",
+      "IsDiscreteValuationRing.equivValuationSubring (mathlib)"
     ]
   },
   "architecture": {
@@ -59,16 +94,28 @@
   "remaining_sorries": {
     "active": [
       {
-        "name": "shifted_element_valuation_le_one",
-        "line": 989,
+        "name": "residueFieldBridge",
+        "line": 1315,
         "status": "ACTIVE",
-        "notes": "WithZero.exp arithmetic - proof path clear"
+        "notes": "RingEquiv - DVR residue field isomorphism"
+      },
+      {
+        "name": "residueFieldBridge_algebraMap_comm",
+        "line": 1322,
+        "status": "BLOCKED",
+        "notes": "Depends on residueFieldBridge"
+      },
+      {
+        "name": "evaluationMapAt_via_bridge",
+        "line": 1331,
+        "status": "BLOCKED",
+        "notes": "Depends on residueFieldBridge"
       },
       {
         "name": "evaluationMapAt",
         "line": 1029,
         "status": "BLOCKER",
-        "notes": "Needs residue field bridge"
+        "notes": "Can use evaluationMapAt_via_bridge once bridge is ready"
       },
       {
         "name": "kernel_evaluationMapAt",
@@ -83,15 +130,22 @@
         "notes": "Depends on kernel proof"
       }
     ],
+    "resolved_cycle_29": [
+      {
+        "name": "shifted_element_valuation_le_one",
+        "line": 989,
+        "notes": "Superseded by shifted_element_valuation_le_one_v2 (PROVED)"
+      }
+    ],
     "deprecated": [
       {
         "name": "ellV2_mono",
-        "line": 337,
+        "line": 335,
         "notes": "Superseded by ellV2_real_mono"
       },
       {
         "name": "riemann_inequality",
-        "line": 715,
+        "line": 713,
         "notes": "Superseded by riemann_inequality_real"
       }
     ]
