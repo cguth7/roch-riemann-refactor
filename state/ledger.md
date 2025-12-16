@@ -75,3 +75,8 @@ The "proof" is algebraically valid but mathematically vacuous—we assumed the a
 - Added Assumption Accounting to ledger
 - Clarified that eulerChar_formula = RR in disguise
 - New active edge: Build real divisor/cohomology foundations
+
+### Cycle 4 (Foundation Building - Divisors)
+- **Active edge**: Define `Divisor α := α →₀ ℤ`, `deg`, prove additivity, refactor RRData
+- **Approach**: Use mathlib's `Finsupp` (finitely supported functions) as the basis
+- **Goal**: Replace abstract `Div : Type*` with concrete `Divisor α` grounded in mathlib

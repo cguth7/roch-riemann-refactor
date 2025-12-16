@@ -1,5 +1,5 @@
 {
-  "active_edge": "Axiomatized RR theory → build real divisor/cohomology foundations",
+  "active_edge": "Define Divisor α := α →₀ ℤ, deg, prove additivity, refactor RRData",
   "candidates": [
     {
       "name": "RRDataWithEuler.riemannRoch",
@@ -49,5 +49,5 @@
     "PIVOT Cycle 2: defined RRData structure (elaborates)",
     "PIVOT Cycle 3: extended to RRDataWithEuler (RR derivable from fields)"
   ],
-  "next_action": "Option 3: Begin building divisor/cohomology foundations in Lean to enable real instantiation"
+  "next_action": "Cycle 4: Define Divisor α := α →₀ ℤ (Finsupp), define deg := sum of coefficients, prove deg_add, refactor RRData.Div to use real Divisor type"
 }

@@ -18,7 +18,10 @@
 - Cannot instantiate abstract structures with real mathlib objects
 - No path to actual RR proof without building foundations
 
-## Next Steps
-- **Option 3 selected**: Build divisor/cohomology foundations in Lean
-- This is a major undertaking (months of work, thousands of lines)
-- Start with simplest component: Weil divisors on a curve?
+## Next Steps (Cycle 4)
+- **Foundation building**: Define real Divisor type
+- `Divisor α := α →₀ ℤ` (Finsupp - finitely supported functions from points to ℤ)
+- `deg D := D.sum (fun _ n => n)` (sum of coefficients)
+- Prove `deg_add : deg (D + E) = deg D + deg E` (should follow from Finsupp.sum_add)
+- Subtraction `K - D` comes free from AddCommGroup instance on Finsupp
+- Refactor `RRData.Div` to use `Divisor α` instead of abstract `Type*`
