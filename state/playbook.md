@@ -1,12 +1,30 @@
 # Playbook (Curator maintained)
 
 ## Heuristics
+
+### General
 - Prefer line-bundle / invertible-sheaf RR statements; divisor RR is a wrapper.
 - Use `finrank k` for dimensions; avoid `Nat`-based dims until the end.
 - Keep lemma statements small: fewer binders, fewer coercions, fewer implicit arguments.
 - When stuck on coercions, introduce explicit `let` bindings for objects (e.g. `L : LineBundle X`).
 
-## Current Status Summary (Cycle 32)
+### Lean Formalization Discipline (Added Cycle 33)
+
+**Archaeology-First Rule**: Before writing a new proof, spend 15+ min searching mathlib for existing lemmas. The "obvious math" often already exists under a different name. Search patterns:
+- `*_iff_*` for characterizations
+- `exists_*` for existence lemmas
+- Check the specific module's API (e.g., `ValuationSubring`, `IsLocalization`, `IsFractionRing`)
+
+**Frontier Freeze Rule**: Don't add new sorry candidates while a key blocker is stuck. Sorry count creeping up (19→25) without the hard lemma moving is a warning sign. Keep pressure on the actual blocker.
+
+**DVR/Valuation Anti-Pattern**: Avoid constructing uniformizers manually. The moment you say "find π with v(π)=...", you're signing up for `Associates`, `Irreducible`, `UniqueFactorizationMonoid` instance juggling. Instead:
+- Use localization universal properties
+- Work inside the DVR/localization where API is cleanest, then transport
+- Look for `exists_lift_of_le_one` patterns in mathlib
+
+**Reframing Rule**: If a "converse" lemma is hard, check if there's a higher-level equivalence that gives both directions for free (e.g., ring isomorphism instead of set equality).
+
+## Current Status Summary (Cycle 33)
 
 **RR.lean (v1)**: Axiom-based approach with `FunctionFieldDataWithRR`. Complete but circular - ARCHIVED.
 
@@ -32,6 +50,8 @@
 - **`localization_residue_equiv`: R/v.asIdeal ≃ Loc.AtPrime/maxIdeal (Cycle 32)**
 - **`localization_residueField_equiv`: Loc.AtPrime.ResidueField ≃ residueFieldAtPrime (Cycle 32)**
 - **`localization_residue_surjective`: Helper lemma (Cycle 32)**
+- **`localization_maximalIdeal_eq_map`: maxIdeal = map v.asIdeal (Cycle 33)**
+- **`mk_mem_valuationRingAt`: Forward direction - fractions have valuation ≤ 1 (Cycle 33)**
 
 ### Typeclass Hierarchy
 ```
@@ -44,7 +64,7 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 
 ---
 
-## Current Sorry Count (RR_v2.lean after Cycle 32)
+## Current Sorry Count (RR_v2.lean after Cycle 33)
 
 | Line | Name | Status | Notes |
 |------|------|--------|-------|
@@ -62,13 +82,55 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 | 1449 | `residueFieldBridge_v3` | BLOCKED | Depends on v2 |
 | 1496 | `exists_same_residue_class` | ACTIVE | density lemma |
 | 1541 | `valuationRingAt_eq_fractions` | ACTIVE | Alternative approach |
-| 1603 | `valuationRingAt_equiv_localization` | **ACTIVE** | **KEY BLOCKER** - DVR equivalence |
+| 1603 | `valuationRingAt_equiv_localization` | **ACTIVE** | **KEY BLOCKER** - DVR equivalence (Cycle 32) |
 | 1610 | `residueField_equiv_of_valuationRingAt_equiv` | BLOCKED | Depends on 1603 |
 | 1621 | `residueFieldBridge_via_localization` | BLOCKED | Depends on 1603 |
 | 1631 | `residueMapFromR_surjective_via_localization` | BLOCKED | Depends on 1603 |
 | 1642 | `exists_same_residue_class_via_fractions` | BACKUP | Alternative direct approach |
+| 1714 | `valuationRingAt_iff_fraction` | HELPER | Bidirectional (Cycle 33) |
+| 1733 | `valuationRingAt_exists_fraction` | **ACTIVE** | **KEY BLOCKER** - converse direction (Cycle 33) |
+| 1744 | `valuationRingAt_equiv_localization_v3` | BLOCKED | Depends on 1733 |
+| 1753 | `valuationRingAt_equiv_localization_v2` | REDUNDANT | Same as v3 |
+| 1759 | `residueField_equiv_of_valuationRingAt_equiv_v2` | BLOCKED | Depends on equiv |
+| 1769 | `residueMapFromR_surjective_via_localization_v2` | BLOCKED | Final target |
 
-**Total**: 19 sorries (2 deprecated, 4 superseded, 5 new Cycle 32, 8 active path)
+**Total**: 25 sorries (2 deprecated, 4 superseded, 6 new Cycle 33, 13 active path)
+
+**Note**: Sorry count increased 19→25 in Cycle 33. Per Frontier Freeze Rule, Cycle 34 should focus exclusively on the key blocker without adding new candidates.
+
+---
+
+## Cycle 33 Accomplishments
+
+**Goal**: Prove DVR equivalence via fraction characterization
+
+**Results**: 2/8 candidates PROVED
+- **`localization_maximalIdeal_eq_map`**: maxIdeal (Loc.AtPrime) = map v.asIdeal (PROVED via mathlib)
+- **`mk_mem_valuationRingAt`**: Forward direction - r/s ∈ valuationRingAt when s ∉ v.asIdeal (PROVED)
+- `valuationRingAt_iff_fraction`: SORRY - bidirectional characterization
+- `valuationRingAt_exists_fraction`: SORRY - **NEW KEY BLOCKER** (converse direction)
+- `valuationRingAt_equiv_localization_v3`: SORRY - depends on converse
+- `valuationRingAt_equiv_localization_v2`: SORRY - redundant
+- `residueField_equiv_of_valuationRingAt_equiv_v2`: SORRY - depends on equiv
+- `residueMapFromR_surjective_via_localization_v2`: SORRY - final target
+
+**Key Discovery**: `mk_mem_valuationRingAt` proves the forward direction:
+```lean
+lemma mk_mem_valuationRingAt (v : HeightOneSpectrum R) (r : R) {s : R} (hs : s ∉ v.asIdeal) :
+    (algebraMap R K r / algebraMap R K s) ∈ valuationRingAt v
+```
+Proof uses `valuation_eq_one_of_not_mem` (Cycle 31) and `Valuation.map_div`.
+
+**New Blocker**: `valuationRingAt_exists_fraction` - need to show every g ∈ K with v(g) ≤ 1 can be written as r/s with s ∉ v.asIdeal.
+
+**Mathlib Archaeology Results**:
+- `IsDiscreteValuationRing.exists_lift_of_le_one`: If DVR valuation ≤ 1, element is in DVR image ✓
+- `IsDiscreteValuationRing.map_algebraMap_eq_valuationSubring`: DVR image = valuationSubring ✓
+- `IsDiscreteValuationRing.equivValuationSubring`: DVR ≃+* valuationSubring ✓
+
+**Gap Identified**: The DVR valuation `(maximalIdeal (Loc.AtPrime v.asIdeal)).valuation K` and `v.valuation K` are defined on different HeightOneSpectrum elements. Need to show they're equal/equivalent.
+
+**Reframing for Cycle 34**: Instead of proving the converse directly, show the valuations are equal. Then `exists_lift_of_le_one` gives the converse for free!
 
 ---
 
@@ -179,35 +241,39 @@ modulo the maximal ideal. This is a real mathematical property of Dedekind domai
 
 ---
 
-## Active Edge: DVR Equivalence (Cycle 32→33)
+## Active Edge: Valuation Equality (Cycle 33→34)
 
-**Goal**: Prove `valuationRingAt_equiv_localization` to complete the localization path
+**Goal**: Show DVR valuation = HeightOneSpectrum valuation, then DVR equiv follows
 
-**Current State** (after Cycle 32):
+**Current State** (after Cycle 33):
 ```
-Localization Path (NEW - Cycle 32):
-R/v.asIdeal ≃ Loc.AtPrime/maxIdeal ≃ valuationRingAt.residueField
-    ✅ PROVED       ❌ MISSING           ▲
-                         │
-               valuationRingAt ≃ Loc.AtPrime
-                    ❌ KEY BLOCKER
+Valuation Equality Path (NEW - Cycle 34):
+(maxIdeal (Loc.AtPrime)).valuation K  =?=  v.valuation K
+              │                                   │
+              ▼                                   ▼
+    Loc.AtPrime ⊆ valuationSubring     valuationRingAt v
+              │                                   │
+              └───── Should be equal! ────────────┘
+
+If equal → exists_lift_of_le_one gives converse → equivValuationSubring gives equiv
 ```
 
 **What We Have**:
-- ✅ `localization_residue_equiv`: R/v.asIdeal ≃ Loc.AtPrime/maxIdeal (Cycle 32)
-- ✅ `localization_residueField_equiv`: Loc.AtPrime.ResidueField ≃ residueFieldAtPrime (Cycle 32)
+- ✅ `mk_mem_valuationRingAt`: Forward direction (fractions have valuation ≤ 1) (Cycle 33)
+- ✅ `localization_maximalIdeal_eq_map`: maxIdeal = map v.asIdeal (Cycle 33)
 - ✅ `localizationAtPrime_isDVR`: Localization.AtPrime is DVR (Cycle 31)
+- ✅ Mathlib: `exists_lift_of_le_one`, `equivValuationSubring` (discovered Cycle 33)
 
 **What We Need**:
-- ❌ `valuationRingAt_equiv_localization`: valuationRingAt v ≃+* Localization.AtPrime v.asIdeal
+- ❌ Valuation equality: `(IsDiscreteValuationRing.maximalIdeal (Loc.AtPrime)).valuation K = v.valuation K`
+- OR: Show valuationSubrings are equal
 
 **Why This Unlocks Everything**:
-1. DVR equivalence → residue field equivalence follows trivially
-2. residue field equivalence → residueFieldBridge composition completes
-3. bridges → evaluationMapAt → kernel → LocalGapBound → victory
+1. Valuation equality → valuationSubring equality
+2. valuationSubring equality + equivValuationSubring → DVR equivalence
+3. DVR equivalence → residue field bridge → evaluationMapAt → LocalGapBound → victory
 
-**Alternative Path** (if DVR equiv too hard):
-- Prove `exists_same_residue_class_via_fractions` directly using IsFractionRing + CRT
+**Cycle 34 Constraint**: NO new sorry candidates. Focus exclusively on valuation equality.
 
 ---
 
@@ -256,13 +322,14 @@ R/v.asIdeal ≃ Loc.AtPrime/maxIdeal ≃ valuationRingAt.residueField
 
 - [ ] `instance : LocalGapBound R K` (makes riemann_inequality_affine unconditional)
 
-**Current Path** (after Cycle 32):
+**Current Path** (after Cycle 33):
 1. ~~Fix `shifted_element_valuation_le_one`~~ ✅ DONE (Cycle 29)
 2. ~~ker(residueMapFromR) = v.asIdeal~~ ✅ DONE (Cycle 30)
 3. ~~Conditional bridges ready~~ ✅ DONE (Cycle 31)
 4. ~~Localization path discovered~~ ✅ DONE (Cycle 32)
-5. **BLOCKER**: Prove `valuationRingAt_equiv_localization` (DVR equivalence)
-6. Then residue field bridges compose → evaluationMapAt → kernel → LocalGapBound
+5. ~~Forward direction (mk_mem_valuationRingAt)~~ ✅ DONE (Cycle 33)
+6. **BLOCKER**: Show valuation equality → get converse for free (Cycle 34)
+7. Then DVR equiv → residue field bridges → evaluationMapAt → kernel → LocalGapBound
 
 ---
 
@@ -291,6 +358,7 @@ R/v.asIdeal ≃ Loc.AtPrime/maxIdeal ≃ valuationRingAt.residueField
 | 30 | **Bypass strategy**: ker(residueMapFromR) = v.asIdeal PROVED |
 | 31 | **Conditional bridges**: First Isom Thm approach ready, density lemma blocking |
 | 32 | **Localization path**: equivQuotMaximalIdeal discovered, DVR equiv blocking |
+| 33 | **Forward direction PROVED** (mk_mem_valuationRingAt), mathlib archaeology, reframing |
 
 ---
 
@@ -302,62 +370,75 @@ R/v.asIdeal ≃ Loc.AtPrime/maxIdeal ≃ valuationRingAt.residueField
 
 ---
 
-## Cycle 33 Tactical Guide
+## Cycle 34 Tactical Guide
 
-### Task 1: Prove `valuationRingAt_equiv_localization` (Priority: CRITICAL)
+### Strategic Reframing (Based on Cycle 33 Archaeology)
 
-**Location**: Line 1603 in RR_v2.lean
+**OLD approach** (Cycle 33): Prove converse direction directly
+- Write g = a/b via IsFractionRing
+- If b ∈ v.asIdeal, factor out uniformizer...
+- **Problem**: Uniformizer math leads to instance hell
 
-**Goal**: Show valuationRingAt v ≃+* Localization.AtPrime v.asIdeal
+**NEW approach** (Cycle 34): Show valuations are equal, get converse for free
+- Show `(maximalIdeal (Loc.AtPrime v.asIdeal)).valuation K = v.valuation K` (or equivalent)
+- Then `exists_lift_of_le_one` from mathlib gives converse automatically
+- Then `equivValuationSubring` gives the ring equivalence
 
-**Proof Strategy**:
+### Task 1: Prove Valuation Equality (Priority: CRITICAL)
+
+**Goal**: Show the two valuations on K are equal/equivalent:
+```lean
+lemma localization_valuation_eq (v : HeightOneSpectrum R) :
+    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K =
+    v.valuation K
+-- OR show their valuationSubrings are equal
+```
+
+**Search Strategy**:
+1. Search mathlib for lemmas connecting `HeightOneSpectrum.valuation` to DVR valuations
+2. Look for `valuation.*eq` or `IsEquiv.*valuation` lemmas
+3. Check if there's a universal property: "valuation on K centered at p is unique"
+
+**Key Files to Check**:
+- `Mathlib/RingTheory/DedekindDomain/AdicValuation.lean` (HeightOneSpectrum.valuation)
+- `Mathlib/RingTheory/Valuation/Discrete/Basic.lean` (DVR valuation)
+- `Mathlib/RingTheory/Localization/AtPrime/*.lean` (localization properties)
+
+**Mathematical Argument**:
+Both valuations:
+1. Have value group ℤᵐ⁰
+2. Are centered at the same prime ideal v.asIdeal (one directly, one via localization)
+3. Give the same valuation on elements of R
+4. Extend uniquely to K as fraction field
+
+By uniqueness of extensions, they should be equal.
+
+### Task 2: Apply DVR Machinery (Depends on Task 1)
+
+Once valuation equality is proved:
 ```lean
 noncomputable def valuationRingAt_equiv_localization (v : HeightOneSpectrum R) :
-    valuationRingAt (R := R) (K := K) v ≃+* Localization.AtPrime v.asIdeal
+    valuationRingAt v ≃+* Localization.AtPrime v.asIdeal := by
+  -- valuation equality gives valuationSubring equality
+  have heq : ((maxIdeal (Loc.AtPrime)).valuation K).valuationSubring = valuationRingAt v := ...
+  -- equivValuationSubring gives: Loc.AtPrime ≃+* (maxIdeal).valuationSubring
+  have hequiv := IsDiscreteValuationRing.equivValuationSubring (Loc.AtPrime) K
+  -- Compose: valuationRingAt = valuationSubring ≃ Loc.AtPrime
+  exact heq ▸ hequiv.symm
 ```
 
-**Mathematical Content**:
-- Both sides are DVRs with fraction field K
-- Both have maximal ideal corresponding to v.asIdeal
-- `valuationRingAt v` = {g ∈ K : v(g) ≤ 1} (valuation approach)
-- `Localization.AtPrime v.asIdeal` = {r/s : r, s ∈ R, s ∉ v.asIdeal} (algebraic approach)
-- These are the same subset of K for Dedekind domains
+### Success Criteria for Cycle 34
 
-**Approach A: Use existing mathlib DVR machinery**
-1. Search for `IsDiscreteValuationRing.equivValuationSubring` or similar
-2. Apply to `Localization.AtPrime v.asIdeal` (which we proved is DVR)
-3. Check if result connects to `valuationRingAt v`
+**Pass**: One of:
+- Find existing mathlib lemma showing valuation equality
+- Prove valuation equality via universal property
+- Prove a "baby lemma" that demonstrably shortens the path
 
-**Approach B: Show subset equality directly**
-1. Prove: `(valuationRingAt v : Set K) = range(algebraMap (Loc.AtPrime) K)`
-2. Use `IsFractionRing` properties
-3. Both directions:
-   - (⊇) r/s with s ∉ v.asIdeal has v(r/s) = v(r) ≤ 1
-   - (⊆) g with v(g) ≤ 1 can be written as r/s with s ∉ v.asIdeal
+**Fail**: Adding more sorry scaffolding without moving the blocker
 
-**Approach C: Use uniqueness of DVR with given valuation**
-1. Both have same valuation restricted from K
-2. DVR with given valuation is unique
-3. Use universal property
+### Fallback (Only if Task 1 proves impossible)
 
-**Decision Point**: Start with Approach A (search for existing lemmas).
-
-### Task 2: Complete bridge (depends on Task 1)
-
-Once `valuationRingAt_equiv_localization` is proved:
-
-```lean
--- This should become trivial composition:
-noncomputable def residueFieldBridge_via_localization (v : HeightOneSpectrum R)
-    (e : valuationRingAt v ≃+* Localization.AtPrime v.asIdeal) :
-    (R ⧸ v.asIdeal) ≃+* valuationRingAt.residueField v := by
-  have h1 := localization_residue_equiv v       -- R/v.asIdeal ≃ Loc/max
-  have h2 := residueField_equiv_of_... e        -- Loc.ResField ≃ valRing.ResField
-  exact h1.symm.trans h2
-```
-
-### Fallback: Direct proof
-
-If DVR equiv proves too hard, fall back to direct proof:
-1. Prove `exists_same_residue_class_via_fractions` (line 1642)
-2. Use IsFractionRing + CRT approximation
+If valuation equality is blocked by fundamental API gaps:
+1. Document the gap clearly
+2. Consider axiomatizing `valuationRingAt v ≃ Localization.AtPrime v.asIdeal` as a structure field
+3. Or pivot to direct `exists_same_residue_class_via_fractions` proof
