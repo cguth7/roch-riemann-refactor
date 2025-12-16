@@ -135,5 +135,36 @@ The "proof" is algebraically valid but mathematically vacuous—we assumed the a
 - `ℓ(D) = dim L(D)` can be defined (once L(D) shown to be a vector space)
 
 #### Next cycle
-- Cycle 6: Prove L(D) is a K-vector subspace (add_mem, neg_mem, smul_mem)
-- This will enable `ℓ(D) = finrank K L(D)`
+- Cycle 6: Prove L(D) is a k-vector subspace (add_mem, smul_mem)
+- This will enable `ℓ(D) = finrank k L(D)`
+
+### Cycle 6 - L(D) is a k-Submodule - COMPLETED
+- **Active edge**: Prove L(D) is a k-vector subspace
+- **Key insight**: L(D) is a k-submodule (ground field), not K-submodule
+- **Mathematical foundation**: Strong triangle inequality for valuations
+
+#### Structure Changes
+| Change | Description |
+|--------|-------------|
+| `FunctionFieldData α k` | Added ground field parameter `k : Type*` with `[Field k]` |
+| `[Algebra k K]` | K is now a k-algebra |
+| `div_add` | Strong triangle inequality: `div f ⊓ div g ≤ div (f + g)` |
+| `div_algebraMap` | Constants have zero divisor: `∀ c : k, div (algebraMap k K c) = 0` |
+
+#### Results
+| Definition/Lemma | Status | Notes |
+|-----------------|--------|-------|
+| `RRSpaceCarrier` | ✅ DEFINED | Carrier set for L(D) |
+| `RRSpace.zero_mem'` | ✅ **PROVED** | `Or.inl rfl` |
+| `RRSpace.add_mem'` | ✅ **PROVED** | Uses `div_add` (strong triangle inequality) |
+| `RRSpace.smul_mem'` | ✅ **PROVED** | Uses `div_mul` + `div_algebraMap` |
+| `RRSpace : Submodule k data.K` | ✅ DEFINED | Full k-submodule structure |
+| `RRSpace.mono` | ✅ **PROVED** | Monotonicity preserved |
+
+#### Significance
+**L(D) is now a proper k-vector space**, not just a set. This enables:
+- `ℓ(D) = finrank k (RRSpace data D)` - semantic dimension
+- Standard linear algebra tools from mathlib
+
+#### Next cycle
+- Cycle 7: Define `ℓ(D) = finrank k L(D)`, prove monotonicity

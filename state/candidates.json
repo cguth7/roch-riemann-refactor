@@ -1,5 +1,5 @@
 {
-  "active_edge": "Prove L(D) is a K-vector subspace",
+  "active_edge": "Define ℓ(D) = finrank k L(D)",
   "candidates": [
     {
       "name": "Divisor α",
@@ -121,6 +121,41 @@
       "cycle": 5
     },
     {
+      "name": "FunctionFieldData.div_add",
+      "status": "AXIOM",
+      "statement": "∀ f g, div f ⊓ div g ≤ div (f + g)",
+      "approach": "Strong triangle inequality - structure field",
+      "cycle": 6
+    },
+    {
+      "name": "FunctionFieldData.div_algebraMap",
+      "status": "AXIOM",
+      "statement": "∀ c : k, div (algebraMap k K c) = 0",
+      "approach": "Constants have zero divisor - structure field",
+      "cycle": 6
+    },
+    {
+      "name": "RRSpace.add_mem'",
+      "status": "PROVED",
+      "statement": "f ∈ L(D) → g ∈ L(D) → f + g ∈ L(D)",
+      "approach": "Using div_add (strong triangle inequality)",
+      "cycle": 6
+    },
+    {
+      "name": "RRSpace.smul_mem'",
+      "status": "PROVED",
+      "statement": "c : k → f ∈ L(D) → c • f ∈ L(D)",
+      "approach": "Using div_mul + div_algebraMap",
+      "cycle": 6
+    },
+    {
+      "name": "RRSpace (Submodule)",
+      "status": "DEFINED",
+      "statement": "def RRSpace (data : FunctionFieldData α k) (D : Divisor α) : Submodule k data.K",
+      "approach": "Full k-submodule structure with zero_mem', add_mem', smul_mem'",
+      "cycle": 6
+    },
+    {
       "name": "RRDataWithEuler.riemannRoch",
       "status": "DERIVED_FROM_ASSUMPTIONS",
       "statement": "∀ D, ℓ(D) - ℓ(K-D) = deg(D) + 1 - g",
@@ -144,7 +179,8 @@
     "PIVOT Cycle 2: defined RRData structure (elaborates)",
     "PIVOT Cycle 3: extended to RRDataWithEuler (RR derivable from fields)",
     "CYCLE 4: Defined Divisor α := α →₀ ℤ, proved deg_add/deg_zero/deg_neg/deg_sub/deg_single",
-    "CYCLE 5: Defined Effective, FunctionFieldData, RRSpace L(D)"
+    "CYCLE 5: Defined Effective, FunctionFieldData, RRSpace L(D)",
+    "CYCLE 6: L(D) is k-Submodule - added div_add, div_algebraMap, proved add_mem'/smul_mem'"
   ],
-  "next_action": "Cycle 6: Prove L(D) is a K-vector subspace (add_mem, neg_mem, smul_mem)"
+  "next_action": "Cycle 7: Define ℓ(D) = finrank k L(D), prove monotonicity"
 }

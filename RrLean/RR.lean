@@ -6,6 +6,7 @@ import Mathlib.Order.Preorder.Finsupp
 import Mathlib.AlgebraicGeometry.Scheme
 import Mathlib.Algebra.Field.Basic
 import Mathlib.FieldTheory.IsAlgClosed.Basic
+import Mathlib.Algebra.Module.Submodule.Basic
 
 open AlgebraicGeometry
 
@@ -99,11 +100,13 @@ This captures the relationship between meromorphic functions and divisors:
 - `div` is a group homomorphism from K× to Div(α)
 - Principal divisors have degree zero (fundamental for Riemann-Roch)
 -/
-structure FunctionFieldData (α : Type*) where
+structure FunctionFieldData (α : Type*) (k : Type*) [Field k] where
   /-- The function field -/
   K : Type*
   /-- K is a field -/
   [field : Field K]
+  /-- K is a k-algebra (contains k as constants) -/
+  [algebra : Algebra k K]
   /-- Principal divisor map: f ↦ div(f) = zeros - poles -/
   div : K → Divisor α
   /-- div is multiplicative: div(fg) = div(f) + div(g) -/
@@ -114,12 +117,18 @@ structure FunctionFieldData (α : Type*) where
   div_inv : ∀ f, f ≠ 0 → div f⁻¹ = -div f
   /-- Principal divisors have degree zero -/
   deg_div : ∀ f, f ≠ 0 → Divisor.deg (div f) = 0
+  /-- Strong triangle inequality: div(f + g) ≥ min(div f, div g) pointwise.
+      This is the key property that makes L(D) a vector subspace. -/
+  div_add : ∀ f g, div f ⊓ div g ≤ div (f + g)
+  /-- Constants have zero divisor: algebraMap k K embeds constants which have no zeros or poles -/
+  div_algebraMap : ∀ c : k, div (algebraMap k K c) = 0
 
 attribute [instance] FunctionFieldData.field
+attribute [instance] FunctionFieldData.algebra
 
 namespace FunctionFieldData
 
-variable {α : Type*} (data : FunctionFieldData α)
+variable {α : Type*} {k : Type*} [Field k] (data : FunctionFieldData α k)
 
 /-- div(0) = 0 (by convention, though 0 has no well-defined divisor) -/
 lemma div_zero : data.div 0 = 0 := by
@@ -132,29 +141,104 @@ lemma div_zero : data.div 0 = 0 := by
 
 end FunctionFieldData
 
-/-! ## Riemann-Roch Space L(D) (Cycle 5)
+/-! ## Riemann-Roch Space L(D) (Cycles 5-6)
 
 L(D) = { f ∈ K | f = 0 or div(f) + D ≥ 0 }
 
 This is the space of meromorphic functions whose poles are bounded by D.
 The dimension ℓ(D) = dim L(D) is what appears in the Riemann-Roch theorem.
+
+**Cycle 6**: L(D) is a K-submodule (vector subspace). The key ingredients are:
+- `div_add`: Strong triangle inequality ensures closure under addition
+- `div_mul`: Multiplicativity ensures closure under scalar multiplication
 -/
 
-/-- The Riemann-Roch space L(D) consists of functions f such that div(f) + D ≥ 0.
-Equivalently: f has poles at most where D has positive coefficients. -/
-def RRSpace (data : FunctionFieldData α) (D : Divisor α) : Set data.K :=
+/-- The carrier set for L(D): functions f such that div(f) + D ≥ 0. -/
+def RRSpaceCarrier {k : Type*} [Field k] (data : FunctionFieldData α k) (D : Divisor α) : Set data.K :=
   { f | f = 0 ∨ Divisor.Effective (data.div f + D) }
 
 namespace RRSpace
 
-variable {α : Type*} (data : FunctionFieldData α) (D : Divisor α)
+variable {α : Type*} {k : Type*} [Field k] (data : FunctionFieldData α k) (D : Divisor α)
 
--- Candidate 7: Zero is always in L(D)
-lemma zero_mem : (0 : data.K) ∈ RRSpace data D := Or.inl rfl
+-- Zero is always in L(D)
+lemma zero_mem' : (0 : data.K) ∈ RRSpaceCarrier data D := Or.inl rfl
 
--- Candidate 8: Monotonicity: D ≤ E → L(D) ⊆ L(E)
-lemma mono {D E : Divisor α} (h : D ≤ E) : RRSpace data D ⊆ RRSpace data E := by
+-- Closure under addition using div_add (strong triangle inequality)
+lemma add_mem' {f g : data.K} (hf : f ∈ RRSpaceCarrier data D) (hg : g ∈ RRSpaceCarrier data D) :
+    f + g ∈ RRSpaceCarrier data D := by
+  rcases hf with rfl | hf_eff
+  · simp only [zero_add]; exact hg
+  rcases hg with rfl | hg_eff
+  · simp only [add_zero]; exact Or.inr hf_eff
+  -- Both f, g nonzero with div f + D ≥ 0, div g + D ≥ 0
+  by_cases h : f + g = 0
+  · exact Or.inl h
+  · right
+    intro p
+    -- Goal: 0 ≤ (div(f+g) + D) p
+    -- We have: div f ⊓ div g ≤ div(f + g) from div_add
+    -- And: div f + D ≥ 0, div g + D ≥ 0
+    have htri := data.div_add f g
+    have htri_p : (data.div f ⊓ data.div g) p ≤ (data.div (f + g)) p := htri p
+    have hf_p : 0 ≤ (data.div f + D) p := hf_eff p
+    have hg_p : 0 ≤ (data.div g + D) p := hg_eff p
+    simp only [Finsupp.add_apply, Finsupp.coe_zero, Pi.zero_apply] at hf_p hg_p ⊢
+    simp only [Finsupp.inf_apply] at htri_p
+    -- (div f) p ⊓ (div g) p ≤ (div (f+g)) p
+    -- (div f) p + D p ≥ 0 means (div f) p ≥ -D p
+    -- (div g) p + D p ≥ 0 means (div g) p ≥ -D p
+    -- So min((div f) p, (div g) p) ≥ -D p
+    -- Therefore (div (f+g)) p ≥ -D p, i.e., (div (f+g)) p + D p ≥ 0
+    have : -D p ≤ (data.div f) p ⊓ (data.div g) p := by
+      simp only [le_inf_iff]
+      constructor <;> omega
+    omega
+
+-- Closure under scalar multiplication using div_mul and div_algebraMap
+-- L(D) is a k-module: scalars are from the ground field k, not the function field K
+lemma smul_mem' (c : k) {f : data.K} (hf : f ∈ RRSpaceCarrier data D) :
+    c • f ∈ RRSpaceCarrier data D := by
+  -- c • f = algebraMap k K c * f in an algebra
+  simp only [Algebra.smul_def]
+  rcases hf with rfl | hf_eff
+  · simp only [mul_zero]; exact Or.inl rfl
+  by_cases hc : c = 0
+  · simp only [hc, map_zero, zero_mul]; exact Or.inl rfl
+  by_cases hf_zero : f = 0
+  · simp only [hf_zero, mul_zero]; exact Or.inl rfl
+  -- c ≠ 0, f ≠ 0, so (algebraMap k K c) * f ≠ 0
+  right
+  intro p
+  -- div((algebraMap k K c) * f) = div(algebraMap k K c) + div f = 0 + div f = div f
+  have hmul := data.div_mul (algebraMap k data.K c) f
+  have hconst := data.div_algebraMap c
+  simp only [Finsupp.add_apply, Finsupp.coe_zero, Pi.zero_apply] at hf_eff ⊢
+  rw [hmul, hconst, Finsupp.add_apply, Finsupp.coe_zero, Pi.zero_apply, zero_add]
+  exact hf_eff p
+
+end RRSpace
+
+/-- The Riemann-Roch space L(D) as a k-submodule of K.
+
+L(D) consists of functions f ∈ K such that div(f) + D ≥ 0.
+This is a k-vector space because:
+- div(f + g) ≥ min(div f, div g) (strong triangle inequality)
+- div(c * f) = div c + div f = 0 + div f = div f for c ∈ k (constants have zero divisor) -/
+def RRSpace {k : Type*} [Field k] (data : FunctionFieldData α k) (D : Divisor α) : Submodule k data.K where
+  carrier := RRSpaceCarrier data D
+  zero_mem' := RRSpace.zero_mem' data D
+  add_mem' := RRSpace.add_mem' data D
+  smul_mem' := RRSpace.smul_mem' data D
+
+namespace RRSpace
+
+variable {α : Type*} {k : Type*} [Field k] (data : FunctionFieldData α k) (D : Divisor α)
+
+-- Monotonicity: D ≤ E → L(D) ⊆ L(E)
+lemma mono {D E : Divisor α} (h : D ≤ E) : (RRSpace data D : Set data.K) ⊆ RRSpace data E := by
   intro f hf
+  simp only [SetLike.mem_coe] at hf ⊢
   rcases hf with rfl | heff
   · exact Or.inl rfl
   · right

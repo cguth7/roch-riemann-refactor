@@ -19,43 +19,43 @@
   - **PROVED**: `Effective_iff`, `Effective_zero`, `Effective_add`, `Effective_single`
   - `FunctionFieldData α` structure (K, div, div_mul, div_one, div_inv, deg_div)
   - **PROVED**: `FunctionFieldData.div_zero`
-  - `RRSpace data D : Set data.K` (Riemann-Roch space L(D))
-  - **PROVED**: `RRSpace.zero_mem`, `RRSpace.mono`
+- **RESOLVED (Cycle 6)**: L(D) is a k-Submodule
+  - Extended `FunctionFieldData α k` with ground field k, `Algebra k K`, `div_add`, `div_algebraMap`
+  - `RRSpace data D : Submodule k data.K` (Riemann-Roch space as proper k-submodule)
+  - **PROVED**: `RRSpace.zero_mem'`, `RRSpace.add_mem'`, `RRSpace.smul_mem'`, `RRSpace.mono`
 
 ## Blockers (fundamental)
 - mathlib lacks: line bundles, sheaf cohomology H⁰/H¹, genus for schemes
 - Cannot yet instantiate `RRData.Div` with real `Divisor α` (needs point type from curve)
 - `RRData.deg` is abstract; not yet connected to `Divisor.deg`
-- `RRData.ell` is abstract; not yet connected to `dim RRSpace`
+- `RRData.ell` is abstract; not yet connected to `finrank k (RRSpace data D)`
 
-## Next Steps (Cycle 6) - Vector Space Structure for L(D)
+## Next Steps (Cycle 7) - Connect ℓ(D) to finrank
 
 **WARNING**: Do NOT touch Schemes or Sheaf Cohomology. Complexity cliff.
 
-**Goal**: Prove L(D) is a K-vector subspace, enabling `ℓ(D) = finrank K L(D)`.
+**Goal**: Define `ℓ(D) = finrank k (RRSpace data D)` and prove basic properties.
 
 ### Deliverables (in order)
-1. **L(D) is a subgroup**:
-   - `RRSpace.add_mem : f ∈ L(D) → g ∈ L(D) → f + g ∈ L(D)`
-   - `RRSpace.neg_mem : f ∈ L(D) → -f ∈ L(D)`
+1. **Define ℓ(D)**:
+   - `def ell (data : FunctionFieldData α k) (D : Divisor α) := finrank k (RRSpace data D)`
+   - May need to import `Mathlib.LinearAlgebra.Dimension.Finrank`
 
-2. **L(D) is closed under scalar multiplication**:
-   - `RRSpace.smul_mem : c ∈ K → f ∈ L(D) → c • f ∈ L(D)`
-   - Requires: `div (c * f) = div c + div f = div f` (for c ≠ 0, div c = 0 since c is constant)
+2. **Prove ℓ monotonicity**:
+   - `ell_mono : D ≤ E → ℓ(D) ≤ ℓ(E)` (larger divisor = more functions = larger dimension)
 
-3. **Subspace instance**:
-   - `instance : Submodule K (data.K)` or similar structure
+3. **Finite-dimensionality assumption**:
+   - May need to add `[FiniteDimensional k (RRSpace data D)]` hypothesis
+   - Or add as field to FunctionFieldData
 
-4. **Connect to dimension**:
-   - Define `ell (data : FunctionFieldData α) (D : Divisor α) := finrank data.K (RRSpace data D)`
-   - This requires L(D) to be finite-dimensional (may need to assume)
+4. **Connect ℓ to RRData.ell** (stretch goal):
+   - Show how abstract `RRData.ell` can be instantiated with `finrank k (RRSpace data D)`
 
 ### Why this matters
 | Old (RRData) | New (FunctionFieldData) |
 |---|---|
-| `ell : Div → ℕ` (opaque) | `finrank K L(D)` (semantic) |
+| `ell : Div → ℕ` (opaque) | `finrank k L(D)` (semantic) |
 
 ### Do NOT do
 - Schemes, sheaves, cohomology
 - Trying to instantiate FunctionFieldData with real objects yet
-- Connecting to RRData (that's Cycle 7+)
