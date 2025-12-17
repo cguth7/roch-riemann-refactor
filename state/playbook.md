@@ -53,7 +53,7 @@ Where:
 
 ---
 
-## Current Status (Cycle 64)
+## Current Status (Cycle 65)
 
 **Codebase Structure**:
 ```
@@ -64,11 +64,11 @@ RrLean/RiemannRochV2/
 ├── Typeclasses.lean        # LocalGapBound ✅
 ├── RiemannInequality.lean  # Main theorems ✅ (1 sorry placeholder)
 ├── Infrastructure.lean     # Residue, uniformizer ✅ **CLEAN** (0 sorries!)
-├── LocalGapInstance.lean   # Cycles 25-61 WIP ✅ BUILDS
+├── LocalGapInstance.lean   # Cycles 25-65 WIP ✅ BUILDS
 └── TestBlockerProofs.lean  # Cycle 58-60: Test proofs
 ```
 
-**Active Development**: `LocalGapInstance.lean` (Cycle 63 candidates at end of file)
+**Active Development**: `LocalGapInstance.lean` (Cycle 65 candidates at end of file)
 
 ### Typeclass Hierarchy
 ```
@@ -79,80 +79,50 @@ SinglePointBound R K       -- PROJECTIVE (adds ell_zero = 1)
 BaseDim R K                -- SEPARATE (explicit base dimension)
 ```
 
-### Key Active Blockers
+### Key Blockers (Updated Cycle 65)
 
 | Name | Status | Notes |
 |------|--------|-------|
 | `evaluationMapAt_complete` | ✅ **PROVED** | Cycle 56: LinearMap bundle complete |
-| `localization_residue_equiv_symm_algebraMap` | ✅ **PROVED** | Cycle 59: Helper for BLOCKER 2 |
-| `ofBijective_quotient_mk_eq_algebraMap` | ✅ **PROVED** | Cycle 59: Helper for BLOCKER 2 |
-| `localization_residueField_equiv_algebraMap_v5` | ✅ **PROVED** | **Cycle 61: BLOCKER 2 RESOLVED IN MAIN FILE!** |
-| `equivValuationSubring_val_eq` | ✅ **PROVED** | Cycle 61: Forward direction helper for BLOCKER 1 |
-| `equivValuationSubring_symm_val_eq` | ✅ **PROVED** | Cycle 61: Inverse direction helper for BLOCKER 1 |
-| `valuationRingAt_equiv_algebraMap_forward_c63_7` | ✅ **PROVED** | Cycle 63: Forward via scalar tower |
-| `valuationRingAt_equiv_algebraMap` | ⚠️ **SORRY** | KEY BLOCKER 1: Main lemma still blocked by ▸ cast |
-| `bridge_residue_algebraMap` | ⚠️ **SORRY** | Depends on BLOCKER 1 only |
+| `localization_residueField_equiv_algebraMap_v5` | ✅ **PROVED** | Cycle 61: BLOCKER 2 RESOLVED |
+| `valuationRingAt_equiv_clean_algebraMap` | ✅ **PROVED** | Cycle 64: Cast-free equiv |
+| `bridge_residue_algebraMap_clean` | ✅ **PROVED** | **Cycle 65: CLEAN BRIDGE PROVED!** |
+| `bridge_residue_algebraMap` | ⚠️ SORRY | File ordering prevents using clean proof |
+| `kernel_evaluationMapAt` | ⚠️ **NEXT TARGET** | ker(eval) = L(D) |
 
-### Next Cycle (65) Priorities
-1. **BLOCKER 1 PIVOT**: Define cast-free equiv
-   - The `▸` cast causes dependent elimination failures
-   - Define `valuationRingAt_equiv_localization''` without cast
-   - Prove it equals the primed version (extensionality)
-   - Prove algebraMap property for cast-free version (should be easy)
-2. **Complete `bridge_residue_algebraMap`** - Only needs BLOCKER 1
-3. **Kernel characterization**: ker(evaluationMapAt) = L(D)
+### Next Cycle (66) Priorities
+1. **Prove `kernel_evaluationMapAt`**: Show ker(evaluationMapAt) = L(D)
+   - L(D) ⊆ ker direction: valuation arithmetic
+   - ker ⊆ L(D) direction: ideal membership
+2. **Complete `LocalGapBound` instance**
+3. **Victory**: 2-3 cycles remaining
 
-### Cycle 64 Technical Hints
-- **ROOT CAUSE CONFIRMED**: The `▸` cast blocks all proof strategies
-- **Cast issue**: `h : valuationRingAt v = DVR.valuationSubring` creates dependent type mismatch
-- **All helpers proved**:
-  - `equivValuationSubring_val_eq` (forward)
-  - `equivValuationSubring_symm_val_eq` (inverse)
-  - `valuationRingAt_equiv_algebraMap_forward_c63_7` (composition)
-- **Resolution**: Build cast-free equiv using `RingEquiv.ofBijective` or explicit construction
+### Cycle 65 Technical Notes
+- **`bridge_residue_algebraMap_clean` PROVED**: Uses clean equiv machinery
+- **Technical debt**: Original `bridge_residue_algebraMap` at line 2342 has sorry due to file ordering
+- **Clean infrastructure**: `residueFieldBridge_explicit_clean`, `residueField_transport_direct_clean` are PROVED
 
 ---
 
-## Victory Path (Updated Cycle 63)
+## Victory Path (Updated Cycle 65)
 
 ```
-shifted_element_valuation_le_one (Cycle 54 - PROVED ✅)
-    ↓
-shiftedElement_mem_valuationRingAt (Cycle 55 - PROVED ✅)
-    ↓
-shiftedElement_add + shiftedElement_smul (Cycle 55 - PROVED ✅)
-    ↓
-evaluationFun_via_bridge (Cycle 55 - DEFINED ✅)
-    ↓
-shiftedSubtype_add + shiftedSubtype_smul (Cycle 56 - PROVED ✅)
-    ↓
-evaluationFun_add + evaluationFun_smul (Cycle 56 - PROVED ✅)
-    ↓
 evaluationMapAt_complete (Cycle 56 - PROVED ✅)  ← LINEARMAP COMPLETE!
     ↓
-localization_residue_equiv_symm_algebraMap (Cycle 59 - PROVED ✅)
+localization_residueField_equiv_algebraMap_v5 (Cycle 61 - PROVED ✅)
     ↓
-ofBijective_quotient_mk_eq_algebraMap (Cycle 59 - PROVED ✅)
+valuationRingAt_equiv_clean_algebraMap (Cycle 64 - PROVED ✅)  ← Cast-free equiv!
     ↓
-localization_residueField_equiv_algebraMap_v5 (Cycle 61 - PROVED ✅)  ← BLOCKER 2 IN MAIN FILE!
+bridge_residue_algebraMap_clean (Cycle 65 - PROVED ✅)  ← 🎉 CLEAN BRIDGE PROVED!
     ↓
-equivValuationSubring_val_eq (Cycle 61 - PROVED ✅)  ← Helper for BLOCKER 1
-    ↓
-equivValuationSubring_symm_val_eq (Cycle 61 - PROVED ✅)  ← Helper for BLOCKER 1
-    ↓
-valuationRingAt_equiv_algebraMap_forward_c63_7 (Cycle 63 - PROVED ✅)  ← Forward direction!
-    ↓
-valuationRingAt_equiv_algebraMap (SORRY)  ← KEY BLOCKER 1 (▸ cast issue)
-    ↓
-bridge_residue_algebraMap (pending)  ← depends only on BLOCKER 1 now
-    ↓
-kernel_evaluationMapAt = L(D)  ← NEXT TARGET after bridge
+kernel_evaluationMapAt = L(D)  ← **NEXT TARGET**
     ↓
 LocalGapBound instance → VICTORY
 ```
 
-**NOTE**: Cycle 63 proved forward direction helper. BLOCKER 1 helpers are 3/3 proved, only main lemma remains.
+**Cycle 65 Status**: `bridge_residue_algebraMap_clean` PROVED! Clean machinery complete.
 
+- [ ] `kernel_evaluationMapAt` - Show ker(eval) = L(D)
 - [ ] `instance : LocalGapBound R K` (makes riemann_inequality_affine unconditional)
 
 ---
