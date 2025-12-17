@@ -2,7 +2,7 @@
 
 *For Cycles 1-34, see `state/ledger_archive.md`*
 
-## Summary: Where We Are (End of Cycle 40)
+## Summary: Where We Are (End of Cycle 41)
 
 **Project Goal**: Prove Riemann-Roch inequality for Dedekind domains in Lean 4.
 
@@ -19,31 +19,28 @@ RrLean/
 │   ├── Typeclasses.lean        # LocalGapBound etc (~100 lines) ✅
 │   ├── RiemannInequality.lean  # Main theorems (~220 lines) ✅
 │   ├── Infrastructure.lean     # Residue, uniformizer (~280 lines) ✅
-│   └── LocalGapInstance.lean   # Cycles 25-39 WIP (~1530 lines) ❌
+│   └── LocalGapInstance.lean   # Cycles 25-41 WIP (~1620 lines) ✅ BUILDS
 └── archive/
     ├── RR_v1_axiom_based.lean  # Cycles 1-16 (archived)
     └── RR_v2_monolithic.lean   # Cycles 17-39 (archived)
 ```
 
-**Blocking Chain**:
+**Blocking Chain** (UPDATED after Cycle 41):
 ```
-mem_asIdeal_iff_mem_maxIdeal (Cycle 39 - CRITICAL)
+mem_of_algebraMap_mem_map (Cycle 41 - PROVED) ✅
+algebraMap_isUnit_iff_not_mem (Cycle 41 - PROVED) ✅
+dvr_intValuation_of_isUnit (Cycle 41 - PROVED) ✅
     ↓
-dvr_intValuation_unit (Cycle 39 - CRITICAL)
+mem_asIdeal_iff_mem_maxIdeal (Cycle 39 - UNBLOCKED)
+dvr_intValuation_unit (Cycle 39 - UNBLOCKED)
     ↓
 dvr_intValuation_of_algebraMap' (Cycle 39 - TARGET)
-    ↓
-dvr_intValuation_of_algebraMap (Cycle 38)
-    ↓
-dvr_valuation_eq_on_R (Cycle 38)
     ↓
 dvr_valuation_eq_height_one' (Cycle 37 - KEY BLOCKER)
     ↓
 valuationRingAt_subset_range_algebraMap' (PROVED*, depends on above)
     ↓
 valuationSubring_eq_localization_image_complete (PROVED*, set equality)
-    ↓
-exists_coprime_rep_via_set_eq
     ↓
 valuationRingAt_equiv_localization
     ↓
@@ -52,7 +49,7 @@ residueMapFromR_surjective
 evaluationMapAt → kernel → LocalGapBound → VICTORY
 ```
 
-**Cycle 39 Progress**: 8 candidates generated, 2 PROVED, 6 SORRY. Key insight: ideal membership foundation lemmas (`mem_asIdeal_iff_mem_maxIdeal`, `dvr_intValuation_unit`) are critical path.
+**Cycle 41 Achievement**: All 8 foundation lemmas PROVED! Key blockers `mem_asIdeal_iff_mem_maxIdeal` and `dvr_intValuation_unit` are now UNBLOCKED.
 
 ---
 
@@ -113,6 +110,51 @@ RiemannInequality  LocalGapInstance
 - **Matches mathlib style**: Each file ~100-300 lines, focused on one concept
 
 **Cycle rating**: 8/10 - Major architectural improvement, technical debt addressed
+
+---
+
+### Cycle 41 - Foundation Lemmas COMPLETE - MAJOR PROGRESS
+
+**Goal**: Prove foundation lemmas for intValuation bridge (unblock Cycle 39 blockers)
+
+#### Results
+
+| Definition/Lemma | Status | Notes |
+|-----------------|--------|-------|
+| `mem_of_algebraMap_mem_map` | ✅ **PROVED** | Reverse direction via `comap_map_of_isPrime_disjoint` |
+| `algebraMap_isUnit_iff_not_mem` | ✅ **PROVED** | Uses `IsLocalization.AtPrime.isUnit_to_map_iff` |
+| `dvr_intValuation_of_isUnit` | ✅ **PROVED** | Units have intVal = 1 (chains C4 + C7) |
+| `localRing_not_mem_maxIdeal_iff_isUnit` | ✅ **PROVED** | Uses `IsLocalRing.notMem_maximalIdeal` |
+| `algebraMap_mem_map_of_mem` | ✅ **PROVED** | Forward direction (trivial) |
+| `algebraMap_not_mem_maxIdeal_of_not_mem` | ✅ **PROVED** | Contrapositive of C1 |
+| `dvr_intValuation_eq_one_iff_not_mem_maxIdeal` | ✅ **PROVED** | Uses `HeightOneSpectrum.intValuation_eq_one_iff` |
+| `dvr_maximalIdeal_asIdeal_eq_localRing_maximalIdeal` | ✅ **PROVED** | Definitional equality (rfl) |
+
+**All 8/8 candidates PROVED!**
+
+#### Key Achievements
+
+1. **Fixed build error from Cycle 40**: `dvr_valuationSubring_eq_range` proof was using incorrect `ValuationSubring.mem_toSubring` rewrite. Fixed to use `Subring.coe_map` + `Set.image_univ`.
+
+2. **Ideal membership bridge**: `mem_of_algebraMap_mem_map` proves the hard direction using `IsLocalization.comap_map_of_isPrime_disjoint` - for localization at a prime, `comap(map(I)) = I`.
+
+3. **Unit characterization bridge**: `algebraMap_isUnit_iff_not_mem` + `dvr_intValuation_of_isUnit` together prove that elements outside v.asIdeal have DVR intValuation = 1.
+
+#### Blockers Unblocked
+
+| Cycle 39 Blocker | Status | How to Complete |
+|------------------|--------|-----------------|
+| `mem_asIdeal_iff_mem_maxIdeal` | **UNBLOCKED** | Use C1 (reverse) + C5 (forward) |
+| `dvr_intValuation_unit` | **UNBLOCKED** | Use C2 + C3 |
+
+#### Next Steps
+
+Cycle 42 should:
+1. Complete `mem_asIdeal_iff_mem_maxIdeal` (now trivial)
+2. Complete `dvr_intValuation_unit` (now trivial)
+3. Then tackle `dvr_intValuation_of_algebraMap'` → `dvr_valuation_eq_height_one'`
+
+**Cycle rating**: 10/10 - All 8 candidates proved, major blockers unblocked
 
 ---
 

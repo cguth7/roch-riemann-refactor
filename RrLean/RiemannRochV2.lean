@@ -1,3 +1,11 @@
+import RrLean.RiemannRochV2.Basic
+import RrLean.RiemannRochV2.Divisor
+import RrLean.RiemannRochV2.RRSpace
+import RrLean.RiemannRochV2.Typeclasses
+import RrLean.RiemannRochV2.RiemannInequality
+import RrLean.RiemannRochV2.Infrastructure
+import RrLean.RiemannRochV2.LocalGapInstance
+
 /-!
 # Riemann-Roch V2: Constructive Dedekind Domain Approach
 
@@ -23,11 +31,3 @@ This module re-exports all components of the Riemann-Roch V2 formalization.
 - Points = finite + infinite places
 - Proves: ℓ(D) ≤ deg(D) + 1
 -/
-
-import RrLean.RiemannRochV2.Basic
-import RrLean.RiemannRochV2.Divisor
-import RrLean.RiemannRochV2.RRSpace
-import RrLean.RiemannRochV2.Typeclasses
-import RrLean.RiemannRochV2.RiemannInequality
-import RrLean.RiemannRochV2.Infrastructure
-import RrLean.RiemannRochV2.LocalGapInstance

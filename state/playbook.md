@@ -24,7 +24,7 @@
 
 **Reframing Rule**: If a "converse" lemma is hard, check if there's a higher-level equivalence that gives both directions for free (e.g., ring isomorphism instead of set equality).
 
-## Current Status Summary (Cycle 40)
+## Current Status Summary (Cycle 41)
 
 **Codebase Structure** (after Cycle 40 modularization):
 ```
@@ -37,13 +37,13 @@ RrLean/
 │   ├── Typeclasses.lean        # LocalGapBound ✅
 │   ├── RiemannInequality.lean  # Main theorems ✅
 │   ├── Infrastructure.lean     # Residue, uniformizer ✅
-│   └── LocalGapInstance.lean   # Cycles 25-39 WIP ❌
+│   └── LocalGapInstance.lean   # Cycles 25-41 WIP ✅ BUILDS
 └── archive/
     ├── RR_v1_axiom_based.lean  # ARCHIVED (Cycles 1-16)
     └── RR_v2_monolithic.lean   # ARCHIVED (Cycles 17-39)
 ```
 
-**Active Development**: `RrLean/RiemannRochV2/LocalGapInstance.lean` (Cycles 25-39 work)
+**Active Development**: `RrLean/RiemannRochV2/LocalGapInstance.lean` (Cycles 25-41 work)
 
 ### Key Results PROVED
 - `RRModuleV2_real`: Valuation-based L(D) definition (Cycle 19)
@@ -70,6 +70,10 @@ RrLean/
 - **`dvr_maximalIdeal_asIdeal_eq'`: DVR HeightOneSpectrum asIdeal = IsLocalRing.maximalIdeal (Cycle 38) ⭐**
 - **`ideal_span_map_singleton`: Ideal.map(span {r}) = span {algebraMap r} (Cycle 39) ⭐**
 - **`dvr_intValuation_unfold`: DVR intValuation = intValuationDef by rfl (Cycle 39) ⭐**
+- **`mem_of_algebraMap_mem_map`: Reverse direction via comap_map_of_isPrime_disjoint (Cycle 41) ⭐⭐**
+- **`algebraMap_isUnit_iff_not_mem`: IsUnit ↔ not in ideal (Cycle 41) ⭐⭐**
+- **`dvr_intValuation_of_isUnit`: Units have intVal = 1 (Cycle 41) ⭐⭐**
+- **`dvr_intValuation_eq_one_iff_not_mem_maxIdeal`: intVal = 1 characterization (Cycle 41) ⭐⭐**
 
 ### Typeclass Hierarchy
 ```
@@ -82,7 +86,7 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 
 ---
 
-## Current Sorry Count (after Cycle 40 modularization)
+## Current Sorry Count (after Cycle 41)
 
 **By Module**:
 | Module | Sorries | Build Status |
@@ -93,14 +97,14 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 | Typeclasses.lean | 0 | ✅ |
 | RiemannInequality.lean | 1 | ✅ (placeholder) |
 | Infrastructure.lean | 1 | ✅ (WIP) |
-| LocalGapInstance.lean | ~35 | ❌ (pre-existing errors) |
+| LocalGapInstance.lean | ~45 | ✅ BUILDS (Cycle 41 fixed errors) |
 
 **Key Active Blockers** (in `LocalGapInstance.lean`):
 | Name | Status | Notes |
 |------|--------|-------|
-| `mem_asIdeal_iff_mem_maxIdeal` | **CRITICAL** | Foundation: r ∈ v.asIdeal ↔ algebraMap r ∈ maxIdeal |
-| `dvr_intValuation_unit` | **CRITICAL** | Unit case: r ∉ v.asIdeal ⟹ DVR.intVal = 1 |
-| `dvr_intValuation_of_algebraMap'` | **CYCLE 39 TARGET** | DVR intVal = v.intVal on R |
+| `mem_asIdeal_iff_mem_maxIdeal` | **UNBLOCKED** | Foundation - now completable via Cycle 41 lemmas |
+| `dvr_intValuation_unit` | **UNBLOCKED** | Unit case - now completable via Cycle 41 lemmas |
+| `dvr_intValuation_of_algebraMap'` | **CYCLE 42 TARGET** | DVR intVal = v.intVal on R |
 | `dvr_intValuation_of_algebraMap` | **KEY HELPER** | Same target (Cycle 38) |
 | `dvr_valuation_eq_height_one'` | **ORIGINAL BLOCKER** | DVR valuation = HeightOneSpectrum valuation (Cycle 37) |
 
