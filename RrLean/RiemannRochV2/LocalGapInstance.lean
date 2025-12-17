@@ -25,13 +25,14 @@ for Dedekind domains. Once complete, this makes `riemann_inequality_affine` unco
 | ~1180 | Cycle37Candidates | Complete proof structure (conditional) |
 | ~1290 | Cycle38Candidates | intValuation bridge candidates |
 | ~1415 | Cycle41Candidates | Foundation lemmas (8/8 PROVED) ✅ |
-| ~1530 | Cycle39Candidates | intValuation foundation (3 PROVED) ✅ |
-| ~1650 | Cycle42Candidates | Hard case candidates |
+| ~1540 | Cycle44Candidates_Moved | Ideal power membership bridge (7/8 PROVED) ✅ |
+| ~1675 | Cycle39Candidates | dvr_intValuation_of_algebraMap' ✅ (Cycle 47) |
+| ~1810 | Cycle42Candidates | Hard case candidates |
 
 ## Victory Path
 
 ```
-dvr_intValuation_of_algebraMap' hard case (SORRY)
+dvr_intValuation_of_algebraMap' ✅ (PROVED Cycle 47)
     ↓
 dvr_valuation_eq_height_one' (KEY BLOCKER)
     ↓
@@ -1537,6 +1538,141 @@ lemma dvr_maximalIdeal_asIdeal_eq_localRing_maximalIdeal (v : HeightOneSpectrum 
 
 end Cycle41Candidates
 
+/-! ## Cycle 44 Candidates (MOVED): Ideal power membership bridge
+
+Goal: Prove the hard case of dvr_intValuation_of_algebraMap' (when r ∈ v.asIdeal).
+
+Key insight: Both intValuations measure "how many times the element is divisible by the prime".
+The strategy is to show that ideal power membership is preserved under localization:
+  r ∈ v.asIdeal^n ↔ algebraMap r ∈ maxIdeal^n
+
+Key mathlib lemmas:
+- `intValuation_le_pow_iff_mem`: v.intValuation r ≤ exp(-n) ↔ r ∈ v.asIdeal^n
+- `algebraMap_mem_map_algebraMap_iff`: membership in map relates to ∃ m in complement with m*r in ideal
+- `Ideal.map_pow`: map(I^n) = (map I)^n
+
+NOTE: Section moved before Cycle39 in Cycle 47 to resolve dependency ordering.
+-/
+section Cycle44Candidates_Moved
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+
+-- Candidate 1 [tag: dvr_bridge] [relevance: 5/5] [status: PROVED] [cycle: 44]
+/-- Ideal.map commutes with powers. Direct application of mathlib's Ideal.map_pow. -/
+lemma ideal_map_pow_eq_pow_map'_moved (v : HeightOneSpectrum R) (n : ℕ) :
+    Ideal.map (algebraMap R (Localization.AtPrime v.asIdeal)) (v.asIdeal ^ n) =
+      (Ideal.map (algebraMap R (Localization.AtPrime v.asIdeal)) v.asIdeal) ^ n :=
+  Ideal.map_pow (algebraMap R (Localization.AtPrime v.asIdeal)) v.asIdeal n
+
+-- Candidate 2 [tag: dvr_bridge] [relevance: 5/5] [status: PROVED] [cycle: 44]
+/-- MaxIdeal^n = map(v.asIdeal^n). Combines localization_maximalIdeal_eq_map with Ideal.map_pow. -/
+lemma maxIdeal_pow_eq_map_asIdeal_pow_moved (v : HeightOneSpectrum R) (n : ℕ) :
+    (IsLocalRing.maximalIdeal (Localization.AtPrime v.asIdeal)) ^ n =
+      Ideal.map (algebraMap R (Localization.AtPrime v.asIdeal)) (v.asIdeal ^ n) := by
+  rw [localization_maximalIdeal_eq_map v, ideal_map_pow_eq_pow_map'_moved v n]
+
+-- Candidate 3 [tag: arithmetic] [relevance: 5/5] [status: PROVED] [cycle: 44]
+/-- Forward direction: r ∈ v.asIdeal^n → algebraMap r ∈ maxIdeal^n.
+Direct application of mem_map_of_mem and the power identity. -/
+lemma algebraMap_mem_maxIdeal_pow_of_mem_asIdeal_pow_moved (v : HeightOneSpectrum R) (r : R) (n : ℕ)
+    (hr : r ∈ v.asIdeal ^ n) :
+    algebraMap R (Localization.AtPrime v.asIdeal) r ∈
+      (IsLocalRing.maximalIdeal (Localization.AtPrime v.asIdeal)) ^ n := by
+  rw [maxIdeal_pow_eq_map_asIdeal_pow_moved v n]
+  exact Ideal.mem_map_of_mem _ hr
+
+-- Candidate 4 [tag: arithmetic] [relevance: 5/5] [status: PROVED] [cycle: 45]
+/-- In a Dedekind domain, if m ∉ p and m * r ∈ p^n, then r ∈ p^n.
+This is the coprimality argument needed for the backward direction.
+Uses Ideal.IsPrime.mul_mem_pow from mathlib. ROOT BLOCKER PROVED in Cycle 45. -/
+lemma mem_pow_of_mul_mem_pow_of_not_mem_moved (v : HeightOneSpectrum R) (m r : R)
+    (hm : m ∉ v.asIdeal) (n : ℕ) (hmr : m * r ∈ v.asIdeal ^ n) :
+    r ∈ v.asIdeal ^ n := by
+  haveI : v.asIdeal.IsPrime := v.isPrime
+  exact (Ideal.IsPrime.mul_mem_pow v.asIdeal hmr).resolve_left hm
+
+-- Candidate 5 [tag: arithmetic] [relevance: 5/5] [status: PROVED] [cycle: 45]
+/-- Backward direction: algebraMap r ∈ maxIdeal^n → r ∈ v.asIdeal^n.
+Uses algebraMap_mem_map_algebraMap_iff and coprimality in Dedekind domain. -/
+lemma mem_asIdeal_pow_of_algebraMap_mem_maxIdeal_pow_moved (v : HeightOneSpectrum R) (r : R) (n : ℕ)
+    (hr : algebraMap R (Localization.AtPrime v.asIdeal) r ∈
+      (IsLocalRing.maximalIdeal (Localization.AtPrime v.asIdeal)) ^ n) :
+    r ∈ v.asIdeal ^ n := by
+  rw [maxIdeal_pow_eq_map_asIdeal_pow_moved v n] at hr
+  rw [IsLocalization.algebraMap_mem_map_algebraMap_iff v.asIdeal.primeCompl] at hr
+  obtain ⟨m, hm, hmr⟩ := hr
+  have hm' : m ∉ v.asIdeal := hm  -- primeCompl membership is definitionally ∉
+  exact mem_pow_of_mul_mem_pow_of_not_mem_moved v m r hm' n hmr
+
+-- Candidate 6 [tag: arithmetic] [relevance: 5/5] [status: PROVED] [cycle: 45]
+/-- Complete characterization: r ∈ v.asIdeal^n ↔ algebraMap r ∈ maxIdeal^n.
+Combines the forward and backward directions. -/
+lemma mem_asIdeal_pow_iff_mem_maxIdeal_pow_moved (v : HeightOneSpectrum R) (r : R) (n : ℕ) :
+    r ∈ v.asIdeal ^ n ↔
+      algebraMap R (Localization.AtPrime v.asIdeal) r ∈
+        (IsLocalRing.maximalIdeal (Localization.AtPrime v.asIdeal)) ^ n :=
+  ⟨algebraMap_mem_maxIdeal_pow_of_mem_asIdeal_pow_moved v r n,
+   mem_asIdeal_pow_of_algebraMap_mem_maxIdeal_pow_moved v r n⟩
+
+-- Candidate 7 [tag: arithmetic] [relevance: 5/5] [status: PROVED] [cycle: 46]
+/-- DVR intValuation characterization via ideal powers.
+Both valuations measure the same ideal power membership.
+Key lemma that bridges HeightOneSpectrum.intValuation with the DVR intValuation. -/
+lemma dvr_intValuation_eq_via_pow_membership_moved (v : HeightOneSpectrum R) (r : R) (hr_ne : r ≠ 0) :
+    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).intValuation
+      (algebraMap R (Localization.AtPrime v.asIdeal) r) = v.intValuation r := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  -- Strategy: Both intValuations are characterized by ideal power membership via intValuation_le_pow_iff_mem.
+  -- Key insight: (DVR.maximalIdeal).asIdeal = IsLocalRing.maximalIdeal (definitional)
+  -- Use mem_asIdeal_pow_iff_mem_maxIdeal_pow_moved to transfer between ideal powers.
+  let dvrMax := IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)
+  -- Both intValuations satisfy: intVal x ≤ exp(-n) ↔ x ∈ asIdeal^n
+  -- For the DVR: dvrMax.intVal (algebraMap r) ≤ exp(-n) ↔ algebraMap r ∈ dvrMax.asIdeal^n
+  --            = algebraMap r ∈ (IsLocalRing.maximalIdeal)^n (by dvr_maximalIdeal_asIdeal_eq_localRing_maximalIdeal)
+  -- For v: v.intVal r ≤ exp(-n) ↔ r ∈ v.asIdeal^n (by intValuation_le_pow_iff_mem)
+  -- Bridge: r ∈ v.asIdeal^n ↔ algebraMap r ∈ maxIdeal^n (by mem_asIdeal_pow_iff_mem_maxIdeal_pow_moved)
+  -- Use le_antisymm with the WithZero.exp characterization
+  have hbridge : ∀ n : ℕ, dvrMax.intValuation (algebraMap R _ r) ≤ WithZero.exp (-(n : ℤ)) ↔
+      v.intValuation r ≤ WithZero.exp (-(n : ℤ)) := fun n => by
+    rw [HeightOneSpectrum.intValuation_le_pow_iff_mem]
+    rw [HeightOneSpectrum.intValuation_le_pow_iff_mem]
+    rw [dvr_maximalIdeal_asIdeal_eq_localRing_maximalIdeal v]
+    exact (mem_asIdeal_pow_iff_mem_maxIdeal_pow_moved v r n).symm
+  -- Now use that values in WithZero (ℤᵐ⁰) are equal iff they satisfy the same inequalities
+  -- Both values are of form exp(-k) for some k, so use the fact that the valuations agree on all exp(-n)
+  -- Key: Both valuations take values exp(-n) for some n ∈ ℕ (since they're nonzero and ≤ 1).
+  -- hbridge shows they're in the same "threshold class" for all exp(-n).
+  -- For any two elements a, b of form exp(-k), a = b iff ∀n, (a ≤ exp(-n) ↔ b ≤ exp(-n)).
+  -- Actually, we just need: a ≤ b iff ∀n, b ≤ exp(-n) → a ≤ exp(-n)
+  -- and vice versa, then le_antisymm gives equality.
+  have hr' : algebraMap R (Localization.AtPrime v.asIdeal) r ≠ 0 := by
+    intro h
+    apply hr_ne
+    have hpc : v.asIdeal.primeCompl ≤ nonZeroDivisors R := v.asIdeal.primeCompl_le_nonZeroDivisors
+    exact (IsLocalization.to_map_eq_zero_iff (Localization.AtPrime v.asIdeal) hpc).mp h
+  classical  -- needed for DecidableEq instances in Associates.count
+  apply le_antisymm
+  · -- Show DVR.intVal ≤ v.intVal
+    -- Strategy: v.intVal = exp(-k) for some k, and hbridge gives DVR.intVal ≤ exp(-k)
+    have hk : v.intValuation r = WithZero.exp
+        (-(((Associates.mk v.asIdeal).count (Associates.mk (Ideal.span {r})).factors) : ℤ)) :=
+      v.intValuation_if_neg hr_ne
+    let k := (Associates.mk v.asIdeal).count (Associates.mk (Ideal.span {r})).factors
+    calc dvrMax.intValuation (algebraMap R (Localization.AtPrime v.asIdeal) r)
+        ≤ WithZero.exp (-(k : ℤ)) := (hbridge k).mpr (le_of_eq hk)
+      _ = v.intValuation r := hk.symm
+  · -- Show v.intVal ≤ DVR.intVal
+    have hm : dvrMax.intValuation (algebraMap R (Localization.AtPrime v.asIdeal) r) = WithZero.exp
+        (-(((Associates.mk dvrMax.asIdeal).count (Associates.mk (Ideal.span {algebraMap R _ r})).factors) : ℤ)) :=
+      dvrMax.intValuation_if_neg hr'
+    let m := (Associates.mk dvrMax.asIdeal).count (Associates.mk (Ideal.span {algebraMap R _ r})).factors
+    calc v.intValuation r
+        ≤ WithZero.exp (-(m : ℤ)) := (hbridge m).mp (le_of_eq hm)
+      _ = dvrMax.intValuation (algebraMap R (Localization.AtPrime v.asIdeal) r) := hm.symm
+
+end Cycle44Candidates_Moved
+
 /-! ## Cycle 39 Candidates: Prove dvr_intValuation_of_algebraMap
 
 The key blocker is `dvr_intValuation_of_algebraMap`: showing that the DVR's intValuation
@@ -1614,10 +1750,8 @@ lemma dvr_intValuation_of_algebraMap' (v : HeightOneSpectrum R) (r : R) :
   by_cases hr0 : r = 0
   · simp only [hr0, map_zero]
   by_cases hr : r ∈ v.asIdeal
-  · -- Hard case: r ∈ v.asIdeal
-    -- NOW UNBLOCKED (Cycle 46): use dvr_intValuation_eq_via_pow_membership from Cycle44
-    -- After section reordering: exact dvr_intValuation_eq_via_pow_membership v r hr0
-    sorry
+  · -- Hard case: r ∈ v.asIdeal (PROVED Cycle 47 via section reordering)
+    exact dvr_intValuation_eq_via_pow_membership_moved v r hr0
   · -- Easy case: r ∉ v.asIdeal, both = 1
     -- DVR side: use Cycle 41 lemmas directly (algebraMap_isUnit_iff_not_mem + dvr_intValuation_of_isUnit)
     -- v side: intValuation_eq_one_iff gives intVal = 1 when r ∉ v.asIdeal
@@ -1724,144 +1858,7 @@ lemma intValuation_mem_lt_one_both (v : HeightOneSpectrum R) (r : R)
 
 end Cycle42Candidates
 
-/-! ## Cycle 44 Candidates: Attack dvr_intValuation_of_algebraMap' hard case
-
-Goal: Prove the hard case of dvr_intValuation_of_algebraMap' (when r ∈ v.asIdeal).
-
-Key insight: Both intValuations measure "how many times the element is divisible by the prime".
-The strategy is to show that ideal power membership is preserved under localization:
-  r ∈ v.asIdeal^n ↔ algebraMap r ∈ maxIdeal^n
-
-Key mathlib lemmas:
-- `intValuation_le_pow_iff_mem`: v.intValuation r ≤ exp(-n) ↔ r ∈ v.asIdeal^n
-- `algebraMap_mem_map_algebraMap_iff`: membership in map relates to ∃ m in complement with m*r in ideal
-- `Ideal.map_pow`: map(I^n) = (map I)^n
--/
-section Cycle44Candidates
-
-variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
-variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
-
--- Candidate 1 [tag: dvr_bridge] [relevance: 5/5] [status: PROVED] [cycle: 44]
-/-- Ideal.map commutes with powers. Direct application of mathlib's Ideal.map_pow. -/
-lemma ideal_map_pow_eq_pow_map' (v : HeightOneSpectrum R) (n : ℕ) :
-    Ideal.map (algebraMap R (Localization.AtPrime v.asIdeal)) (v.asIdeal ^ n) =
-      (Ideal.map (algebraMap R (Localization.AtPrime v.asIdeal)) v.asIdeal) ^ n :=
-  Ideal.map_pow (algebraMap R (Localization.AtPrime v.asIdeal)) v.asIdeal n
-
--- Candidate 2 [tag: dvr_bridge] [relevance: 5/5] [status: TBD] [cycle: 44]
-/-- MaxIdeal^n = map(v.asIdeal^n). Combines localization_maximalIdeal_eq_map with Ideal.map_pow. -/
-lemma maxIdeal_pow_eq_map_asIdeal_pow (v : HeightOneSpectrum R) (n : ℕ) :
-    (IsLocalRing.maximalIdeal (Localization.AtPrime v.asIdeal)) ^ n =
-      Ideal.map (algebraMap R (Localization.AtPrime v.asIdeal)) (v.asIdeal ^ n) := by
-  rw [localization_maximalIdeal_eq_map v, ideal_map_pow_eq_pow_map' v n]
-
--- Candidate 3 [tag: arithmetic] [relevance: 5/5] [status: TBD] [cycle: 44]
-/-- Forward direction: r ∈ v.asIdeal^n → algebraMap r ∈ maxIdeal^n.
-Direct application of mem_map_of_mem and the power identity. -/
-lemma algebraMap_mem_maxIdeal_pow_of_mem_asIdeal_pow (v : HeightOneSpectrum R) (r : R) (n : ℕ)
-    (hr : r ∈ v.asIdeal ^ n) :
-    algebraMap R (Localization.AtPrime v.asIdeal) r ∈
-      (IsLocalRing.maximalIdeal (Localization.AtPrime v.asIdeal)) ^ n := by
-  rw [maxIdeal_pow_eq_map_asIdeal_pow v n]
-  exact Ideal.mem_map_of_mem _ hr
-
--- Candidate 4 [tag: arithmetic] [relevance: 5/5] [status: PROVED] [cycle: 45]
-/-- In a Dedekind domain, if m ∉ p and m * r ∈ p^n, then r ∈ p^n.
-This is the coprimality argument needed for the backward direction.
-Uses Ideal.IsPrime.mul_mem_pow from mathlib. ROOT BLOCKER PROVED in Cycle 45. -/
-lemma mem_pow_of_mul_mem_pow_of_not_mem (v : HeightOneSpectrum R) (m r : R)
-    (hm : m ∉ v.asIdeal) (n : ℕ) (hmr : m * r ∈ v.asIdeal ^ n) :
-    r ∈ v.asIdeal ^ n := by
-  haveI : v.asIdeal.IsPrime := v.isPrime
-  exact (Ideal.IsPrime.mul_mem_pow v.asIdeal hmr).resolve_left hm
-
--- Candidate 5 [tag: arithmetic] [relevance: 5/5] [status: PROVED] [cycle: 45]
-/-- Backward direction: algebraMap r ∈ maxIdeal^n → r ∈ v.asIdeal^n.
-Uses algebraMap_mem_map_algebraMap_iff and coprimality in Dedekind domain. -/
-lemma mem_asIdeal_pow_of_algebraMap_mem_maxIdeal_pow (v : HeightOneSpectrum R) (r : R) (n : ℕ)
-    (hr : algebraMap R (Localization.AtPrime v.asIdeal) r ∈
-      (IsLocalRing.maximalIdeal (Localization.AtPrime v.asIdeal)) ^ n) :
-    r ∈ v.asIdeal ^ n := by
-  rw [maxIdeal_pow_eq_map_asIdeal_pow v n] at hr
-  rw [IsLocalization.algebraMap_mem_map_algebraMap_iff v.asIdeal.primeCompl] at hr
-  obtain ⟨m, hm, hmr⟩ := hr
-  have hm' : m ∉ v.asIdeal := hm  -- primeCompl membership is definitionally ∉
-  exact mem_pow_of_mul_mem_pow_of_not_mem v m r hm' n hmr
-
--- Candidate 6 [tag: arithmetic] [relevance: 5/5] [status: PROVED] [cycle: 45]
-/-- Complete characterization: r ∈ v.asIdeal^n ↔ algebraMap r ∈ maxIdeal^n.
-Combines the forward and backward directions. -/
-lemma mem_asIdeal_pow_iff_mem_maxIdeal_pow' (v : HeightOneSpectrum R) (r : R) (n : ℕ) :
-    r ∈ v.asIdeal ^ n ↔
-      algebraMap R (Localization.AtPrime v.asIdeal) r ∈
-        (IsLocalRing.maximalIdeal (Localization.AtPrime v.asIdeal)) ^ n :=
-  ⟨algebraMap_mem_maxIdeal_pow_of_mem_asIdeal_pow v r n,
-   mem_asIdeal_pow_of_algebraMap_mem_maxIdeal_pow v r n⟩
-
--- Candidate 7 [tag: arithmetic] [relevance: 5/5] [status: PROVED] [cycle: 46]
-/-- DVR intValuation characterization via ideal powers.
-Both valuations measure the same ideal power membership.
-Key lemma that bridges HeightOneSpectrum.intValuation with the DVR intValuation. -/
-lemma dvr_intValuation_eq_via_pow_membership (v : HeightOneSpectrum R) (r : R) (hr_ne : r ≠ 0) :
-    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).intValuation
-      (algebraMap R (Localization.AtPrime v.asIdeal) r) = v.intValuation r := by
-  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
-  -- Strategy: Both intValuations are characterized by ideal power membership via intValuation_le_pow_iff_mem.
-  -- Key insight: (DVR.maximalIdeal).asIdeal = IsLocalRing.maximalIdeal (definitional)
-  -- Use mem_asIdeal_pow_iff_mem_maxIdeal_pow' to transfer between ideal powers.
-  let dvrMax := IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)
-  -- Both intValuations satisfy: intVal x ≤ exp(-n) ↔ x ∈ asIdeal^n
-  -- For the DVR: dvrMax.intVal (algebraMap r) ≤ exp(-n) ↔ algebraMap r ∈ dvrMax.asIdeal^n
-  --            = algebraMap r ∈ (IsLocalRing.maximalIdeal)^n (by dvr_maximalIdeal_asIdeal_eq_localRing_maximalIdeal)
-  -- For v: v.intVal r ≤ exp(-n) ↔ r ∈ v.asIdeal^n (by intValuation_le_pow_iff_mem)
-  -- Bridge: r ∈ v.asIdeal^n ↔ algebraMap r ∈ maxIdeal^n (by mem_asIdeal_pow_iff_mem_maxIdeal_pow')
-  -- Use le_antisymm with the WithZero.exp characterization
-  have hbridge : ∀ n : ℕ, dvrMax.intValuation (algebraMap R _ r) ≤ WithZero.exp (-(n : ℤ)) ↔
-      v.intValuation r ≤ WithZero.exp (-(n : ℤ)) := fun n => by
-    rw [HeightOneSpectrum.intValuation_le_pow_iff_mem]
-    rw [HeightOneSpectrum.intValuation_le_pow_iff_mem]
-    rw [dvr_maximalIdeal_asIdeal_eq_localRing_maximalIdeal v]
-    exact (mem_asIdeal_pow_iff_mem_maxIdeal_pow' v r n).symm
-  -- Now use that values in WithZero (ℤᵐ⁰) are equal iff they satisfy the same inequalities
-  -- Both values are of form exp(-k) for some k, so use the fact that the valuations agree on all exp(-n)
-  -- Key: Both valuations take values exp(-n) for some n ∈ ℕ (since they're nonzero and ≤ 1).
-  -- hbridge shows they're in the same "threshold class" for all exp(-n).
-  -- For any two elements a, b of form exp(-k), a = b iff ∀n, (a ≤ exp(-n) ↔ b ≤ exp(-n)).
-  -- Actually, we just need: a ≤ b iff ∀n, b ≤ exp(-n) → a ≤ exp(-n)
-  -- and vice versa, then le_antisymm gives equality.
-  have hr' : algebraMap R (Localization.AtPrime v.asIdeal) r ≠ 0 := by
-    intro h
-    apply hr_ne
-    have hpc : v.asIdeal.primeCompl ≤ nonZeroDivisors R := v.asIdeal.primeCompl_le_nonZeroDivisors
-    exact (IsLocalization.to_map_eq_zero_iff (Localization.AtPrime v.asIdeal) hpc).mp h
-  classical  -- needed for DecidableEq instances in Associates.count
-  apply le_antisymm
-  · -- Show DVR.intVal ≤ v.intVal
-    -- Strategy: v.intVal = exp(-k) for some k, and hbridge gives DVR.intVal ≤ exp(-k)
-    have hk : v.intValuation r = WithZero.exp
-        (-(((Associates.mk v.asIdeal).count (Associates.mk (Ideal.span {r})).factors) : ℤ)) :=
-      v.intValuation_if_neg hr_ne
-    let k := (Associates.mk v.asIdeal).count (Associates.mk (Ideal.span {r})).factors
-    calc dvrMax.intValuation (algebraMap R (Localization.AtPrime v.asIdeal) r)
-        ≤ WithZero.exp (-(k : ℤ)) := (hbridge k).mpr (le_of_eq hk)
-      _ = v.intValuation r := hk.symm
-  · -- Show v.intVal ≤ DVR.intVal
-    have hm : dvrMax.intValuation (algebraMap R (Localization.AtPrime v.asIdeal) r) = WithZero.exp
-        (-(((Associates.mk dvrMax.asIdeal).count (Associates.mk (Ideal.span {algebraMap R _ r})).factors) : ℤ)) :=
-      dvrMax.intValuation_if_neg hr'
-    let m := (Associates.mk dvrMax.asIdeal).count (Associates.mk (Ideal.span {algebraMap R _ r})).factors
-    calc v.intValuation r
-        ≤ WithZero.exp (-(m : ℤ)) := (hbridge m).mp (le_of_eq hm)
-      _ = dvrMax.intValuation (algebraMap R (Localization.AtPrime v.asIdeal) r) := hm.symm
-
--- Candidate 8 [tag: arithmetic] [relevance: 4/5] [status: TBD] [cycle: 44]
-/-- Alternative: Use that intValuation values are exp(-n) for some n, and show n is the same. -/
-lemma intValuation_exists_exp_eq (v : HeightOneSpectrum R) (r : R) (hr_ne : r ≠ 0) :
-    ∃ n : ℕ, v.intValuation r = WithZero.exp (-(n : ℤ)) := by
-  -- By definition, intValuation is exp(-count) where count is the exponent in factorization
-  sorry
-
-end Cycle44Candidates
+-- NOTE: Cycle44Candidates section was moved before Cycle39 in Cycle 47.
+-- The original section is now at Cycle44Candidates_Moved above.
 
 end RiemannRochV2

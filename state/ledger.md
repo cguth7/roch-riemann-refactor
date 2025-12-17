@@ -2,7 +2,7 @@
 
 *For Cycles 1-34, see `state/ledger_archive.md`*
 
-## Summary: Where We Are (End of Cycle 46)
+## Summary: Where We Are (End of Cycle 47)
 
 **Project Goal**: Prove Riemann-Roch inequality for Dedekind domains in Lean 4.
 
@@ -12,7 +12,7 @@
 ```
 dvr_intValuation_eq_via_pow_membership (Cycle 46 - PROVED ✅)
     ↓
-dvr_intValuation_of_algebraMap' hard case (UNBLOCKED - needs section reorder)
+dvr_intValuation_of_algebraMap' (Cycle 47 - PROVED ✅)
     ↓
 dvr_valuation_eq_height_one' (KEY BLOCKER)
     ↓
@@ -26,6 +26,42 @@ evaluationMapAt → kernel → LocalGapBound → VICTORY
 ---
 
 ## 2025-12-17
+
+### Cycle 47 - dvr_intValuation_of_algebraMap' PROVED
+
+**Goal**: Complete dvr_intValuation_of_algebraMap' via section reordering
+
+#### Key Change
+
+**Section Reordering**: Moved `Cycle44Candidates` section (containing `dvr_intValuation_eq_via_pow_membership`) to before `Cycle39Candidates` (renamed to `Cycle44Candidates_Moved`).
+
+This resolved a dependency ordering issue where `dvr_intValuation_of_algebraMap'` (in Cycle39) needed `dvr_intValuation_eq_via_pow_membership` (in Cycle44), but Cycle44 was defined after Cycle39 in the file.
+
+#### Proof Strategy
+
+The hard case of `dvr_intValuation_of_algebraMap'` (when `r ∈ v.asIdeal`) now uses:
+```lean
+exact dvr_intValuation_eq_via_pow_membership_moved v r hr0
+```
+
+#### Results
+
+| Lemma | Status | Notes |
+|-------|--------|-------|
+| `dvr_intValuation_of_algebraMap'` | ✅ **PROVED** | Hard case completed via section reordering |
+
+**Cascade Unblocked**: `dvr_valuation_eq_height_one'` is now the sole KEY BLOCKER.
+
+**Discovery**: Found `Valuation.extendToLocalization_apply_map_apply` in mathlib - may help prove `dvr_valuation_eq_height_one'`.
+
+**Next Steps (Cycle 48)**:
+1. Prove `dvr_valuation_eq_height_one'` using `dvr_intValuation_of_algebraMap'` + extension properties
+2. Complete `valuationRingAt_subset_range_algebraMap'`
+3. Build towards `valuationRingAt_equiv_localization`
+
+**Cycle rating**: 9/10 (key lemma proved, clear path to final blocker)
+
+---
 
 ### Cycle 46 - dvr_intValuation_eq_via_pow_membership PROVED
 

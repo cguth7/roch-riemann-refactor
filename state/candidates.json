@@ -1,28 +1,28 @@
 {
-  "active_edge": "Cycle 46: dvr_intValuation_eq_via_pow_membership PROVED",
-  "cycle_46_results": {
-    "goal": "Prove dvr_intValuation_eq_via_pow_membership",
+  "active_edge": "Cycle 47: dvr_intValuation_of_algebraMap' PROVED",
+  "cycle_47_results": {
+    "goal": "Complete dvr_intValuation_of_algebraMap' via section reordering",
     "status": "SUCCESS",
     "proved_count": 1,
     "sorry_count_new": 0,
-    "key_discovery": "intValuation_le_pow_iff_mem + mem_asIdeal_pow_iff_mem_maxIdeal_pow'",
+    "key_change": "Section reordering - moved Cycle44Candidates before Cycle39",
     "candidates": [
       {
-        "name": "dvr_intValuation_eq_via_pow_membership",
+        "name": "dvr_intValuation_of_algebraMap'",
         "type": "PROVE",
         "status": "PROVED",
         "score": "10/10",
-        "notes": "Key bridge lemma via intValuation_le_pow_iff_mem and le_antisymm"
+        "notes": "Hard case fixed via dvr_intValuation_eq_via_pow_membership_moved"
       }
     ],
     "cascade_unblocked": [
-      "dvr_intValuation_of_algebraMap' hard case (after section reordering)"
+      "dvr_valuation_eq_height_one' (KEY BLOCKER - next target)"
     ]
   },
   "next_cycle_priority": [
-    "Section reordering: move Cycle44/45 lemmas before Cycle39",
-    "dvr_intValuation_of_algebraMap' hard case",
-    "dvr_valuation_eq_height_one' - FINAL KEY BLOCKER"
+    "dvr_valuation_eq_height_one' - use dvr_intValuation_of_algebraMap' + extendToLocalization",
+    "valuationRingAt_subset_range_algebraMap' - depends on above",
+    "valuationRingAt_equiv_localization"
   ],
   "architecture": {
     "cascade_structure": [
@@ -33,14 +33,14 @@
       "  └─→ mem_asIdeal_pow_of_algebraMap_mem_maxIdeal_pow (Cycle 45 - PROVED) ✅",
       "      └─→ mem_asIdeal_pow_iff_mem_maxIdeal_pow' (Cycle 45 - PROVED) ✅",
       "          └─→ dvr_intValuation_eq_via_pow_membership (Cycle 46 - PROVED) ✅",
-      "              └─→ dvr_intValuation_of_algebraMap' hard case (UNBLOCKED)",
+      "              └─→ dvr_intValuation_of_algebraMap' (Cycle 47 - PROVED) ✅",
       "                  └─→ dvr_valuation_eq_height_one' (KEY BLOCKER)",
       "                      └─→ valuationRingAt_subset_range_algebraMap' (TARGET)"
     ]
   },
   "proof_strategy_used": {
-    "lemma": "dvr_intValuation_eq_via_pow_membership",
-    "approach": "Both intValuations characterized by intValuation_le_pow_iff_mem, bridge via mem_asIdeal_pow_iff_mem_maxIdeal_pow', use le_antisymm with calc blocks",
-    "key_insight": "Values of form exp(-k) are equal iff they satisfy same threshold comparisons"
+    "lemma": "dvr_intValuation_of_algebraMap'",
+    "approach": "Section reordering to make dvr_intValuation_eq_via_pow_membership_moved available",
+    "key_insight": "Dependency ordering issue - lemma needed to exist before usage site"
   }
 }
