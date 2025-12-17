@@ -2817,31 +2817,15 @@ lemma cast_valuationSubring_preserves_val_v2 (v : HeightOneSpectrum R)
     (x : valuationRingAt (R := R) (K := K) v) :
     (h ▸ x).val = x.val := sorry
 
--- Candidate 4 [tag: rr_bundle_bridge] [status: PROVED] [cycle: 62]
+-- Candidate 4 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 63-WIP]
 /-- BLOCKER 1: valuationRingAt_equiv_algebraMap using equivValuationSubring helpers.
 Key insight (Gemini): Use IsFractionRing.injective immediately to escape the Subtype
-dependent-type trap. Once in K, the ▸ cast metadata is "erased". -/
+dependent-type trap. Once in K, the ▸ cast metadata is "erased".
+CYCLE 63: Previous approach (Cycle 62) created convert goals that couldn't be discharged. -/
 lemma valuationRingAt_equiv_algebraMap_v3 (v : HeightOneSpectrum R) (r : R) :
     (valuationRingAt_equiv_localization' (R := R) (K := K) v)
       ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩ =
-    algebraMap R (Localization.AtPrime v.asIdeal) r := by
-  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
-  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
-  -- 1. Reduce to equality in K to escape the Subtype dependent-type trap
-  apply IsFractionRing.injective (Localization.AtPrime v.asIdeal) K
-  -- 2. Handle the RHS via Scalar Tower (note .symm for direction)
-  have h_rhs : (algebraMap (Localization.AtPrime v.asIdeal) K)
-      (algebraMap R (Localization.AtPrime v.asIdeal) r) = algebraMap R K r :=
-    (IsScalarTower.algebraMap_apply R (Localization.AtPrime v.asIdeal) K r).symm
-  rw [h_rhs]
-  -- 3. Unfold the equiv and clear the '▸' cast metadata
-  unfold valuationRingAt_equiv_localization'
-  simp only [RingEquiv.coe_mk, Equiv.coe_fn_mk]
-  -- 4. Goal: algebraMap Loc K ((h ▸ equiv.symm) ⟨algebraMap R K r, _⟩) = algebraMap R K r
-  -- Use convert since rw can't match the cast pattern
-  convert equivValuationSubring_symm_val_eq v _
-  -- Discharge all ValuationSubring equality goals from convert
-  all_goals exact (dvr_valuationSubring_eq_valuationRingAt' v).symm
+    algebraMap R (Localization.AtPrime v.asIdeal) r := sorry
 
 -- Candidate 5 [tag: rr_bundle_bridge] [status: PROVED] [cycle: 61]
 /-- BLOCKER 2: Direct transplant from TestBlockerProofs.localization_residueField_equiv_algebraMap_v4.
@@ -2897,5 +2881,127 @@ lemma bridge_residue_algebraMap_unfold (v : HeightOneSpectrum R) (r : R) :
     algebraMap R (residueFieldAtPrime R v) r := sorry
 
 end Cycle61Candidates
+
+/-! ## Cycle 63 Candidates: Prove valuationRingAt_equiv_algebraMap
+
+**Context**: The equivalence `valuationRingAt_equiv_localization'` is defined as:
+```
+h ▸ equivValuationSubring.symm : valuationRingAt v ≃+* Localization.AtPrime v.asIdeal
+```
+where `h : valuationRingAt v = DVR.valuationSubring` creates a dependent cast.
+
+**Proved helpers**:
+- `equivValuationSubring_val_eq`: Forward direction preserves algebraMap
+- `equivValuationSubring_symm_val_eq`: Inverse direction preserves algebraMap
+
+**Goal**: Show the equiv respects `algebraMap R → Loc.AtPrime` composition.
+-/
+
+section Cycle63Candidates
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+
+-- Candidate 1 [tag: coercion_simplify] [status: OK] [cycle: 63]
+/-- Approach: Use `Subtype.ext` to reduce to equality of `.val` components in K.
+Strategy: Apply Subtype.ext, then use equivValuationSubring_symm_val_eq on the LHS
+and algebraMap composition on the RHS. Both should equal `algebraMap R K r`.
+The cast `h ▸` preserves `.val`, so we can work in K directly. -/
+lemma valuationRingAt_equiv_algebraMap_c63_1 (v : HeightOneSpectrum R) (r : R) :
+    (valuationRingAt_equiv_localization' (R := R) (K := K) v)
+      ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩ =
+    algebraMap R (Localization.AtPrime v.asIdeal) r := sorry
+
+-- Candidate 2 [tag: coercion_simplify] [status: OK] [cycle: 63]
+/-- Helper: The cast along ValuationSubring equality is transparent to RingEquiv application.
+Strategy: Prove that `(h ▸ e) x = h ▸ (e (h.symm ▸ x))` for RingEquivs.
+This allows us to "push" the cast through the equiv application.
+Key insight: RingEquiv respects equality, so casting the domain means casting the codomain. -/
+lemma cast_ringEquiv_apply_c63_2 (v : HeightOneSpectrum R)
+    (h : valuationRingAt (R := R) (K := K) v =
+      ((IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K).valuationSubring)
+    (x : valuationRingAt (R := R) (K := K) v) :
+    (h ▸ IsDiscreteValuationRing.equivValuationSubring.symm) x =
+    IsDiscreteValuationRing.equivValuationSubring.symm (h ▸ x) := sorry
+
+-- Candidate 3 [tag: rewrite_bridge] [status: OK] [cycle: 63]
+/-- Approach: Factor through K using IsScalarTower.
+Strategy: Show both sides equal `algebraMap R K r` when composed with `algebraMap Loc K`.
+Use `IsFractionRing.injective (A := Localization.AtPrime v.asIdeal) K` to pull back.
+This avoids the Subtype dependent type issue entirely. -/
+lemma valuationRingAt_equiv_algebraMap_via_K_c63_3 (v : HeightOneSpectrum R) (r : R) :
+    algebraMap (Localization.AtPrime v.asIdeal) K
+      ((valuationRingAt_equiv_localization' (R := R) (K := K) v)
+        ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩) =
+    algebraMap (Localization.AtPrime v.asIdeal) K
+      (algebraMap R (Localization.AtPrime v.asIdeal) r) := sorry
+
+-- Candidate 4 [tag: coercion_simplify] [status: OK] [cycle: 63]
+/-- Helper: Cast preserves `.val` for elements of ValuationSubring.
+Strategy: Both sides are subtypes of K with the same value, so the cast is trivial.
+Use Subtype.ext or cases to reduce to equality of the `.val` component. -/
+lemma cast_valuationSubring_val_c63_4 (v : HeightOneSpectrum R)
+    (h : valuationRingAt (R := R) (K := K) v =
+      ((IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K).valuationSubring)
+    (x : valuationRingAt (R := R) (K := K) v) :
+    (h ▸ x : ((IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K).valuationSubring).val = x.val := sorry
+
+-- Candidate 5 [tag: rewrite_bridge] [status: OK] [cycle: 63]
+/-- Approach: Unfold the definition completely and use congrArg.
+Strategy: Unfold valuationRingAt_equiv_localization' to expose the cast and equivValuationSubring.symm.
+Apply the equiv to the input, getting an element of Loc.AtPrime.
+Use equivValuationSubring_val_eq and the scalar tower to show the values match.
+Then use Subtype.ext at the Loc.AtPrime level (both elements have same algebraMap to K). -/
+lemma valuationRingAt_equiv_algebraMap_unfold_c63_5 (v : HeightOneSpectrum R) (r : R) :
+    (valuationRingAt_equiv_localization' (R := R) (K := K) v)
+      ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩ =
+    algebraMap R (Localization.AtPrime v.asIdeal) r := sorry
+
+-- Candidate 6 [tag: coercion_simplify] [status: OK] [cycle: 63]
+/-- Approach: Use eq_rec/cast simplification lemmas.
+Strategy: Apply `cast_trans`, `cast_eq`, and other cast manipulation lemmas
+to simplify the nested casts. Work directly with the algebraMap output and target.
+Key: (h ▸ e) x can be simplified by induction/cases on h. -/
+lemma cast_equiv_simplify_c63_6 (v : HeightOneSpectrum R)
+    (h : valuationRingAt (R := R) (K := K) v =
+      ((IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K).valuationSubring)
+    (r : R) :
+    let x : valuationRingAt (R := R) (K := K) v := ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩
+    let y : ((IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K).valuationSubring :=
+      h ▸ x
+    algebraMap (Localization.AtPrime v.asIdeal) K (IsDiscreteValuationRing.equivValuationSubring.symm y) = x.val := sorry
+
+-- Candidate 7 [tag: rewrite_bridge] [status: PROVED] [cycle: 63]
+/-- Approach: Use RingEquiv.apply_eq_iff_eq_symm_apply and Subtype.ext.
+Strategy: Show that equivValuationSubring maps algebraMap r to an element
+whose .val equals algebraMap R K r. Use equivValuationSubring_val_eq. -/
+lemma valuationRingAt_equiv_algebraMap_forward_c63_7 (v : HeightOneSpectrum R) (r : R) :
+    (IsDiscreteValuationRing.equivValuationSubring (K := K)
+      (algebraMap R (Localization.AtPrime v.asIdeal) r)).val = algebraMap R K r := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  rw [equivValuationSubring_val_eq v]
+  exact (IsScalarTower.algebraMap_apply R (Localization.AtPrime v.asIdeal) K r).symm
+
+-- Candidate 8 [tag: coercion_simplify] [status: OK] [cycle: 63]
+/-- Approach: Use IsFractionRing.injective to reduce both sides to K.
+Strategy: Apply IsFractionRing.injective Loc K to reduce the equality
+to equality in K. Then use scalar tower and equivValuationSubring properties. -/
+lemma valuationRingAt_equiv_main_c63_8 (v : HeightOneSpectrum R) (r : R) :
+    (valuationRingAt_equiv_localization' (R := R) (K := K) v)
+      ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩ =
+    algebraMap R (Localization.AtPrime v.asIdeal) r := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  -- Use injectivity to reduce to equality in K
+  apply IsFractionRing.injective (Localization.AtPrime v.asIdeal) K
+  -- RHS: algebraMap Loc K (algebraMap R Loc r) = algebraMap R K r by scalar tower
+  rw [(IsScalarTower.algebraMap_apply R (Localization.AtPrime v.asIdeal) K r).symm]
+  -- LHS: Need to trace through the equiv definition
+  -- valuationRingAt_equiv_localization' = h ▸ equivValuationSubring.symm
+  -- Use equivValuationSubring_symm_val_eq and cast_valuationSubring_val_c63_4
+  sorry
+
+end Cycle63Candidates
 
 end RiemannRochV2

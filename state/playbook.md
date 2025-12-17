@@ -53,7 +53,7 @@ Where:
 
 ---
 
-## Current Status (Cycle 61)
+## Current Status (Cycle 63)
 
 **Codebase Structure**:
 ```
@@ -68,7 +68,7 @@ RrLean/RiemannRochV2/
 └── TestBlockerProofs.lean  # Cycle 58-60: Test proofs
 ```
 
-**Active Development**: `LocalGapInstance.lean` (Cycle 61 candidates at end of file)
+**Active Development**: `LocalGapInstance.lean` (Cycle 63 candidates at end of file)
 
 ### Typeclass Hierarchy
 ```
@@ -89,29 +89,30 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 | `localization_residueField_equiv_algebraMap_v5` | ✅ **PROVED** | **Cycle 61: BLOCKER 2 RESOLVED IN MAIN FILE!** |
 | `equivValuationSubring_val_eq` | ✅ **PROVED** | Cycle 61: Forward direction helper for BLOCKER 1 |
 | `equivValuationSubring_symm_val_eq` | ✅ **PROVED** | Cycle 61: Inverse direction helper for BLOCKER 1 |
-| `valuationRingAt_equiv_algebraMap` | ⚠️ **SORRY** | KEY BLOCKER 1: Needs cast handling for ▸ |
+| `valuationRingAt_equiv_algebraMap_forward_c63_7` | ✅ **PROVED** | Cycle 63: Forward via scalar tower |
+| `valuationRingAt_equiv_algebraMap` | ⚠️ **SORRY** | KEY BLOCKER 1: Main lemma still blocked by ▸ cast |
 | `bridge_residue_algebraMap` | ⚠️ **SORRY** | Depends on BLOCKER 1 only |
 
-### Next Cycle (62) Priorities
-1. **BLOCKER 1**: Complete `valuationRingAt_equiv_algebraMap_v3`
-   - Helpers `equivValuationSubring_val_eq` and `equivValuationSubring_symm_val_eq` are PROVED
-   - Issue: Dependent elimination with `▸` cast from `dvr_valuationSubring_eq_valuationRingAt'`
-   - Try: Direct rewriting without going through cast
+### Next Cycle (64) Priorities
+1. **BLOCKER 1**: Complete `valuationRingAt_equiv_algebraMap` main lemma
+   - New helper `valuationRingAt_equiv_algebraMap_forward_c63_7` is PROVED (Cycle 63)
+   - Combined with `equivValuationSubring_symm_val_eq`, have both directions
+   - Need: Connect through the `▸` cast or prove cast_valuationSubring_val_c63_4
 2. **Complete `bridge_residue_algebraMap`** - Only needs BLOCKER 1
 3. **Kernel characterization**: ker(evaluationMapAt) = L(D)
 
-### Cycle 62 Technical Hints (from Cycle 61-62 analysis)
-- **BLOCKER 2 is DONE!** Used `unfold localization_residueField_equiv` + `congrArg` pattern
-- **BLOCKER 1 ALMOST SOLVED** (Cycle 62 progress):
-  - Use `IsFractionRing.injective` first to escape Subtype dependent-type trap
-  - Use `convert equivValuationSubring_symm_val_eq v _` (not `rw` - cast blocks pattern match)
-  - `convert` creates multiple ValuationSubring equality goals
-  - Discharge with `all_goals exact (dvr_valuationSubring_eq_valuationRingAt' v).symm`
-  - **BUILD WAS INTERRUPTED** - this approach needs verification in Cycle 63
+### Cycle 63 Technical Hints
+- **KEY HELPER PROVED**: `valuationRingAt_equiv_algebraMap_forward_c63_7`
+  - Shows: `(equivValuationSubring (algebraMap R Loc r)).val = algebraMap R K r`
+  - Proof: `equivValuationSubring_val_eq` + `IsScalarTower.algebraMap_apply`
+- **BLOCKER 1 Strategy**:
+  - Have forward direction (`equiv (algebraMap r)`'s val = `algebraMap R K r`)
+  - Have inverse direction (`algebraMap (equiv.symm y) = y.val`)
+  - Need: Show that casting via `h ▸` preserves val (Subtype.ext approach)
 
 ---
 
-## Victory Path (Updated Cycle 61)
+## Victory Path (Updated Cycle 63)
 
 ```
 shifted_element_valuation_le_one (Cycle 54 - PROVED ✅)
@@ -138,7 +139,9 @@ equivValuationSubring_val_eq (Cycle 61 - PROVED ✅)  ← Helper for BLOCKER 1
     ↓
 equivValuationSubring_symm_val_eq (Cycle 61 - PROVED ✅)  ← Helper for BLOCKER 1
     ↓
-valuationRingAt_equiv_algebraMap (SORRY)  ← KEY BLOCKER 1 (dependent elimination issue)
+valuationRingAt_equiv_algebraMap_forward_c63_7 (Cycle 63 - PROVED ✅)  ← Forward direction!
+    ↓
+valuationRingAt_equiv_algebraMap (SORRY)  ← KEY BLOCKER 1 (▸ cast issue)
     ↓
 bridge_residue_algebraMap (pending)  ← depends only on BLOCKER 1 now
     ↓
@@ -147,7 +150,7 @@ kernel_evaluationMapAt = L(D)  ← NEXT TARGET after bridge
 LocalGapBound instance → VICTORY
 ```
 
-**NOTE**: Cycle 61 transplanted BLOCKER 2 to main file and proved 2 helpers for BLOCKER 1. Only the main BLOCKER 1 lemma remains.
+**NOTE**: Cycle 63 proved forward direction helper. BLOCKER 1 helpers are 3/3 proved, only main lemma remains.
 
 - [ ] `instance : LocalGapBound R K` (makes riemann_inequality_affine unconditional)
 

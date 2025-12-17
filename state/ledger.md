@@ -2,13 +2,13 @@
 
 *For Cycles 1-34, see `state/ledger_archive.md`*
 
-## Summary: Where We Are (End of Cycle 60)
+## Summary: Where We Are (End of Cycle 63)
 
 **Project Goal**: Prove Riemann-Roch inequality for Dedekind domains in Lean 4.
 
 **Current Target**: `instance : LocalGapBound R K` (makes riemann_inequality_affine unconditional)
 
-**Blocking Chain** (Updated Cycle 61):
+**Blocking Chain** (Updated Cycle 63):
 ```
 evaluationMapAt_complete (Cycle 56 - PROVED ✅)  ← LINEARMAP COMPLETE!
     ↓
@@ -22,6 +22,8 @@ equivValuationSubring_val_eq (Cycle 61 - PROVED ✅)  ← Helper for BLOCKER 1
     ↓
 equivValuationSubring_symm_val_eq (Cycle 61 - PROVED ✅)  ← Helper for BLOCKER 1
     ↓
+valuationRingAt_equiv_algebraMap_forward_c63_7 (Cycle 63 - PROVED ✅)  ← Forward direction!
+    ↓
 valuationRingAt_equiv_algebraMap (SORRY)  ← KEY BLOCKER 1 (▸ cast issue)
     ↓
 bridge_residue_algebraMap (pending)  ← depends on BLOCKER 1
@@ -31,11 +33,69 @@ kernel_evaluationMapAt = L(D)  ← NEXT TARGET after bridge
 LocalGapBound instance → VICTORY
 ```
 
-**Note**: Cycle 61 transplanted BLOCKER 2 to main file and proved 2 helpers for BLOCKER 1. Only the main BLOCKER 1 lemma remains.
+**Note**: Cycle 63 proved forward direction helper. BLOCKER 1 has 3/3 helpers proved, only main lemma remains.
 
 ---
 
 ## 2025-12-17
+
+### Cycle 63 - FORWARD DIRECTION PROVED - 1/8 PROVED
+
+**Goal**: Prove valuationRingAt_equiv_algebraMap (KEY BLOCKER 1)
+
+#### Key Achievement
+
+**Forward Direction Helper PROVED!**
+
+`valuationRingAt_equiv_algebraMap_forward_c63_7` proves:
+```lean
+(equivValuationSubring (algebraMap R Loc r)).val = algebraMap R K r
+```
+
+Proof:
+```lean
+rw [equivValuationSubring_val_eq v]
+exact (IsScalarTower.algebraMap_apply R (Localization.AtPrime v.asIdeal) K r).symm
+```
+
+This shows that when `equivValuationSubring` maps `algebraMap R Loc r`, the resulting element's `.val` (in K) equals `algebraMap R K r`.
+
+#### Results
+
+| Candidate | Status | Notes |
+|-----------|--------|-------|
+| `valuationRingAt_equiv_algebraMap_c63_1` | ⚠️ SORRY | Main lemma direct attempt |
+| `cast_ringEquiv_apply_c63_2` | ⚠️ SORRY | Cast through equiv |
+| `valuationRingAt_equiv_algebraMap_via_K_c63_3` | ⚠️ SORRY | Factor through K |
+| `cast_valuationSubring_val_c63_4` | ⚠️ SORRY | Cast preserves val |
+| `valuationRingAt_equiv_algebraMap_unfold_c63_5` | ⚠️ SORRY | Unfold completely |
+| `cast_equiv_simplify_c63_6` | ⚠️ SORRY | Cast simplification |
+| `valuationRingAt_equiv_algebraMap_forward_c63_7` | ✅ **PROVED** | Forward direction via scalar tower |
+| `valuationRingAt_equiv_main_c63_8` | ⚠️ SORRY | Main lemma with IsFractionRing.injective |
+
+**1/8 candidates PROVED**
+
+#### BLOCKER 1 Progress
+
+We now have 3 helpers for BLOCKER 1:
+1. `equivValuationSubring_val_eq` (Cycle 61): `(equiv a).val = algebraMap a`
+2. `equivValuationSubring_symm_val_eq` (Cycle 61): `algebraMap (equiv.symm y) = y.val`
+3. `valuationRingAt_equiv_algebraMap_forward_c63_7` (Cycle 63): `(equiv (algebraMap R Loc r)).val = algebraMap R K r`
+
+**Remaining issue**: The `▸` cast from `dvr_valuationSubring_eq_valuationRingAt'` in the definition of `valuationRingAt_equiv_localization'` creates type issues.
+
+#### Reflector Score: 6/10
+
+**Assessment**: Good progress with forward direction proved. The helper completes a key piece of the puzzle. Combined with the inverse direction helper from Cycle 61, we have both directions but need to connect through the `▸` cast.
+
+**Next Steps (Cycle 64)**:
+1. Prove `cast_valuationSubring_val_c63_4` showing cast preserves `.val`
+2. Use the 3 helpers to complete the main BLOCKER 1 lemma
+3. Complete `bridge_residue_algebraMap` once BLOCKER 1 is resolved
+
+**Cycle rating**: 6/10 (Key helper PROVED, clear path forward)
+
+---
 
 ### Cycle 61 - BLOCKER 2 TRANSPLANTED - 3/8 PROVED
 
