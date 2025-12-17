@@ -2423,13 +2423,20 @@ lemma residueField_transport_algebraMap (v : HeightOneSpectrum R) (r : R) :
   conv_lhs => rw [valuationRingAt.residue]
   rw [residueField_equiv_commutes_with_residue, valuationRingAt_equiv_algebraMap]
 
--- Candidate 3 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 57]
-/-- The h2 step: localization_residueField_equiv maps residue of algebraMap R to algebraMap R κ(v). -/
+-- Candidate 3 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 60]
+/-- The h2 step: localization_residueField_equiv maps residue of algebraMap R to algebraMap R κ(v).
+BLOCKER 2 - Proof in TestBlockerProofs.lean works; type unification issue in main file. -/
 lemma localization_residueField_equiv_algebraMap (v : HeightOneSpectrum R) (r : R) :
     (localization_residueField_equiv v)
       (IsLocalRing.residue (Localization.AtPrime v.asIdeal)
         (algebraMap R (Localization.AtPrime v.asIdeal) r)) =
     algebraMap R (residueFieldAtPrime R v) r := by
+  -- Proof structure from TestBlockerProofs.lean:
+  -- 1. unfold localization_residueField_equiv + simp [trans_apply]
+  -- 2. rw [residue_def, mk_algebraMap]
+  -- 3. Key: (loc_res_equiv v).symm (algebraMap R ...) = Quotient.mk v.asIdeal r
+  -- 4. simp [key, ofBijective_apply, Quotient.algebraMap_eq]
+  -- Type mismatch between residueFieldAtPrime R v and v.asIdeal.ResidueField blocks rw/simp
   sorry
 
 -- Candidate 4 [tag: coercion_simplify] [status: PROVED] [cycle: 57]
@@ -2611,5 +2618,133 @@ lemma localization_residueField_equiv_algebraMap_complete (v : HeightOneSpectrum
   exact localization_residueField_equiv_algebraMap_step v r
 
 end Cycle59Candidates
+
+/-! ## Cycle 60 Candidates
+
+Focus: Complete BLOCKER 2 (type coercion) and BLOCKER 1 (equivValuationSubring.symm)
+
+Discovery results:
+- `Subring.coe_equivMapOfInjective_apply`: (equiv x : S) = f x
+- `RingEquiv.subringCongr`: preserves underlying values
+- `equivValuationSubring` construction uses these
+-/
+
+section Cycle60Candidates
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+
+-- Candidate 1 [tag: coercion_simplify] [status: SORRY] [cycle: 60]
+/-- Forward direction: equivValuationSubring sends a ∈ DVR to ⟨algebraMap a, _⟩.
+Key insight: equivValuationSubring is built from equivMapOfInjective which has
+coe_equivMapOfInjective_apply: (equiv x : S) = f x -/
+lemma equivValuationSubring_coe (v : HeightOneSpectrum R)
+    (a : Localization.AtPrime v.asIdeal) :
+    (IsDiscreteValuationRing.equivValuationSubring (K := K) a).val =
+    algebraMap (Localization.AtPrime v.asIdeal) K a := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  sorry
+
+-- Candidate 2 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 60]
+/-- Key property: equivValuationSubring.symm preserves the embedding to K.
+Strategy: Use RingEquiv.apply_symm_apply on the forward direction,
+then extract the value component. -/
+lemma equivValuationSubring_symm_coe_via_apply_symm (v : HeightOneSpectrum R)
+    (y : ((IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K).valuationSubring) :
+    algebraMap (Localization.AtPrime v.asIdeal) K
+      (IsDiscreteValuationRing.equivValuationSubring.symm y) = y.val := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  -- Strategy: conv_rhs => rw [← equivValuationSubring.apply_symm_apply y]
+  -- Then use equivValuationSubring_coe
+  sorry
+
+-- Candidate 3 [tag: coercion_simplify] [status: OK] [cycle: 60]
+/-- Type coercion bridge for BLOCKER 2: residueFieldAtPrime R v = v.asIdeal.ResidueField
+by definition (abbrev). This is rfl. -/
+lemma residueFieldAtPrime_eq_ResidueField (v : HeightOneSpectrum R) :
+    residueFieldAtPrime R v = v.asIdeal.ResidueField := rfl
+
+-- Candidate 4 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 60]
+/-- BLOCKER 2 step - Try using unfold and explicit type annotations.
+Use show to make the type coercion explicit. -/
+lemma localization_residueField_equiv_algebraMap_step_v2 (v : HeightOneSpectrum R) (r : R) :
+    (localization_residueField_equiv v)
+      (Ideal.Quotient.mk (IsLocalRing.maximalIdeal (Localization.AtPrime v.asIdeal))
+        (algebraMap R (Localization.AtPrime v.asIdeal) r)) =
+    algebraMap R (residueFieldAtPrime R v) r := by
+  haveI : v.asIdeal.IsMaximal := v.isMaximal
+  -- The helpers are proved:
+  -- localization_residue_equiv_symm_algebraMap v r : (loc_res_equiv v).symm (algebraMap ...) = Quotient.mk v.asIdeal r
+  -- ofBijective_quotient_mk_eq_algebraMap v r : ofBijective (Quotient.mk ...) = algebraMap R (residueFieldAtPrime R v) r
+  -- ISSUE: rw fails because the pattern doesn't match exactly
+  -- The LHS after unfold+simp is:
+  --   (RingEquiv.ofBijective ...) ((localization_residue_equiv v).symm (Quotient.mk (maxIdeal Loc) (algebraMap R Loc r)))
+  -- But localization_residue_equiv_symm_algebraMap talks about algebraMap R (Loc ⧸ maxIdeal) r
+  -- Need to first show Quotient.mk_algebraMap equivalence
+  sorry
+
+-- Candidate 5 [tag: coercion_simplify] [status: SORRY] [cycle: 60]
+/-- Alternative approach: Cast along ValuationSubring equality preserves val.
+Both valuationRingAt and DVR.valuationSubring are subtypes of K, so cast preserves val. -/
+lemma cast_valuationSubring_val_eq (v : HeightOneSpectrum R)
+    (h : valuationRingAt (R := R) (K := K) v =
+      ((IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K).valuationSubring)
+    (x : valuationRingAt (R := R) (K := K) v) :
+    (h ▸ x).val = x.val := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  -- Cast along equality should preserve the value since both are subtypes of K
+  -- Use subst h or induction h
+  sorry
+
+-- Candidate 6 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 60]
+/-- BLOCKER 1 main lemma via equivValuationSubring.symm.
+Combine IsFractionRing.injective with the helper lemmas. -/
+lemma valuationRingAt_equiv_algebraMap_v2 (v : HeightOneSpectrum R) (r : R) :
+    (valuationRingAt_equiv_localization' (R := R) (K := K) v)
+      ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩ =
+    algebraMap R (Localization.AtPrime v.asIdeal) r := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  apply IsFractionRing.injective (Localization.AtPrime v.asIdeal) K
+  -- Goal: algebraMap Loc K (equiv ⟨algebraMap R K r, _⟩) = algebraMap R K r
+  -- LHS: Use valuationRingAt_equiv_coe_eq (once proved)
+  -- RHS: Use IsScalarTower.algebraMap_apply
+  sorry
+
+-- Candidate 7 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 60]
+/-- bridge_residue_algebraMap complete using BLOCKER 2 fix.
+Uses residueField_transport_direct + localization_residueField_equiv. -/
+lemma bridge_residue_algebraMap_v2 (v : HeightOneSpectrum R) (r : R) :
+    (residueFieldBridge_explicit (R := R) (K := K) v)
+      ((valuationRingAt.residue (R := R) (K := K) v) ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩) =
+    algebraMap R (residueFieldAtPrime R v) r := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  -- Unfold residueFieldBridge_explicit = h1.trans h2
+  -- h1: residueField_transport_direct (via mapEquiv)
+  -- h2: localization_residueField_equiv
+  sorry
+
+-- Candidate 8 [tag: coercion_simplify] [status: SORRY] [cycle: 60]
+/-- Helper for equivValuationSubring_coe: unfold the definition and use
+Subring.coe_equivMapOfInjective_apply. -/
+lemma equivValuationSubring_coe_unfold (v : HeightOneSpectrum R)
+    (a : Localization.AtPrime v.asIdeal) :
+    (IsDiscreteValuationRing.equivValuationSubring (K := K) a).val =
+    algebraMap (Localization.AtPrime v.asIdeal) K a := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  -- equivValuationSubring = (topEquiv.symm.trans (equivMapOfInjective ...)).trans (subringCongr ...)
+  -- subringCongr preserves val (both subrings live in K), equivMapOfInjective gives algebraMap
+  unfold IsDiscreteValuationRing.equivValuationSubring
+  simp only [RingEquiv.trans_apply]
+  -- After unfolding: the result is ⟨algebraMap a, _⟩ : valuationSubring
+  -- subringCongr just reindexes the Subring but doesn't change the value in K
+  sorry
+
+end Cycle60Candidates
 
 end RiemannRochV2

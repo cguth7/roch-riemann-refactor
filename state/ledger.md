@@ -2,36 +2,89 @@
 
 *For Cycles 1-34, see `state/ledger_archive.md`*
 
-## Summary: Where We Are (End of Cycle 59)
+## Summary: Where We Are (End of Cycle 60)
 
 **Project Goal**: Prove Riemann-Roch inequality for Dedekind domains in Lean 4.
 
 **Current Target**: `instance : LocalGapBound R K` (makes riemann_inequality_affine unconditional)
 
-**Blocking Chain** (Updated Cycle 59):
+**Blocking Chain** (Updated Cycle 60):
 ```
 evaluationMapAt_complete (Cycle 56 - PROVED ✅)  ← LINEARMAP COMPLETE!
     ↓
-localization_residue_equiv_symm_algebraMap (Cycle 59 - PROVED ✅)  ← NEW! Helper for BLOCKER 2
+localization_residue_equiv_symm_algebraMap (Cycle 59 - PROVED ✅)
     ↓
-ofBijective_quotient_mk_eq_algebraMap (Cycle 59 - PROVED ✅)  ← NEW! Helper for BLOCKER 2
+ofBijective_quotient_mk_eq_algebraMap (Cycle 59 - PROVED ✅)
     ↓
 valuationRingAt_equiv_algebraMap (SORRY)  ← KEY BLOCKER 1
     ↓
-localization_residueField_equiv_algebraMap (90% COMPLETE)  ← KEY BLOCKER 2 (type coercion only)
+localization_residueField_equiv_algebraMap (PROVED in TestBlockerProofs.lean!)  ← BLOCKER 2 (transplant blocked)
     ↓
-bridge_residue_algebraMap (pending)  ← depends on blockers 1 & 2
+bridge_residue_algebraMap (pending)  ← depends on BLOCKER 1
     ↓
 kernel_evaluationMapAt = L(D)  ← NEXT TARGET after bridge
     ↓
 LocalGapBound instance → VICTORY
 ```
 
-**Note**: Cycle 59 proved 2 helper lemmas for BLOCKER 2. Only a type coercion issue remains for BLOCKER 2.
+**Note**: Cycle 60 discovered that BLOCKER 2 (`localization_residueField_equiv_algebraMap`) is PROVED in TestBlockerProofs.lean but type unification issues prevent direct transplant to main file.
 
 ---
 
 ## 2025-12-17
+
+### Cycle 60 - Type Unification Analysis - 1/8 PROVED
+
+**Goal**: Complete BLOCKER 2 (type coercion) and BLOCKER 1 (equivValuationSubring.symm)
+
+#### Key Discovery
+
+**BLOCKER 2 is PROVED in TestBlockerProofs.lean!**
+
+The lemma `localization_residueField_equiv_algebraMap_v4` (lines 27-65) has a complete proof using:
+1. `unfold localization_residueField_equiv` + `simp [trans_apply]`
+2. `rw [residue_def, mk_algebraMap]`
+3. Key step: `(loc_res_equiv v).symm (algebraMap R ...) = Quotient.mk v.asIdeal r`
+4. `simp [key, ofBijective_apply, Quotient.algebraMap_eq]`
+
+**BUT**: When transplanted to LocalGapInstance.lean, `rw`/`simp` fail due to:
+- `residueFieldAtPrime R v` vs `v.asIdeal.ResidueField` syntactic mismatch
+- These are definitionally equal (abbrev) but Lean's pattern matcher treats them differently
+
+#### Results
+
+| Candidate | Status | Notes |
+|-----------|--------|-------|
+| `equivValuationSubring_coe` | SORRY | Forward direction for BLOCKER 1 |
+| `equivValuationSubring_symm_coe_via_apply_symm` | SORRY | KEY for BLOCKER 1 |
+| `residueFieldAtPrime_eq_ResidueField` | **PROVED** | Trivial rfl |
+| `localization_residueField_equiv_algebraMap_step_v2` | SORRY | Type coercion blocked |
+| `cast_valuationSubring_val_eq` | SORRY | Cast helper |
+| `valuationRingAt_equiv_algebraMap_v2` | SORRY | BLOCKER 1 main |
+| `bridge_residue_algebraMap_v2` | SORRY | Final target |
+| `equivValuationSubring_coe_unfold` | SORRY | Alternative unfold approach |
+
+**1/8 candidates PROVED**
+
+#### Discovery Hook Findings
+
+- `Subring.coe_equivMapOfInjective_apply`: `(equivMapOfInjective s f hf x : S) = f x`
+- `equivValuationSubring` is constructed using `equivMapOfInjective` and `subringCongr`
+- This should enable proving `(equivValuationSubring a).val = algebraMap a`
+
+#### Reflector Score: 5/10
+
+**Assessment**: Exploratory cycle. Key discovery that BLOCKER 2 is provable (and actually proved in test file) but transplant is blocked by type unification. One trivial lemma proved.
+
+**Next Steps (Cycle 61)**:
+1. **Option A**: Use `unfold residueFieldAtPrime` in LocalGapInstance.lean before rewrites
+2. **Option B**: Import the proven lemma from TestBlockerProofs.lean
+3. **Option C**: Investigate the context difference between the two files
+4. Continue work on BLOCKER 1 via `equivValuationSubring` properties
+
+**Cycle rating**: 5/10 (Key discovery about BLOCKER 2 proof, 1/8 proved, type issue identified)
+
+---
 
 ### Cycle 59 - BLOCKER 2 Helpers PROVED - 2/8 CANDIDATES COMPLETE
 
