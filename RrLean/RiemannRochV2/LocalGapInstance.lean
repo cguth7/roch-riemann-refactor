@@ -1460,7 +1460,8 @@ lemma mem_asIdeal_iff_mem_maxIdeal (v : HeightOneSpectrum R) (r : R) :
     localization_maximalIdeal_eq_map v
   rw [hmax]
   -- r ∈ v.asIdeal ↔ algebraMap r ∈ Ideal.map v.asIdeal
-  -- Use properties of Ideal.map and IsLocalization
+  -- PROVABLE via Cycle 41: algebraMap_mem_map_of_mem (forward) + mem_of_algebraMap_mem_map (reverse)
+  -- Note: Need to reorder sections so Cycle 41 comes before Cycle 39
   sorry
 
 -- Candidate 5 [tag: arithmetic] [relevance: 5/5] [status: TBD] [cycle: 39]
@@ -1470,12 +1471,14 @@ lemma dvr_intValuation_of_algebraMap' (v : HeightOneSpectrum R) (r : R) :
     (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).intValuation
       (algebraMap R (Localization.AtPrime v.asIdeal) r) = v.intValuation r := by
   haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
-  by_cases hr : r = 0
-  · simp only [hr, map_zero]
-  · -- Use the definition of intValuation in terms of Associates.count
-    -- v.intValuation r = exp(-count v.asIdeal in factors of span {r})
-    -- DVR.intValuation (algebraMap r) = exp(-count maxIdeal in factors of span {algebraMap r})
-    -- These are equal by associates_count_preserved_at_prime
+  by_cases hr0 : r = 0
+  · simp only [hr0, map_zero]
+  by_cases hr : r ∈ v.asIdeal
+  · -- Hard case: r ∈ v.asIdeal, need intValuation comparison
+    sorry
+  · -- Easy case: r ∉ v.asIdeal, both = 1
+    -- PROVABLE via Cycle 41: dvr_intValuation_unit + intValuation_eq_one_iff
+    -- Note: Need to reorder sections so Cycle 41 comes before Cycle 39
     sorry
 
 -- Candidate 6 [tag: dvr_bridge] [relevance: 4/5] [status: TBD] [cycle: 39]
@@ -1517,11 +1520,8 @@ lemma dvr_intValuation_unit (v : HeightOneSpectrum R) (r : R) (hr : r ∉ v.asId
   haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
   -- r ∉ v.asIdeal means algebraMap r is a unit in Loc.AtPrime
   -- Units have intValuation = 1 in a DVR
-  have hunit : IsUnit (algebraMap R (Localization.AtPrime v.asIdeal) r) := by
-    -- algebraMap r is in the complement of maxIdeal
-    -- In a local ring, complement of maxIdeal = units
-    sorry
-  -- Use that units have intValuation = 1
+  -- PROVABLE via Cycle 41: algebraMap_isUnit_iff_not_mem + dvr_intValuation_of_isUnit
+  -- Note: Need to reorder sections so Cycle 41 comes before Cycle 39
   sorry
 
 end Cycle39Candidates
@@ -1629,5 +1629,57 @@ lemma dvr_maximalIdeal_asIdeal_eq_localRing_maximalIdeal (v : HeightOneSpectrum 
   rfl
 
 end Cycle41Candidates
+
+/-! ## Cycle 42 Candidates: Complete Foundation + Attack Hard Case
+
+Goal: Prove the hard case of dvr_intValuation_of_algebraMap' (when r ∈ v.asIdeal).
+Strategy: Show both intValuations count ideal powers the same way.
+-/
+section Cycle42Candidates
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+
+-- Candidate 1 [tag: arithmetic] [relevance: 5/5] [status: SORRY] [cycle: 42]
+/-- For r ∈ v.asIdeal with r ≠ 0, the DVR intValuation < 1.
+Uses mem_asIdeal_iff_mem_maxIdeal to transfer ideal membership. -/
+lemma dvr_intValuation_mem_lt_one (v : HeightOneSpectrum R) (r : R)
+    (hr : r ∈ v.asIdeal) (hr_ne : r ≠ 0) :
+    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).intValuation
+      (algebraMap R (Localization.AtPrime v.asIdeal) r) < 1 := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  have hmem : algebraMap R (Localization.AtPrime v.asIdeal) r ∈
+      (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).asIdeal := by
+    rw [dvr_maximalIdeal_asIdeal_eq_localRing_maximalIdeal v]
+    rw [← mem_asIdeal_iff_mem_maxIdeal v r]
+    exact hr
+  -- We have: r ∈ maxIdeal.asIdeal and r ≠ 0, need to conclude intVal < 1
+  -- Use HeightOneSpectrum.intValuation_lt_one_iff_dvd for DVR.maximalIdeal
+  rw [HeightOneSpectrum.intValuation_lt_one_iff_dvd]
+  sorry
+
+-- Candidate 2 [tag: dvr_bridge] [relevance: 5/5] [status: PROVED] [cycle: 42]
+/-- DVR intValuation of zero equals zero (via map_zero).
+Base case for intValuation equality. -/
+lemma dvr_intValuation_zero (v : HeightOneSpectrum R) :
+    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).intValuation
+      (0 : Localization.AtPrime v.asIdeal) = 0 := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  exact map_zero _
+
+-- Candidate 3 [tag: arithmetic] [relevance: 5/5] [status: SORRY] [cycle: 42]
+/-- For r ∈ v.asIdeal, both intValuations are < 1.
+Establishes parallel structure for the hard case. -/
+lemma intValuation_mem_lt_one_both (v : HeightOneSpectrum R) (r : R)
+    (hr : r ∈ v.asIdeal) (hr_ne : r ≠ 0) :
+    v.intValuation r < 1 ∧
+    (IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).intValuation
+      (algebraMap R (Localization.AtPrime v.asIdeal) r) < 1 := by
+  refine ⟨?_, dvr_intValuation_mem_lt_one v r hr hr_ne⟩
+  -- Use HeightOneSpectrum.intValuation_lt_one_iff_mem
+  rw [v.intValuation_lt_one_iff_mem]
+  exact hr
+
+end Cycle42Candidates
 
 end RiemannRochV2

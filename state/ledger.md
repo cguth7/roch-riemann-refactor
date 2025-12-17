@@ -2,7 +2,7 @@
 
 *For Cycles 1-34, see `state/ledger_archive.md`*
 
-## Summary: Where We Are (End of Cycle 41)
+## Summary: Where We Are (End of Cycle 42)
 
 **Project Goal**: Prove Riemann-Roch inequality for Dedekind domains in Lean 4.
 
@@ -49,7 +49,7 @@ residueMapFromR_surjective
 evaluationMapAt → kernel → LocalGapBound → VICTORY
 ```
 
-**Cycle 41 Achievement**: All 8 foundation lemmas PROVED! Key blockers `mem_asIdeal_iff_mem_maxIdeal` and `dvr_intValuation_unit` are now UNBLOCKED.
+**Cycle 42 Achievement**: Identified section ordering blocker. Cycle 39 candidates are PROVABLE once Cycle 41 section is moved before them.
 
 ---
 
@@ -155,6 +155,48 @@ Cycle 42 should:
 3. Then tackle `dvr_intValuation_of_algebraMap'` → `dvr_valuation_eq_height_one'`
 
 **Cycle rating**: 10/10 - All 8 candidates proved, major blockers unblocked
+
+---
+
+### Cycle 42 - Section Ordering Blocker Identified - PROGRESS
+
+**Goal**: Complete `mem_asIdeal_iff_mem_maxIdeal` and `dvr_intValuation_unit` using Cycle 41 foundation
+
+#### Results
+
+| Definition/Lemma | Status | Notes |
+|-----------------|--------|-------|
+| `dvr_intValuation_zero` | ✅ **PROVED** | Base case via `map_zero` |
+| `dvr_intValuation_mem_lt_one` | ⚠️ SORRY | intVal < 1 for r ∈ v.asIdeal (depends on ideal membership) |
+| `intValuation_mem_lt_one_both` | ✅ **BUILDS** | Shows both intValuations < 1 (depends on #2) |
+
+#### Key Finding: Section Ordering Blocker
+
+The Cycle 39 candidates (`mem_asIdeal_iff_mem_maxIdeal`, `dvr_intValuation_unit`) are mathematically PROVABLE using Cycle 41 lemmas, but **cannot compile** because:
+
+- Cycle 39 section (lines 1415-1527) appears BEFORE Cycle 41 section (lines 1538-1631)
+- Lean requires declarations to appear before their uses
+
+**Solution for Cycle 43**: Reorder sections - move Cycle 41 before Cycle 39.
+
+#### Proof Sketches Ready
+
+```lean
+-- mem_asIdeal_iff_mem_maxIdeal (once reordered)
+rw [localization_maximalIdeal_eq_map v]
+exact ⟨algebraMap_mem_map_of_mem v r, mem_of_algebraMap_mem_map v r⟩
+
+-- dvr_intValuation_unit (once reordered)
+have hunit := (algebraMap_isUnit_iff_not_mem v r).mpr hr
+exact dvr_intValuation_of_isUnit v _ hunit
+```
+
+#### Reflector Ranking (Top 2)
+
+1. **Section Reordering** (10/10) - Single file change unlocks 3 lemmas
+2. **dvr_intValuation_of_algebraMap' easy case** (9/10) - Follows immediately from unit case
+
+**Cycle rating**: 6/10 - Identified critical structural issue, added helper lemmas, clear path forward
 
 ---
 

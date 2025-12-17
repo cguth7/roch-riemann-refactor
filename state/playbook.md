@@ -24,7 +24,7 @@
 
 **Reframing Rule**: If a "converse" lemma is hard, check if there's a higher-level equivalence that gives both directions for free (e.g., ring isomorphism instead of set equality).
 
-## Current Status Summary (Cycle 41)
+## Current Status Summary (Cycle 42)
 
 **Codebase Structure** (after Cycle 40 modularization):
 ```
@@ -37,13 +37,15 @@ RrLean/
 │   ├── Typeclasses.lean        # LocalGapBound ✅
 │   ├── RiemannInequality.lean  # Main theorems ✅
 │   ├── Infrastructure.lean     # Residue, uniformizer ✅
-│   └── LocalGapInstance.lean   # Cycles 25-41 WIP ✅ BUILDS
+│   └── LocalGapInstance.lean   # Cycles 25-42 WIP ✅ BUILDS (~1690 lines)
 └── archive/
     ├── RR_v1_axiom_based.lean  # ARCHIVED (Cycles 1-16)
     └── RR_v2_monolithic.lean   # ARCHIVED (Cycles 17-39)
 ```
 
-**Active Development**: `RrLean/RiemannRochV2/LocalGapInstance.lean` (Cycles 25-41 work)
+**Active Development**: `RrLean/RiemannRochV2/LocalGapInstance.lean` (Cycles 25-42 work)
+
+**CYCLE 42 KEY FINDING**: Section ordering blocker identified! Cycle 39 candidates need Cycle 41 lemmas but sections are in wrong order. Next cycle: reorder sections to complete 3 lemmas immediately.
 
 ### Key Results PROVED
 - `RRModuleV2_real`: Valuation-based L(D) definition (Cycle 19)
@@ -86,7 +88,7 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 
 ---
 
-## Current Sorry Count (after Cycle 41)
+## Current Sorry Count (after Cycle 42)
 
 **By Module**:
 | Module | Sorries | Build Status |
@@ -97,32 +99,26 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 | Typeclasses.lean | 0 | ✅ |
 | RiemannInequality.lean | 1 | ✅ (placeholder) |
 | Infrastructure.lean | 1 | ✅ (WIP) |
-| LocalGapInstance.lean | ~45 | ✅ BUILDS (Cycle 41 fixed errors) |
+| LocalGapInstance.lean | ~47 | ✅ BUILDS (Cycle 42: +3 Cycle 42 candidates) |
 
 **Key Active Blockers** (in `LocalGapInstance.lean`):
 | Name | Status | Notes |
 |------|--------|-------|
-| `mem_asIdeal_iff_mem_maxIdeal` | **UNBLOCKED** | Foundation - now completable via Cycle 41 lemmas |
-| `dvr_intValuation_unit` | **UNBLOCKED** | Unit case - now completable via Cycle 41 lemmas |
-| `dvr_intValuation_of_algebraMap'` | **CYCLE 42 TARGET** | DVR intVal = v.intVal on R |
-| `dvr_intValuation_of_algebraMap` | **KEY HELPER** | Same target (Cycle 38) |
+| `mem_asIdeal_iff_mem_maxIdeal` | **READY_TO_PROVE** | Needs section reordering (Cycle 41 → before Cycle 39) |
+| `dvr_intValuation_unit` | **READY_TO_PROVE** | Needs section reordering (Cycle 41 → before Cycle 39) |
+| `dvr_intValuation_of_algebraMap'` | **CYCLE 43 TARGET** | Easy case ready once above done; hard case still blocks |
 | `dvr_valuation_eq_height_one'` | **ORIGINAL BLOCKER** | DVR valuation = HeightOneSpectrum valuation (Cycle 37) |
 
-**Cycle 39 Candidates** (8 total, 2 PROVED):
-- `ideal_span_map_singleton` - **PROVED** (Ideal.map_span + Set.image_singleton)
-- `algebraMap_uniformizer_dvr_uniformizer` - SORRY (uniformizer maps to uniformizer)
-- `dvr_intValuation_unfold` - **PROVED** (rfl)
-- `mem_asIdeal_iff_mem_maxIdeal` - SORRY (**CRITICAL** - foundation)
-- `dvr_intValuation_of_algebraMap'` - SORRY (**TARGET**)
-- `mem_asIdeal_pow_iff_mem_maxIdeal_pow` - SORRY (generalizes to powers)
-- `dvr_intValuation_uniformizer_pow` - SORRY (uniformizer power case)
-- `dvr_intValuation_unit` - SORRY (**CRITICAL** - unit case)
+**Cycle 42 Candidates** (3 total, 1 PROVED):
+- `dvr_intValuation_zero` - **PROVED** (map_zero)
+- `dvr_intValuation_mem_lt_one` - SORRY (needs ideal membership lemma)
+- `intValuation_mem_lt_one_both` - BUILDS (depends on above)
 
-**Reflector Ranking (Top 2)**:
-1. `mem_asIdeal_iff_mem_maxIdeal` (9.5/10) - foundation for all
-2. `dvr_intValuation_unit` (8.5/10) - unit base case
+**Reflector Ranking (Top 2 for Cycle 43)**:
+1. **Section Reordering** (10/10) - Move Cycle 41 before Cycle 39, unlocks 3 lemmas immediately
+2. `dvr_intValuation_of_algebraMap' easy case` (9/10) - Follows from unit case
 
-**Note**: 2/8 candidates PROVED (Cycle 39). Next priority: prove Candidates 4 and 8.
+**Note**: 1/3 Cycle 42 candidates PROVED. PRIORITY: Reorder sections in Cycle 43.
 
 ---
 
