@@ -2242,4 +2242,84 @@ lemma residueField_equiv_commutes_with_residue (v : HeightOneSpectrum R)
 
 end Cycle51Candidates
 
+/-! ## Cycle 55 Candidates: evaluationMapAt_via_bridge construction
+
+Goal: Prove evaluationMapAt_via_bridge (LocalGapInstance.lean:379)
+
+Strategy: Construct the linear map L(D+v) →ₗ[R] κ(v) by:
+1. Shift f ↦ f * π^{(D v + 1).toNat}
+2. Use shifted_element_valuation_le_one to get g ∈ valuationRingAt v
+3. Apply valuationRingAt.residue v
+4. Apply residueFieldBridge_explicit v
+-/
+
+section Cycle55Candidates
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+
+-- Candidate 1 [tag: rr_bundle_bridge] [status: OK] [cycle: 55]
+/-- The shifted element function: f ↦ f * π^{(D v + 1).toNat}.
+This is the core computation in the evaluation map construction.
+For f ∈ L(D+v), the shifted element has valuation ≤ 1 at v. -/
+noncomputable def shiftedElement (v : HeightOneSpectrum R) (D : DivisorV2 R) (f : K) : K :=
+  f * algebraMap R K ((uniformizerAt v) ^ (D v + 1).toNat)
+
+-- Candidate 2 [tag: coercion_simplify] [status: PROVED] [cycle: 55]
+/-- The shifted element of f ∈ L(D+v) lies in the valuation ring at v.
+This follows immediately from shifted_element_valuation_le_one and mem_valuationRingAt_iff. -/
+lemma shiftedElement_mem_valuationRingAt (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    (f : RRModuleV2_real R K (D + DivisorV2.single v 1)) :
+    shiftedElement v D f.val ∈ valuationRingAt (R := R) (K := K) v := by
+  rw [mem_valuationRingAt_iff]
+  exact shifted_element_valuation_le_one v D f.val f.property
+
+-- Candidate 3 [tag: rr_bundle_bridge] [status: PROVED] [cycle: 55]
+/-- Additivity of shiftedElement: (f + g) * π^n = f * π^n + g * π^n.
+Key for proving the evaluation map is additive. -/
+lemma shiftedElement_add (v : HeightOneSpectrum R) (D : DivisorV2 R) (f g : K) :
+    shiftedElement v D (f + g) = shiftedElement v D f + shiftedElement v D g := by
+  simp only [shiftedElement, add_mul]
+
+-- Candidate 4 [tag: rr_bundle_bridge] [status: PROVED] [cycle: 55]
+/-- R-linearity of shiftedElement: (r • f) * π^n = r • (f * π^n).
+Key for proving the evaluation map respects R-module structure. -/
+lemma shiftedElement_smul (v : HeightOneSpectrum R) (D : DivisorV2 R) (r : R) (f : K) :
+    shiftedElement v D (algebraMap R K r * f) =
+    algebraMap R K r * shiftedElement v D f := by
+  simp only [shiftedElement, mul_assoc]
+
+-- Candidate 5 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 55]
+/-- The core evaluation function: sends f ∈ L(D+v) to its residue class in κ(v).
+Computes shiftedElement, embeds into valuationRingAt, applies residue, then bridges. -/
+noncomputable def evaluationFun_via_bridge (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    (f : RRModuleV2_real R K (D + DivisorV2.single v 1)) : residueFieldAtPrime R v :=
+  let g : valuationRingAt (R := R) (K := K) v :=
+    ⟨shiftedElement v D f.val, shiftedElement_mem_valuationRingAt v D f⟩
+  let res := (valuationRingAt.residue (R := R) (K := K) v) g
+  (residueFieldBridge_explicit (R := R) (K := K) v) res
+
+-- Candidate 6 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 55]
+/-- The evaluation function is additive.
+Uses shiftedElement_add and that residue and bridge are additive homomorphisms. -/
+lemma evaluationFun_add (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    (f g : RRModuleV2_real R K (D + DivisorV2.single v 1)) :
+    evaluationFun_via_bridge v D (f + g) =
+    evaluationFun_via_bridge v D f + evaluationFun_via_bridge v D g := sorry
+
+-- Candidate 7 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 55]
+/-- The evaluation function respects R-scalar multiplication.
+Uses shiftedElement_smul and that residue and bridge are R-linear. -/
+lemma evaluationFun_smul (v : HeightOneSpectrum R) (D : DivisorV2 R) (r : R)
+    (f : RRModuleV2_real R K (D + DivisorV2.single v 1)) :
+    evaluationFun_via_bridge v D (r • f) = r • evaluationFun_via_bridge v D f := sorry
+
+-- Candidate 8 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 55]
+/-- The complete evaluation map as a linear map.
+Bundles evaluationFun_via_bridge with additivity and R-linearity proofs. -/
+noncomputable def evaluationMapAt_complete (v : HeightOneSpectrum R) (D : DivisorV2 R) :
+    RRModuleV2_real R K (D + DivisorV2.single v 1) →ₗ[R] residueFieldAtPrime R v := sorry
+
+end Cycle55Candidates
+
 end RiemannRochV2

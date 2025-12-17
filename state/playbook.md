@@ -53,7 +53,7 @@ Where:
 
 ---
 
-## Current Status (Cycle 54)
+## Current Status (Cycle 55)
 
 **Codebase Structure**:
 ```
@@ -64,10 +64,10 @@ RrLean/RiemannRochV2/
 ├── Typeclasses.lean        # LocalGapBound ✅
 ├── RiemannInequality.lean  # Main theorems ✅ (1 sorry placeholder)
 ├── Infrastructure.lean     # Residue, uniformizer ✅ **CLEAN** (0 sorries!)
-└── LocalGapInstance.lean   # Cycles 25-54 WIP ✅ BUILDS (dead code marked OBSOLETE)
+└── LocalGapInstance.lean   # Cycles 25-55 WIP ✅ BUILDS (46 sorries)
 ```
 
-**Active Development**: `LocalGapInstance.lean` (evaluationMapAt_via_bridge - uses shifted_element!)
+**Active Development**: `LocalGapInstance.lean` (evaluationMapAt construction - 3/8 PROVED!)
 
 ### Typeclass Hierarchy
 ```
@@ -82,51 +82,42 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 
 | Name | Status | Notes |
 |------|--------|-------|
-| `mem_pow_of_mul_mem_pow_of_not_mem` | ✅ **PROVED** | Cycle 45: via Ideal.IsPrime.mul_mem_pow |
-| `dvr_intValuation_eq_via_pow_membership` | ✅ **PROVED** | Cycle 46: via intValuation_le_pow_iff_mem bridge |
-| `dvr_intValuation_of_algebraMap'` | ✅ **PROVED** | Cycle 47: section reordering |
-| `dvr_valuation_eq_height_one'` | ✅ **DEPLOYED** | Cycle 49: key valuation bridge |
-| `dvr_valuationSubring_eq_valuationRingAt'` | ✅ **PROVED** | Cycle 50: ValuationSubring equality |
-| `valuationRingAt_equiv_localization'` | ✅ **PROVED** | Cycle 50: Ring equivalence |
-| `residueField_transport_direct` | ✅ **PROVED** | Cycle 52: via IsLocalRing.ResidueField.mapEquiv |
-| `residueFieldBridge_explicit` | ✅ **PROVED** | Cycle 52: composition with localization_residueField_equiv |
-| `residueMapFromR_surjective` | ❌ **OBSOLETE** | Bypassed by Cycle 52's mapEquiv approach |
-| `shifted_element_valuation_le_one` | ✅ **PROVED** | Cycle 54: case analysis (nonneg/neg) + WithZero.exp arithmetic |
+| `shiftedElement_mem_valuationRingAt` | ✅ **PROVED** | Cycle 55: shifted element lands in valuation ring |
+| `shiftedElement_add` | ✅ **PROVED** | Cycle 55: additivity (trivial: add_mul) |
+| `shiftedElement_smul` | ✅ **PROVED** | Cycle 55: R-linearity (trivial: mul_assoc) |
+| `evaluationFun_via_bridge` | ✅ **DEFINED** | Cycle 55: core function composition |
+| `evaluationFun_add` | ⚠️ **SORRY** | Cycle 55: additivity of evaluation |
+| `evaluationFun_smul` | ⚠️ **SORRY** | Cycle 55: R-linearity of evaluation |
+| `evaluationMapAt_complete` | ⚠️ **SORRY** | Cycle 55: bundle as LinearMap |
 
-### Next Cycle (55) Priorities
-1. **Build `evaluationMapAt_via_bridge`** (LocalGapInstance.lean:379) - Uses residueFieldBridge_explicit + shifted_element (PROVED!)
-2. **Prove kernel characterization** - Key for gap bound: ker(eval) = L(D)
-3. **Instance `LocalGapBound R K`** - Final target
+### Next Cycle (56) Priorities
+1. **Prove `evaluationFun_add`** - Additivity of evaluation function (composition of homomorphisms)
+2. **Prove `evaluationFun_smul`** - R-linearity of evaluation function
+3. **Complete `evaluationMapAt_complete`** - Bundle as LinearMap (blocked by 1,2)
 
 ---
 
-## Victory Path (Updated Cycle 54)
+## Victory Path (Updated Cycle 55)
 
 ```
-dvr_intValuation_eq_via_pow_membership (Cycle 46 - PROVED ✅)
+shifted_element_valuation_le_one (Cycle 54 - PROVED ✅)
     ↓
-dvr_intValuation_of_algebraMap' (Cycle 47 - PROVED ✅)
+shiftedElement_mem_valuationRingAt (Cycle 55 - PROVED ✅)
     ↓
-dvr_valuation_eq_height_one' (Cycle 49 - DEPLOYED ✅)
+shiftedElement_add + shiftedElement_smul (Cycle 55 - PROVED ✅)
     ↓
-dvr_valuationSubring_eq_valuationRingAt' (Cycle 50 - PROVED ✅)
+evaluationFun_via_bridge (Cycle 55 - DEFINED ✅)  ← CORE FUNCTION COMPLETE!
     ↓
-valuationRingAt_equiv_localization' (Cycle 50 - PROVED ✅)
+evaluationFun_add + evaluationFun_smul (Cycle 55 - SORRY)  ← NEXT TARGET
     ↓
-residueField_transport_direct (Cycle 52 - PROVED ✅)
-    ↓
-residueFieldBridge_explicit (Cycle 52 - PROVED ✅)
-    ↓
-shifted_element_valuation_le_one (Cycle 54 - PROVED ✅)  ← INFRASTRUCTURE COMPLETE!
-    ↓ (proves f·π^{D(v)+1} ∈ valuationRingAt v)
-evaluationMapAt_via_bridge (LocalGapInstance.lean:379)  ← NEXT TARGET
+evaluationMapAt_complete (LinearMap bundle)
     ↓
 kernel_evaluationMapAt = L(D)
     ↓
 LocalGapBound instance → VICTORY
 ```
 
-**NOTE**: `residueMapFromR_surjective` is OBSOLETE - the mapEquiv approach bypasses it entirely.
+**NOTE**: The evaluation function is now structurally complete. Only linearity proofs remain.
 
 - [ ] `instance : LocalGapBound R K` (makes riemann_inequality_affine unconditional)
 
@@ -189,6 +180,7 @@ LocalGapBound instance → VICTORY
 | 52 | **residueFieldBridge PROVED** (7/8 candidates via IsLocalRing.ResidueField.mapEquiv) |
 | 53 | **Consolidation & Cull** (dead code marked OBSOLETE, corrected victory path) |
 | 54 | **shifted_element_valuation_le_one PROVED** (7 helpers + main lemma, Infrastructure.lean CLEAN) |
+| 55 | **evaluationFun_via_bridge DEFINED** (core function + 3/8 candidates PROVED, linearity pending) |
 
 ---
 

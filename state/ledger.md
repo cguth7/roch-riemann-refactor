@@ -2,26 +2,72 @@
 
 *For Cycles 1-34, see `state/ledger_archive.md`*
 
-## Summary: Where We Are (End of Cycle 54)
+## Summary: Where We Are (End of Cycle 55)
 
 **Project Goal**: Prove Riemann-Roch inequality for Dedekind domains in Lean 4.
 
 **Current Target**: `instance : LocalGapBound R K` (makes riemann_inequality_affine unconditional)
 
-**Blocking Chain** (Updated Cycle 54):
+**Blocking Chain** (Updated Cycle 55):
 ```
-shifted_element_valuation_le_one (Cycle 54 - PROVED ✅)  ← INFRASTRUCTURE COMPLETE!
+evaluationFun_via_bridge (Cycle 55 - DEFINED ✅)  ← CORE FUNCTION COMPLETE!
     ↓
-evaluationMapAt_via_bridge (LocalGapInstance.lean:379)  ← NEXT TARGET
+evaluationFun_add + evaluationFun_smul (Cycle 55 - SORRY)  ← NEXT TARGET
     ↓
-kernel → LocalGapBound → VICTORY
+evaluationMapAt_complete → kernel → LocalGapBound → VICTORY
 ```
 
-**Note**: `residueMapFromR_surjective` is OBSOLETE - bypassed by Cycle 52's mapEquiv approach.
+**Note**: The evaluation function is now structurally complete. Only linearity proofs remain.
 
 ---
 
 ## 2025-12-17
+
+### Cycle 55 - evaluationFun_via_bridge DEFINED - CORE FUNCTION COMPLETE
+
+**Goal**: Build `evaluationMapAt_via_bridge` - evaluation map from L(D+v) to κ(v)
+
+#### Key Achievement
+
+**Core Evaluation Function Defined**: `evaluationFun_via_bridge` computes f ↦ residue(f · π^{D(v)+1})
+
+The construction chain:
+1. f ∈ L(D+v) → shiftedElement: g = f · π^{(D v + 1).toNat}
+2. By `shiftedElement_mem_valuationRingAt`, g ∈ valuationRingAt v
+3. Apply `valuationRingAt.residue` to get residue class
+4. Apply `residueFieldBridge_explicit` to transport to residueFieldAtPrime R v
+
+#### Results
+
+| Candidate | Status | Notes |
+|-----------|--------|-------|
+| `shiftedElement` | ✅ OK (def) | f ↦ f * π^{(D v + 1).toNat} |
+| `shiftedElement_mem_valuationRingAt` | ✅ **PROVED** | Uses shifted_element_valuation_le_one + mem_valuationRingAt_iff |
+| `shiftedElement_add` | ✅ **PROVED** | Trivial: add_mul |
+| `shiftedElement_smul` | ✅ **PROVED** | Trivial: mul_assoc |
+| `evaluationFun_via_bridge` | ✅ OK (def) | Core function composition |
+| `evaluationFun_add` | ⚠️ SORRY | Additivity - subtype equality issues |
+| `evaluationFun_smul` | ⚠️ SORRY | R-linearity - module structure |
+| `evaluationMapAt_complete` | ⚠️ SORRY | Bundle as LinearMap (blocked by 6,7) |
+
+**5/8 candidates OK (3 PROVED, 2 defs), 3 with SORRY**
+
+#### Reflector Score: 7.5/10
+
+**Assessment**: Good progress - core function is complete. The shifted element infrastructure is solid and proved trivially. The remaining work is proving that the homomorphism chain preserves addition and scalar multiplication.
+
+**Challenges Identified**:
+1. Subtype equality: When f, g ∈ RRModuleV2_real, showing (f + g).val = f.val + g.val then proving the membership conditions match
+2. R-module structure: Verify residueFieldAtPrime R v has appropriate Module R instance
+
+**Next Steps (Cycle 56)**:
+1. Prove `evaluationFun_add` - Additivity via composition of ring homomorphisms
+2. Prove `evaluationFun_smul` - R-linearity
+3. Complete `evaluationMapAt_complete` - Bundle as LinearMap
+
+**Cycle rating**: 7.5/10 (Core function complete, 3 lemmas proved, linearity proofs pending)
+
+---
 
 ### Cycle 54 - shifted_element_valuation_le_one PROVED - INFRASTRUCTURE COMPLETE
 
