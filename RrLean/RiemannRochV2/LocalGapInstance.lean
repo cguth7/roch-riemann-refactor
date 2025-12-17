@@ -3004,4 +3004,73 @@ lemma valuationRingAt_equiv_main_c63_8 (v : HeightOneSpectrum R) (r : R) :
 
 end Cycle63Candidates
 
+/-! ## Cycle 64 Candidates: valuationRingAt_equiv_algebraMap - Final Push
+
+**Context**: KEY BLOCKER 1 remains. We have:
+- `valuationRingAt_equiv_algebraMap_forward_c63_7` PROVED: `(equivValuationSubring (algebraMap R Loc r)).val = algebraMap R K r`
+- Need to prove: `equiv' ⟨algebraMap R K r, _⟩ = algebraMap R Loc r`
+
+**Strategy**: Use `symm_apply_eq` pattern to flip the goal and leverage the forward direction.
+The key insight: `e x = y ↔ x = e.symm y`, and we have the symm direction.
+-/
+
+section Cycle64Candidates
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+
+-- Candidate 1 [tag: symm_apply_eq] [status: SORRY] [cycle: 64]
+/-- Use symm_apply_eq to flip the goal direction.
+Strategy: e x = y ↔ x = e.symm y, then use Subtype.ext and forward helper.
+The equiv'.symm = equivValuationSubring (up to cast), so we can use the forward lemma. -/
+lemma valuationRingAt_equiv_algebraMap_c64_1 (v : HeightOneSpectrum R) (r : R) :
+    (valuationRingAt_equiv_localization' (R := R) (K := K) v)
+      ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩ =
+    algebraMap R (Localization.AtPrime v.asIdeal) r := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  -- Use IsFractionRing.injective to reduce to equality in K
+  apply IsFractionRing.injective (Localization.AtPrime v.asIdeal) K
+  -- RHS: algebraMap Loc K (algebraMap R Loc r) = algebraMap R K r
+  rw [(IsScalarTower.algebraMap_apply R (Localization.AtPrime v.asIdeal) K r).symm]
+  -- LHS: algebraMap Loc K (equiv' ⟨algebraMap R K r, _⟩)
+  -- Need: show this equals algebraMap R K r
+  -- This requires tracing through the cast in equiv' definition
+  sorry
+
+-- Candidate 2 [tag: alternative_via_symm] [status: SORRY] [cycle: 64]
+/-- Alternative: show equiv'.symm (algebraMap R Loc r) = ⟨algebraMap R K r, _⟩
+Then use RingEquiv.apply_symm_apply to conclude. -/
+lemma valuationRingAt_equiv_symm_algebraMap_c64_2 (v : HeightOneSpectrum R) (r : R) :
+    (valuationRingAt_equiv_localization' (R := R) (K := K) v).symm
+      (algebraMap R (Localization.AtPrime v.asIdeal) r) =
+    ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩ := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  -- equiv'.symm = h.symm ▸ equivValuationSubring where h : valuationRingAt = DVR.valuationSubring
+  -- equivValuationSubring (algebraMap R Loc r) = ⟨algebraMap R K r, _⟩ in DVR.valuationSubring
+  -- After cast back via h.symm, we get ⟨algebraMap R K r, _⟩ in valuationRingAt
+  apply Subtype.ext
+  simp only [Subtype.coe_mk]
+  -- Goal: (equiv'.symm (algebraMap R Loc r)).val = algebraMap R K r
+  -- equiv'.symm = (h ▸ equivValuationSubring.symm).symm = h.symm ▸ equivValuationSubring
+  -- So (equiv'.symm y).val should equal (equivValuationSubring y).val = algebraMap Loc K y
+  -- by equivValuationSubring_val_eq
+  -- We need: algebraMap Loc K (algebraMap R Loc r) = algebraMap R K r (scalar tower)
+  -- But also we need to handle the h.symm cast
+  sorry
+
+-- Candidate 3 [tag: from_c64_2] [status: DEPENDS] [cycle: 64]
+/-- Once Candidate 2 is proved, the main lemma follows by apply_symm_apply. -/
+lemma valuationRingAt_equiv_algebraMap_from_symm (v : HeightOneSpectrum R) (r : R)
+    (h : (valuationRingAt_equiv_localization' (R := R) (K := K) v).symm
+           (algebraMap R (Localization.AtPrime v.asIdeal) r) =
+         ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩) :
+    (valuationRingAt_equiv_localization' (R := R) (K := K) v)
+      ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩ =
+    algebraMap R (Localization.AtPrime v.asIdeal) r := by
+  rw [← h, RingEquiv.apply_symm_apply]
+
+end Cycle64Candidates
+
 end RiemannRochV2

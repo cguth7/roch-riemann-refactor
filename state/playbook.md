@@ -53,7 +53,7 @@ Where:
 
 ---
 
-## Current Status (Cycle 63)
+## Current Status (Cycle 64)
 
 **Codebase Structure**:
 ```
@@ -93,22 +93,23 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 | `valuationRingAt_equiv_algebraMap` | ⚠️ **SORRY** | KEY BLOCKER 1: Main lemma still blocked by ▸ cast |
 | `bridge_residue_algebraMap` | ⚠️ **SORRY** | Depends on BLOCKER 1 only |
 
-### Next Cycle (64) Priorities
-1. **BLOCKER 1**: Complete `valuationRingAt_equiv_algebraMap` main lemma
-   - New helper `valuationRingAt_equiv_algebraMap_forward_c63_7` is PROVED (Cycle 63)
-   - Combined with `equivValuationSubring_symm_val_eq`, have both directions
-   - Need: Connect through the `▸` cast or prove cast_valuationSubring_val_c63_4
+### Next Cycle (65) Priorities
+1. **BLOCKER 1 PIVOT**: Define cast-free equiv
+   - The `▸` cast causes dependent elimination failures
+   - Define `valuationRingAt_equiv_localization''` without cast
+   - Prove it equals the primed version (extensionality)
+   - Prove algebraMap property for cast-free version (should be easy)
 2. **Complete `bridge_residue_algebraMap`** - Only needs BLOCKER 1
 3. **Kernel characterization**: ker(evaluationMapAt) = L(D)
 
-### Cycle 63 Technical Hints
-- **KEY HELPER PROVED**: `valuationRingAt_equiv_algebraMap_forward_c63_7`
-  - Shows: `(equivValuationSubring (algebraMap R Loc r)).val = algebraMap R K r`
-  - Proof: `equivValuationSubring_val_eq` + `IsScalarTower.algebraMap_apply`
-- **BLOCKER 1 Strategy**:
-  - Have forward direction (`equiv (algebraMap r)`'s val = `algebraMap R K r`)
-  - Have inverse direction (`algebraMap (equiv.symm y) = y.val`)
-  - Need: Show that casting via `h ▸` preserves val (Subtype.ext approach)
+### Cycle 64 Technical Hints
+- **ROOT CAUSE CONFIRMED**: The `▸` cast blocks all proof strategies
+- **Cast issue**: `h : valuationRingAt v = DVR.valuationSubring` creates dependent type mismatch
+- **All helpers proved**:
+  - `equivValuationSubring_val_eq` (forward)
+  - `equivValuationSubring_symm_val_eq` (inverse)
+  - `valuationRingAt_equiv_algebraMap_forward_c63_7` (composition)
+- **Resolution**: Build cast-free equiv using `RingEquiv.ofBijective` or explicit construction
 
 ---
 

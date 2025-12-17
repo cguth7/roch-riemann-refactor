@@ -2,13 +2,13 @@
 
 *For Cycles 1-34, see `state/ledger_archive.md`*
 
-## Summary: Where We Are (End of Cycle 63)
+## Summary: Where We Are (End of Cycle 64)
 
 **Project Goal**: Prove Riemann-Roch inequality for Dedekind domains in Lean 4.
 
 **Current Target**: `instance : LocalGapBound R K` (makes riemann_inequality_affine unconditional)
 
-**Blocking Chain** (Updated Cycle 63):
+**Blocking Chain** (Updated Cycle 64):
 ```
 evaluationMapAt_complete (Cycle 56 - PROVED ✅)  ← LINEARMAP COMPLETE!
     ↓
@@ -24,7 +24,7 @@ equivValuationSubring_symm_val_eq (Cycle 61 - PROVED ✅)  ← Helper for BLOCKE
     ↓
 valuationRingAt_equiv_algebraMap_forward_c63_7 (Cycle 63 - PROVED ✅)  ← Forward direction!
     ↓
-valuationRingAt_equiv_algebraMap (SORRY)  ← KEY BLOCKER 1 (▸ cast issue)
+valuationRingAt_equiv_algebraMap (SORRY)  ← KEY BLOCKER 1 (▸ cast - dependent elimination fails)
     ↓
 bridge_residue_algebraMap (pending)  ← depends on BLOCKER 1
     ↓
@@ -33,11 +33,65 @@ kernel_evaluationMapAt = L(D)  ← NEXT TARGET after bridge
 LocalGapBound instance → VICTORY
 ```
 
-**Note**: Cycle 63 proved forward direction helper. BLOCKER 1 has 3/3 helpers proved, only main lemma remains.
+**Note**: Cycle 64 confirmed cast is the root cause. Alternative strategy needed: define cast-free equiv.
 
 ---
 
 ## 2025-12-17
+
+### Cycle 64 - BLOCKER 1 CAST ANALYSIS - 0/3 PROVED (EXPLORATORY)
+
+**Goal**: Prove valuationRingAt_equiv_algebraMap (KEY BLOCKER 1)
+
+#### Key Finding
+
+**Root Cause Confirmed**: The `▸` cast in `valuationRingAt_equiv_localization'` causes dependent elimination failures.
+
+**Strategies Tried**:
+1. `IsFractionRing.injective` to reduce to K - Works until cast step
+2. `RingEquiv.symm_apply_eq` to flip direction - Rewriter pattern mismatch
+3. `Subtype.ext` to extract `.val` - Works but cast still blocks
+4. Direct `unfold` - Exposes `(⋯ ▸ equivValuationSubring.symm)` syntax
+
+All approaches ultimately hit the same wall: Lean's dependent elimination cannot handle the equality `h : valuationRingAt v = DVR.valuationSubring` because the two types have different predicates (`v.valuation K x ≤ 1` vs `DVR.maximalIdeal.valuation K x ≤ 1`).
+
+#### Results
+
+| Candidate | Status | Notes |
+|-----------|--------|-------|
+| `valuationRingAt_equiv_algebraMap_c64_1` | ⚠️ SORRY | IsFractionRing.injective approach |
+| `valuationRingAt_equiv_symm_algebraMap_c64_2` | ⚠️ SORRY | Symm direction via Subtype.ext |
+| `valuationRingAt_equiv_algebraMap_from_symm` | ✅ COMPILES | Follows from C64_2 via apply_symm_apply |
+
+**0/3 candidates PROVED** (but proof structure identified)
+
+#### Suggested Resolution (Cycle 65)
+
+**Define a cast-free equiv**:
+```lean
+noncomputable def valuationRingAt_equiv_localization'' (v : HeightOneSpectrum R) :
+    valuationRingAt v ≃+* Localization.AtPrime v.asIdeal :=
+  -- Build directly using RingEquiv.ofBijective or
+  -- compose equivValuationSubring.symm with an explicit setoid equiv
+```
+
+Then prove:
+1. Cast-free equiv equals cast-based equiv (by extensionality on Loc)
+2. algebraMap property for cast-free equiv (should be easy)
+3. Transfer to cast-based equiv
+
+#### Reflector Score: 4/10
+
+**Assessment**: Exploratory cycle. Root cause confirmed but no forward progress on the lemma itself. The cast issue is a Lean-specific technical hurdle, not a mathematical one.
+
+**Next Steps (Cycle 65)**:
+1. Define `valuationRingAt_equiv_localization''` without cast
+2. Prove equivalence with primed version
+3. Complete BLOCKER 1
+
+**Cycle rating**: 4/10 (Root cause confirmed, strategy pivot needed)
+
+---
 
 ### Cycle 63 - FORWARD DIRECTION PROVED - 1/8 PROVED
 
