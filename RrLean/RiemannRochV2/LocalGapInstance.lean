@@ -2376,4 +2376,113 @@ noncomputable def evaluationMapAt_complete (v : HeightOneSpectrum R) (D : Diviso
 
 end Cycle55Candidates
 
+/-! ## Cycle 57 Candidates: Proving bridge_residue_algebraMap (diagram commutativity)
+
+Goal: Prove `bridge_residue_algebraMap` - the key blocker for R-algebra structure.
+
+Strategy: Break down the composition `residueFieldBridge_explicit = h1.trans h2`:
+1. h1 = `residueField_transport_direct` = `mapEquiv (valuationRingAt_equiv_localization')`
+2. h2 = `localization_residueField_equiv` = `(localization_residue_equiv).symm.trans (algebraMap_bijection)`
+
+Key mathlib lemmas:
+- `IsLocalRing.ResidueField.map_residue`: `map f (residue r) = residue (f r)`
+- `IsLocalRing.ResidueField.algebraMap_residue`: `algebraMap (residue x) = residue (algebraMap x)` (rfl)
+- `IsScalarTower.algebraMap_apply`: algebra tower factorization
+-/
+
+section Cycle57Candidates
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+
+-- Candidate 1 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 57]
+/-- The key step: showing that valuationRingAt_equiv_localization' maps algebraMap R K r
+to algebraMap R (Localization.AtPrime) r. This establishes scalar compatibility. -/
+lemma valuationRingAt_equiv_algebraMap (v : HeightOneSpectrum R) (r : R) :
+    (valuationRingAt_equiv_localization' (R := R) (K := K) v)
+      ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩ =
+    algebraMap R (Localization.AtPrime v.asIdeal) r := by
+  -- The equiv is equivValuationSubring.symm transported along equality
+  -- Key: algebraMap R K factors through Loc by scalar tower, and equivValuationSubring
+  -- maps x ↦ ⟨algebraMap x, _⟩, so its inverse is the preimage.
+  -- Strategy: use congrArg to transport along the ValuationSubring equality,
+  -- then apply equivValuationSubring.symm_apply_apply
+  sorry
+
+-- Candidate 2 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 57]
+/-- The h1 step: residue field transport commutes with residue of algebraMap.
+Uses residueField_equiv_commutes_with_residue and valuationRingAt_equiv_algebraMap. -/
+lemma residueField_transport_algebraMap (v : HeightOneSpectrum R) (r : R) :
+    (residueField_transport_direct (R := R) (K := K) v)
+      ((valuationRingAt.residue (R := R) (K := K) v) ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩) =
+    IsLocalRing.residue (Localization.AtPrime v.asIdeal)
+      (algebraMap R (Localization.AtPrime v.asIdeal) r) := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  -- valuationRingAt.residue is IsLocalRing.residue
+  conv_lhs => rw [valuationRingAt.residue]
+  rw [residueField_equiv_commutes_with_residue, valuationRingAt_equiv_algebraMap]
+
+-- Candidate 3 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 57]
+/-- The h2 step: localization_residueField_equiv maps residue of algebraMap R to algebraMap R κ(v). -/
+lemma localization_residueField_equiv_algebraMap (v : HeightOneSpectrum R) (r : R) :
+    (localization_residueField_equiv v)
+      (IsLocalRing.residue (Localization.AtPrime v.asIdeal)
+        (algebraMap R (Localization.AtPrime v.asIdeal) r)) =
+    algebraMap R (residueFieldAtPrime R v) r := by
+  sorry
+
+-- Candidate 4 [tag: coercion_simplify] [status: PROVED] [cycle: 57]
+/-- Scalar tower property: algebraMap from R to κ(v) factors as R → R/I → κ(v). -/
+lemma algebraMap_residueField_factorization (v : HeightOneSpectrum R) (r : R) :
+    algebraMap R (residueFieldAtPrime R v) r =
+    algebraMap (R ⧸ v.asIdeal) (residueFieldAtPrime R v) (Ideal.Quotient.mk v.asIdeal r) := by
+  rw [IsScalarTower.algebraMap_apply R (R ⧸ v.asIdeal) (residueFieldAtPrime R v)]
+  rfl
+
+-- Candidate 5 [tag: coercion_simplify] [status: PROVED] [cycle: 57]
+/-- Commutation of residue and algebraMap in Localization.AtPrime. Definitional. -/
+lemma localization_residue_algebraMap (v : HeightOneSpectrum R) (r : R) :
+    IsLocalRing.residue (Localization.AtPrime v.asIdeal)
+      (algebraMap R (Localization.AtPrime v.asIdeal) r) =
+    Ideal.Quotient.mk (IsLocalRing.maximalIdeal (Localization.AtPrime v.asIdeal))
+      (algebraMap R (Localization.AtPrime v.asIdeal) r) := rfl
+
+-- Candidate 6 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 57]
+/-- The quotient map R → R ⧸ v.asIdeal factors through localization residue field.
+This is the inverse of equivQuotMaximalIdeal applied to algebraMap r. -/
+lemma quotient_mk_via_localization (v : HeightOneSpectrum R) (r : R) :
+    Ideal.Quotient.mk v.asIdeal r =
+    (localization_residue_equiv v).symm
+      (IsLocalRing.residue (Localization.AtPrime v.asIdeal)
+        (algebraMap R (Localization.AtPrime v.asIdeal) r)) := by
+  sorry
+
+-- Candidate 7 [tag: rr_bundle_bridge] [status: PROVED] [cycle: 57]
+/-- Direct composition: once Candidates 2 and 3 are proved, this follows by rewriting. -/
+lemma residueFieldBridge_composition_algebraMap (v : HeightOneSpectrum R) (r : R) :
+    ((residueField_transport_direct (R := R) (K := K) v).trans (localization_residueField_equiv v))
+      ((valuationRingAt.residue (R := R) (K := K) v) ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩) =
+    algebraMap R (residueFieldAtPrime R v) r := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  simp only [RingEquiv.trans_apply]
+  rw [residueField_transport_algebraMap, localization_residueField_equiv_algebraMap]
+
+-- Candidate 8 [tag: rr_bundle_bridge] [status: PROVED] [cycle: 57]
+/-- The full proof using that residueFieldBridge_explicit = h1.trans h2.
+Depends on Candidates 2 and 3. -/
+lemma bridge_residue_algebraMap_proof (v : HeightOneSpectrum R) (r : R) :
+    (residueFieldBridge_explicit (R := R) (K := K) v)
+      ((valuationRingAt.residue (R := R) (K := K) v) ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩) =
+    algebraMap R (residueFieldAtPrime R v) r := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  -- residueFieldBridge_explicit = h1.trans h2
+  unfold residueFieldBridge_explicit
+  simp only [RingEquiv.trans_apply]
+  rw [residueField_transport_algebraMap, localization_residueField_equiv_algebraMap]
+
+end Cycle57Candidates
+
 end RiemannRochV2

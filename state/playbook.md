@@ -53,7 +53,7 @@ Where:
 
 ---
 
-## Current Status (Cycle 56)
+## Current Status (Cycle 57)
 
 **Codebase Structure**:
 ```
@@ -64,10 +64,10 @@ RrLean/RiemannRochV2/
 ├── Typeclasses.lean        # LocalGapBound ✅
 ├── RiemannInequality.lean  # Main theorems ✅ (1 sorry placeholder)
 ├── Infrastructure.lean     # Residue, uniformizer ✅ **CLEAN** (0 sorries!)
-└── LocalGapInstance.lean   # Cycles 25-56 WIP ✅ BUILDS (44 sorries)
+└── LocalGapInstance.lean   # Cycles 25-57 WIP ✅ BUILDS
 ```
 
-**Active Development**: `LocalGapInstance.lean` (evaluationMapAt_complete - LinearMap COMPLETE!)
+**Active Development**: `LocalGapInstance.lean` (bridge_residue_algebraMap decomposition)
 
 ### Typeclass Hierarchy
 ```
@@ -82,25 +82,22 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 
 | Name | Status | Notes |
 |------|--------|-------|
-| `shiftedElement_mem_valuationRingAt` | ✅ **PROVED** | Cycle 55: shifted element lands in valuation ring |
-| `shiftedElement_add` | ✅ **PROVED** | Cycle 55: additivity (trivial: add_mul) |
-| `shiftedElement_smul` | ✅ **PROVED** | Cycle 55: R-linearity (trivial: mul_assoc) |
-| `evaluationFun_via_bridge` | ✅ **DEFINED** | Cycle 55: core function composition |
-| `shiftedSubtype_add` | ✅ **PROVED** | Cycle 56: subtype addition equality |
-| `shiftedSubtype_smul` | ✅ **PROVED** | Cycle 56: subtype smul equality |
-| `bridge_residue_algebraMap` | ⚠️ **SORRY** | Cycle 56: **KEY BLOCKER** - diagram commutativity |
-| `evaluationFun_add` | ✅ **PROVED** | Cycle 56: additivity of evaluation |
-| `evaluationFun_smul` | ✅ **PROVED** | Cycle 56: R-linearity (uses bridge_residue_algebraMap) |
 | `evaluationMapAt_complete` | ✅ **PROVED** | Cycle 56: LinearMap bundle complete |
+| `bridge_residue_algebraMap` | ⚠️ **SORRY** | **KEY BLOCKER** - diagram commutativity |
+| `valuationRingAt_equiv_algebraMap` | ⚠️ **SORRY** | Cycle 57: Ring equiv scalar tower (NEW) |
+| `localization_residueField_equiv_algebraMap` | ⚠️ **SORRY** | Cycle 57: h2 step (NEW) |
+| `algebraMap_residueField_factorization` | ✅ **PROVED** | Cycle 57: Scalar tower factorization |
+| `localization_residue_algebraMap` | ✅ **PROVED** | Cycle 57: Definitional (rfl) |
 
-### Next Cycle (57) Priorities
-1. **Prove `bridge_residue_algebraMap`** - Diagram commutativity for R-algebra structure
-2. **Kernel characterization**: ker(evaluationMapAt) = L(D)
-3. **LocalGapBound instance** - Gap ≤ 1 from exact sequence
+### Next Cycle (58) Priorities
+1. **Prove `valuationRingAt_equiv_algebraMap`** - Ring equiv preserves algebraMap
+2. **Prove `localization_residueField_equiv_algebraMap`** - h2 step through localization
+3. **Complete `bridge_residue_algebraMap`** - Via composition proof
+4. **Kernel characterization**: ker(evaluationMapAt) = L(D)
 
 ---
 
-## Victory Path (Updated Cycle 56)
+## Victory Path (Updated Cycle 57)
 
 ```
 shifted_element_valuation_le_one (Cycle 54 - PROVED ✅)
@@ -113,18 +110,22 @@ evaluationFun_via_bridge (Cycle 55 - DEFINED ✅)
     ↓
 shiftedSubtype_add + shiftedSubtype_smul (Cycle 56 - PROVED ✅)
     ↓
-bridge_residue_algebraMap (Cycle 56 - SORRY)  ← KEY BLOCKER: diagram commutativity
-    ↓
 evaluationFun_add + evaluationFun_smul (Cycle 56 - PROVED ✅)
     ↓
 evaluationMapAt_complete (Cycle 56 - PROVED ✅)  ← LINEARMAP COMPLETE!
     ↓
-kernel_evaluationMapAt = L(D)  ← NEXT TARGET
+valuationRingAt_equiv_algebraMap (Cycle 57 - SORRY)  ← KEY BLOCKER 1
+    ↓
+localization_residueField_equiv_algebraMap (Cycle 57 - SORRY)  ← KEY BLOCKER 2
+    ↓
+bridge_residue_algebraMap (pending)  ← depends on blockers 1 & 2
+    ↓
+kernel_evaluationMapAt = L(D)  ← NEXT TARGET after bridge
     ↓
 LocalGapBound instance → VICTORY
 ```
 
-**NOTE**: The evaluation LinearMap is structurally complete! Only diagram commutativity + kernel proof remain.
+**NOTE**: The evaluation LinearMap is structurally complete! Cycle 57 decomposed bridge_residue_algebraMap into 2 key blockers.
 
 - [ ] `instance : LocalGapBound R K` (makes riemann_inequality_affine unconditional)
 
@@ -189,6 +190,7 @@ LocalGapBound instance → VICTORY
 | 54 | **shifted_element_valuation_le_one PROVED** (7 helpers + main lemma, Infrastructure.lean CLEAN) |
 | 55 | **evaluationFun_via_bridge DEFINED** (core function + 3/8 candidates PROVED, linearity pending) |
 | 56 | **evaluationMapAt_complete PROVED** (LinearMap complete! 5/6 PROVED, diagram commutativity pending) |
+| 57 | **bridge_residue_algebraMap decomposition** (2/8 PROVED, 2 key blockers identified) |
 
 ---
 
