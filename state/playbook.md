@@ -26,7 +26,7 @@
 
 ---
 
-## Current Status (Cycle 50)
+## Current Status (Cycle 51)
 
 **Codebase Structure**:
 ```
@@ -37,7 +37,7 @@ RrLean/RiemannRochV2/
 ├── Typeclasses.lean        # LocalGapBound ✅
 ├── RiemannInequality.lean  # Main theorems ✅ (1 sorry placeholder)
 ├── Infrastructure.lean     # Residue, uniformizer ✅ (1 sorry WIP)
-└── LocalGapInstance.lean   # Cycles 25-50 WIP ✅ BUILDS
+└── LocalGapInstance.lean   # Cycles 25-51 WIP ✅ BUILDS
 ```
 
 **Active Development**: `LocalGapInstance.lean`
@@ -61,12 +61,14 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 | `dvr_valuation_eq_height_one'` | ✅ **DEPLOYED** | Cycle 49: key valuation bridge |
 | `dvr_valuationSubring_eq_valuationRingAt'` | ✅ **PROVED** | Cycle 50: ValuationSubring equality |
 | `valuationRingAt_equiv_localization'` | ✅ **PROVED** | Cycle 50: Ring equivalence |
+| `residueField_transport_direct` | ⚠️ **NEXT** | Cycle 51: 8 candidates added, proof chain identified |
 
-### Next Cycle (51) Priorities
-1. **residueFieldBridge** - Use valuationRingAt_equiv_localization' for residue field equiv
-2. **residueMapFromR_surjective** - Surjectivity via localization equivalence
-3. **evaluationMapAt** - Construction using residue field bridge
-4. **LocalGapBound instance** - Final goal
+### Next Cycle (52) Priorities
+1. **Prove Candidate 1** - `valuationRingAt_equiv_map_unit_iff` (unit preservation)
+2. **Prove Candidate 6** - `valuationRingAt_equiv_mem_maximalIdeal_iff` (membership iff)
+3. **Prove Candidate 2** - `valuationRingAt_maximalIdeal_correspondence` (comap equality)
+4. **Prove Candidate 3** - `residueField_transport_direct` (KEY target)
+5. **Candidate 7** - `residueFieldBridge_explicit` gives residueFieldBridge via composition
 
 ---
 
@@ -147,6 +149,7 @@ evaluationMapAt → kernel → LocalGapBound → VICTORY
 | 48 | **dvr_valuation_eq_height_one' PROOF VERIFIED** (section ordering blocks deployment) |
 | 49 | **dvr_valuation_eq_height_one' DEPLOYED** (Cycle49Prerequisites section, cascade unblocked) |
 | 50 | **valuationRingAt_equiv_localization' PROVED** (Ring equiv via ValuationSubring equality) |
+| 51 | **residueFieldBridge candidates** (8 stubs, proof chain identified: 1→6→2→3→7) |
 
 ---
 

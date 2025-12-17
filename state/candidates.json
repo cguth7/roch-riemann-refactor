@@ -1,50 +1,57 @@
 {
-  "active_edge": "Cycle 50: valuationRingAt_equiv_localization' PROVED",
-  "cycle_50_results": {
-    "goal": "Prove valuationRingAt_equiv_localization ring equivalence",
-    "status": "SUCCESS - RING EQUIV PROVED",
-    "proved_count": 2,
-    "sorry_count_change": "+1 net (added placeholder sorry, proved 2 new lemmas)",
-    "key_change": "Ring equivalence via ValuationSubring equality",
-    "candidates": [
+  "active_edge": "Cycle 51: residueFieldBridge candidates added",
+  "cycle_51_results": {
+    "goal": "Prove residueFieldBridge ring equivalence",
+    "status": "CANDIDATES ADDED - 8 stubs typecheck",
+    "proved_count": 0,
+    "sorry_count_change": "+8 (8 new candidate stubs)",
+    "key_change": "Proof chain identified: Candidate 1 → 6 → 2 → 3 → 7",
+    "top_candidates": [
       {
-        "name": "dvr_valuationSubring_eq_valuationRingAt'",
-        "type": "EQUALITY",
-        "status": "PROVED",
-        "score": "8/10",
-        "location": "Line 1478 (Cycle37Candidates)",
-        "notes": "ValuationSubring equality via ext + dvr_valuation_eq_height_one'"
+        "name": "residueField_transport_direct",
+        "type": "RING_EQUIV",
+        "status": "SORRY",
+        "score": "10/10",
+        "location": "Line 2146 (Cycle51Candidates)",
+        "notes": "KEY missing piece - transports residue field via valuationRingAt_equiv_localization'"
       },
       {
-        "name": "valuationRingAt_equiv_localization'",
-        "type": "RING_EQUIV",
-        "status": "PROVED",
+        "name": "valuationRingAt_maximalIdeal_correspondence",
+        "type": "EQUALITY",
+        "status": "SORRY",
         "score": "8/10",
-        "location": "Line 1491 (Cycle37Candidates)",
-        "notes": "RingEquiv via transport along equality + equivValuationSubring.symm"
+        "location": "Line 2138 (Cycle51Candidates)",
+        "notes": "Required for residueField_transport_direct - maximal ideal comap equality"
       }
     ],
-    "technical_debt": {
-      "type": "Section ordering",
-      "issue": "Original valuationRingAt_equiv_localization at line 648 still has sorry",
-      "reason": "Dependencies defined after the declaration",
-      "fix_plan": "Either move definition or use cross-reference like Cycle49"
-    }
+    "all_candidates": [
+      {"name": "valuationRingAt_equiv_map_unit_iff", "score": "6/10", "location": "Line 2130"},
+      {"name": "valuationRingAt_maximalIdeal_correspondence", "score": "8/10", "location": "Line 2138"},
+      {"name": "residueField_transport_direct", "score": "10/10", "location": "Line 2146"},
+      {"name": "residueFieldBridge_via_composition", "score": "5/10", "location": "Line 2155"},
+      {"name": "residueField_iso_of_ringEquiv_localRings", "score": "4/10", "location": "Line 2161"},
+      {"name": "valuationRingAt_equiv_mem_maximalIdeal_iff", "score": "7/10", "location": "Line 2169"},
+      {"name": "residueFieldBridge_explicit", "score": "9/10", "location": "Line 2179"},
+      {"name": "residueField_equiv_commutes_with_residue", "score": "3/10", "location": "Line 2196"}
+    ]
   },
   "next_cycle_priority": [
-    "residueFieldBridge via valuationRingAt_equiv_localization'",
-    "residueMapFromR_surjective",
-    "evaluationMapAt construction",
-    "LocalGapBound instance"
+    "Prove Candidate 1 (unit preservation)",
+    "Prove Candidate 6 (maximal ideal membership iff)",
+    "Prove Candidate 2 (maximal ideal correspondence)",
+    "Prove Candidate 3 (residueField_transport_direct)",
+    "Candidate 7 composes to give residueFieldBridge"
   ],
   "architecture": {
     "cascade_structure": [
-      "dvr_valuation_eq_height_one' (Cycle 49 - DEPLOYED) ✅",
-      "  └─→ dvr_valuationSubring_eq_valuationRingAt' (Cycle 50 - PROVED) ✅",
-      "      └─→ valuationRingAt_equiv_localization' (Cycle 50 - PROVED) ✅",
-      "          └─→ residueFieldBridge (NEXT TARGET)",
-      "              └─→ residueMapFromR_surjective",
-      "                  └─→ evaluationMapAt → LocalGapBound"
+      "valuationRingAt_equiv_localization' (Cycle 50 - PROVED) ✅",
+      "  └─→ valuationRingAt_equiv_map_unit_iff (Cycle 51 - SORRY)",
+      "      └─→ valuationRingAt_equiv_mem_maximalIdeal_iff (Cycle 51 - SORRY)",
+      "          └─→ valuationRingAt_maximalIdeal_correspondence (Cycle 51 - SORRY)",
+      "              └─→ residueField_transport_direct (Cycle 51 - SORRY)",
+      "                  └─→ residueFieldBridge_explicit (COMPOSITION)",
+      "                      └─→ residueMapFromR_surjective",
+      "                          └─→ evaluationMapAt → LocalGapBound"
     ]
   },
   "victory_path_status": {
@@ -54,7 +61,8 @@
     "valuationRingAt_subset_range_algebraMap'": "✅ PROVED (uses above)",
     "dvr_valuationSubring_eq_valuationRingAt'": "✅ PROVED (Cycle 50)",
     "valuationRingAt_equiv_localization'": "✅ PROVED (Cycle 50)",
-    "residueFieldBridge": "⚠️ NEXT TARGET",
+    "residueField_transport_direct": "⚠️ NEXT TARGET (Cycle 51)",
+    "residueFieldBridge": "⚠️ via composition (pending Candidate 3)",
     "residueMapFromR_surjective": "pending",
     "evaluationMapAt": "pending",
     "LocalGapBound": "pending"
