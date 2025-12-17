@@ -2,19 +2,19 @@
 
 *For Cycles 1-34, see `state/ledger_archive.md`*
 
-## Summary: Where We Are (End of Cycle 53)
+## Summary: Where We Are (End of Cycle 54)
 
 **Project Goal**: Prove Riemann-Roch inequality for Dedekind domains in Lean 4.
 
 **Current Target**: `instance : LocalGapBound R K` (makes riemann_inequality_affine unconditional)
 
-**Blocking Chain** (CORRECTED Cycle 53):
+**Blocking Chain** (Updated Cycle 54):
 ```
-residueFieldBridge_explicit (Cycle 52 - PROVED ✅)
+shifted_element_valuation_le_one (Cycle 54 - PROVED ✅)  ← INFRASTRUCTURE COMPLETE!
     ↓
-shifted_element_valuation_le_one (Infrastructure.lean:274 - SORRY)  ← ACTUAL NEXT TARGET
+evaluationMapAt_via_bridge (LocalGapInstance.lean:379)  ← NEXT TARGET
     ↓
-evaluationMapAt_via_bridge → kernel → LocalGapBound → VICTORY
+kernel → LocalGapBound → VICTORY
 ```
 
 **Note**: `residueMapFromR_surjective` is OBSOLETE - bypassed by Cycle 52's mapEquiv approach.
@@ -22,6 +22,65 @@ evaluationMapAt_via_bridge → kernel → LocalGapBound → VICTORY
 ---
 
 ## 2025-12-17
+
+### Cycle 54 - shifted_element_valuation_le_one PROVED - INFRASTRUCTURE COMPLETE
+
+**Goal**: Prove `shifted_element_valuation_le_one` (Infrastructure.lean:274)
+
+#### Key Achievement
+
+**Main Lemma PROVED**: `shifted_element_valuation_le_one` is now sorry-free!
+
+For f ∈ L(D+v), the shifted element f · π^{D(v)+1} has valuation ≤ 1 at v.
+
+#### Proof Strategy
+
+The proof uses case analysis on `D(v) + 1 ≥ 0` vs `D(v) + 1 < 0`:
+
+**Case 1 (D(v)+1 ≥ 0)**:
+- `(D v + 1).toNat = D v + 1` (as integer)
+- `v(π^n) = exp(-(D v + 1))`
+- `v(f) ≤ exp(D v + 1)` from membership
+- Product: `v(f) * exp(-(D v + 1)) ≤ exp(D v + 1) * exp(-(D v + 1)) = 1`
+
+**Case 2 (D(v)+1 < 0)**:
+- `(D v + 1).toNat = 0` (toNat of negative)
+- `v(π^0) = v(1) = 1`
+- `v(f) ≤ exp(D v + 1) < exp(0) = 1` (strict inequality!)
+- `v(f) * 1 = v(f) < 1 ≤ 1`
+
+#### Results
+
+| Candidate | Status | Notes |
+|-----------|--------|-------|
+| `WithZero.exp_mul_exp_eq_add_int` | ✅ **PROVED** | rfl (definitional) |
+| `WithZero.exp_inv_eq_neg_int` | ✅ **PROVED** | rfl (definitional) |
+| `int_toNat_cast_eq_self` | ✅ **PROVED** | Int.toNat_of_nonneg |
+| `int_toNat_of_neg` | ✅ **PROVED** | Int.toNat_eq_zero |
+| `uniformizerAt_pow_valuation_of_nonneg` | ✅ **PROVED** | Bridges ℕ → ℤ exponent |
+| `valuation_product_le_one_of_nonneg` | ✅ **PROVED** | Case 1 main step |
+| `valuation_product_le_one_of_neg` | ✅ **PROVED** | Case 2 main step |
+| **`shifted_element_valuation_le_one`** | ✅ **PROVED** | Main goal via case analysis |
+
+**8/8 candidates PROVED! Infrastructure.lean now has 0 sorries!**
+
+#### Reflector Score: 10/10
+
+**Assessment**: Excellent cycle! All candidates proved, main blocker resolved. The Infrastructure module is now complete and clean.
+
+**Key mathlib lemmas used**:
+- `Int.toNat_of_nonneg`, `Int.toNat_eq_zero`
+- `WithZero.exp_lt_exp`, `WithZero.exp_neg` (definitionally)
+- `Valuation.map_mul`, `mul_le_mul_right'`
+
+**Next Steps (Cycle 55)**:
+1. Build `evaluationMapAt_via_bridge` (LocalGapInstance.lean:379) - Uses residueFieldBridge_explicit + shifted_element
+2. Prove kernel characterization: ker(eval) = L(D)
+3. Instance `LocalGapBound R K` → VICTORY
+
+**Cycle rating**: 10/10 (Main blocker PROVED, Infrastructure.lean CLEAN, victory path advanced significantly)
+
+---
 
 ### Cycle 53 - Consolidation & Cull - DEAD CODE MARKED OBSOLETE
 

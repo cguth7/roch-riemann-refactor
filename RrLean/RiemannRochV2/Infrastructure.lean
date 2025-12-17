@@ -259,18 +259,105 @@ lemma uniformizerAt_pow_valuation (v : HeightOneSpectrum R) (n : ℕ) :
   rw [HeightOneSpectrum.valuation_of_algebraMap]
   exact uniformizerAt_pow_val v n
 
--- Candidate 7 [tag: coercion_simplify] [status: SORRY] [cycle: 24.2]
+/-! ### Cycle 54: Valuation Arithmetic Helpers for shifted_element_valuation_le_one
+
+The proof requires careful manipulation of WithZero.exp with integer arguments
+and case analysis on Int.toNat. The key is showing v(f) * v(π^n) ≤ 1 where
+n = (D v + 1).toNat and v(f) ≤ exp(D v + 1). -/
+
+-- Candidate 2 [tag: withzero_exp_helper] [status: PROVED] [cycle: 54]
+/-- Simplification: exp(a) * exp(b) = exp(a + b) for integers.
+Essential for showing exp(D v + 1) * exp(-(D v + 1)) = exp(0) = 1.
+
+This is WithZero.exp_add from mathlib (definitionally rfl). -/
+lemma WithZero.exp_mul_exp_eq_add_int (a b : ℤ) :
+    WithZero.exp a * WithZero.exp b = WithZero.exp (a + b) := rfl
+
+-- Candidate 3 [tag: withzero_exp_helper] [status: PROVED] [cycle: 54]
+/-- Simplification: exp(b)⁻¹ = exp(-b) for integers in WithZero.
+Needed to convert v(π^n)⁻¹ from inverse form to negative exponent form.
+
+This is WithZero.exp_neg from mathlib (definitionally rfl). -/
+lemma WithZero.exp_inv_eq_neg_int (b : ℤ) :
+    (WithZero.exp b)⁻¹ = WithZero.exp (-b) := rfl
+
+-- Candidate 4 [tag: int_tonat_helper] [status: PROVED] [cycle: 54]
+/-- When an integer is nonnegative, toNat preserves the value as a casted nat.
+Key for case 1: if D v + 1 ≥ 0, then (D v + 1).toNat = D v + 1 as integers.
+
+Uses: Int.toNat_of_nonneg from mathlib. -/
+lemma int_toNat_cast_eq_self {n : ℤ} (hn : 0 ≤ n) :
+    ((n.toNat : ℕ) : ℤ) = n := Int.toNat_of_nonneg hn
+
+-- Candidate 5 [tag: int_tonat_helper] [status: PROVED] [cycle: 54]
+/-- When an integer is negative, toNat gives 0.
+Key for case 2: if D v + 1 < 0, then (D v + 1).toNat = 0.
+
+Uses: Int.toNat_eq_zero from mathlib. -/
+lemma int_toNat_of_neg {n : ℤ} (hn : n < 0) :
+    n.toNat = 0 := Int.toNat_eq_zero.mpr (le_of_lt hn)
+
+-- Candidate 6 [tag: uniformizer_valuation_nonneg_case] [status: PROVED] [cycle: 54]
+/-- When D v + 1 ≥ 0, the uniformizer power valuation equals exp(-(D v + 1)).
+Combines uniformizerAt_pow_valuation with int_toNat_cast_eq_self.
+
+This reduces π^{(Dv+1).toNat} to π^{Dv+1} when the exponent is nonnegative. -/
+lemma uniformizerAt_pow_valuation_of_nonneg (v : HeightOneSpectrum R) (n : ℤ) (hn : 0 ≤ n) :
+    v.valuation K (algebraMap R K ((uniformizerAt v) ^ n.toNat)) = WithZero.exp (-n) := by
+  rw [uniformizerAt_pow_valuation]
+  congr 1
+  rw [int_toNat_cast_eq_self hn]
+
+-- Candidate 7 [tag: valuation_product_le_one_nonneg] [status: PROVED] [cycle: 54]
+/-- Case 1: When D v + 1 ≥ 0, prove v(f * π^n) ≤ 1.
+Given v(f) ≤ exp(D v + 1) and v(π^n) = exp(-(D v + 1)),
+the product equals exp(0) = 1.
+
+Main proof step for the nonnegative case. -/
+lemma valuation_product_le_one_of_nonneg
+    (v : HeightOneSpectrum R) (D : DivisorV2 R) (f : K)
+    (hn : 0 ≤ D v + 1)
+    (hfv : v.valuation K f ≤ WithZero.exp (D v + 1)) :
+    v.valuation K (f * algebraMap R K ((uniformizerAt v) ^ (D v + 1).toNat)) ≤ 1 := by
+  rw [Valuation.map_mul]
+  rw [uniformizerAt_pow_valuation_of_nonneg v (D v + 1) hn]
+  -- Goal: v(f) * exp(-(D v + 1)) ≤ 1
+  calc v.valuation K f * WithZero.exp (-(D v + 1))
+      = v.valuation K f * (WithZero.exp (D v + 1))⁻¹ := by rw [WithZero.exp_inv_eq_neg_int]
+    _ ≤ WithZero.exp (D v + 1) * (WithZero.exp (D v + 1))⁻¹ := mul_le_mul_right' hfv _
+    _ = 1 := by rw [mul_inv_cancel₀ (WithZero.coe_ne_zero)]
+
+-- Candidate 8 [tag: valuation_product_le_one_neg] [status: PROVED] [cycle: 54]
+/-- Case 2: When D v + 1 < 0, prove v(f * π^n) ≤ 1.
+Since (D v + 1).toNat = 0, we have π^0 = 1 with valuation 1.
+Since D v + 1 < 0, we have v(f) ≤ exp(D v + 1) < exp(0) = 1.
+Therefore v(f * 1) = v(f) < 1 ≤ 1.
+
+Main proof step for the negative case. -/
+lemma valuation_product_le_one_of_neg
+    (v : HeightOneSpectrum R) (D : DivisorV2 R) (f : K)
+    (hn : D v + 1 < 0)
+    (hfv : v.valuation K f ≤ WithZero.exp (D v + 1)) :
+    v.valuation K (f * algebraMap R K ((uniformizerAt v) ^ (D v + 1).toNat)) ≤ 1 := by
+  rw [Valuation.map_mul]
+  rw [int_toNat_of_neg hn]
+  simp only [pow_zero, map_one, mul_one]
+  -- Goal: v(f) ≤ 1
+  apply le_of_lt
+  calc v.valuation K f
+      ≤ WithZero.exp (D v + 1) := hfv
+    _ < WithZero.exp 0 := WithZero.exp_lt_exp.mpr hn
+    _ = 1 := rfl
+
+-- Candidate 7 [tag: coercion_simplify] [status: PROVED] [cycle: 24.2 → 54]
 /-- For f ∈ L(D+v), the shifted element f · π^{D(v)+1} has valuation ≤ 1 at v.
 
 This is KEY: allows us to "evaluate f at v" by shifting the pole away.
 
-PROOF OUTLINE:
+PROOF (completed Cycle 54):
 - f ∈ L(D+v) means v(f) ≤ exp(D(v)+1)
-- By uniformizer: v(π^{D(v)+1}) = exp(-(D(v)+1))
-- Product: v(f·π^{D(v)+1}) ≤ exp(D(v)+1) · exp(-(D(v)+1)) = 1
-
-TECHNICAL NOTE: The proof involves careful case analysis on whether D(v)+1 ≥ 0
-and manipulation of WithZero.exp with integer arguments. -/
+- Case 1 (D(v)+1 ≥ 0): v(π^{D(v)+1}) = exp(-(D(v)+1)), product cancels to ≤ 1
+- Case 2 (D(v)+1 < 0): π^0 = 1, and v(f) < 1 since exp(D(v)+1) < 1 -/
 lemma shifted_element_valuation_le_one
     (v : HeightOneSpectrum R) (D : DivisorV2 R)
     (f : K) (hf : f ∈ RRModuleV2_real R K (D + DivisorV2.single v 1)) :
@@ -281,9 +368,11 @@ lemma shifted_element_valuation_le_one
   -- f ≠ 0 case: use membership condition and uniformizer properties
   have hfv := hf' v
   simp only [Finsupp.add_apply, DivisorV2.single, Finsupp.single_eq_same] at hfv
-  rw [Valuation.map_mul]
-  -- Technical proof: v(f) * v(π^n) ≤ 1 using uniformizer valuation
-  sorry -- Valuation arithmetic with WithZero.exp
+  -- Case analysis on D v + 1 ≥ 0 vs D v + 1 < 0
+  by_cases h : 0 ≤ D v + 1
+  · exact valuation_product_le_one_of_nonneg v D f h hfv
+  · push_neg at h
+    exact valuation_product_le_one_of_neg v D f h hfv
 
 end UniformizerInfrastructure
 

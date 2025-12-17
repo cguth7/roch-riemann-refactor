@@ -53,7 +53,7 @@ Where:
 
 ---
 
-## Current Status (Cycle 53)
+## Current Status (Cycle 54)
 
 **Codebase Structure**:
 ```
@@ -63,11 +63,11 @@ RrLean/RiemannRochV2/
 ├── RRSpace.lean            # L(D), ℓ(D) ✅ (1 sorry placeholder)
 ├── Typeclasses.lean        # LocalGapBound ✅
 ├── RiemannInequality.lean  # Main theorems ✅ (1 sorry placeholder)
-├── Infrastructure.lean     # Residue, uniformizer ✅ (1 sorry: shifted_element_valuation_le_one)
-└── LocalGapInstance.lean   # Cycles 25-53 WIP ✅ BUILDS (dead code marked OBSOLETE)
+├── Infrastructure.lean     # Residue, uniformizer ✅ **CLEAN** (0 sorries!)
+└── LocalGapInstance.lean   # Cycles 25-54 WIP ✅ BUILDS (dead code marked OBSOLETE)
 ```
 
-**Active Development**: `Infrastructure.lean` (shifted_element) then `LocalGapInstance.lean` (evaluationMapAt)
+**Active Development**: `LocalGapInstance.lean` (evaluationMapAt_via_bridge - uses shifted_element!)
 
 ### Typeclass Hierarchy
 ```
@@ -91,17 +91,16 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 | `residueField_transport_direct` | ✅ **PROVED** | Cycle 52: via IsLocalRing.ResidueField.mapEquiv |
 | `residueFieldBridge_explicit` | ✅ **PROVED** | Cycle 52: composition with localization_residueField_equiv |
 | `residueMapFromR_surjective` | ❌ **OBSOLETE** | Bypassed by Cycle 52's mapEquiv approach |
-| `shifted_element_valuation_le_one` | ⚠️ **NEXT** | Infrastructure.lean:274 - valuation arithmetic |
+| `shifted_element_valuation_le_one` | ✅ **PROVED** | Cycle 54: case analysis (nonneg/neg) + WithZero.exp arithmetic |
 
-### Next Cycle (54) Priorities
-1. **Prove `shifted_element_valuation_le_one`** (Infrastructure.lean:274) - Valuation arithmetic with WithZero.exp
-2. **Build `evaluationMapAt_via_bridge`** (LocalGapInstance.lean:379) - Uses residueFieldBridge_explicit (PROVED!)
-3. **Prove kernel characterization** - Key for gap bound
-4. **Instance `LocalGapBound R K`** - Final target
+### Next Cycle (55) Priorities
+1. **Build `evaluationMapAt_via_bridge`** (LocalGapInstance.lean:379) - Uses residueFieldBridge_explicit + shifted_element (PROVED!)
+2. **Prove kernel characterization** - Key for gap bound: ker(eval) = L(D)
+3. **Instance `LocalGapBound R K`** - Final target
 
 ---
 
-## Victory Path (CORRECTED Cycle 53)
+## Victory Path (Updated Cycle 54)
 
 ```
 dvr_intValuation_eq_via_pow_membership (Cycle 46 - PROVED ✅)
@@ -118,9 +117,9 @@ residueField_transport_direct (Cycle 52 - PROVED ✅)
     ↓
 residueFieldBridge_explicit (Cycle 52 - PROVED ✅)
     ↓
-shifted_element_valuation_le_one (Infrastructure.lean:274)  ← ACTUAL NEXT TARGET
+shifted_element_valuation_le_one (Cycle 54 - PROVED ✅)  ← INFRASTRUCTURE COMPLETE!
     ↓ (proves f·π^{D(v)+1} ∈ valuationRingAt v)
-evaluationMapAt_via_bridge (LocalGapInstance.lean:379)
+evaluationMapAt_via_bridge (LocalGapInstance.lean:379)  ← NEXT TARGET
     ↓
 kernel_evaluationMapAt = L(D)
     ↓
@@ -189,6 +188,7 @@ LocalGapBound instance → VICTORY
 | 51 | **residueFieldBridge candidates** (8 stubs, proof chain identified: 1→6→2→3→7) |
 | 52 | **residueFieldBridge PROVED** (7/8 candidates via IsLocalRing.ResidueField.mapEquiv) |
 | 53 | **Consolidation & Cull** (dead code marked OBSOLETE, corrected victory path) |
+| 54 | **shifted_element_valuation_le_one PROVED** (7 helpers + main lemma, Infrastructure.lean CLEAN) |
 
 ---
 
