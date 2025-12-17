@@ -1,88 +1,85 @@
 {
-  "active_edge": "Cycle 66: kernel_evaluationMapAt - 8 candidates added",
-  "cycle_66_results": {
-    "goal": "Prove kernel_evaluationMapAt_complete - show ker(evaluationMapAt) = L(D)",
-    "status": "8/8 candidates typecheck, priority path identified",
+  "active_edge": "Cycle 67: kernel helper lemmas - 5/8 PROVED",
+  "cycle_67_results": {
+    "goal": "Prove helper lemmas for kernel_evaluationMapAt_complete",
+    "status": "5/8 candidates PROVED",
     "candidates": [
       {
-        "name": "LD_element_shifted_in_maximalIdeal",
-        "status": "SORRY",
-        "priority": 4,
-        "notes": "Helper for L(D) ⊆ ker direction",
-        "line": 3360
+        "name": "exp_neg_one_lt_one",
+        "status": "PROVED",
+        "priority": 1,
+        "notes": "Trivial via WithZero.exp_lt_exp",
+        "line": 3458
       },
       {
-        "name": "LD_element_valuation_strict_bound",
+        "name": "exp_mul_exp_neg",
+        "status": "PROVED",
+        "priority": 2,
+        "notes": "exp_add + add_neg_cancel",
+        "line": 3466
+      },
+      {
+        "name": "valuation_product_strict_bound_nonneg",
+        "status": "PROVED",
+        "priority": 3,
+        "notes": "KEY: Forward direction v(f·π^n) ≤ exp(-1)",
+        "line": 3474
+      },
+      {
+        "name": "valuation_lt_one_of_neg",
+        "status": "PROVED",
+        "priority": 4,
+        "notes": "Negative exponent case",
+        "line": 3490
+      },
+      {
+        "name": "extract_valuation_bound_from_maxIdeal_nonneg",
         "status": "SORRY",
         "priority": 1,
-        "notes": "CRITICAL: Foundation for forward direction, pure valuation arithmetic",
-        "line": 3373
+        "notes": "KEY BLOCKER: Inversion lemma, needs WithZero.log",
+        "line": 3504
       },
       {
-        "name": "LD_inclusion_in_kernel",
-        "status": "SORRY",
-        "priority": 5,
-        "notes": "Forward direction main lemma, depends on Candidates 1-2",
-        "line": 3381
-      },
-      {
-        "name": "kernel_element_shifted_in_maximalIdeal",
+        "name": "extract_valuation_bound_from_maxIdeal_neg",
         "status": "SORRY",
         "priority": 2,
-        "notes": "KEY: Backward direction key, bridge inversion",
-        "line": 3390
+        "notes": "Negative case inversion",
+        "line": 3520
       },
       {
-        "name": "kernel_element_satisfies_LD_bound",
+        "name": "RingEquiv_apply_eq_zero_iff'",
+        "status": "PROVED",
+        "priority": 7,
+        "notes": "Bridge inversion via map_eq_zero_iff",
+        "line": 3530
+      },
+      {
+        "name": "valuation_bound_at_other_prime",
         "status": "SORRY",
         "priority": 3,
-        "notes": "L(D) membership from kernel, depends on Candidate 4",
-        "line": 3401
-      },
-      {
-        "name": "kernel_element_in_LD",
-        "status": "SORRY",
-        "priority": 6,
-        "notes": "Backward helper, combines 4 and 5",
-        "line": 3409
-      },
-      {
-        "name": "kernel_subset_LD_range",
-        "status": "SORRY",
-        "priority": 7,
-        "notes": "Backward direction main, depends on Candidate 6",
-        "line": 3417
-      },
-      {
-        "name": "kernel_evaluationMapAt_complete",
-        "status": "SORRY",
-        "priority": 8,
-        "notes": "MAIN GOAL: Combines Candidates 3 and 7 via set_ext",
-        "line": 3426
+        "notes": "Multi-prime monotonicity via Finsupp.single",
+        "line": 3538
       }
     ]
   },
-  "proof_strategy": {
-    "forward_direction": "L(D) ⊆ ker: f ∈ L(D) → v(f) ≤ exp(D(v)) → v(f·π^{D(v)+1}) < 1 → residue = 0",
-    "backward_direction": "ker ⊆ L(D): evaluationMapAt f = 0 → shifted in maxIdeal → v(f) ≤ exp(D(v))",
-    "critical_path": ["Candidate 2", "Candidate 4", "Candidate 5"]
-  },
   "next_cycle_priority": [
-    "1. Prove LD_element_valuation_strict_bound (Candidate 2)",
-    "2. Prove kernel_element_shifted_in_maximalIdeal (Candidate 4)",
-    "3. Prove kernel_element_satisfies_LD_bound (Candidate 5)",
-    "4. Complete remaining candidates in dependency order"
+    "1. Prove extract_valuation_bound_from_maxIdeal_nonneg (WithZero.log approach)",
+    "2. Prove extract_valuation_bound_from_maxIdeal_neg (case analysis)",
+    "3. Prove valuation_bound_at_other_prime (Finsupp.single_eq_of_ne)",
+    "4. Complete Cycle 66 kernel candidates",
+    "5. LocalGapBound instance → VICTORY"
   ],
   "infrastructure_status": {
     "Infrastructure.lean": "CLEAN (0 sorries)",
     "evaluationMapAt_complete": "PROVED (Cycle 56)",
     "bridge_residue_algebraMap_clean": "PROVED (Cycle 65)",
-    "shiftedElement_mem_valuationRingAt": "PROVED",
-    "shifted_element_valuation_le_one": "PROVED (Cycle 54)"
+    "valuation_product_strict_bound_nonneg": "PROVED (Cycle 67)",
+    "RingEquiv_apply_eq_zero_iff": "PROVED (Cycle 67)"
   },
-  "potential_blockers": [
-    "WithZero.exp arithmetic (exp_add, exp_neg)",
-    "Bridge injectivity for backward direction"
+  "key_blockers": [
+    "extract_valuation_bound_from_maxIdeal_nonneg: WithZero.log manipulation",
+    "Discrete valuation inversion: x < exp(n) implies x ≤ exp(n-1)"
   ],
-  "reflector_score": 7.0
+  "reflector_score": 7.5,
+  "victory_estimate": "2 cycles away (Cycles 68-69)"
 }

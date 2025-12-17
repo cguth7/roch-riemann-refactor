@@ -2,32 +2,83 @@
 
 *For Cycles 1-34, see `state/ledger_archive.md`*
 
-## Summary: Where We Are (End of Cycle 66)
+## Summary: Where We Are (End of Cycle 67)
 
 **Project Goal**: Prove Riemann-Roch inequality for Dedekind domains in Lean 4.
 
-**Current Target**: `kernel_evaluationMapAt_complete` (8 candidates added, critical path identified)
+**Current Target**: `kernel_evaluationMapAt_complete` (helper lemmas 5/8 PROVED)
 
-**Blocking Chain** (Updated Cycle 66 - KERNEL CANDIDATES ADDED):
+**Blocking Chain** (Updated Cycle 67 - HELPER LEMMAS PROVED):
 ```
 evaluationMapAt_complete (Cycle 56 - PROVED ✅)  ← LINEARMAP COMPLETE!
     ↓
-localization_residueField_equiv_algebraMap_v5 (Cycle 61 - PROVED ✅)
-    ↓
-valuationRingAt_equiv_clean_algebraMap (Cycle 64 - PROVED ✅)
-    ↓
 bridge_residue_algebraMap_clean (Cycle 65 - PROVED ✅)  ← CLEAN BRIDGE PROVED!
     ↓
-kernel_evaluationMapAt_complete (Cycle 66 - 8 CANDIDATES)  ← **IN PROGRESS**
+valuation_product_strict_bound_nonneg (Cycle 67 - PROVED ✅)  ← FORWARD DIRECTION ARMED!
+    ↓
+extract_valuation_bound_from_maxIdeal (Cycle 67 - 3 SORRY)  ← **IN PROGRESS**
+    ↓
+kernel_evaluationMapAt_complete (Cycle 66 candidates pending)
     ↓
 LocalGapBound instance → VICTORY
 ```
 
-**Note**: Cycle 66 - 8 candidates added for kernel characterization. Victory is 2-3 cycles away!
+**Note**: Cycle 67 - 5/8 helper lemmas proved. Forward direction ready, backward direction needs inversion. Victory is 2 cycles away!
 
 ---
 
 ## 2025-12-17
+
+### Cycle 67 - kernel Helper Lemmas - 5/8 PROVED
+
+**Goal**: Prove helper lemmas enabling kernel_evaluationMapAt_complete proof
+
+#### Key Achievement
+
+**5 helper lemmas PROVED** for the kernel characterization. Forward direction now armed!
+
+**Proved lemmas**:
+1. `exp_neg_one_lt_one` - exp(-1) < exp(0) = 1 (trivial via exp_lt_exp)
+2. `exp_mul_exp_neg` - exp(a) * exp(-a) = 1 (exp_add + add_neg_cancel)
+3. `valuation_product_strict_bound_nonneg` - **KEY**: v(f·π^n) ≤ exp(-1) for forward direction
+4. `valuation_lt_one_of_neg` - Negative exponent case handling
+5. `RingEquiv_apply_eq_zero_iff'` - Bridge inversion for backward direction
+
+#### Results
+
+| Candidate | Status | Notes |
+|-----------|--------|-------|
+| `exp_neg_one_lt_one` | ✅ **PROVED** | WithZero.exp_lt_exp.mpr (by omega) |
+| `exp_mul_exp_neg` | ✅ **PROVED** | exp_add + add_neg_cancel + exp_zero |
+| `valuation_product_strict_bound_nonneg` | ✅ **PROVED** | Forward direction key lemma |
+| `valuation_lt_one_of_neg` | ✅ **PROVED** | Negative case via exp_lt_exp |
+| `extract_valuation_bound_from_maxIdeal_nonneg` | ⚠️ SORRY | KEY BLOCKER: needs WithZero.log |
+| `extract_valuation_bound_from_maxIdeal_neg` | ⚠️ SORRY | Negative case inversion |
+| `RingEquiv_apply_eq_zero_iff'` | ✅ **PROVED** | map_eq_zero_iff + injective |
+| `valuation_bound_at_other_prime` | ⚠️ SORRY | Multi-prime via Finsupp.single |
+
+**5/8 candidates PROVED**
+
+#### Technical Notes
+
+- **Forward direction armed**: Candidate 3 (`valuation_product_strict_bound_nonneg`) shows v(f·π^{D(v)+1}) ≤ exp(-1) < 1 for f ∈ L(D)
+- **Backward direction blocked**: Need to invert v(f·π^n) < 1 to get v(f) ≤ exp(D v)
+- **Key insight for Cycle 68**: Use discrete valuation property: x < exp(n) ⟹ x ≤ exp(n-1)
+- **WithZero.log approach**: log_lt_iff_lt_exp + integer arithmetic to complete Candidate 5
+
+#### Reflector Score: 7.5/10
+
+**Assessment**: Strong cycle with key forward direction lemma proved. Three remaining blockers are straightforward inversion lemmas using discrete valuation properties.
+
+**Next Steps (Cycle 68)**:
+1. `extract_valuation_bound_from_maxIdeal_nonneg` - Use WithZero.log + Int.lt_add_one_iff
+2. `extract_valuation_bound_from_maxIdeal_neg` - Case analysis
+3. `valuation_bound_at_other_prime` - Finsupp.single_eq_of_ne
+4. Complete Cycle 66 kernel candidates → LocalGapBound → **VICTORY**
+
+**Cycle rating**: 7.5/10 (5/8 PROVED, forward direction complete, clear path to victory)
+
+---
 
 ### Cycle 66 - kernel_evaluationMapAt Candidates Added - 8/8 TYPECHECK
 

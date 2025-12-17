@@ -53,7 +53,7 @@ Where:
 
 ---
 
-## Current Status (Cycle 66)
+## Current Status (Cycle 67)
 
 **Codebase Structure**:
 ```
@@ -64,11 +64,11 @@ RrLean/RiemannRochV2/
 ├── Typeclasses.lean        # LocalGapBound ✅
 ├── RiemannInequality.lean  # Main theorems ✅ (1 sorry placeholder)
 ├── Infrastructure.lean     # Residue, uniformizer ✅ **CLEAN** (0 sorries!)
-├── LocalGapInstance.lean   # Cycles 25-66 WIP ✅ BUILDS
+├── LocalGapInstance.lean   # Cycles 25-67 WIP ✅ BUILDS
 └── TestBlockerProofs.lean  # Cycle 58-60: Test proofs
 ```
 
-**Active Development**: `LocalGapInstance.lean` (Cycle 66 candidates at end of file)
+**Active Development**: `LocalGapInstance.lean` (Cycle 67 candidates at end of file)
 
 ### Typeclass Hierarchy
 ```
@@ -79,51 +79,54 @@ SinglePointBound R K       -- PROJECTIVE (adds ell_zero = 1)
 BaseDim R K                -- SEPARATE (explicit base dimension)
 ```
 
-### Key Blockers (Updated Cycle 66)
+### Key Blockers (Updated Cycle 67)
 
 | Name | Status | Notes |
 |------|--------|-------|
 | `evaluationMapAt_complete` | ✅ **PROVED** | Cycle 56: LinearMap bundle complete |
-| `localization_residueField_equiv_algebraMap_v5` | ✅ **PROVED** | Cycle 61: BLOCKER 2 RESOLVED |
-| `valuationRingAt_equiv_clean_algebraMap` | ✅ **PROVED** | Cycle 64: Cast-free equiv |
 | `bridge_residue_algebraMap_clean` | ✅ **PROVED** | Cycle 65: CLEAN BRIDGE PROVED |
-| `kernel_evaluationMapAt_complete` | ⚠️ **NEXT TARGET** | ker(eval) = L(D) - 8 candidates added |
+| `valuation_product_strict_bound_nonneg` | ✅ **PROVED** | Cycle 67: Forward direction key |
+| `RingEquiv_apply_eq_zero_iff'` | ✅ **PROVED** | Cycle 67: Bridge inversion |
+| `extract_valuation_bound_from_maxIdeal_nonneg` | ⚠️ **KEY BLOCKER** | Inversion lemma, needs WithZero.log |
+| `kernel_evaluationMapAt_complete` | ⚠️ **NEXT TARGET** | ker(eval) = L(D) |
 
-### Next Cycle (67) Priorities
-1. **Prove `LD_element_valuation_strict_bound`** (Candidate 2): Foundation for forward direction
-2. **Prove `kernel_element_shifted_in_maximalIdeal`** (Candidate 4): Key for backward direction
-3. **Prove `kernel_element_satisfies_LD_bound`** (Candidate 5): Valuation bound from kernel membership
-4. Complete kernel characterization → LocalGapBound instance → **VICTORY**
+### Next Cycle (68) Priorities
+1. **Prove `extract_valuation_bound_from_maxIdeal_nonneg`**: Key inversion, v(f·π^n) < 1 → v(f) ≤ exp(D v)
+2. **Prove `extract_valuation_bound_from_maxIdeal_neg`**: Negative case inversion
+3. **Prove `valuation_bound_at_other_prime`**: Multi-prime monotonicity via Finsupp.single_eq_of_ne
+4. Complete Cycle 66 kernel candidates → LocalGapBound instance → **VICTORY**
 
-### Cycle 66 Technical Notes
-- **8 candidates added** for kernel_evaluationMapAt proof
-- **Proof strategy**: Two directions - L(D) ⊆ ker (valuation arithmetic) and ker ⊆ L(D) (ideal membership)
-- **Key mathlib lemma**: `IsLocalRing.residue_eq_zero_iff` connects residue = 0 with maximalIdeal membership
+### Cycle 67 Technical Notes
+- **5/8 candidates PROVED** (exp_neg_one_lt_one, exp_mul_exp_neg, valuation_product_strict_bound_nonneg, valuation_lt_one_of_neg, RingEquiv_apply_eq_zero_iff')
+- **3 remaining**: extract_valuation_bound (nonneg/neg), valuation_bound_at_other_prime
+- **Key insight**: Forward direction (L(D) ⊆ ker) now armed with Candidate 3
+- **Blocking**: Backward direction needs inversion lemmas (Candidates 5, 6, 8)
 
 ---
 
-## Victory Path (Updated Cycle 66)
+## Victory Path (Updated Cycle 67)
 
 ```
 evaluationMapAt_complete (Cycle 56 - PROVED ✅)  ← LINEARMAP COMPLETE!
     ↓
-localization_residueField_equiv_algebraMap_v5 (Cycle 61 - PROVED ✅)
-    ↓
-valuationRingAt_equiv_clean_algebraMap (Cycle 64 - PROVED ✅)  ← Cast-free equiv!
-    ↓
 bridge_residue_algebraMap_clean (Cycle 65 - PROVED ✅)  ← CLEAN BRIDGE PROVED!
     ↓
-kernel_evaluationMapAt_complete (Cycle 66 - 8 CANDIDATES ADDED)  ← **IN PROGRESS**
+valuation_product_strict_bound_nonneg (Cycle 67 - PROVED ✅)  ← FORWARD DIRECTION ARMED!
+    ↓
+extract_valuation_bound_from_maxIdeal (Cycle 67 - 3 SORRY)  ← **IN PROGRESS**
+    ↓
+kernel_evaluationMapAt_complete (Cycle 66 candidates pending)
     ↓
 LocalGapBound instance → VICTORY
 ```
 
-**Cycle 66 Status**: 8 candidates added for kernel characterization. Critical path identified.
+**Cycle 67 Status**: 5/8 helper candidates PROVED. Forward direction ready, backward direction needs inversion.
 
-- [ ] `LD_element_valuation_strict_bound` - Candidate 2 (foundation)
-- [ ] `kernel_element_shifted_in_maximalIdeal` - Candidate 4 (backward direction key)
-- [ ] `kernel_element_satisfies_LD_bound` - Candidate 5 (L(D) membership)
-- [ ] `kernel_evaluationMapAt_complete` - Main lemma (Candidate 8)
+- [x] `exp_neg_one_lt_one` - Cycle 67 Candidate 1 (PROVED)
+- [x] `valuation_product_strict_bound_nonneg` - Cycle 67 Candidate 3 (PROVED)
+- [x] `RingEquiv_apply_eq_zero_iff'` - Cycle 67 Candidate 7 (PROVED)
+- [ ] `extract_valuation_bound_from_maxIdeal_nonneg` - Cycle 67 Candidate 5 (KEY BLOCKER)
+- [ ] `kernel_evaluationMapAt_complete` - Main lemma (Cycle 66 Candidate 8)
 - [ ] `instance : LocalGapBound R K` (makes riemann_inequality_affine unconditional)
 
 ---

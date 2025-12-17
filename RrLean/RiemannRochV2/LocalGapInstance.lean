@@ -3429,4 +3429,118 @@ lemma kernel_evaluationMapAt_complete (v : HeightOneSpectrum R) (D : DivisorV2 R
 
 end Cycle66Candidates
 
+/-! ### Cycle 67 Candidates: Helper lemmas for kernel proof
+
+Goal: Prove helpers for kernel_evaluationMapAt_complete
+
+Key achievements:
+- exp_neg_one_lt_one: PROVED (trivial via exp_lt_exp)
+- exp_mul_exp_neg: PROVED (exp_add + add_neg_cancel)
+- valuation_product_strict_bound_nonneg: PROVED (forward direction arithmetic)
+- valuation_lt_one_of_neg: PROVED (negative case arithmetic)
+- RingEquiv.apply_eq_zero_iff': PROVED (trivial via map_eq_zero_iff)
+
+Remaining sorries:
+- extract_valuation_bound_from_maxIdeal_nonneg: Key inversion lemma (needs WithZero.log)
+- extract_valuation_bound_from_maxIdeal_neg: Negative case inversion
+- valuation_bound_at_other_prime: Multi-prime condition
+-/
+
+section Cycle67Candidates
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+
+-- Candidate 1 [tag: rr_bundle_bridge] [status: PROVED] [cycle: 67]
+/-- Helper: exp(-1) < exp(0) = 1 for WithZero valuations.
+This is the key strict inequality needed for LD_element_valuation_strict_bound.
+Uses WithZero.exp_lt_exp to reduce to -1 < 0. -/
+lemma exp_neg_one_lt_one :
+    WithZero.exp (-1 : ℤ) < WithZero.exp (0 : ℤ) :=
+  WithZero.exp_lt_exp.mpr (by omega)
+
+-- Candidate 2 [tag: rr_bundle_bridge] [status: PROVED] [cycle: 67]
+/-- Helper: exp(a) * exp(-a) = 1 for any integer a.
+Needed for cancellation in valuation arithmetic.
+This is exp_add with b = -a: exp(a + (-a)) = exp(0) = 1. -/
+lemma exp_mul_exp_neg (a : ℤ) :
+    WithZero.exp a * WithZero.exp (-a) = 1 := by
+  rw [← WithZero.exp_add, add_neg_cancel, WithZero.exp_zero]
+
+-- Candidate 3 [tag: rr_bundle_bridge] [status: PROVED] [cycle: 67]
+/-- If v(f) ≤ exp(D(v)) and n = D(v)+1, then v(f·π^n) ≤ exp(-1).
+Key calculation for the forward direction showing strict inequality.
+Uses that v(f) ≤ exp(D(v)) and v(π^{D(v)+1}) = exp(-(D(v)+1)). -/
+lemma valuation_product_strict_bound_nonneg
+    (v : HeightOneSpectrum R) (D : DivisorV2 R) (f : K)
+    (hn : 0 ≤ D v + 1)
+    (hfv : v.valuation K f ≤ WithZero.exp (D v)) :
+    v.valuation K (f * algebraMap R K ((uniformizerAt v) ^ (D v + 1).toNat)) ≤
+      WithZero.exp (-1 : ℤ) := by
+  rw [Valuation.map_mul]
+  rw [uniformizerAt_pow_valuation_of_nonneg v (D v + 1) hn]
+  calc v.valuation K f * WithZero.exp (-(D v + 1))
+      ≤ WithZero.exp (D v) * WithZero.exp (-(D v + 1)) := mul_le_mul_right' hfv _
+    _ = WithZero.exp (D v + (-(D v + 1))) := by rw [← WithZero.exp_add]
+    _ = WithZero.exp (-1) := by ring_nf
+
+-- Candidate 4 [tag: rr_bundle_bridge] [status: PROVED] [cycle: 67]
+/-- When D(v)+1 < 0, v(f) ≤ exp(D(v)) implies v(f) < 1.
+Key for showing the strict bound in the negative exponent case. -/
+lemma valuation_lt_one_of_neg
+    (v : HeightOneSpectrum R) (D : DivisorV2 R) (f : K)
+    (hn : D v + 1 < 0)
+    (hfv : v.valuation K f ≤ WithZero.exp (D v)) :
+    v.valuation K f < WithZero.exp (0 : ℤ) := by
+  calc v.valuation K f
+      ≤ WithZero.exp (D v) := hfv
+    _ < WithZero.exp 0 := WithZero.exp_lt_exp.mpr (by omega : D v < 0)
+
+-- Candidate 5 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 67]
+/-- If shifted element is in maxIdeal and D(v)+1 ≥ 0, extract the v(f) bound.
+Inverts the valuation multiplication to get v(f) from v(f·π^n) < 1.
+Key: v(f) · exp(-(D(v)+1)) < 1, so v(f) < exp(D(v)+1).
+In WithZero ℤᵐ, strict inequality with exp means we can get ≤ for the previous value. -/
+lemma extract_valuation_bound_from_maxIdeal_nonneg
+    (v : HeightOneSpectrum R) (D : DivisorV2 R) (f : K) (hf_ne : f ≠ 0)
+    (hn : 0 ≤ D v + 1)
+    (h_maxIdeal : v.valuation K (f * algebraMap R K ((uniformizerAt v) ^ (D v + 1).toNat)) < 1) :
+    v.valuation K f ≤ WithZero.exp (D v) := by
+  -- This is the key inversion lemma. Proof strategy:
+  -- v(f·π^n) < 1 where n = D(v)+1 ≥ 0
+  -- v(f) · exp(-n) < 1
+  -- v(f) < exp(n) = exp(D(v)+1)
+  -- Since valuation is discrete (values in ℤᵐ₀), v(f) < exp(D(v)+1) ⟹ v(f) ≤ exp(D(v))
+  sorry
+
+-- Candidate 6 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 67]
+/-- If shifted element is in maxIdeal and D(v)+1 < 0, extract the v(f) bound.
+When (D(v)+1).toNat = 0, we have v(f·1) = v(f) < 1.
+Need to show v(f) < 1 implies v(f) ≤ exp(D(v)) when D(v) < -1. -/
+lemma extract_valuation_bound_from_maxIdeal_neg
+    (v : HeightOneSpectrum R) (D : DivisorV2 R) (f : K) (hf_ne : f ≠ 0)
+    (hn : D v + 1 < 0)
+    (h_maxIdeal : v.valuation K (f * algebraMap R K ((uniformizerAt v) ^ (D v + 1).toNat)) < 1) :
+    v.valuation K f ≤ WithZero.exp (D v) := sorry
+
+-- Candidate 7 [tag: rr_bundle_bridge] [status: PROVED] [cycle: 67]
+/-- RingEquiv preserves zero: if f(x) = 0 for a RingEquiv f, then x = 0.
+Specialization of RingEquiv.map_eq_zero_iff for use with residueFieldBridge_explicit.
+This is the key to working backward through the bridge in Candidate 4 of Cycle 66. -/
+lemma RingEquiv_apply_eq_zero_iff' {A B : Type*} [Ring A] [Ring B]
+    (f : A ≃+* B) (x : A) :
+    f x = 0 ↔ x = 0 := map_eq_zero_iff f f.injective
+
+-- Candidate 8 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 67]
+/-- For v' ≠ v, if f ∈ L(D+v) then f ∈ L(D) at v' (by monotonicity).
+This is needed for kernel_element_in_LD to show the valuation condition holds at all primes.
+Uses that D ≤ D + single v 1, and v' ≠ v means (D + single v 1)(v') = D(v'). -/
+lemma valuation_bound_at_other_prime
+    (v v' : HeightOneSpectrum R) (D : DivisorV2 R) (f : K)
+    (hf : f ∈ RRModuleV2_real R K (D + DivisorV2.single v 1))
+    (hne : v' ≠ v) :
+    f = 0 ∨ v'.valuation K f ≤ WithZero.exp (D v') := sorry
+
+end Cycle67Candidates
+
 end RiemannRochV2
