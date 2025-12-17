@@ -646,6 +646,8 @@ constructs fractions a/s with s ∉ v. The valuation approach takes {g : v(g) �
 These are the same subset of K for Dedekind domains. -/
 noncomputable def valuationRingAt_equiv_localization (v : HeightOneSpectrum R) :
     valuationRingAt (R := R) (K := K) v ≃+* Localization.AtPrime v.asIdeal := by
+  -- Section ordering: proof depends on dvr_valuation_eq_height_one' (Cycle37)
+  -- See valuationRingAt_equiv_localization' (line ~1500) for complete proof
   sorry
 
 -- Candidate 3 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 32]
@@ -1470,6 +1472,33 @@ lemma valuationSubring_eq_localization_image_complete (v : HeightOneSpectrum R) 
   apply Set.eq_of_subset_of_subset
   · exact valuationRingAt_subset_range_algebraMap' (K := K) v
   · exact range_algebraMap_subset_valuationRingAt (K := K) v
+
+-- Candidate 9 [tag: dvr_bridge] [relevance: 5/5] [status: PROVED] [cycle: 50]
+/-- Prove valuationSubrings are equal as ValuationSubrings (not just as sets).
+Uses ext with the proved valuation equality dvr_valuation_eq_height_one'. -/
+lemma dvr_valuationSubring_eq_valuationRingAt' (v : HeightOneSpectrum R) :
+    ((IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K).valuationSubring =
+      valuationRingAt (R := R) (K := K) v := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  ext g
+  rw [Valuation.mem_valuationSubring_iff, mem_valuationRingAt_iff]
+  rw [dvr_valuation_eq_height_one' v g]
+
+-- Candidate 10 [tag: dvr_bridge] [relevance: 5/5] [status: PROVED] [cycle: 50]
+/-- The ring equivalence between valuationRingAt and Localization.AtPrime.
+Uses equivValuationSubring.symm composed with the ValuationSubring equality. -/
+noncomputable def valuationRingAt_equiv_localization' (v : HeightOneSpectrum R) :
+    valuationRingAt (R := R) (K := K) v ≃+* Localization.AtPrime v.asIdeal := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  -- First, show valuationRingAt = DVR.valuationSubring
+  have h : valuationRingAt (R := R) (K := K) v =
+      ((IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K).valuationSubring :=
+    (dvr_valuationSubring_eq_valuationRingAt' v).symm
+  -- Use cast along this equality, then apply equivValuationSubring.symm
+  exact (h ▸ IsDiscreteValuationRing.equivValuationSubring.symm :
+    valuationRingAt (R := R) (K := K) v ≃+* Localization.AtPrime v.asIdeal)
 
 end Cycle37Candidates
 
