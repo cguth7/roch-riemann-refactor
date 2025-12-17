@@ -24,7 +24,7 @@
 
 **Reframing Rule**: If a "converse" lemma is hard, check if there's a higher-level equivalence that gives both directions for free (e.g., ring isomorphism instead of set equality).
 
-## Current Status Summary (Cycle 42)
+## Current Status Summary (Cycle 43)
 
 **Codebase Structure** (after Cycle 40 modularization):
 ```
@@ -37,15 +37,15 @@ RrLean/
 │   ├── Typeclasses.lean        # LocalGapBound ✅
 │   ├── RiemannInequality.lean  # Main theorems ✅
 │   ├── Infrastructure.lean     # Residue, uniformizer ✅
-│   └── LocalGapInstance.lean   # Cycles 25-42 WIP ✅ BUILDS (~1690 lines)
+│   └── LocalGapInstance.lean   # Cycles 25-43 WIP ✅ BUILDS (~1590 lines)
 └── archive/
     ├── RR_v1_axiom_based.lean  # ARCHIVED (Cycles 1-16)
     └── RR_v2_monolithic.lean   # ARCHIVED (Cycles 17-39)
 ```
 
-**Active Development**: `RrLean/RiemannRochV2/LocalGapInstance.lean` (Cycles 25-42 work)
+**Active Development**: `RrLean/RiemannRochV2/LocalGapInstance.lean` (Cycles 25-43 work)
 
-**CYCLE 42 KEY FINDING**: Section ordering blocker identified! Cycle 39 candidates need Cycle 41 lemmas but sections are in wrong order. Next cycle: reorder sections to complete 3 lemmas immediately.
+**CYCLE 43 KEY ACHIEVEMENT**: Section reordering COMPLETE! 3 lemmas PROVED: `mem_asIdeal_iff_mem_maxIdeal`, `dvr_intValuation_unit`, `dvr_intValuation_of_algebraMap'` (easy case).
 
 ### Key Results PROVED
 - `RRModuleV2_real`: Valuation-based L(D) definition (Cycle 19)
@@ -76,6 +76,9 @@ RrLean/
 - **`algebraMap_isUnit_iff_not_mem`: IsUnit ↔ not in ideal (Cycle 41) ⭐⭐**
 - **`dvr_intValuation_of_isUnit`: Units have intVal = 1 (Cycle 41) ⭐⭐**
 - **`dvr_intValuation_eq_one_iff_not_mem_maxIdeal`: intVal = 1 characterization (Cycle 41) ⭐⭐**
+- **`mem_asIdeal_iff_mem_maxIdeal`: r ∈ v.asIdeal ↔ algebraMap r ∈ maxIdeal (Cycle 43) ⭐⭐⭐**
+- **`dvr_intValuation_unit`: r ∉ v.asIdeal ⟹ DVR.intVal = 1 (Cycle 43) ⭐⭐⭐**
+- **`dvr_intValuation_of_algebraMap'` (easy case): DVR intVal = v.intVal for r ∉ v.asIdeal (Cycle 43) ⭐⭐⭐**
 
 ### Typeclass Hierarchy
 ```
@@ -88,7 +91,7 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 
 ---
 
-## Current Sorry Count (after Cycle 42)
+## Current Sorry Count (after Cycle 43)
 
 **By Module**:
 | Module | Sorries | Build Status |
@@ -99,26 +102,27 @@ BaseDim R K                -- SEPARATE (explicit base dimension)
 | Typeclasses.lean | 0 | ✅ |
 | RiemannInequality.lean | 1 | ✅ (placeholder) |
 | Infrastructure.lean | 1 | ✅ (WIP) |
-| LocalGapInstance.lean | ~47 | ✅ BUILDS (Cycle 42: +3 Cycle 42 candidates) |
+| LocalGapInstance.lean | ~43 | ✅ BUILDS (Cycle 43: 3 PROVED, -4 sorries) |
 
 **Key Active Blockers** (in `LocalGapInstance.lean`):
 | Name | Status | Notes |
 |------|--------|-------|
-| `mem_asIdeal_iff_mem_maxIdeal` | **READY_TO_PROVE** | Needs section reordering (Cycle 41 → before Cycle 39) |
-| `dvr_intValuation_unit` | **READY_TO_PROVE** | Needs section reordering (Cycle 41 → before Cycle 39) |
-| `dvr_intValuation_of_algebraMap'` | **CYCLE 43 TARGET** | Easy case ready once above done; hard case still blocks |
-| `dvr_valuation_eq_height_one'` | **ORIGINAL BLOCKER** | DVR valuation = HeightOneSpectrum valuation (Cycle 37) |
+| `mem_asIdeal_iff_mem_maxIdeal` | **PROVED** | Cycle 43 via section reordering |
+| `dvr_intValuation_unit` | **PROVED** | Cycle 43 via section reordering |
+| `dvr_intValuation_of_algebraMap'` (easy) | **PROVED** | Cycle 43 - r ∉ v.asIdeal case |
+| `dvr_intValuation_of_algebraMap'` (hard) | **SORRY** | r ∈ v.asIdeal case needs intVal comparison |
+| `dvr_valuation_eq_height_one'` | **KEY BLOCKER** | DVR valuation = HeightOneSpectrum valuation (Cycle 37) |
 
-**Cycle 42 Candidates** (3 total, 1 PROVED):
-- `dvr_intValuation_zero` - **PROVED** (map_zero)
-- `dvr_intValuation_mem_lt_one` - SORRY (needs ideal membership lemma)
-- `intValuation_mem_lt_one_both` - BUILDS (depends on above)
+**Cycle 43 Results** (3 total, 3 PROVED):
+- `mem_asIdeal_iff_mem_maxIdeal` - **PROVED** (uses Cycle 41 foundation)
+- `dvr_intValuation_unit` - **PROVED** (uses Cycle 41 foundation)
+- `dvr_intValuation_of_algebraMap'` easy case - **PROVED** (r ∉ v.asIdeal)
 
-**Reflector Ranking (Top 2 for Cycle 43)**:
-1. **Section Reordering** (10/10) - Move Cycle 41 before Cycle 39, unlocks 3 lemmas immediately
-2. `dvr_intValuation_of_algebraMap' easy case` (9/10) - Follows from unit case
+**Reflector Ranking (Top 2 for Cycle 44)**:
+1. **dvr_intValuation_of_algebraMap' hard case** (10/10) - Attack r ∈ v.asIdeal via uniformizer powers
+2. **mem_asIdeal_pow_iff_mem_maxIdeal_pow** (8/10) - May provide induction path
 
-**Note**: 1/3 Cycle 42 candidates PROVED. PRIORITY: Reorder sections in Cycle 43.
+**Note**: Section ordering issue RESOLVED. 3/3 Cycle 43 targets PROVED.
 
 ---
 

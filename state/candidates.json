@@ -1,63 +1,67 @@
 {
-  "active_edge": "Cycle 42: Section reordering needed to complete Cycle 39 blockers",
-  "cycle_42_results": {
-    "goal": "Complete mem_asIdeal_iff_mem_maxIdeal and dvr_intValuation_unit",
-    "status": "BLOCKED_BY_SECTION_ORDER",
-    "proved_count": 1,
-    "sorry_count": 2,
+  "active_edge": "Cycle 43: Section reordering COMPLETE, 3 lemmas PROVED",
+  "cycle_43_results": {
+    "goal": "Reorder sections and complete Cycle 39 blockers",
+    "status": "SUCCESS",
+    "proved_count": 3,
+    "sorry_count": 43,
     "candidates": [
       {
-        "name": "dvr_intValuation_zero",
+        "name": "mem_asIdeal_iff_mem_maxIdeal",
         "type": "PROVE",
         "status": "PROVED",
-        "score": "5/5",
-        "notes": "Base case via map_zero"
+        "score": "10/10",
+        "notes": "r ∈ v.asIdeal ↔ algebraMap r ∈ maxIdeal. Uses Cycle 41 foundation."
       },
       {
-        "name": "dvr_intValuation_mem_lt_one",
+        "name": "dvr_intValuation_unit",
         "type": "PROVE",
-        "status": "SORRY",
+        "status": "PROVED",
+        "score": "10/10",
+        "notes": "r ∉ v.asIdeal ⟹ DVR.intVal = 1. Uses algebraMap_isUnit_iff_not_mem + dvr_intValuation_of_isUnit."
+      },
+      {
+        "name": "dvr_intValuation_of_algebraMap' (easy case)",
+        "type": "PROVE",
+        "status": "PROVED",
         "score": "9/10",
-        "notes": "intVal < 1 for r in v.asIdeal. Needs ideal membership lemma."
-      },
-      {
-        "name": "intValuation_mem_lt_one_both",
-        "type": "PROVE",
-        "status": "BUILDS",
-        "score": "6/10",
-        "notes": "Both intValuations < 1. Depends on dvr_intValuation_mem_lt_one."
+        "notes": "r ∉ v.asIdeal case proved. Hard case (r ∈ v.asIdeal) still SORRY."
       }
     ],
-    "key_finding": "Section ordering is sole blocker. Cycle 39 uses Cycle 41 lemmas but Cycle 41 section comes AFTER Cycle 39 in the file."
+    "key_changes": [
+      "Moved Cycle 41 section before Cycle 39 section in LocalGapInstance.lean",
+      "Sorry count reduced from ~47 to 43"
+    ]
   },
   "cycle_39_blockers_status": {
     "mem_asIdeal_iff_mem_maxIdeal": {
-      "status": "READY_TO_PROVE",
-      "blocker": "Section ordering - Cycle 41 lemmas declared after Cycle 39",
-      "proof_sketch": "rw [localization_maximalIdeal_eq_map v]; exact ⟨algebraMap_mem_map_of_mem v r, mem_of_algebraMap_mem_map v r⟩"
+      "status": "PROVED",
+      "proof": "rw [localization_maximalIdeal_eq_map v]; exact ⟨algebraMap_mem_map_of_mem v r, mem_of_algebraMap_mem_map v r⟩"
     },
     "dvr_intValuation_unit": {
-      "status": "READY_TO_PROVE",
-      "blocker": "Section ordering - Cycle 41 lemmas declared after Cycle 39",
-      "proof_sketch": "have hunit := (algebraMap_isUnit_iff_not_mem v r).mpr hr; exact dvr_intValuation_of_isUnit v _ hunit"
+      "status": "PROVED",
+      "proof": "have hunit := (algebraMap_isUnit_iff_not_mem v r).mpr hr; exact dvr_intValuation_of_isUnit v _ hunit"
+    },
+    "dvr_intValuation_of_algebraMap'": {
+      "easy_case": "PROVED",
+      "hard_case": "SORRY - r ∈ v.asIdeal case needs intValuation comparison"
     }
   },
   "next_cycle_priority": [
-    "REORDER SECTIONS: Move Cycle41Candidates section (lines 1538-1631) before Cycle39Candidates (lines 1415-1527)",
-    "Then complete mem_asIdeal_iff_mem_maxIdeal using proof sketch",
-    "Then complete dvr_intValuation_unit using proof sketch",
-    "Then complete dvr_intValuation_of_algebraMap' easy case"
+    "Attack dvr_intValuation_of_algebraMap' hard case (r ∈ v.asIdeal)",
+    "Alternative: mem_asIdeal_pow_iff_mem_maxIdeal_pow for induction",
+    "Target: dvr_valuation_eq_height_one' (KEY BLOCKER)"
   ],
   "architecture": {
     "cascade_structure": [
       "mem_of_algebraMap_mem_map (Cycle 41 - PROVED) ✅",
       "algebraMap_isUnit_iff_not_mem (Cycle 41 - PROVED) ✅",
       "dvr_intValuation_of_isUnit (Cycle 41 - PROVED) ✅",
-      "  └─→ mem_asIdeal_iff_mem_maxIdeal (Cycle 39 - READY once reordered)",
-      "  └─→ dvr_intValuation_unit (Cycle 39 - READY once reordered)",
-      "        └─→ dvr_intValuation_of_algebraMap' easy case (Cycle 39 - READY)",
-      "        └─→ dvr_intValuation_of_algebraMap' hard case (Cycle 42+ - BLOCKED)",
-      "              └─→ dvr_valuation_eq_height_one' (ORIGINAL BLOCKER)",
+      "  └─→ mem_asIdeal_iff_mem_maxIdeal (Cycle 43 - PROVED) ✅",
+      "  └─→ dvr_intValuation_unit (Cycle 43 - PROVED) ✅",
+      "        └─→ dvr_intValuation_of_algebraMap' easy case (Cycle 43 - PROVED) ✅",
+      "        └─→ dvr_intValuation_of_algebraMap' hard case (SORRY)",
+      "              └─→ dvr_valuation_eq_height_one' (KEY BLOCKER)",
       "                    └─→ valuationRingAt_subset_range_algebraMap' (TARGET)"
     ]
   }

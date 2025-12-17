@@ -2,7 +2,7 @@
 
 *For Cycles 1-34, see `state/ledger_archive.md`*
 
-## Summary: Where We Are (End of Cycle 42)
+## Summary: Where We Are (End of Cycle 43)
 
 **Project Goal**: Prove Riemann-Roch inequality for Dedekind domains in Lean 4.
 
@@ -19,22 +19,23 @@ RrLean/
 │   ├── Typeclasses.lean        # LocalGapBound etc (~100 lines) ✅
 │   ├── RiemannInequality.lean  # Main theorems (~220 lines) ✅
 │   ├── Infrastructure.lean     # Residue, uniformizer (~280 lines) ✅
-│   └── LocalGapInstance.lean   # Cycles 25-41 WIP (~1620 lines) ✅ BUILDS
+│   └── LocalGapInstance.lean   # Cycles 25-43 WIP (~1590 lines) ✅ BUILDS
 └── archive/
     ├── RR_v1_axiom_based.lean  # Cycles 1-16 (archived)
     └── RR_v2_monolithic.lean   # Cycles 17-39 (archived)
 ```
 
-**Blocking Chain** (UPDATED after Cycle 41):
+**Blocking Chain** (UPDATED after Cycle 43):
 ```
 mem_of_algebraMap_mem_map (Cycle 41 - PROVED) ✅
 algebraMap_isUnit_iff_not_mem (Cycle 41 - PROVED) ✅
 dvr_intValuation_of_isUnit (Cycle 41 - PROVED) ✅
     ↓
-mem_asIdeal_iff_mem_maxIdeal (Cycle 39 - UNBLOCKED)
-dvr_intValuation_unit (Cycle 39 - UNBLOCKED)
+mem_asIdeal_iff_mem_maxIdeal (Cycle 43 - PROVED) ✅
+dvr_intValuation_unit (Cycle 43 - PROVED) ✅
     ↓
-dvr_intValuation_of_algebraMap' (Cycle 39 - TARGET)
+dvr_intValuation_of_algebraMap' easy case (Cycle 43 - PROVED) ✅
+dvr_intValuation_of_algebraMap' hard case (SORRY - r ∈ v.asIdeal)
     ↓
 dvr_valuation_eq_height_one' (Cycle 37 - KEY BLOCKER)
     ↓
@@ -49,7 +50,7 @@ residueMapFromR_surjective
 evaluationMapAt → kernel → LocalGapBound → VICTORY
 ```
 
-**Cycle 42 Achievement**: Identified section ordering blocker. Cycle 39 candidates are PROVABLE once Cycle 41 section is moved before them.
+**Cycle 43 Achievement**: Section reordering COMPLETE! 3 lemmas PROVED: `mem_asIdeal_iff_mem_maxIdeal`, `dvr_intValuation_unit`, `dvr_intValuation_of_algebraMap'` (easy case).
 
 ---
 
@@ -155,6 +156,53 @@ Cycle 42 should:
 3. Then tackle `dvr_intValuation_of_algebraMap'` → `dvr_valuation_eq_height_one'`
 
 **Cycle rating**: 10/10 - All 8 candidates proved, major blockers unblocked
+
+---
+
+## 2025-12-17
+
+### Cycle 43 - Section Reordering COMPLETE - 3 LEMMAS PROVED
+
+**Goal**: Reorder sections and complete Cycle 39 blockers using Cycle 41 foundation
+
+#### Changes Made
+
+| Action | Details |
+|--------|---------|
+| **Section Reordering** | Moved Cycle41Candidates section before Cycle39Candidates in LocalGapInstance.lean |
+| **Removed Duplicate** | Deleted duplicate Cycle 41 section that remained after original location |
+
+#### Results
+
+| Definition/Lemma | Status | Notes |
+|-----------------|--------|-------|
+| `mem_asIdeal_iff_mem_maxIdeal` | ✅ **PROVED** | r ∈ v.asIdeal ↔ algebraMap r ∈ maxIdeal |
+| `dvr_intValuation_unit` | ✅ **PROVED** | r ∉ v.asIdeal ⟹ DVR.intVal = 1 |
+| `dvr_intValuation_of_algebraMap'` (easy) | ✅ **PROVED** | r ∉ v.asIdeal case complete |
+| `dvr_intValuation_of_algebraMap'` (hard) | ⚠️ SORRY | r ∈ v.asIdeal case remains |
+
+#### Key Achievement: Section Ordering Resolved
+
+All 3 lemmas that were "ready to prove" in Cycle 42 are now **PROVED**:
+
+1. **`mem_asIdeal_iff_mem_maxIdeal`**: Uses `localization_maximalIdeal_eq_map` + `algebraMap_mem_map_of_mem` + `mem_of_algebraMap_mem_map`
+
+2. **`dvr_intValuation_unit`**: Uses `algebraMap_isUnit_iff_not_mem` + `dvr_intValuation_of_isUnit`
+
+3. **`dvr_intValuation_of_algebraMap'` easy case**: Uses `dvr_intValuation_of_isUnit` + `intValuation_eq_one_iff`
+
+#### Sorry Count
+
+- LocalGapInstance.lean: ~43 sorries (down from ~47)
+- Net reduction: 4 sorries
+
+#### Next Steps (Cycle 44)
+
+1. Attack `dvr_intValuation_of_algebraMap'` hard case (r ∈ v.asIdeal)
+2. Consider `mem_asIdeal_pow_iff_mem_maxIdeal_pow` for induction approach
+3. Target: `dvr_valuation_eq_height_one'` (KEY BLOCKER)
+
+**Cycle rating**: 9/10 - Section reordering executed, 3/3 targets PROVED, clear next step
 
 ---
 
