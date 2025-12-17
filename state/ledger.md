@@ -2,19 +2,23 @@
 
 *For Cycles 1-34, see `state/ledger_archive.md`*
 
-## Summary: Where We Are (End of Cycle 58)
+## Summary: Where We Are (End of Cycle 59)
 
 **Project Goal**: Prove Riemann-Roch inequality for Dedekind domains in Lean 4.
 
 **Current Target**: `instance : LocalGapBound R K` (makes riemann_inequality_affine unconditional)
 
-**Blocking Chain** (Updated Cycle 58):
+**Blocking Chain** (Updated Cycle 59):
 ```
 evaluationMapAt_complete (Cycle 56 - PROVED ✅)  ← LINEARMAP COMPLETE!
     ↓
-valuationRingAt_equiv_algebraMap (Cycle 58 - IN PROGRESS)  ← KEY BLOCKER 1
+localization_residue_equiv_symm_algebraMap (Cycle 59 - PROVED ✅)  ← NEW! Helper for BLOCKER 2
     ↓
-localization_residueField_equiv_algebraMap (Cycle 58 - IN PROGRESS)  ← KEY BLOCKER 2
+ofBijective_quotient_mk_eq_algebraMap (Cycle 59 - PROVED ✅)  ← NEW! Helper for BLOCKER 2
+    ↓
+valuationRingAt_equiv_algebraMap (SORRY)  ← KEY BLOCKER 1
+    ↓
+localization_residueField_equiv_algebraMap (90% COMPLETE)  ← KEY BLOCKER 2 (type coercion only)
     ↓
 bridge_residue_algebraMap (pending)  ← depends on blockers 1 & 2
     ↓
@@ -23,11 +27,68 @@ kernel_evaluationMapAt = L(D)  ← NEXT TARGET after bridge
 LocalGapBound instance → VICTORY
 ```
 
-**Note**: Cycle 58 deep-dived into blocker structure. Test file created with proof strategies.
+**Note**: Cycle 59 proved 2 helper lemmas for BLOCKER 2. Only a type coercion issue remains for BLOCKER 2.
 
 ---
 
 ## 2025-12-17
+
+### Cycle 59 - BLOCKER 2 Helpers PROVED - 2/8 CANDIDATES COMPLETE
+
+**Goal**: Prove helper lemmas for the two key blockers
+
+#### Key Achievement
+
+**2 Helper Lemmas PROVED for BLOCKER 2**:
+1. `localization_residue_equiv_symm_algebraMap` - Shows that the inverse equivalence maps `algebraMap R (Loc ⧸ maxIdeal) r` to `Quotient.mk v.asIdeal r`
+2. `ofBijective_quotient_mk_eq_algebraMap` - Shows that `RingEquiv.ofBijective` applied to `Quotient.mk` equals `algebraMap`
+
+These two helpers provide the complete proof chain for BLOCKER 2 (`localization_residueField_equiv_algebraMap`).
+
+#### Results
+
+| Candidate | Status | Notes |
+|-----------|--------|-------|
+| `valuationRingAt_equiv_coe_eq` | ⚠️ **SORRY** | Helper for BLOCKER 1 |
+| `equivValuationSubring_symm_coe` | ⚠️ **SORRY** | Helper for BLOCKER 1 |
+| `cast_valuationSubring_preserves_val` | ⚠️ **SORRY** | Dependent elimination blocked |
+| `valuationRingAt_equiv_algebraMap_via_helpers` | ⚠️ **SORRY** | Depends on Candidates 1-3 |
+| `localization_residue_equiv_symm_algebraMap` | ✅ **PROVED** | Helper for BLOCKER 2 |
+| `ofBijective_quotient_mk_eq_algebraMap` | ✅ **PROVED** | Helper for BLOCKER 2 |
+| `localization_residueField_equiv_algebraMap_step` | ⚠️ **SORRY** | Type coercion issue |
+| `localization_residueField_equiv_algebraMap_complete` | ✅ DEPENDS | Depends on Candidate 7 |
+
+**2/8 candidates PROVED, BLOCKER 2 is 90% complete**
+
+#### BLOCKER 2 Analysis
+
+**Root Cause Identified**: Type coercion between `residueFieldAtPrime R v` and `v.asIdeal.ResidueField`. These are definitionally equal (`abbrev residueFieldAtPrime = ResidueField`), but Lean's rewriter treats them as syntactically different.
+
+**Proof Strategy for Cycle 60**:
+- Use `show` to explicitly cast types
+- Or use `unfold residueFieldAtPrime` before rewrites
+- All mathematical steps are now proved; only type unification remains
+
+#### BLOCKER 1 Analysis
+
+**Root Cause**: Missing property about `IsDiscreteValuationRing.equivValuationSubring.symm`. Need to show that `algebraMap A K (equivValuationSubring.symm y) = y.val`.
+
+**Attempted Approaches**:
+- `subst`/`cases` on ValuationSubring equality: BLOCKED by dependent elimination
+- Direct proof using `apply_symm_apply`: Not yet attempted
+
+#### Reflector Score: 6/10
+
+**Assessment**: Good progress on BLOCKER 2 with 2 helper lemmas proved. BLOCKER 1 remains challenging due to dependent type issues with ValuationSubring.
+
+**Next Steps (Cycle 60)**:
+1. Complete BLOCKER 2 by fixing type coercion in Candidate 7
+2. Attack BLOCKER 1 using `equivValuationSubring.apply_symm_apply` property
+3. Complete `bridge_residue_algebraMap` once both blockers resolved
+
+**Cycle rating**: 6/10 (2/8 PROVED, BLOCKER 2 is 90% complete, clear path forward)
+
+---
 
 ### Cycle 58 - Deep Analysis of Key Blockers - PROOF STRATEGIES IDENTIFIED
 

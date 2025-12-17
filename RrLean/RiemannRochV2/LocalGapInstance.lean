@@ -2485,4 +2485,131 @@ lemma bridge_residue_algebraMap_proof (v : HeightOneSpectrum R) (r : R) :
 
 end Cycle57Candidates
 
+/-! ## Cycle 59 Candidates: Proving Key Blockers
+
+Two key blockers for bridge_residue_algebraMap:
+- BLOCKER 1: valuationRingAt_equiv_algebraMap (scalar tower compatibility)
+- BLOCKER 2: localization_residueField_equiv_algebraMap (h2 step)
+
+Strategy:
+- BLOCKER 1: Use IsFractionRing.injective + helper lemma about equivValuationSubring.symm
+- BLOCKER 2: Unfold layers + use definitional equality residueFieldAtPrime = ResidueField
+-/
+
+section Cycle59Candidates
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+
+-- Candidate 1 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 59]
+/-- Helper for BLOCKER 1: The composition of algebraMap from Loc.AtPrime to K
+with valuationRingAt_equiv_localization' extracts the value in K.
+Key property: for x ∈ valuationRingAt, algebraMap Loc K (equiv x) = x.val -/
+lemma valuationRingAt_equiv_coe_eq (v : HeightOneSpectrum R)
+    (x : valuationRingAt (R := R) (K := K) v) :
+    algebraMap (Localization.AtPrime v.asIdeal) K
+      ((valuationRingAt_equiv_localization' (R := R) (K := K) v) x) = x.val := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  sorry
+
+-- Candidate 2 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 59]
+/-- Helper for BLOCKER 1: equivValuationSubring.symm preserves the embedding to K.
+For y ∈ DVR.valuationSubring, algebraMap DVR K (equiv.symm y) = y.val -/
+lemma equivValuationSubring_symm_coe (v : HeightOneSpectrum R)
+    (y : ((IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K).valuationSubring) :
+    algebraMap (Localization.AtPrime v.asIdeal) K
+      (IsDiscreteValuationRing.equivValuationSubring.symm y) = y.val := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  sorry
+
+-- Candidate 3 [tag: coercion_simplify] [status: SORRY] [cycle: 59]
+/-- Helper for BLOCKER 1: Cast along ValuationSubring equality preserves the value in K.
+When h : A = B and x ∈ A, then (h ▸ x).val = x.val in K. -/
+lemma cast_valuationSubring_preserves_val (v : HeightOneSpectrum R)
+    (h : valuationRingAt (R := R) (K := K) v =
+      ((IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K).valuationSubring)
+    (x : valuationRingAt (R := R) (K := K) v) :
+    (h ▸ x : ((IsDiscreteValuationRing.maximalIdeal (Localization.AtPrime v.asIdeal)).valuation K).valuationSubring).val = x.val := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  -- Cast along equality preserves the underlying value: both subrings live in K
+  -- Note: Dependent elimination on ValuationSubring equality is blocked
+  sorry
+
+-- Candidate 4 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 59]
+/-- BLOCKER 1 using helpers: Combine Candidates 1-3 to prove the main goal.
+Strategy: Use IsFractionRing.injective, then apply scalar tower and helper lemmas. -/
+lemma valuationRingAt_equiv_algebraMap_via_helpers (v : HeightOneSpectrum R) (r : R) :
+    (valuationRingAt_equiv_localization' (R := R) (K := K) v)
+      ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩ =
+    algebraMap R (Localization.AtPrime v.asIdeal) r := by
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) := localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K := localization_isFractionRing v
+  apply IsFractionRing.injective (Localization.AtPrime v.asIdeal) K
+  -- Use simp to handle dependent type issues with rewrite
+  simp only [valuationRingAt_equiv_coe_eq, ← IsScalarTower.algebraMap_apply R (Localization.AtPrime v.asIdeal) K r]
+
+-- Candidate 5 [tag: coercion_simplify] [status: SORRY] [cycle: 59]
+/-- Helper for BLOCKER 2: Unfolding localization_residue_equiv.symm applied to algebraMap.
+Shows that the inverse equivalence maps algebraMap R (Loc ⧸ maxIdeal) r to Quotient.mk v.asIdeal r. -/
+lemma localization_residue_equiv_symm_algebraMap (v : HeightOneSpectrum R) (r : R) :
+    (localization_residue_equiv v).symm
+      (algebraMap R (Localization.AtPrime v.asIdeal ⧸
+        IsLocalRing.maximalIdeal (Localization.AtPrime v.asIdeal)) r) =
+    Ideal.Quotient.mk v.asIdeal r := by
+  haveI : v.asIdeal.IsMaximal := v.isMaximal
+  unfold localization_residue_equiv
+  rw [RingEquiv.symm_apply_eq]
+  unfold IsLocalization.AtPrime.equivQuotMaximalIdeal
+  simp only [RingEquiv.trans_apply, Ideal.quotEquivOfEq_mk]
+  rfl
+
+-- Candidate 6 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 59]
+/-- Helper for BLOCKER 2: The RingEquiv.ofBijective applied to Quotient.mk equals algebraMap.
+Combines Quotient.algebraMap_eq with ofBijective_apply. -/
+lemma ofBijective_quotient_mk_eq_algebraMap (v : HeightOneSpectrum R) (r : R) :
+    (RingEquiv.ofBijective (algebraMap (R ⧸ v.asIdeal) (residueFieldAtPrime R v))
+      (Ideal.bijective_algebraMap_quotient_residueField v.asIdeal))
+    (Ideal.Quotient.mk v.asIdeal r) =
+    algebraMap R (residueFieldAtPrime R v) r := by
+  haveI : v.asIdeal.IsMaximal := v.isMaximal
+  simp only [RingEquiv.ofBijective_apply]
+  rw [← Ideal.Quotient.algebraMap_eq]
+  rfl
+
+-- Candidate 7 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 59]
+/-- BLOCKER 2 intermediate step: After unfolding and using residue_def,
+show the key equality using Ideal.Quotient.mk_algebraMap.
+Note: residueFieldAtPrime R v = v.asIdeal.ResidueField definitionally.
+Key steps:
+1. unfold + simp trans
+2. rw Quotient.mk_algebraMap
+3. Use localization_residue_equiv_symm_algebraMap + ofBijective_quotient_mk_eq_algebraMap -/
+lemma localization_residueField_equiv_algebraMap_step (v : HeightOneSpectrum R) (r : R) :
+    (localization_residueField_equiv v)
+      (Ideal.Quotient.mk (IsLocalRing.maximalIdeal (Localization.AtPrime v.asIdeal))
+        (algebraMap R (Localization.AtPrime v.asIdeal) r)) =
+    algebraMap R (residueFieldAtPrime R v) r := by
+  haveI : v.asIdeal.IsMaximal := v.isMaximal
+  -- Strategy: unfold localization_residueField_equiv = (loc_res_equiv).symm.trans h2
+  -- Then use helpers: localization_residue_equiv_symm_algebraMap + ofBijective_quotient_mk_eq_algebraMap
+  -- BLOCKED: Type coercion between residueFieldAtPrime R v and v.asIdeal.ResidueField
+  -- These are definitionally equal but Lean's rewriter treats them as syntactically different
+  sorry
+
+-- Candidate 8 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 59]
+/-- BLOCKER 2 complete: Combine step lemma with residue_def to finish the proof. -/
+lemma localization_residueField_equiv_algebraMap_complete (v : HeightOneSpectrum R) (r : R) :
+    (localization_residueField_equiv v)
+      (IsLocalRing.residue (Localization.AtPrime v.asIdeal)
+        (algebraMap R (Localization.AtPrime v.asIdeal) r)) =
+    algebraMap R (residueFieldAtPrime R v) r := by
+  haveI : v.asIdeal.IsMaximal := v.isMaximal
+  rw [IsLocalRing.residue_def]
+  exact localization_residueField_equiv_algebraMap_step v r
+
+end Cycle59Candidates
+
 end RiemannRochV2
