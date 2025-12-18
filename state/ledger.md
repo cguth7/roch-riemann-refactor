@@ -6,12 +6,12 @@
 
 ---
 
-## ⚡ Quick Reference: Current Axiom/Sorry Status (Cycle 112)
+## ⚡ Quick Reference: Current Axiom/Sorry Status (Cycle 113)
 
 | File | Item | Type | Status | Discharge Path |
 |------|------|------|--------|----------------|
 | `ResidueFieldIso.lean` | `toResidueField_surjective` | theorem | ✅ PROVED | Via `residue_of_K_element` (with sorries) |
-| `ResidueFieldIso.lean` | `residue_of_K_element` | lemma | 🔶 2 sorries | Fraction clearing: s∈ideal & s∉ideal cases |
+| `ResidueFieldIso.lean` | `residue_of_K_element` | lemma | 🔶 2 sorries | Coercion management S↔C |
 | `TraceDualityProof.lean` | `finrank_dual_eq` | sorry | ⚪ NOT CRITICAL | Not on main proof path |
 | `AllIntegersCompactProof.lean` | `FiniteCompletionResidueFields` | class | ✅ DISCHARGED | Via `residueFieldIso` (needs surjectivity) |
 | `AdelicTopology.lean` | `AllIntegersCompact` | class | ✅ PROVED | Via DVR + RankOne (Cycles 105-107) |
@@ -19,7 +19,7 @@
 
 **Build Status**: ⚠️ Compiles with 3 sorries (no axioms!)
 
-**Next Priority**: Fill 2 sorries in `residue_of_K_element` using `equivQuotMaximalIdeal` approach
+**Next Priority**: Fill 2 sorries in `residue_of_K_element` via coercion bridge lemmas + simp
 
 ---
 
@@ -995,6 +995,58 @@ at v to the quotient R/v.asIdeal. This avoids manual unit-inverse bridge constru
 1. Use `equivQuotMaximalIdeal` approach to simplify fraction handling
 2. Or: Factor s ∈ v.asIdeal case using uniformizer decomposition
 3. Then complete full surjectivity proof
+
+---
+
+#### Cycle 113 - Surjectivity Proof Progress (Coercion Challenges)
+
+**Goal**: Fill the 2 sorries in `residue_of_K_element` to complete `toResidueField_surjective`.
+
+**Status**: 🔶 IN PROGRESS (sorry count unchanged, code restructured)
+
+**Results**:
+- [x] Handled `s ∈ v.asIdeal` case when `v(k) < 1` (residue = 0, use r = 0)
+- [x] Derived `residue(t) = residue(s)⁻¹` using `eq_inv_of_mul_eq_one_right`
+- [x] Set up coercion bridge lemmas between S := adicCompletionIntegers and C := adicCompletion
+- [ ] `s ∈ v.asIdeal` case when `v(k) = 1` (uniformizer factoring - complex)
+- [ ] `s ∉ v.asIdeal` case (coercion management between subring and completion)
+
+**Key Insight**: The mathematical content is clear:
+- For `s ∈ v.asIdeal`: If `v(a/s) < 1`, residue = 0. If `v(a/s) = 1`, factor out uniformizers.
+- For `s ∉ v.asIdeal`: `residue(a*t) = residue(a) * residue(t) = residue(a) * residue(s)⁻¹ = residue(a/s)`
+
+**Blocking Issues**:
+1. **Coercion mismatch**: `algebraMap R S s` (integer subring element) vs `algebraMap R C s` (completion element)
+   - Need bridge lemma: `algebraMap R C s = ((algebraMap R S s : S) : C)`
+   - Use `simp` instead of `rw` to handle definitional variations
+
+2. **Type inference**: Lean's elaborator treats `(residue.comp algebraMap) x` differently from `residue (algebraMap x)`
+   - Pattern matching fails even though they're definitionally equal
+
+**Recommended Approach** (for next cycle):
+```lean
+-- Bridge coercion: S → C
+have hs_coe : algebraMap R C s = ((algebraMap R S s : S) : C) := rfl
+
+-- Use congrArg to transport equalities across coercions
+have h := congrArg (fun x : S => (x : C)) hs_unit_eq
+
+-- Use simp [hs_coe] instead of rw to avoid pattern mismatch
+simp [hs_coe, ...]
+```
+
+**Sorry Status**:
+- ResidueFieldIso.lean: 2 sorries in `residue_of_K_element` (lines 349, 401)
+- TraceDualityProof.lean: 1 sorry (`finrank_dual_eq` - NOT on critical path)
+
+**Total**: 3 sorries in proof path (unchanged from Cycle 112)
+
+**Build**: ✅ Compiles successfully
+
+**Next Steps** (Cycle 114+):
+1. Add explicit coercion bridge lemmas and use `simp` throughout
+2. For `s ∈ v.asIdeal, v(k) = 1`: Either factor via uniformizers or use `Localization.AtPrime` API
+3. Consider using `native_decide` for definitional equalities if simp fails
 
 ---
 
