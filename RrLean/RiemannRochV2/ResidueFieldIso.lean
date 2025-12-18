@@ -308,161 +308,91 @@ lemma mem_integers_of_close (v : HeightOneSpectrum R) (x : v.adicCompletionInteg
 
 /-- Key lemma: elements of K with v ≤ 1 give residues from R.
 
-The key insight is to use IsLocalization.surj with primeCompl, which directly
-gives a representation k = a/s where s ∉ v.asIdeal. This eliminates the need
-for uniformizer factorization in the s ∈ v.asIdeal case. -/
+Strategy: Work directly in the residue field using ≠ 0 and field operations.
+- For s ∉ v.asIdeal: res(s) ≠ 0 (unit), so can use inverse in residue field
+- Key: res(a*t) = res(a) * res(t) = res(a) * res(s)⁻¹ = res(a/s) -/
 lemma residue_of_K_element (v : HeightOneSpectrum R) (k : K)
     (hk : Valued.v (algebraMap K (v.adicCompletion K) k) ≤ 1) :
     ∃ r : R, toResidueField (K := K) v r =
       IsLocalRing.residue (R := v.adicCompletionIntegers K)
         ⟨algebraMap K (v.adicCompletion K) k, hk⟩ := by
-  -- Use IsLocalization.surj to get k = (algebraMap R K a) / (algebraMap R K s) where s ∉ v.asIdeal
-  -- K is the fraction field of R, and also the fraction field of Localization.AtPrime v.asIdeal
-  -- Elements with v(k) ≤ 1 can be represented with denominator outside v.asIdeal
-  -- First, write k = a/s for some a, s ∈ R with s ≠ 0
+  -- Abbreviations for clarity
+  let S := v.adicCompletionIntegers K
+  let C := v.adicCompletion K
+  let res : S →+* IsLocalRing.ResidueField S := IsLocalRing.residue (R := S)
+  -- Write k = a/s for some a, s ∈ R with s ≠ 0
   rcases IsFractionRing.div_surjective (A := R) k with ⟨a, s, hs_ne, hk_eq⟩
-  -- hs_ne : s ∈ nonZeroDivisors R, meaning s ≠ 0
-  -- hk_eq : k = algebraMap R K a / algebraMap R K s
-  -- If s ∉ v.asIdeal, we're done with the main case
-  -- If s ∈ v.asIdeal, we need to clear common uniformizer factors
-  -- Key insight: use that v(k) ≤ 1 means k is in the "valuation ring" part
-  -- We can find an equivalent representation with denominator outside v.asIdeal
   by_cases hs : s ∈ v.asIdeal
-  · -- Case: s ∈ v.asIdeal. Then v(s) < 1, so v(a/s) = v(a)/v(s).
-    -- For v(a/s) ≤ 1, we need v(a) ≤ v(s) < 1, so a ∈ v.asIdeal too.
-    -- Subcase 1: v(k) < 1, so residue = 0
-    by_cases hk_lt : Valued.v (algebraMap K (v.adicCompletion K) k) < 1
+  · -- Case: s ∈ v.asIdeal
+    -- Subcase: v(k) < 1, so residue = 0
+    by_cases hk_lt : Valued.v (algebraMap K C k) < 1
     · use 0
       simp only [toResidueField, algebraMapToIntegers, map_zero]
       symm
       rw [IsLocalRing.residue_eq_zero_iff, mem_maximalIdeal_iff_val_lt_one]
       exact hk_lt
-    · -- Subcase 2: v(k) = 1 (a unit). Both a, b have the same v-adic order.
-      -- We can factor: a = π^n · a', b = π^n · b' where a', b' ∉ v.asIdeal
-      -- Then k = a'/b' with b' ∉ v.asIdeal
-      -- Instead of explicit factorization, observe: if v(k) = 1 and k = a/b,
-      -- then a/b represents a unit in O_v^, and the residue is nonzero.
-      -- Since R → residue field is surjective onto R/v.asIdeal ≃ residue field,
-      -- there exists r with the same residue.
+    · -- Subcase: v(k) = 1. The element k is a unit in O_v^.
+      -- This case requires uniformizer factorization - deferred.
       push_neg at hk_lt
-      have hk_eq_one : Valued.v (algebraMap K (v.adicCompletion K) k) = 1 :=
-        le_antisymm hk hk_lt
-      -- The element k is a unit in the completion integers
-      have hk_unit : IsUnit (⟨algebraMap K (v.adicCompletion K) k, hk⟩ :
-          v.adicCompletionIntegers K) := by
-        have hint : Valuation.Integers Valued.v (v.adicCompletionIntegers K) :=
-          Valuation.integer.integers Valued.v
-        exact hint.isUnit_iff_valuation_eq_one.mpr hk_eq_one
-      -- Units in the completion have nonzero residue
-      -- Since R/v.asIdeal is a field, we can find a preimage
-      -- The key is that the residue map R → ResidueField factors through R/v.asIdeal
-      -- and R/v.asIdeal ≃ ResidueField (this is what residueFieldIso will show)
-      -- For now, find r ∈ R with matching residue by using the unit structure
-      -- Use that units in the local ring O_v^ map to units in the residue field
-      obtain ⟨u, hu⟩ := hk_unit
-      -- hu : ↑u = ⟨algebraMap K ... k, hk⟩
-      -- residue(u) is a unit in the residue field
-      have hres_unit : IsUnit (IsLocalRing.residue (R := v.adicCompletionIntegers K)
-          ⟨algebraMap K (v.adicCompletion K) k, hk⟩) := by
-        rw [← hu]
-        exact (IsLocalRing.residue (v.adicCompletionIntegers K)).isUnit_map u.isUnit
-      -- Since toResidueField : R → ResidueField factors through R/v.asIdeal which is a field,
-      -- and residue(k) is a nonzero element, we can find a preimage.
-      -- Specifically, use that 1 maps to 1, and units are invertible.
-      -- For a unit u in ResidueField, there exists r ∈ R \ v.asIdeal with toResidueField r = u
-      -- This follows from surjectivity of R → R/v.asIdeal → ResidueField
-      -- The tricky part: we need to find the specific r matching residue(k)
-      -- Use the inverse: residue(k)⁻¹ * residue(k) = 1
-      -- There exists r with toResidueField(r) = residue(k)⁻¹ (since R/v surjects)
-      -- But we need residue(k) itself...
-      -- Actually, the cleanest approach: residue(1) = 1 in ResidueField
-      -- If residue(k) = residue(r') for some r' ∈ O_v^, and r' comes from R, done.
-      -- The issue is showing r' comes from R. This requires the density argument
-      -- which is what we're trying to prove! So we need a different approach.
-      -- Key: since v(a/b) = 1 and both a, b ∈ v.asIdeal with same order,
-      -- we can find a' ∈ R with a' ∉ v.asIdeal and a' ≡ a/π^n mod m_v
-      -- This is getting circular. Let's use a cleaner approach:
-      -- The residue of k only depends on k mod m_v. Since k is a unit,
-      -- k = u for some u ∈ O_v^×. The group O_v^× surjects onto k* where
-      -- k* is the residue field minus 0. Since R \ v.asIdeal ⊂ O_v^× and
-      -- R \ v.asIdeal maps onto (R/v.asIdeal)* = k*, we can find r.
-      -- This is proven via the isomorphism R/v.asIdeal ≃ ResidueField.
-      -- Since we're trying to build that isomorphism, we need to be careful.
-      -- Clean solution: show R ∩ O_v^× → k* is surjective
-      -- This follows from: v(r) = 1 ⟺ r ∉ v.asIdeal, and R/v.asIdeal is a field.
-      -- For any unit in k*, lift to R/v.asIdeal, then lift to R.
-      -- Sorry: this case requires the isomorphism we're building. We defer.
+      have hk_eq_one : Valued.v (algebraMap K C k) = 1 := le_antisymm hk hk_lt
+      -- k is a unit, so its residue is nonzero
+      -- Need to find r ∈ R with toResidueField(r) = res(⟨k, hk⟩)
+      -- This requires the isomorphism R/v.asIdeal ≃ ResidueField we're building
       sorry
-  · -- b ∉ v.asIdeal is the main case
-    -- In this case, v(s) = 1, so s is a unit in O_v^
-    -- In the residue field, residue(a/s) = residue(a) · residue(s)^{-1}
-    -- Since s ∉ v.asIdeal, there exists t ∈ R with st ≡ 1 mod v.asIdeal
+  · -- Main case: s ∉ v.asIdeal
+    -- Strategy: res(s) ≠ 0 in residue field, use field inverse
+    -- Step 1: s is a unit in S, so res(s) ≠ 0
+    have hs_unit : IsUnit (algebraMap R S s) := algebraMap_isUnit_of_not_mem v s hs
+    have hs_res_ne : res (algebraMap R S s) ≠ 0 :=
+      (IsLocalRing.residue_ne_zero_iff_isUnit).mpr hs_unit
+    -- Step 2: Find t ∈ R with s*t ≡ 1 mod v.asIdeal, then res(t) = res(s)⁻¹
     obtain ⟨t, hst⟩ := exists_mul_eq_one_mod v s hs
-    -- Claim: residue(a/s) = residue(a·t)
-    use a * t
-    -- After `rfl`, the goal has k replaced by `a / s` (with implicit coercions)
-    -- Goal: toResidueField v (a * t) = residue ⟨algebraMap K (completion) (a/s), hk⟩
-    -- Step 1: s is a unit in the completion integer ring
-    have hs_unit : IsUnit (algebraMap R (v.adicCompletionIntegers K) s) :=
-      algebraMap_isUnit_of_not_mem v s hs
-    -- Step 2: st ≡ 1 means st - 1 ∈ v.asIdeal
     have hst_mem : s * t - 1 ∈ v.asIdeal := by
       rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, hst, map_one, sub_self]
-    -- Step 3: In the residue field, residue(s) * residue(t) = 1
-    have hst_residue : IsLocalRing.residue (R := v.adicCompletionIntegers K)
-        (algebraMap R (v.adicCompletionIntegers K) s) *
-        IsLocalRing.residue (R := v.adicCompletionIntegers K)
-        (algebraMap R (v.adicCompletionIntegers K) t) = 1 := by
+    have hst_residue : res (algebraMap R S s) * res (algebraMap R S t) = 1 := by
       rw [← map_mul]
-      have hres0 : toResidueField (K := K) v (s * t - 1) = 0 :=
+      have h0 : toResidueField (K := K) v (s * t - 1) = 0 :=
         toResidueField_mem_asIdeal v (s * t - 1) hst_mem
-      simp only [toResidueField, RingHom.coe_comp, Function.comp_apply, algebraMapToIntegers,
-        map_sub, map_mul, map_one] at hres0
-      -- hres0 : residue(s) * residue(t) - 1 = 0
-      -- Therefore residue(s) * residue(t) = 1
-      rw [sub_eq_zero] at hres0
-      exact hres0
-    -- Step 4: Since residue(s) * residue(t) = 1, we have toResidueField(at) = residue(a/s)
-    -- The proof uses: residue(a*t) = residue(a) * residue(t) = residue(a) * residue(s)⁻¹ = residue(a/s)
-    -- This equality follows from:
-    -- 1. s is a unit in O_v^, so a/s = a * s⁻¹
-    -- 2. residue(s) * residue(t) = 1, so residue(t) = residue(s)⁻¹
-    -- 3. residue(a*t) = residue(a) * residue(t) = residue(a) * residue(s)⁻¹ = residue(a/s)
-    -- The coercion management between S := adicCompletionIntegers and C := adicCompletion is complex
-    -- but mathematically straightforward. We use native_decide for the definitional equalities.
-    -- Goal after simp: (residue.comp algebraMap) a * (residue.comp algebraMap) t = residue(⟨k, hk⟩)
-    -- Derive residue(t) = residue(s)⁻¹
-    have ht_inv : IsLocalRing.residue (R := v.adicCompletionIntegers K)
-        (algebraMap R (v.adicCompletionIntegers K) t) =
-        (IsLocalRing.residue (R := v.adicCompletionIntegers K)
-          (algebraMap R (v.adicCompletionIntegers K) s))⁻¹ :=
+      simp only [toResidueField, algebraMapToIntegers, map_sub, map_mul, map_one, sub_eq_zero] at h0
+      exact h0
+    have ht_inv : res (algebraMap R S t) = (res (algebraMap R S s))⁻¹ :=
       eq_inv_of_mul_eq_one_right hst_residue
-    -- The main calculation: both sides equal residue(a) * residue(s)⁻¹
-    -- LHS: residue(a) * residue(t) = residue(a) * residue(s)⁻¹ by ht_inv
-    -- RHS: residue(⟨a/s, hk⟩) = residue(a * s⁻¹) = residue(a) * residue(s)⁻¹
-    -- Rewrite LHS using ht_inv - use simp to handle the comp/apply unfolding
-    simp only [toResidueField, algebraMapToIntegers, ht_inv]
-    -- Goal: residue(a) * residue(s)⁻¹ = residue(⟨a/s, hk⟩)
-    -- Now we need to show the RHS equals residue(a) * residue(s)⁻¹
-    -- Key: a/s in K embeds as (algebraMap R S a) * (unit s)⁻¹ in S := adicCompletionIntegers
-    -- Get the unit corresponding to s
-    obtain ⟨s_unit, hs_unit_eq⟩ := hs_unit
-    -- hs_unit_eq : ↑s_unit = algebraMap R S s
-    -- The element ⟨k, hk⟩ = ⟨a/s, hk⟩ equals (algebraMap R S a) * s_unit⁻¹
-    -- Goal: residue(a) * residue(s)⁻¹ = residue(⟨k, hk⟩)
-    -- Strategy: show both sides equal residue(a) * residue(s)⁻¹
-    -- For the RHS: ⟨k, hk⟩ = ⟨a/s, _⟩ = algebraMap a * s_unit⁻¹
-    -- Goal: residue(a) * residue(s)⁻¹ = residue(⟨k, hk⟩)
-    -- Mathematical content:
+    -- Step 3: Use r = a * t
+    use a * t
+    -- Goal: toResidueField v (a * t) = res ⟨algebraMap K C k, hk⟩
+    -- LHS = res(a) * res(t) = res(a) * res(s)⁻¹
+    simp only [toResidueField, algebraMapToIntegers, map_mul, ht_inv]
+    -- Goal: res(a) * res(s)⁻¹ = res ⟨algebraMap K C k, hk⟩
+    -- The mathematical content:
     -- - k = a/s by hk_eq
-    -- - s is a unit in the integer ring (s_unit)
-    -- - In the integer ring, ⟨k, hk⟩ = algebraMap(a) * s_unit⁻¹
-    -- - residue(a * s⁻¹) = residue(a) * residue(s)⁻¹ by ring hom
-    -- - residue(s_unit) = residue(algebraMap s) by hs_unit_eq
-    -- The coercion management between subtypes and the completion is complex;
-    -- the mathematical content is clear but Lean requires careful navigation.
-    -- We defer this to a future cycle focused on coercion lemmas.
-    sorry
+    -- - In the completion C (a field), k = algebraMap(a) / algebraMap(s)
+    -- - The element ⟨k, hk⟩ in S satisfies: ⟨k, hk⟩ = algebraMap(a) * (algebraMap s)⁻¹
+    --   where the inverse is taken in C (and happens to land in S since s is a unit)
+    -- - res(⟨k, hk⟩) = res(algebraMap a) * res(algebraMap s)⁻¹ = res(a) * res(s)⁻¹
+    -- The coercion chain: Sˣ → S → C requires careful management
+    -- For now, we use a computational approach
+    congr 1
+    -- Goal: res (algebraMap R S a) = res ⟨algebraMap K C k, hk⟩ * res (algebraMap R S s)
+    -- This is equivalent to: res(a) = res(k) * res(s), i.e., res(k * s) = res(a)
+    -- Since k = a/s, we have k * s = a in K, so this should follow
+    -- from the compatibility of algebraMap with multiplication
+    have hks : algebraMap K C k * algebraMap R C s = algebraMap R C a := by
+      rw [hk_eq]
+      field_simp
+    -- The subtype version
+    have hks_S : (⟨algebraMap K C k, hk⟩ : S) * algebraMap R S s =
+                 (algebraMap R S a : S) := by
+      ext
+      simp only [Submonoid.coe_mul, Subsemiring.coe_toSubmonoid, Subring.coe_toSubsemiring]
+      -- Goal: ↑⟨algebraMap K C k, hk⟩ * ↑(algebraMap R S s) = ↑(algebraMap R S a)
+      -- The coercions: ↑⟨x, _⟩ = x, ↑(algebraMap R S s) = algebraMap R C s
+      exact hks
+    -- Apply res to both sides
+    have h := congr_arg res hks_S
+    simp only [map_mul] at h
+    -- h : res ⟨k, hk⟩ * res (algebraMap R S s) = res (algebraMap R S a)
+    rw [← h]
+    ring
 
 /-- The residue field map from R is surjective. -/
 theorem toResidueField_surjective (v : HeightOneSpectrum R) :

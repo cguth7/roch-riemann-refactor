@@ -6,20 +6,20 @@
 
 ---
 
-## ⚡ Quick Reference: Current Axiom/Sorry Status (Cycle 114)
+## ⚡ Quick Reference: Current Axiom/Sorry Status (Cycle 115)
 
 | File | Item | Type | Status | Discharge Path |
 |------|------|------|--------|----------------|
-| `ResidueFieldIso.lean` | `toResidueField_surjective` | theorem | ✅ PROVED | Via `residue_of_K_element` (with sorries) |
-| `ResidueFieldIso.lean` | `residue_of_K_element` | lemma | 🔶 2 sorries | Coercion chain Units↔Subtype↔Completion |
+| `ResidueFieldIso.lean` | `toResidueField_surjective` | theorem | ✅ PROVED | Via `residue_of_K_element` (with 1 sorry) |
+| `ResidueFieldIso.lean` | `residue_of_K_element` | lemma | 🔶 1 sorry | `s ∈ v.asIdeal, v(k)=1` case (uniformizer factoring) |
 | `TraceDualityProof.lean` | `finrank_dual_eq` | sorry | ⚪ NOT CRITICAL | Not on main proof path |
 | `AllIntegersCompactProof.lean` | `FiniteCompletionResidueFields` | class | ✅ DISCHARGED | Via `residueFieldIso` (needs surjectivity) |
 | `AdelicTopology.lean` | `AllIntegersCompact` | class | ✅ PROVED | Via DVR + RankOne (Cycles 105-107) |
 | `AdelicTopology.lean` | `DiscreteCocompactEmbedding` | class | ⏳ TODO | Class group finiteness approach |
 
-**Build Status**: ⚠️ Compiles with 3 sorries (no axioms!)
+**Build Status**: ⚠️ Compiles with 2 sorries (no axioms!)
 
-**Next Priority**: Fill 2 sorries in `residue_of_K_element` via coercion bridge lemmas (see Cycle 114 notes)
+**Next Priority**: Fill remaining sorry in `residue_of_K_element` (s ∈ v.asIdeal case) OR eliminate via localization at primeCompl
 
 ---
 
@@ -1050,6 +1050,41 @@ simp [hs_coe, ...]
 
 ---
 
+#### Cycle 115 - Main Case SOLVED (s ∉ v.asIdeal)
+
+**Goal**: Fill sorries in `residue_of_K_element` using "no-units, residue-field-only" approach.
+
+**Status**: 🔶 PARTIAL (1 of 2 sorries filled!)
+
+**Results**:
+- [x] **FILLED**: `s ∉ v.asIdeal` case using residue field operations
+- [x] Used `res(s) ≠ 0` and `eq_inv_of_mul_eq_one_right` instead of constructing Units
+- [x] Key insight: Prove `⟨k, hk⟩ * algebraMap s = algebraMap a` in S, then apply `res` and use `ring`
+- [ ] `s ∈ v.asIdeal, v(k) = 1` case still needs uniformizer factoring
+
+**Key Proof Strategy for s ∉ v.asIdeal**:
+```lean
+-- Instead of complex coercion management, use:
+-- 1. hks : algebraMap K C k * algebraMap R C s = algebraMap R C a  (from k = a/s)
+-- 2. hks_S : ⟨k, hk⟩ * algebraMap R S s = algebraMap R S a  (via ext + hks)
+-- 3. Apply res to both sides, use ring to rearrange
+```
+
+**Sorries** (reduced from 2 to 1!):
+- ResidueFieldIso.lean:341 - `s ∈ v.asIdeal, v(k) = 1` case
+- TraceDualityProof.lean:150 - `finrank_dual_eq` (NOT on critical path)
+
+**Total**: 2 sorries in proof path (down from 3!)
+
+**Build**: ✅ Compiles successfully
+
+**Next Steps** (Cycle 116+):
+1. Eliminate `s ∈ v.asIdeal` branch by using `IsLocalization.surj v.asIdeal.primeCompl`
+2. Or: Handle with uniformizer factorization
+3. Once filled, `AllIntegersCompact` fully discharged under finite quotient hypothesis
+
+---
+
 #### Cycle 114 - Coercion Analysis + Structure Clarification
 
 **Goal**: Fill the 2 sorries in `residue_of_K_element` using coercion bridge lemmas.
@@ -1101,104 +1136,51 @@ The `Units.val_inv_eq_inv_val` lemma and `map_units_inv` need careful applicatio
 ### 🎯 CRITICAL BRIEFING FOR NEXT CYCLE
 
 **File**: `RrLean/RiemannRochV2/ResidueFieldIso.lean`
-**Function**: `residue_of_K_element` (lines ~310-465)
-**Sorries**: Line 395 (s ∈ v.asIdeal case), Line 465 (s ∉ v.asIdeal case)
+**Function**: `residue_of_K_element` (line 341)
+**Sorries**: 1 remaining - Line 341 (s ∈ v.asIdeal, v(k) = 1 case)
+
+**PROGRESS**: The `s ∉ v.asIdeal` case is now SORRY-FREE (Cycle 115)!
 
 ---
 
-## ⚠️ THE RIGHT APPROACH (DO THIS FIRST)
+## ⚠️ THE REMAINING SORRY: s ∈ v.asIdeal with v(k) = 1
 
-**Delete the `s ∈ v.asIdeal` branch entirely** by using the localization API upstream.
+When `k = a/s` and both `a, s ∈ v.asIdeal` with `v(k) = 1`, we need to find `r ∈ R` with `toResidueField(r) = res(⟨k, hk⟩)`.
 
-Currently the code uses `IsFractionRing.div_surjective` which gives an arbitrary representation `k = a/s`. This forces handling the case where `s ∈ v.asIdeal`.
+**Two approaches**:
 
-**Better approach**: For k with v(k) ≤ 1, k is in the valuation ring, which equals `Localization.AtPrime v.asIdeal`. Use `IsLocalization.surj v.asIdeal.primeCompl` to get `k = a/s` where **s ∉ v.asIdeal by construction**.
+### Approach 1: Eliminate this branch entirely (RECOMMENDED)
 
+Use `IsLocalization.surj v.asIdeal.primeCompl` to force `s ∉ v.asIdeal` from the start:
 ```lean
--- Instead of:
-rcases IsFractionRing.div_surjective (A := R) k with ⟨a, s, hs_ne, hk_eq⟩
-by_cases hs : s ∈ v.asIdeal  -- THIS CREATES THE PROBLEM
-
--- Use something like:
--- 1. Show k lifts to Localization.AtPrime v.asIdeal (since v(k) ≤ 1)
--- 2. Use IsLocalization.surj v.asIdeal.primeCompl to get s ∉ v.asIdeal
--- 3. No more s ∈ v.asIdeal case!
+-- For k with v(k) ≤ 1, k is in the valuation ring = Localization.AtPrime v.asIdeal
+-- Use IsLocalization.sec/surj to get representation with s ∈ primeCompl
+-- This eliminates the s ∈ v.asIdeal case!
 ```
 
-See archive file `RrLean/RiemannRochV2/archive/LocalGapInstance.lean` around line 1420 for `exists_lift_from_dvr_valuation` pattern.
+Key insight: Elements with `v(k) ≤ 1` are exactly those representable as `a/s` where `s ∉ v.asIdeal`.
+
+### Approach 2: Uniformizer factorization (complex)
+
+If `s ∈ v.asIdeal` and `v(k) = 1`, then both `a` and `s` have the same v-adic order. Factor out the common uniformizer power:
+```
+a = π^n · a', s = π^n · s'  where a', s' ∉ v.asIdeal
+k = a/s = a'/s' with s' ∉ v.asIdeal
+```
+This reduces to the already-solved case.
 
 ---
 
-## Sorry 2 (s ∉ v.asIdeal) - The Remaining Coercion Issue
+## ✅ SOLVED: s ∉ v.asIdeal case (Cycle 115)
 
-Once you eliminate Sorry 1, this is the only remaining issue.
-
-**The math is trivial**:
-```
-Goal: residue(a) * residue(s)⁻¹ = residue(⟨k, hk⟩)
-
-We have:
-- k = a/s (by hk_eq)
-- s is a unit in O_v^ (hs_unit, since s ∉ v.asIdeal)
-- hst_residue: residue(s) * residue(t) = 1  (where t is inverse of s mod v.asIdeal)
-- ht_inv: residue(t) = residue(s)⁻¹
-
-The proof should be:
-1. ⟨k, hk⟩ = algebraMap(a) * s_unit⁻¹  (as elements of O_v^)
-2. residue(algebraMap(a) * s_unit⁻¹) = residue(a) * residue(s_unit⁻¹)  (by map_mul)
-3. residue(s_unit⁻¹) = residue(s)⁻¹  (units map to units, inverse maps to inverse)
-```
-
-**The Lean difficulty** is the coercion chain:
-```
-(v.adicCompletionIntegers K)ˣ  →  v.adicCompletionIntegers K  →  v.adicCompletion K
-        s_unit                          ↑s_unit                    (↑s_unit : C)
-```
-
-**Key lemmas to use**:
-- `Units.val_inv_eq_inv_val`: `(u⁻¹ : Rˣ).val = u.val⁻¹` (in a DivisionRing)
-- `map_units_inv`: For a ring hom f, `f(u⁻¹) = (f u)⁻¹` when u is a unit
-- `IsLocalRing.residue` is a ring hom
-
-**Attempted approach that failed** (Cycle 114):
-Tried to build `h_k_eq_div : ⟨k, hk⟩ = algebraMap a * s_unit⁻¹` and then apply `map_mul`, but got stuck on:
-1. Proving the subtype equality requires `ext` then coercion management
-2. The goal after `ext` has `(s_unit⁻¹ : C)` but we need to connect to `(algebraMap s)⁻¹`
-
-**Suggested simpler approach**:
-Work entirely in the residue field. Both sides are in `Valued.ResidueField`. Show they're equal there without decomposing the subtype:
+**Key insight**: Work in the residue field directly using `res(k) * res(s) = res(a)`:
 ```lean
--- After simp, goal is: residue(a) * residue(s)⁻¹ = residue(⟨k, hk⟩)
--- Use: k = a/s, and in O_v^ division by unit s equals mult by s⁻¹
--- The residue of a/s should equal residue(a)/residue(s) since s is a unit
--- Look for: map_div₀ or similar for residue map on division by units
+-- Prove: algebraMap K C k * algebraMap R C s = algebraMap R C a (from k = a/s)
+-- Lift to S via ext: ⟨k, hk⟩ * algebraMap R S s = algebraMap R S a
+-- Apply res and use ring to get: res(a) * res(s)⁻¹ = res(⟨k, hk⟩)
 ```
 
-**What went wrong in Cycle 112**: Tried to prove `⟨a/s, hk⟩ = algebraMap(a) * s_unit⁻¹` as subtypes. The coercion management was painful.
-
-**Better approach**: Work in the residue field directly, not at the integer ring level.
-```lean
--- We have: hst_residue : residue(s) * residue(t) = 1
--- We have: hat : toResidueField v (a * t) = residue(a) * residue(t)  (by map_mul)
--- Goal: toResidueField v (a * t) = residue(⟨a/s, hk⟩)
-
--- Key: Don't decompose ⟨a/s, hk⟩. Instead show both sides equal residue(a) * residue(s)⁻¹
--- LHS: residue(a) * residue(t) = residue(a) * residue(s)⁻¹ (from hst_residue)
--- RHS: residue(a/s) = residue(a) * residue(s)⁻¹ (since s is unit, use map_div₀ at residue level)
-```
-
-**Key lemma to find/prove**: `IsLocalRing.residue` respects division by units.
-Look for something like `map_div₀` or prove:
-```lean
-lemma residue_div_unit (a : O_v) (u : O_vˣ) :
-    residue (a * ↑u⁻¹) = residue a * (residue u)⁻¹
-```
-
-#### Available Infrastructure (already in file):
-- `hs_unit : IsUnit (algebraMap R (v.adicCompletionIntegers K) s)`
-- `hst_residue : residue(s) * residue(t) = 1`
-- `exists_mul_eq_one_mod v s hs` gives the `t` with `st ≡ 1`
-- `toResidueField_mem_asIdeal` for showing residue = 0
+No Units construction needed! Just field operations and `ring` tactic.
 
 ---
 
