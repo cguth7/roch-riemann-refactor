@@ -1338,6 +1338,65 @@ This is deferred to future work.
 
 ---
 
+#### Cycle 101 - Genus 1 Consistency Check + Focus Decision
+
+**Goal**: Add genus 1 (elliptic curve) consistency check and decide on forward direction.
+
+**Status**: ✅ COMPLETE
+
+**Results**:
+- [x] Added `EllipticCurve` namespace with `ell_g1` dimension function
+- [x] Proved `ell_g1_neg`: ℓ(D) = 0 when deg(D) < 0
+- [x] Proved `ell_g1_zero`: ℓ(0) = 1
+- [x] Proved `ell_g1_pos`: ℓ(D) = deg(D) when deg(D) > 0
+- [x] Proved `RR_g1_check`: ℓ(D) - ℓ(-D) = deg(D) for all D
+- [x] Proved `FullRRData_consistent_for_genus_1`: Axioms consistent for g = 1
+- [x] Added `FullRRData_axioms_consistent`: Unified theorem for g ∈ {0, 1}
+
+**Genus 1 Model**:
+```lean
+def ell_g1 (d : ℤ) : ℕ :=
+  if d < 0 then 0
+  else if d = 0 then 1
+  else d.toNat
+```
+
+**Key Insight**: For g = 1, deg(K) = 0, so RR becomes ℓ(D) - ℓ(-D) = deg(D).
+
+**Scope Clarification**: These are **sanity checks** ("we're not proving nonsense"),
+not claims about existence of curves. The theorems are explicitly limited to g ≤ 1.
+Full instantiation would require actual algebraic curve infrastructure.
+
+**Sorry Status** (unchanged):
+- AdelicTopology.lean: 1 sorry (`h1_module_finite`)
+- TraceDualityProof.lean: 1 sorry (`finrank_dual_eq` - NOT on critical path)
+
+**Total**: 2 sorries in main path (unchanged)
+
+**Forward Direction Decision**:
+
+The consistency checks are complete and serve their purpose. **Future cycles should
+focus on adelic infrastructure**, specifically:
+
+1. **`h1_module_finite`**: Requires Haar measure / fundamental domain machinery
+   - Mathlib has building blocks but not the "adelic Minkowski theorem"
+   - May need to axiomatize `DiscreteCocompactEmbedding` properties further
+
+2. **Instantiate `AdelicRRData`**: The bridge to `FullRRData` is sorry-free
+   - Need to prove: `h1_finite`, `h1_vanishing`, `adelic_rr`, `serre_duality`
+   - These are the deep theorems requiring adelic infrastructure
+
+3. **Do NOT expand**: Model/consistency checks beyond g ∈ {0, 1}
+   - Would require algebraic curve existence machinery
+   - Diminishing returns for axiom validation
+
+**Next Steps** (Cycle 102+):
+1. Research specific path to `h1_module_finite` (Haar measure, Blichfeldt)
+2. Or: Axiomatize remaining adelic properties to complete Track B structure
+3. Or: Attempt one of the `AdelicRRData` axioms directly
+
+---
+
 ## References
 
 ### Primary (Validated)
