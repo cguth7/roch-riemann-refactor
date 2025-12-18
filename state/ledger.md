@@ -8,19 +8,34 @@
 
 ## ⚡ Quick Reference: Current Axiom/Sorry Status (Cycle 116)
 
-| File | Item | Type | Status | Discharge Path |
-|------|------|------|--------|----------------|
-| `ResidueFieldIso.lean` | `toResidueField_surjective` | theorem | ✅ PROVED | SORRY-FREE! Via localization approach |
-| `ResidueFieldIso.lean` | `residue_of_K_element` | lemma | ✅ PROVED | SORRY-FREE! Via IsLocalization.surj + primeCompl |
-| `ResidueFieldIso.lean` | `residueFieldIso` | def | ✅ PROVED | SORRY-FREE! R/v.asIdeal ≃ ResidueField(completion) |
-| `TraceDualityProof.lean` | `finrank_dual_eq` | sorry | ⚪ NOT CRITICAL | Not on main proof path |
-| `AllIntegersCompactProof.lean` | `FiniteCompletionResidueFields` | class | ✅ DISCHARGED | Via `residueFieldIso` (now sorry-free!) |
-| `AdelicTopology.lean` | `AllIntegersCompact` | class | ✅ PROVED | Via DVR + RankOne + residueFieldIso |
-| `AdelicTopology.lean` | `DiscreteCocompactEmbedding` | class | ⏳ TODO | Class group finiteness approach |
+### Sorries (proof holes)
+| File | Item | Status | Notes |
+|------|------|--------|-------|
+| `TraceDualityProof.lean` | `finrank_dual_eq` | ⚪ 1 sorry | NOT on critical path |
+
+### Axiom Classes (still need instantiation for concrete types)
+| File | Class | Status | Notes |
+|------|-------|--------|-------|
+| `AllIntegersCompactProof.lean` | `FiniteCompletionResidueFields` | 🔶 CLASS | Constructor needs `Finite (R ⧸ v.asIdeal)` |
+| `AdelicTopology.lean` | `AllIntegersCompact` | 🔶 CLASS | Follows from `FiniteCompletionResidueFields` |
+| `AdelicTopology.lean` | `DiscreteCocompactEmbedding` | ⏳ CLASS | TODO - needs class group finiteness |
+| `AdelicH1v2.lean` | `AdelicRRData` | ⏳ CLASS | Full adelic RR axioms |
+| `FullRRData.lean` | `FullRRData` | 🔗 CLASS | Derived from `AdelicRRData` |
+
+### Proofs (now sorry-free!)
+| File | Item | Status | Notes |
+|------|------|--------|-------|
+| `ResidueFieldIso.lean` | `residueFieldIso` | ✅ PROVED | R/v.asIdeal ≃ ResidueField(completion) |
+| `ResidueFieldIso.lean` | `toResidueField_surjective` | ✅ PROVED | Via localization approach |
+| `AllIntegersCompactProof.lean` | `allIntegersCompact_of_axioms` | ✅ PROVED | Needs `FiniteCompletionResidueFields` |
 
 **Build Status**: ✅ Compiles with 1 sorry (NOT on critical path!)
 
-**Next Priority**: Focus on `DiscreteCocompactEmbedding` for full adelic theory
+**Key Distinction**:
+- **Sorries**: Holes in existing proofs → 1 remaining (non-critical)
+- **Axiom Classes**: Assumptions that need instances for concrete R, K → 3+ remaining
+
+**Next Priority**: Either instantiate axiom classes for concrete function fields, or work on `DiscreteCocompactEmbedding`
 
 ---
 
@@ -1145,7 +1160,8 @@ The `Units.val_inv_eq_inv_val` lemma and `map_units_inv` need careful applicatio
 - [x] `residue_of_K_element` is now SORRY-FREE
 - [x] `toResidueField_surjective` is now SORRY-FREE
 - [x] `residueFieldIso` is now SORRY-FREE
-- [x] Full proof chain for `FiniteCompletionResidueFields` → `AllIntegersCompact` is now axiom-free!
+- [x] Full PROOF chain for `FiniteCompletionResidueFields` → `AllIntegersCompact` is now sorry-free!
+- [!] Note: These are still AXIOM CLASSES - they need instances for concrete types
 
 **Key Insight**: Elements with `v(k) ≤ 1` belong to `valuationRingAt v`, which equals `Localization.AtPrime v.asIdeal` (via `valuationRingAt_val_mem_range`). Using `IsLocalization.surj v.asIdeal.primeCompl`, we get a representation `k = a/s` where `s ∈ primeCompl` (i.e., `s ∉ v.asIdeal`). This eliminates the problematic `s ∈ v.asIdeal` case from the proof entirely!
 
