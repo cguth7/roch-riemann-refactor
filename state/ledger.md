@@ -196,10 +196,42 @@ lemma fractionalIdealToDivisor_dual {I} (hI : I ≠ 0) :
 - `inv_inv` lemma needs explicit application for `FractionalIdeal`
 - Some mathlib API changes (mem_toFinset)
 
-**Next Steps** (Cycle 82+):
-1. Fix remaining API issues in bridge
-2. Prove `differentIdeal_ne_bot` under finiteness assumptions
-3. Connect to `FullRRData` typeclass instantiation
+---
+
+#### Cycle 82 - DifferentIdealBridge Sorry Eliminated
+
+**Goal**: Fix remaining API issues and eliminate the sorry in `fractionalIdealToDivisor_dual`.
+
+**Status**: ✅ COMPLETE
+
+**Results**:
+- [x] Fixed `Set.Finite.mem_toFinset.mpr` API issue (line 66)
+- [x] Fixed `fractionalIdealToDivisor_dual` proof - no more sorry!
+- [x] Bridge file now compiles cleanly
+
+**Key Insight**: The sorry was proving `(↑(differentIdeal A R) : FractionalIdeal R⁰ K) ≠ 0`.
+
+Instead of using `differentIdeal_ne_bot` (which requires constructing an `Algebra (FractionRing A) (FractionRing R)` instance), we used the identity:
+```
+↑(differentIdeal A R) = (dual A K_A 1)⁻¹   (from coeIdeal_differentIdeal)
+```
+
+Since `dual A K_A 1 ≠ 0` (via `dual_ne_zero`), its inverse is also nonzero.
+
+**Technical Fixes**:
+1. **API change**: `Set.Finite.mem_toFinset.mpr` → `(finite_factors I).mem_toFinset.mpr`
+2. **Rewrite direction**: Changed `rw [← h_diff]; simp only [inv_inv]` to `simp only [h_diff, inv_inv]`
+3. **Removed unnecessary `ring`**: The proof closed by reflexivity after the final rewrite
+
+**Sorry Status**:
+- DifferentIdealBridge.lean: 0 sorries (was 1)
+- FullRRData.lean: 1 sorry (unchanged - helper lemma needing principal divisor theory)
+- TestBlockerProofs.lean: 2 sorries (experimental, not in main path)
+
+**Next Steps** (Cycle 83+):
+1. Prove `ell_canonical_minus_eq_zero_of_large_deg` in FullRRData.lean (needs principal divisor theory)
+2. Or: instantiate `FullRRData` for specific cases to validate the framework
+3. Explore connecting `traceDual` to dimension counting for duality proof
 
 ---
 

@@ -63,7 +63,7 @@ lemma fractionalIdealToDivisor_apply {I : FractionalIdeal R⁰ K} (hI : I ≠ 0)
       have : v ∉ {w | count K w I ≠ 0} := by
         simp only [Set.mem_setOf_eq, ne_eq, not_not]
         by_contra h_ne
-        exact hv (Set.Finite.mem_toFinset.mpr h_ne)
+        exact hv ((finite_factors I).mem_toFinset.mpr h_ne)
       simpa using this
     rw [Finset.sum_eq_zero]
     · exact h_zero.symm
@@ -159,15 +159,31 @@ lemma fractionalIdealToDivisor_dual {I : FractionalIdeal R⁰ K} (hI : I ≠ 0) 
   -- h_diff : ↑(differentIdeal A R) = (dual A K_A 1)⁻¹
   have h_dual_eq : dual A K_A (1 : FractionalIdeal R⁰ K) =
       (↑(differentIdeal A R) : FractionalIdeal R⁰ K)⁻¹ := by
-    rw [← h_diff]
-    simp only [inv_inv]
+    simp only [h_diff, inv_inv]
   rw [h_dual_eq]
   -- Need to show: (differentIdeal A R : FractionalIdeal R⁰ K) ≠ 0 for the inverse
   have h_diff_ne : (↑(differentIdeal A R) : FractionalIdeal R⁰ K) ≠ 0 := by
-    -- Track B: Need Module.Finite A R and separability to use differentIdeal_ne_bot
-    sorry
+    -- The differentIdeal A R is nonzero (non-bot) under our assumptions.
+    -- We need to show: differentIdeal A R ≠ ⊥, then convert via coeIdeal_ne_zero.
+    --
+    -- Mathlib's differentIdeal_ne_bot requires:
+    --   [Module.Finite A R] and [Algebra.IsSeparable (FractionRing A) (FractionRing R)]
+    --
+    -- We have:
+    --   - IsIntegralClosure R A K gives Module.Finite A R (via IsIntegralClosure.finite)
+    --   - Algebra.IsSeparable K_A K where K_A ≃ FractionRing A, K ≃ FractionRing R
+    --
+    -- For now, we state this as a hypothesis that can be discharged later.
+    -- Track B TODO: Construct the Algebra (FractionRing A) (FractionRing R) instance
+    -- and transfer separability to apply differentIdeal_ne_bot directly.
+    haveI : IsNoetherianRing A := inferInstance
+    haveI : Module.Finite A R := IsIntegralClosure.finite A K_A K R
+    -- The different ideal is nonzero in any finite separable extension
+    -- For now we use the fact that it equals (dual 1)⁻¹ and dual 1 ≠ 0
+    have h1 : dual A K_A (1 : FractionalIdeal R⁰ K) ≠ 0 := dual_ne_zero A K_A one_ne_zero
+    rw [h_diff]
+    exact inv_ne_zero h1
   rw [fractionalIdealToDivisor_inv R K h_diff_ne]
-  ring
 
 end CanonicalDivisor
 
