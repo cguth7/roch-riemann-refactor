@@ -242,30 +242,123 @@ lemma denseRange_algebraMap_adicCompletion (v : HeightOneSpectrum R) :
   -- And algebraMap K (adicCompletion K) is essentially this coercion
   convert h
 
-/-- The residue field map from R is surjective.
+/-! ## Surjectivity via Density
 
-Mathematical proof outline:
-1. For any y in the residue field, lift to x ∈ O_v^
-2. By density of K in K_v, find k ∈ K close to x (i.e., v(x - k) < 1)
-3. Then residue(k) = residue(x) = y in the completion's residue field
-4. k ∈ K with v(k) ≤ 1 means k ∈ R_v (localization at v.asIdeal)
-5. Write k = a/s with a ∈ R, s ∈ R \ v.asIdeal
-6. In O_v^, s is a unit (v(s) = 1), so residue(k) = residue(a) · residue(s)⁻¹
-7. Find t ∈ R with st ≡ 1 mod v.asIdeal (using exists_mul_eq_one_mod)
-8. Then residue(s)⁻¹ = residue(t) in the completion residue field
-9. So residue(k) = residue(a) · residue(t) = residue(at), and at ∈ R
-
-The density argument (steps 1-4) requires navigating the Mathlib API for valued fields.
-Key ingredients already available:
-- `denseRange_algebraMap_adicCompletion`: K is dense in K_v
-- `mem_maximalIdeal_iff_val_lt_one`: maximal ideal characterized by v < 1
-- `residue_eq_of_sub_mem_maximalIdeal`: close elements have same residue
-- `exists_mul_eq_one_mod`: multiplicative inverse exists in R/v.asIdeal
-
-This axiom is expected to be dischargeable using the above ingredients.
+The proof that R → completion residue field is surjective uses:
+1. Lift y to x ∈ O_v^ using `IsLocalRing.residue_surjective`
+2. Use density of K in completion to find k ∈ K with v(x - k) < 1
+3. Use `residue_eq_of_sub_mem_maximalIdeal` to get residue(k) = residue(x)
+4. Show k ∈ O_v^ (by ultrametric) and express residue(k) as residue(at) for t ∈ R
 -/
-axiom toResidueField_surjective (v : HeightOneSpectrum R) :
-    Function.Surjective (toResidueField (K := K) v)
+
+/-- From density, we can find k ∈ K close to any x in the completion. -/
+lemma exists_close_element (v : HeightOneSpectrum R) (x : v.adicCompletion K) :
+    ∃ k : K, Valued.v (x - algebraMap K (v.adicCompletion K) k) < 1 := by
+  -- K is dense in the completion
+  have hdense : DenseRange (algebraMap K (v.adicCompletion K)) :=
+    denseRange_algebraMap_adicCompletion v
+  -- x is in the closure of the range of K
+  have hx_closure : x ∈ closure (Set.range (algebraMap K (v.adicCompletion K))) := hdense x
+  -- Use mem_closure_iff: every neighborhood of x meets the range
+  rw [mem_closure_iff] at hx_closure
+  -- The ball {y : v(x - y) < 1} is a neighborhood of x
+  -- Using Valued.mem_nhds: s ∈ 𝓝 x ↔ ∃ γ : Γ₀ˣ, { y | v (y - x) < γ } ⊆ s
+  have hball_open : IsOpen {y : v.adicCompletion K | Valued.v (y - x) < 1} := by
+    rw [isOpen_iff_mem_nhds]
+    intro y hy
+    rw [Valued.mem_nhds]
+    use 1
+    intro z hz
+    simp only [Set.mem_setOf_eq] at hz hy ⊢
+    -- Need: v(z - x) < 1
+    -- We have: v(z - y) < 1 and v(y - x) < 1
+    calc Valued.v (z - x)
+        = Valued.v ((z - y) + (y - x)) := by ring_nf
+      _ ≤ max (Valued.v (z - y)) (Valued.v (y - x)) := Valuation.map_add _ _ _
+      _ < max 1 1 := max_lt hz hy
+      _ = 1 := max_self 1
+  have hx_in_ball : x ∈ {y : v.adicCompletion K | Valued.v (y - x) < 1} := by
+    simp only [Set.mem_setOf_eq, sub_self, Valuation.map_zero]
+    exact one_pos
+  -- Get intersection with range of K
+  obtain ⟨y, hy_in_ball, hy_in_range⟩ := hx_closure _ hball_open hx_in_ball
+  obtain ⟨k, rfl⟩ := hy_in_range
+  -- Convert v(y - x) < 1 to v(x - y) < 1 using v(a) = v(-a)
+  use k
+  simp only [Set.mem_setOf_eq] at hy_in_ball
+  rw [Valuation.map_sub_swap] at hy_in_ball
+  exact hy_in_ball
+
+/-- If k ∈ K has v(x - k) < 1 where x ∈ O_v^, then k ∈ O_v^ (by ultrametric). -/
+lemma mem_integers_of_close (v : HeightOneSpectrum R) (x : v.adicCompletionIntegers K) (k : K)
+    (hclose : Valued.v ((x : v.adicCompletion K) - algebraMap K (v.adicCompletion K) k) < 1) :
+    Valued.v (algebraMap K (v.adicCompletion K) k) ≤ 1 := by
+  -- By ultrametric: v(k) ≤ max(v(x), v(x - k))
+  -- v(x) ≤ 1 (since x ∈ O_v^) and v(x - k) < 1, so max ≤ 1
+  have hx : Valued.v (x : v.adicCompletion K) ≤ 1 := x.2
+  -- k = x - (x - k), so v(k) ≤ max(v(x), v(x - k)) by ultrametric
+  have hrewrite : algebraMap K (v.adicCompletion K) k =
+      (x : v.adicCompletion K) - ((x : v.adicCompletion K) - algebraMap K _ k) := by ring
+  rw [hrewrite]
+  calc Valued.v ((x : v.adicCompletion K) - ((x : v.adicCompletion K) - algebraMap K _ k))
+      ≤ max (Valued.v (x : v.adicCompletion K)) (Valued.v ((x : v.adicCompletion K) - algebraMap K _ k)) :=
+        Valuation.map_sub Valued.v _ _
+    _ ≤ max 1 1 := max_le_max hx (le_of_lt hclose)
+    _ = 1 := max_self 1
+
+/-- Key lemma: elements of K with v ≤ 1 give residues from R. -/
+lemma residue_of_K_element (v : HeightOneSpectrum R) (k : K)
+    (hk : Valued.v (algebraMap K (v.adicCompletion K) k) ≤ 1) :
+    ∃ r : R, toResidueField (K := K) v r =
+      IsLocalRing.residue (R := v.adicCompletionIntegers K)
+        ⟨algebraMap K (v.adicCompletion K) k, hk⟩ := by
+  -- k ∈ K = Frac(R), so write k = a/s with a, s ∈ R, s ≠ 0
+  rcases IsFractionRing.div_surjective (A := R) k with ⟨a, s, hs_ne, rfl⟩
+  -- hs_ne : s ∈ nonZeroDivisors R, meaning s ≠ 0
+  -- Need to handle the fraction a/s in the residue field
+  by_cases hs : s ∈ v.asIdeal
+  · -- If s ∈ v.asIdeal, then v(s) < 1, so for k = a/s to have v(k) ≤ 1,
+    -- we need v(a) ≤ v(s), which means a ∈ v.asIdeal too (and more deeply)
+    -- In this case, we can factor out a common power of the uniformizer
+    -- For simplicity, we handle this with sorry for now
+    sorry
+  · -- s ∉ v.asIdeal is the main case
+    -- In this case, v(s) = 1, so s is a unit in O_v^
+    -- In the residue field, residue(a/s) = residue(a) · residue(s)^{-1}
+    -- Since s ∉ v.asIdeal, there exists t ∈ R with st ≡ 1 mod v.asIdeal
+    obtain ⟨t, hst⟩ := exists_mul_eq_one_mod v s hs
+    -- Claim: residue(a/s) = residue(a·t)
+    use a * t
+    -- The proof: in the completion's residue field, s is a unit with inverse having
+    -- the same residue as t. So residue(a/s) = residue(a) · residue(s)⁻¹ = residue(a) · residue(t) = residue(at)
+    sorry
+
+/-- The residue field map from R is surjective. -/
+theorem toResidueField_surjective (v : HeightOneSpectrum R) :
+    Function.Surjective (toResidueField (K := K) v) := by
+  intro y
+  -- Step 1: Lift y to x ∈ O_v^
+  obtain ⟨x, rfl⟩ := IsLocalRing.residue_surjective y
+  -- Step 2: Find k ∈ K close to x (v(x - k) < 1)
+  obtain ⟨k, hclose⟩ := exists_close_element v (x : v.adicCompletion K)
+  -- Step 3: k ∈ O_v^ by ultrametric
+  have hk_int : Valued.v (algebraMap K (v.adicCompletion K) k) ≤ 1 :=
+    mem_integers_of_close v x k hclose
+  -- Step 4: residue(k) = residue(x) since v(x - k) < 1
+  let k' : v.adicCompletionIntegers K := ⟨algebraMap K (v.adicCompletion K) k, hk_int⟩
+  have hresid_eq : IsLocalRing.residue (R := v.adicCompletionIntegers K) k' =
+                   IsLocalRing.residue (R := v.adicCompletionIntegers K) x := by
+    apply residue_eq_of_sub_mem_maximalIdeal
+    rw [mem_maximalIdeal_iff_val_lt_one]
+    show Valued.v ((k' : v.adicCompletion K) - (x : v.adicCompletion K)) < 1
+    simp only [k', Subtype.coe_mk]
+    rw [Valuation.map_sub_swap]
+    exact hclose
+  -- Step 5: Get r ∈ R with toResidueField r = residue(k)
+  obtain ⟨r, hr⟩ := residue_of_K_element v k hk_int
+  -- Combine: toResidueField r = residue(k) = residue(x) = y
+  use r
+  rw [hr, hresid_eq]
 
 /-! ## Step 4: The ring isomorphism -/
 
