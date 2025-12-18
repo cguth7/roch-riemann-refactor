@@ -177,19 +177,26 @@ riemann_roch_full (Cycle 80) ✅
 ℓ(D) - ℓ(K-D) = deg(D) + 1 - g  ← ✅ THEOREM WORKS!
 ```
 
-**Track B (Discharge Axioms)** - OPTIONAL FUTURE WORK:
+**Track B (Prove Serre Duality)** - REQUIRED FOR FULL RR:
 ```
 DifferentIdealBridge.lean (Cycle 82) ✅ COMPLETE
     ↓ Connect differentIdeal to DivisorV2 via FractionalIdeal.count
 TraceDualityProof.lean (Cycle 83) ✅ Infrastructure laid
     ↓ Key insight: trace dual gives H¹(K-D), not L(K-D) directly
-    ↓ Full discharge requires adelic exact sequence (substantial)
+AdelicCohomology.lean (Cycle 84+)
+    ↓ Define H¹(D) via adelic cokernel
+    ↓ Prove h¹(D) = ℓ(K-D) (Serre duality)
+    ↓ This discharges serre_duality_eq axiom → FULL RR PROVED
 ```
 
-**Mathematical Note (Cycle 83)**: Serre duality is:
-- `dual(H⁰(D)) = H¹(K-D)` and `L(K-D) = H⁰(K-D) = dual(H¹(D))`
-- Full proof requires defining H¹ via adelic cokernel: `0 → K → ∏_v K_v → H¹ → 0`
-- This is ~5-10 cycles of work; Track A (axiomatized) is sufficient for most uses
+**Mathematical Roadmap for Track B**:
+1. **Define adeles**: `A_K = restricted product of K_v` (local completions)
+2. **Adelic exact sequence**: `0 → K → A_K → A_K/K → 0`
+3. **H¹(D) definition**: `h¹(D) = dim_k(A_K / (K + A_K(D)))` where A_K(D) = adeles with poles bounded by D
+4. **Serre duality**: `h¹(D) = ℓ(K-D)` via trace pairing at each place
+5. **Instantiate FullRRData**: Discharge axiom with concrete proof
+
+**Estimated effort**: ~5-10 cycles for full proof
 
 **Phase 3 Checklist**:
 
@@ -198,12 +205,13 @@ Track A (Cycle 80): ✅ COMPLETE
 - [x] `riemann_roch_full` theorem (assuming axioms)
 - [x] Verify imports: `Different.lean`, `Kaehler/Basic.lean`
 
-Track B (Cycles 81+) - Optional:
+Track B (Cycles 81+) - Required for full proof:
 - [x] Bridge `differentIdeal` → `DivisorV2 R` (Cycle 82)
 - [x] TraceDualityProof infrastructure (Cycle 83)
-- [ ] *Future*: Adelic H¹ definition (~5 cycles)
-- [ ] *Future*: Local-global trace duality
-- [ ] *Future*: Instantiate `FullRRData` concretely
+- [ ] Define adeles A_K as restricted product (Cycle 84)
+- [ ] Define H¹(D) via adelic cokernel (Cycle 85)
+- [ ] Prove Serre duality: h¹(D) = ℓ(K-D) (Cycles 86-88)
+- [ ] Instantiate `FullRRData` with proof (Cycle 89+)
 
 ---
 
