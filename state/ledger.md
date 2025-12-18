@@ -6,16 +6,94 @@
 
 ---
 
-## ⚡ Quick Reference: Current Axiom/Sorry Status (Cycle 120)
+## 🎯 NEXT CLAUDE: Start Here (Post-Cycle 121)
+
+### Critical Context
+**Cycle 121 discovered a spec bug**: K is NOT discrete in the *finite* adeles.
+This is not a proof difficulty - the statement is mathematically false.
+The fix is architectural: **add the infinite place**.
+
+### Architectural Decision (Confirmed)
+**Option 1: Add Infinity** - This is the correct path for adelic Riemann-Roch.
+
+### Recommended Implementation Strategy
+
+**Don't rework HeightOneSpectrum plumbing.** Instead, build full adeles as a product:
+
+```lean
+-- New file: RrLean/RiemannRochV2/FullAdeles.lean
+
+/-- The completion at infinity for Fq(X) is Fq((1/X)) -/
+def completionAtInfinity (Fq : Type*) [Field Fq] := LaurentSeries Fq
+-- Or use FunctionField.inftyValuation machinery from Mathlib
+
+/-- Integers at infinity: Fq[[1/X]] (power series) -/
+def integersAtInfinity (Fq : Type*) [Field Fq] := PowerSeries Fq
+
+/-- Full adeles = finite adeles × completion at infinity -/
+def FullAdeleRing (R K : Type*) [CommRing R] [IsDedekindDomain R]
+    [Field K] [Algebra R K] [IsFractionRing R K] (K_infty : Type*) :=
+  FiniteAdeleRing R K × K_infty
+
+/-- Diagonal embedding into full adeles -/
+def fullDiagonalEmbedding (k : K) : FullAdeleRing R K K_infty :=
+  (diagonalEmbedding R K k, algebraMap K K_infty k)
+```
+
+### Concrete Next Steps (Cycle 122+)
+
+**Step 1**: Create `FullAdeles.lean` with the product definition
+- Use `LaurentSeries Fq` or `FunctionField.inftyValuation` for K_∞
+- Define `FullAdeleRing := FiniteAdeleRing R K × K_∞`
+- Define diagonal embedding
+
+**Step 2**: Define `FullDiscreteCocompactEmbedding` for full adeles
+- K discrete in A (now TRUE with infinity included)
+- K closed in A (follows from discrete + locally compact)
+- A/K compact (standard cocompactness)
+
+**Step 3**: Migrate `DiscreteCocompactEmbedding` usages
+- Audit `AdelicH1v2.lean` - does it use discreteness?
+- Audit `AdelicTopology.lean` - update to use full adeles where needed
+- Keep finite adeles for properties that don't need infinity
+
+**Step 4**: Prove the properties for Fq[X]
+- `valuation_eq_one_almost_all` already proved (finite places)
+- Need analogous statement including infinity
+- Compactness of integral adeles should work
+
+### What NOT To Do
+- ❌ Don't try to prove `discrete_diagonal_embedding` for finite adeles (it's false)
+- ❌ Don't try alternative proofs for closedness without infinity (same issue)
+- ❌ Don't weaken axioms unless abandoning adelic RR entirely
+
+### Mathlib Resources for Infinity
+```
+Mathlib/NumberTheory/FunctionField.lean:192 - FunctionField.inftyValuation
+Mathlib/RingTheory/LaurentSeries.lean - LaurentSeries type
+Mathlib/RingTheory/PowerSeries/Basic.lean - PowerSeries type
+```
+
+### Files to Modify/Create
+| File | Action |
+|------|--------|
+| `FullAdeles.lean` | **CREATE** - Product definition A = A_f × K_∞ |
+| `FqPolynomialInstance.lean` | Keep AllIntegersCompact, retire discrete goal |
+| `AdelicTopology.lean` | Add FullDiscreteCocompactEmbedding class |
+| `AdelicH1v2.lean` | Audit for full adele requirements |
+
+---
+
+## ⚡ Quick Reference: Current Axiom/Sorry Status (Cycle 121)
 
 ### Sorries (proof holes)
 | File | Item | Status | Notes |
 |------|------|--------|-------|
 | `TraceDualityProof.lean` | `finrank_dual_eq` | ⚪ 1 sorry | NOT on critical path |
-| `FqPolynomialInstance.lean` | `discrete_diagonal_embedding` | ⚪ 1 sorry | Discreteness of K |
-| `FqPolynomialInstance.lean` | `closed_diagonal_embedding` | ⚪ 1 sorry | Closedness from discrete |
-| `FqPolynomialInstance.lean` | `isCompact_integralAdeles` | ⚪ 1 sorry | Product compactness |
-| `FqPolynomialInstance.lean` | `exists_K_translate_in_integralAdeles` | ⚪ 1 sorry | Weak approximation for PIDs |
+| `FqPolynomialInstance.lean` | `discrete_diagonal_embedding` | ❌ FALSE | **CANNOT BE PROVED** - K not discrete in finite adeles |
+| `FqPolynomialInstance.lean` | `closed_diagonal_embedding` | ⚪ 1 sorry | Needs different approach (not from discreteness) |
+| `FqPolynomialInstance.lean` | `isCompact_integralAdeles` | ⚪ 1 sorry | Product compactness - may still work |
+| `FqPolynomialInstance.lean` | `exists_K_translate_in_integralAdeles` | ⚪ 1 sorry | Weak approximation - may still work |
 
 ### Axiom Classes (still need instantiation for concrete types)
 | File | Class | Status | Notes |
@@ -38,40 +116,45 @@
 | `FqPolynomialInstance.lean` | `valuation_eq_one_almost_all` | ✅ PROVED | Finiteness of valuations ≠ 1 |
 | `FqPolynomialInstance.lean` | `instDiscreteCocompactEmbedding` | ✅ INSTANCE | For Fq[X] (sorries in proofs) |
 
-**Build Status**: ✅ Compiles with 5 sorries (1 non-critical, 4 for DiscreteCocompact)
+**Build Status**: ✅ Compiles with 5 sorries (1 non-critical, 1 **mathematically false**, 3 under investigation)
 
 **Key Distinction**:
-- **Sorries**: Holes in existing proofs → 5 remaining (4 are for DiscreteCocompactEmbedding)
-- **Axiom Classes**: BOTH `AllIntegersCompact` AND `DiscreteCocompactEmbedding` now have instances for Fq[X]!
+- **Sorries**: Holes in existing proofs → 5 remaining
+- **CRITICAL (Cycle 121)**: `discrete_diagonal_embedding` is **FALSE** - K is NOT discrete in finite adeles!
+- **Axiom Classes**: `AllIntegersCompact` has valid instance; `DiscreteCocompactEmbedding` has specification issue
 
-**Next Priority**: Fill remaining DiscreteCocompactEmbedding sorries (discreteness, closedness, compactness, weak approximation)
+**Next Priority**: Decide on resolution path for discreteness issue:
+1. Add infinite place (full adeles) - most correct but requires refactoring
+2. Weaken DiscreteCocompactEmbedding - if applications don't need discreteness
+3. Alternative adelic framework
 
 ---
 
-## ⚠️ SPEC RISK: Finite Places Only (Important for Next Claude)
+## ✅ RESOLVED: Finite Places Issue (Cycle 121)
 
-**Critical Note**: Our `FiniteAdeleRing R K` uses only **finite places** (HeightOneSpectrum primes).
-For function fields, the **place at infinity** is NOT included.
+**Status**: RESOLVED - Architectural decision made.
 
-**Classical Full Adeles**: A_K = ∏'_v K_v where v ranges over ALL places (finite + ∞)
+**The Issue** (discovered Cycle 121):
+- `FiniteAdeleRing R K` uses only finite places (HeightOneSpectrum primes)
+- K is **NOT discrete** in finite adeles (mathematically false, not just hard to prove)
+- The previous assessment ("weaker statement IS correct for PIDs") was **wrong**
 
-**Our Finite Adeles**: Only HeightOneSpectrum R (finite places)
+**The Fix**: Add the infinite place via product construction:
+```
+FullAdeleRing := FiniteAdeleRing R K × K_∞
+```
 
-**Why This Matters**:
-- The classical product formula ∏_v |x|_v = 1 uses ALL places
-- Full adelic cocompactness requires the infinite place
-- Our `DiscreteCocompactEmbedding` is a **weaker statement** (finite adeles only)
+**Why This Works**:
+- Classical discreteness of K in A_K uses ALL places including infinity
+- The infinite place provides the "missing constraint" that makes K discrete
+- Product formula ∏_v |x|_v = 1 uses all places, enforcing discreteness
 
-**Current Assessment**: The weaker statement IS correct for PIDs via weak approximation,
-and our `AdelicH1v2.lean` axioms are self-consistent with this definition. BUT:
+**Implementation**: See "NEXT CLAUDE: Start Here" section above for concrete steps.
 
-1. **Before filling DiscreteCocompactEmbedding sorries**: Verify statements match classical theorems
-2. **If we need full adeles later**: Use `FunctionField.inftyValuation` from Mathlib
-3. **H¹(D) finiteness**: May need the infinite place for the full proof
-
-**Recommendation**: Treat Fq[X] as validation milestone. If topology API makes remaining
-sorries 10× harder than the math, consider alternatives (e.g., discharge axioms via
-different machinery, or accept axioms with clear mathematical justification).
+**What's Preserved**:
+- `AllIntegersCompact` for finite adeles - still valid and useful
+- `valuation_eq_one_almost_all` - still valid for finite places
+- Core RR equation machinery - unchanged
 
 ---
 
@@ -1542,6 +1625,86 @@ The remaining proofs require deeper work with restricted product topology.
 1. Research restricted product neighborhood basis for discreteness proof
 2. Find/prove Tychonoff-like theorem for restricted products
 3. Or: Accept remaining sorries with clear mathematical justification and move to AdelicRRData
+
+---
+
+#### Cycle 121 - CRITICAL FINDING: K is NOT Discrete in Finite Adeles
+
+**Goal**: Prove `discrete_diagonal_embedding` using `valuation_eq_one_almost_all`.
+
+**Status**: ⚠️ MATHEMATICAL OBSTRUCTION DISCOVERED
+
+**Results**:
+- [x] Thorough analysis of restricted product topology
+- [x] Discovered: K is **NOT discrete** in the finite adeles
+- [x] Updated FqPolynomialInstance.lean with detailed documentation
+- [x] Identified root cause and resolution options
+
+**The Mathematical Obstruction**:
+
+K is **NOT** discrete in the finite adeles. This statement is FALSE and cannot be proved.
+
+**Proof that discreteness fails**:
+
+1. In the cofinite restricted product topology, neighborhoods of 0 are characterized by:
+   - At finitely many places v₁,...,vₙ: component aᵥᵢ ∈ Uᵢ for some open Uᵢ ∋ 0
+   - At all other places: component is in O_v (automatic from restricted product)
+
+2. The smallest neighborhood at each vᵢ is {x | v(x) > 1} = m_v (maximal ideal).
+
+3. For k ∈ Fq[X] to have diagonalEmbedding(k) in such a neighborhood:
+   k must satisfy vᵢ(k) > 1 for all i, i.e., k must be divisible by v₁,...,vₙ.
+
+4. The set {k ∈ Fq[X] | v₁ | k ∧ ... ∧ vₙ | k} = (v₁ · ... · vₙ) · Fq[X] is **INFINITE**.
+
+5. Therefore, every neighborhood of 0 contains infinitely many elements of K.
+
+6. Hence {0} is NOT open in the subspace topology, so K is NOT discrete.
+
+**Root Cause**: The finite adeles use only `HeightOneSpectrum R` (finite places).
+For function fields, the **place at infinity** is NOT included.
+Full discreteness requires including all places via `FunctionField.inftyValuation`.
+
+**Impact on DiscreteCocompactEmbedding**:
+- `discrete_diagonal_embedding`: **CANNOT BE PROVED** (mathematically false)
+- `closed_diagonal_embedding`: Cannot derive from discreteness; needs different approach
+- `isCompact_integralAdeles`: Independent of discreteness; might still be provable
+- `exists_K_translate_in_integralAdeles`: Weak approximation; might still work
+
+**Options for Resolution**:
+
+1. **Add Infinity**: Extend to full adeles including `FunctionField.inftyValuation`
+   - Most mathematically correct approach
+   - Requires significant refactoring of adelic infrastructure
+
+2. **Weaken DiscreteCocompactEmbedding**: Remove discreteness requirement
+   - If H¹ finiteness doesn't need discreteness, this suffices
+   - Need to verify which applications actually need discrete
+
+3. **Different Framework**: Alternative formulation of adelic theory
+   - E.g., use norm topology instead of restricted product topology
+
+**Sorry Status** (updated):
+- TraceDualityProof.lean: 1 sorry (`finrank_dual_eq` - NOT on critical path)
+- FqPolynomialInstance.lean: 4 sorries (1 is **mathematically impossible**)
+
+**Total**: 5 sorries in proof path (1 is false statement, 3 need investigation)
+
+**Build**: ✅ Compiles successfully
+
+**Significance**: This is a fundamental specification issue, not a proof difficulty.
+The ledger's "SPEC RISK" section warned about this, but the previous assessment
+("weaker statement IS correct for PIDs") was incorrect.
+
+**Recommendation**: Before proceeding with more cycle work on DiscreteCocompactEmbedding,
+decide on which resolution option to pursue. The most robust approach is Option 1
+(add infinity), but this requires significant infrastructure changes.
+
+**POST-CYCLE UPDATE**: Architectural decision confirmed by user:
+- ✅ **Option 1 (Add Infinity) selected** as the correct path
+- Implementation strategy: Define `FullAdeleRing := FiniteAdeleRing × K_∞` (product approach)
+- Don't rework HeightOneSpectrum; build on top of existing finite adeles
+- See "NEXT CLAUDE: Start Here" section at top of ledger for detailed next steps
 
 ---
 

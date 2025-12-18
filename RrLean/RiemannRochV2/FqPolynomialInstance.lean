@@ -211,33 +211,56 @@ This is a standard result about restricted products, but formalizing it requires
 careful navigation of Mathlib's product/restricted product topology API.
 -/
 
-/-- K is discrete in the finite adeles: the diagonal image has discrete topology.
+/--
+**MATHEMATICAL OBSTRUCTION (Cycle 121 finding)**
 
-Proof sketch:
-- For any nonzero f ∈ K, let S = {v | v(f) ≠ 1} (finite)
-- A neighborhood of f excludes all other elements of K:
-  - If g ≠ f and g is close to f at places in S, then g - f ≠ 0 but close to 0 at S
-  - But g - f must have some v(g - f) ≠ 1, which is bounded away from 0
+K is **NOT** discrete in the finite adeles. This statement is FALSE.
+
+**Proof that discreteness fails:**
+
+1. In the cofinite restricted product topology, neighborhoods of 0 are characterized by:
+   - At finitely many places v₁,...,vₙ: component a_{vᵢ} ∈ Uᵢ for some open Uᵢ ∋ 0
+   - At all other places: component is in O_v (automatic from restricted product)
+
+2. The smallest neighborhood at each vᵢ is {x | v(x) > 1} = m_v (maximal ideal).
+
+3. For k ∈ Fq[X] to have diagonalEmbedding(k) in such a neighborhood:
+   k must satisfy vᵢ(k) > 1 for all i, i.e., k must be divisible by v₁,...,vₙ.
+
+4. The set {k ∈ Fq[X] | v₁ | k ∧ ... ∧ vₙ | k} = (v₁ · ... · vₙ) · Fq[X] is INFINITE.
+
+5. Therefore, every neighborhood of 0 contains infinitely many elements of K.
+
+6. Hence {0} is NOT open in the subspace topology, so K is NOT discrete.
+
+**Root cause**: The FINITE adeles only include finite places. For function fields,
+discreteness requires including the place at infinity (via `FunctionField.inftyValuation`).
+
+**Options for resolution**:
+- Add infinity: Use `FunctionField.inftyValuation` to include the infinite place
+- Accept non-discreteness: Some applications may not need this property
+- Use different topology: The "adelic norm" topology might work differently
 -/
 theorem discrete_diagonal_embedding :
     DiscreteTopology (Set.range (diagonalEmbedding Fq[X] (RatFunc Fq))) := by
-  -- To show discrete, we show every singleton is open in the subspace topology
-  -- This follows from valuation_eq_one_almost_all: nonzero elements have bounded support
-  rw [discreteTopology_iff_forall_isClosed]
-  intro s
-  -- Every subset of a discrete space is closed
+  -- CANNOT BE PROVED: K is not discrete in finite adeles (see docstring above)
   sorry
 
 /-- K is closed in the finite adeles.
 
-For locally compact groups, discrete subgroups are closed.
-Since FiniteAdeleRing is locally compact (under AllIntegersCompact) and
-K embeds as an additive subgroup, discreteness implies closedness.
+**Note**: Closedness does NOT follow from discreteness since K is NOT discrete
+in the finite adeles (see `discrete_diagonal_embedding` docstring).
+
+However, K might still be closed via a different argument. The standard approach:
+- K is the image of a complete group under the diagonal embedding
+- The diagonal embedding is proper/closed?
+
+This requires investigation.
 -/
 theorem closed_diagonal_embedding [AllIntegersCompact Fq[X] (RatFunc Fq)] :
     IsClosed (Set.range (diagonalEmbedding Fq[X] (RatFunc Fq))) := by
-  -- The range is an additive subgroup
-  -- Discrete subgroups of T2 locally compact groups are closed
+  -- Cannot use "discrete ⟹ closed" since K is not discrete
+  -- Need different approach (properness? completeness?)
   sorry
 
 /-! ### Compact fundamental domain for PIDs
@@ -292,25 +315,34 @@ end DiscreteCocompactFqPolynomial
 
 /-! ## Final Summary
 
-For Fq[X] / RatFunc(Fq), we now have instances for BOTH key axiom classes:
+For Fq[X] / RatFunc(Fq):
 
+### Completed (sorry-free)
 1. ✅ `AllIntegersCompact Fq[X] (RatFunc Fq)` - via finite quotients + ResidueFieldIso
-2. ✅ `DiscreteCocompactEmbedding Fq[X] (RatFunc Fq)` - via PID structure
+2. ✅ `valuation_eq_one_almost_all` - finiteness of places with non-unit valuation
 
-**Remaining sorries** (for DiscreteCocompactEmbedding):
-- `valuation_eq_one_almost_all` - finiteness of divisors
-- `discrete_diagonal_embedding` - discreteness from valuation bounds
-- `closed_diagonal_embedding` - closedness from discrete + locally compact
-- `isCompact_integralAdeles` - compactness of restricted product
-- `exists_K_translate_in_integralAdeles` - weak approximation for PIDs
+### Mathematical Obstruction (Cycle 121)
+⚠️ **K is NOT discrete in the finite adeles**
 
-These are all standard results in algebraic number theory / function field theory.
-The proofs require careful navigation of Mathlib's adelic topology API.
+The `DiscreteCocompactEmbedding` class requires discreteness, but:
+- In the restricted product topology, neighborhoods of 0 constrain only finitely many places
+- For any finite set of places, infinitely many polynomials are divisible by all of them
+- Therefore K ∩ U is infinite for every neighborhood U of 0
+- Hence K is NOT discrete in the finite adeles
 
-**Significance**:
-- This validates the full axiom structure for the simplest function field case
-- For other function fields over finite k, the same pattern applies but with
-  class group considerations for the fundamental domain
+**Root cause**: Finite adeles exclude the infinite place.
+For full discreteness, use `FunctionField.inftyValuation` to include infinity.
+
+### Remaining sorries (affected by obstruction)
+- `discrete_diagonal_embedding` - **CANNOT BE PROVED** (statement is FALSE)
+- `closed_diagonal_embedding` - needs different approach (not from discreteness)
+- `isCompact_integralAdeles` - might still be true (independent of discreteness)
+- `exists_K_translate_in_integralAdeles` - weak approximation, might still work
+
+### Options for resolution
+1. **Add infinity**: Extend to full adeles including `FunctionField.inftyValuation`
+2. **Weaken axioms**: Remove discreteness requirement if not needed for applications
+3. **Different framework**: Use alternative formulation of adelic theory
 -/
 
 end FqPolynomialInstance
