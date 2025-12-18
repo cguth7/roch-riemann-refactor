@@ -747,6 +747,62 @@ finite fields and is easy to verify in concrete cases.
 
 ---
 
+#### Cycle 109 - Surjectivity Proof Infrastructure
+
+**Goal**: Complete the `toResidueField_surjective` proof using the density argument.
+
+**Status**: 🔶 PARTIAL (infrastructure built, proof strategy documented)
+
+**Results**:
+- [x] Converted `toResidueField_surjective` from axiom to theorem (with sorry)
+- [x] Added sorry-free helper lemmas:
+  - `asIdeal_isMaximal` - v.asIdeal is maximal in Dedekind domains
+  - `algebraMap_val_eq_one_of_not_mem` - valuation = 1 for elements outside ideal
+  - `algebraMap_isUnit_of_not_mem` - such elements are units in completion integer ring
+  - `quotient_unit_of_nonzero` - nonzero elements in R/v.asIdeal are units (R/v is a field)
+  - `exists_mul_eq_one_mod` - multiplicative inverse exists modulo v.asIdeal
+- [x] Documented complete proof strategy in docstrings
+- [ ] Full density-based proof (still needs work)
+
+**Proof Strategy Identified**:
+
+```
+For any y ∈ ResidueField(O_v):
+1. Lift y to x ∈ O_v via residue_surjective
+2. By Completion.denseRange_coe, K is dense in K_v
+3. Find k ∈ K with v(x - k) < 1 (k close to x)
+4. By ultrametric: v(k) ≤ max(v(x), v(x-k)) ≤ 1, so k ∈ O_v ∩ K = R_v
+5. Since v(x - k) < 1, we have x - k ∈ m_v, so residue(k) = residue(x) = y
+6. Write k = a/s where a ∈ R, s ∈ R \ v.asIdeal
+7. Since R/v.asIdeal is a field, find t with st ≡ 1 mod v.asIdeal
+8. Then residue(k) = residue(a) · residue(t) = residue(a·t), and a·t ∈ R
+```
+
+**Key Mathlib Lemmas Identified**:
+- `Completion.denseRange_coe` - K embeds densely into its completion
+- `Completion.induction_on` - induction principle for completions
+- `isClosed_property` - properties holding on dense subset extend to closure
+
+**Blocker**: The density argument requires navigating between:
+- The uniform completion structure on K_v
+- The valuation topology on O_v
+- The discrete topology on the residue field
+
+The mathematical content is clear; the Mathlib API connection needs careful navigation.
+
+**Sorry Status**:
+- ResidueFieldIso.lean: 1 sorry (`toResidueField_surjective` - density argument)
+- TraceDualityProof.lean: 1 sorry (`finrank_dual_eq` - NOT on critical path)
+
+**Total**: 2 sorries in proof path
+
+**Next Steps** (Cycle 110+):
+1. Complete density proof using `Completion.denseRange_coe` and `isClosed_property`
+2. Alternative: Use `IsLocalization.equivQuotMaximalIdeal` to establish R/v ≃ O_v/m_v
+3. Or: Move to DiscreteCocompactEmbedding (different axiom direction)
+
+---
+
 ## References
 
 ### Primary (Validated)
