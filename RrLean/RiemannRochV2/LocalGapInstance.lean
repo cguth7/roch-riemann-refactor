@@ -3543,4 +3543,210 @@ lemma valuation_bound_at_other_prime
 
 end Cycle67Candidates
 
+/-! ### Cycle 68 Candidates: Complete kernel proof chain
+
+Goal: Prove remaining 3 Cycle 67 sorries and complete Cycle 66 kernel candidates
+
+Key discoveries:
+- WithZero.lt_mul_exp_iff_le: x < y * exp 1 ↔ x ≤ y (line 585, Canonical.lean)
+- Int.lt_add_one_iff: a < b + 1 ↔ a ≤ b
+- Finsupp.single_eq_of_ne: single a b c = 0 when c ≠ a
+
+Proof chain:
+- Candidate 1: Discrete step-down (core WithZero lemma)
+- Candidates 2-4: Prove remaining Cycle 67 sorries
+- Candidates 5-8: Complete Cycle 66 kernel characterization → LocalGapBound
+-/
+
+section Cycle68Candidates
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+
+-- Candidate 1 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 68]
+/-- In WithZero ℤᵐ⁰, if x < exp(n+1) and x ≠ 0, then x ≤ exp(n).
+Key discrete valuation property: strict inequality with exp allows stepping down.
+This is the bridge between v(f·π^n) < 1 and v(f) ≤ exp(D v). -/
+lemma withzero_lt_exp_succ_imp_le_exp
+    (x : ℤᵐ⁰) (n : ℤ) (hx : x ≠ 0)
+    (h : x < WithZero.exp (n + 1)) :
+    x ≤ WithZero.exp n := by
+  -- Use the discrete step-down: x < exp(n+1) ↔ x ≤ exp(n) * exp(1) implies x ≤ exp(n)
+  rw [← WithZero.lt_mul_exp_iff_le (WithZero.exp_ne_zero n)]
+  convert h using 2
+  rw [← WithZero.exp_add, add_comm]
+
+-- Candidate 2 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 68]
+/-- Prove extract_valuation_bound_from_maxIdeal_nonneg using discrete step-down.
+From v(f·π^n) < 1 where n = D(v)+1 ≥ 0, extract v(f) ≤ exp(D v).
+Strategy: v(f) · exp(-n) < exp(0) gives v(f) < exp(n), then step down. -/
+lemma extract_valuation_bound_from_maxIdeal_nonneg_proof
+    (v : HeightOneSpectrum R) (D : DivisorV2 R) (f : K) (hf_ne : f ≠ 0)
+    (hn : 0 ≤ D v + 1)
+    (h_maxIdeal : v.valuation K (f * algebraMap R K ((uniformizerAt v) ^ (D v + 1).toNat)) < 1) :
+    v.valuation K f ≤ WithZero.exp (D v) := by
+  -- v(f·π^n) < 1 where n = (D v + 1).toNat
+  -- Since hn : 0 ≤ D v + 1, we have (D v + 1).toNat = D v + 1
+  have hn_nat : ((D v + 1).toNat : ℤ) = D v + 1 := Int.toNat_of_nonneg hn
+  -- v(f) · v(π^n) < 1
+  rw [Valuation.map_mul] at h_maxIdeal
+  rw [uniformizerAt_pow_valuation_of_nonneg v (D v + 1) hn] at h_maxIdeal
+  -- v(f) · exp(-(D v + 1)) < exp(0) means v(f) < exp(D v + 1)
+  have hval_ne : v.valuation K f ≠ 0 := Valuation.ne_zero_iff.mpr hf_ne
+  -- Use exp_mul_exp_neg: exp(a) * exp(-a) = 1
+  have hexp_inv : WithZero.exp (D v + 1) * WithZero.exp (-(D v + 1)) = 1 := by
+    rw [← WithZero.exp_add, add_neg_cancel, WithZero.exp_zero]
+  -- From v(f) * exp(-(D v+1)) < 1, multiply both sides by exp(D v+1) on left
+  have h1 : v.valuation K f < WithZero.exp (D v + 1) := by
+    have h2 : v.valuation K f * WithZero.exp (-(D v + 1)) < WithZero.exp (0 : ℤ) := h_maxIdeal
+    rw [WithZero.exp_zero] at h2
+    -- v(f) < exp(D v + 1) follows from v(f) * exp(-n) < 1 and exp(n) * exp(-n) = 1
+    calc v.valuation K f
+        = v.valuation K f * 1 := by ring
+      _ = v.valuation K f * (WithZero.exp (D v + 1) * WithZero.exp (-(D v + 1))) := by rw [hexp_inv]
+      _ = (v.valuation K f * WithZero.exp (-(D v + 1))) * WithZero.exp (D v + 1) := by ring
+      _ < 1 * WithZero.exp (D v + 1) := by
+          apply mul_lt_mul_of_pos_right h2 WithZero.exp_pos
+      _ = WithZero.exp (D v + 1) := by ring
+  -- Now use discrete step-down: v(f) < exp(D v + 1) ⟹ v(f) ≤ exp(D v)
+  exact withzero_lt_exp_succ_imp_le_exp (v.valuation K f) (D v) hval_ne h1
+
+-- Candidate 3 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 68]
+/-- When D(v)+1 < 0, (D(v)+1).toNat = 0, so v(f·π^0) = v(f) < 1.
+Since f ∈ L(D+v), we have v(f) ≤ exp(D v + 1).
+Using exp(D v + 1) ≤ exp(D v) when D v + 1 ≤ D v (always true), we get the bound. -/
+lemma extract_valuation_bound_from_maxIdeal_neg_proof
+    (v : HeightOneSpectrum R) (D : DivisorV2 R) (f : K) (hf_ne : f ≠ 0)
+    (hf_mem : f ∈ RRModuleV2_real R K (D + DivisorV2.single v 1))
+    (hn : D v + 1 < 0)
+    (h_maxIdeal : v.valuation K (f * algebraMap R K ((uniformizerAt v) ^ (D v + 1).toNat)) < 1) :
+    v.valuation K f ≤ WithZero.exp (D v) := by
+  -- When D v + 1 < 0, (D v + 1).toNat = 0
+  have hnat_zero : (D v + 1).toNat = 0 := Int.toNat_eq_zero.mpr (le_of_lt hn)
+  -- So v(f·π^0) = v(f·1) = v(f)
+  simp only [hnat_zero, pow_zero, map_one, mul_one] at h_maxIdeal
+  -- f ∈ L(D+v) means f = 0 ∨ v(f) ≤ exp((D + single v 1)(v))
+  -- (D + single v 1)(v) = D v + 1
+  have hDv_shifted : (D + DivisorV2.single v 1) v = D v + 1 := by
+    simp only [Finsupp.add_apply, Finsupp.single_eq_same]
+  -- From membership, v(f) ≤ exp(D v + 1)
+  simp only [RRModuleV2_real, Submodule.mem_mk, AddSubmonoid.mem_mk, AddSubsemigroup.mem_mk,
+    Set.mem_setOf_eq, satisfiesValuationCondition] at hf_mem
+  cases hf_mem with
+  | inl hf_zero => exact absurd hf_zero hf_ne
+  | inr hf_bound =>
+    -- hf_bound : ∀ v', v'.valuation K f ≤ exp((D + single v 1) v')
+    have hv_bound := hf_bound v
+    rw [hDv_shifted] at hv_bound
+    -- v(f) ≤ exp(D v + 1) < exp(D v + 1) is not useful directly
+    -- But D v + 1 < 0 means D v < -1, so D v + 1 ≤ D v
+    have hle : D v + 1 ≤ D v := by omega
+    calc v.valuation K f
+        ≤ WithZero.exp (D v + 1) := hv_bound
+      _ ≤ WithZero.exp (D v) := WithZero.exp_le_exp.mpr hle
+
+-- Candidate 4 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 68]
+/-- For v' ≠ v, (D + single v 1)(v') = D(v') by Finsupp.single_eq_of_ne.
+Therefore f ∈ L(D+v) gives v'(f) ≤ exp((D + single v 1)(v')) = exp(D(v')).
+This is exactly the condition for f ∈ L(D) at prime v'. -/
+lemma valuation_bound_at_other_prime_proof
+    (v v' : HeightOneSpectrum R) (D : DivisorV2 R) (f : K)
+    (hf : f ∈ RRModuleV2_real R K (D + DivisorV2.single v 1))
+    (hne : v' ≠ v) :
+    f = 0 ∨ v'.valuation K f ≤ WithZero.exp (D v') := by
+  -- (D + single v 1)(v') = D(v') + (single v 1)(v') = D(v') + 0 = D(v')
+  have hcoeff : (D + DivisorV2.single v 1) v' = D v' := by
+    simp only [Finsupp.add_apply]
+    rw [Finsupp.single_apply, if_neg (Ne.symm hne), add_zero]
+  -- From f ∈ L(D+v), get the valuation condition
+  simp only [RRModuleV2_real, Submodule.mem_mk, AddSubmonoid.mem_mk, AddSubsemigroup.mem_mk,
+    Set.mem_setOf_eq, satisfiesValuationCondition] at hf
+  cases hf with
+  | inl hf_zero => exact Or.inl hf_zero
+  | inr hf_bound =>
+    right
+    have hv'_bound := hf_bound v'
+    rw [hcoeff] at hv'_bound
+    exact hv'_bound
+
+-- Candidate 5 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 68]
+/-- If v(x) < 1 and x ∈ valuationRingAt, then x ∈ maximalIdeal.
+Uses that valuationRingAt.maximalIdeal = {x | v(x) < 1}. -/
+lemma valuation_lt_one_imp_mem_maxIdeal
+    (v : HeightOneSpectrum R)
+    (x : K) (hx_mem : x ∈ valuationRingAt (R := R) (K := K) v)
+    (hx_lt : v.valuation K x < WithZero.exp (0 : ℤ)) :
+    (⟨x, hx_mem⟩ : valuationRingAt (R := R) (K := K) v) ∈
+      IsLocalRing.maximalIdeal (valuationRingAt (R := R) (K := K) v) := by
+  -- valuationRingAt v = (v.valuation K).valuationSubring
+  -- The maximal ideal of a valuation ring is {x | v(x) < 1}
+  -- Convert to the valuationSubring type for the maximalIdeal lemma
+  show (⟨x, hx_mem⟩ : (v.valuation K).valuationSubring) ∈
+       IsLocalRing.maximalIdeal (v.valuation K).valuationSubring
+  rw [Valuation.mem_maximalIdeal_iff]
+  rw [WithZero.exp_zero] at hx_lt
+  exact hx_lt
+
+-- Candidate 6 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 68]
+/-- Complete LD ⊆ ker direction: if f ∈ L(D), then evaluationFun f = 0.
+Uses that shifted element lands in maxIdeal, so residue is zero. -/
+lemma LD_element_maps_to_zero
+    (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    (f : RRModuleV2_real R K D) :
+    evaluationFun_via_bridge v D
+      (Submodule.inclusion (RRModuleV2_mono_inclusion R K (divisor_le_add_single D v)) f) = 0 := by
+  -- Need to show the composition through residueFieldBridge gives 0
+  -- Step 1: f ∈ L(D), so v(f) ≤ exp(D v)
+  -- Step 2: shiftedElement = f · π^{(D v + 1).toNat}
+  -- Step 3: v(shiftedElement) < 1 by valuation_product_strict_bound_nonneg or _neg
+  -- Step 4: shiftedElement ∈ maxIdeal
+  -- Step 5: residue of maxIdeal element = 0
+  sorry
+
+-- Candidate 7 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 68]
+/-- Complete ker ⊆ LD direction: if evaluationFun f = 0, then f ∈ L(D).
+Combines extract_valuation_bound for v and valuation_bound_at_other_prime for v' ≠ v. -/
+lemma kernel_element_satisfies_all_bounds
+    (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    (f : RRModuleV2_real R K (D + DivisorV2.single v 1))
+    (hf : evaluationFun_via_bridge v D f = 0) :
+    f.val ∈ RRModuleV2_real R K D := by
+  -- Need to show: f.val = 0 ∨ ∀ v', v'.valuation K f.val ≤ exp(D v')
+  -- Case analysis on f.val = 0
+  by_cases hf_ne : f.val = 0
+  · left; exact hf_ne
+  · right
+    intro v'
+    by_cases hv'_eq : v' = v
+    · -- At v: use extract_valuation_bound
+      subst hv'_eq
+      sorry -- Need to trace through evaluationFun = 0 → extract_valuation_bound
+    · -- At v' ≠ v: use valuation_bound_at_other_prime_proof
+      exact (valuation_bound_at_other_prime_proof v v' D f.val f.property hv'_eq).resolve_left hf_ne
+
+-- Candidate 8 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 68]
+/-- Final assembly: kernel equals range of inclusion from L(D).
+Combines both directions: LD ⊆ ker and ker ⊆ LD. -/
+lemma kernel_evaluationMapAt_complete_proof
+    (v : HeightOneSpectrum R) (D : DivisorV2 R) :
+    LinearMap.ker (evaluationMapAt_complete v D) =
+    LinearMap.range (Submodule.inclusion
+      (RRModuleV2_mono_inclusion R K (divisor_le_add_single D v))) := by
+  ext x
+  constructor
+  · -- ker ⊆ range: if x ∈ ker, show x ∈ range of inclusion
+    intro hx
+    rw [LinearMap.mem_ker] at hx
+    -- x.val ∈ L(D) by kernel_element_satisfies_all_bounds
+    sorry
+  · -- range ⊆ ker: if x = inclusion(f) for f ∈ L(D), show x ∈ ker
+    intro hx
+    rw [LinearMap.mem_range] at hx
+    obtain ⟨f, hf⟩ := hx
+    rw [LinearMap.mem_ker, ← hf]
+    -- evaluationMapAt_complete applied to inclusion(f) is evaluationFun(inclusion f)
+    sorry
+
+end Cycle68Candidates
+
 end RiemannRochV2

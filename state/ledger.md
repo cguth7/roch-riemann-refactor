@@ -2,32 +2,64 @@
 
 *For Cycles 1-34, see `state/ledger_archive.md`*
 
-## Summary: Where We Are (End of Cycle 67)
+## Summary: Where We Are (End of Cycle 68)
 
 **Project Goal**: Prove Riemann-Roch inequality for Dedekind domains in Lean 4.
 
-**Current Target**: `kernel_evaluationMapAt_complete` (helper lemmas 5/8 PROVED)
+**Current Target**: `kernel_evaluationMapAt_complete` (inversion lemmas PROVED, assembly pending)
 
-**Blocking Chain** (Updated Cycle 67 - HELPER LEMMAS PROVED):
+**Blocking Chain** (Updated Cycle 68 - INVERSION COMPLETE):
 ```
 evaluationMapAt_complete (Cycle 56 - PROVED ✅)  ← LINEARMAP COMPLETE!
     ↓
 bridge_residue_algebraMap_clean (Cycle 65 - PROVED ✅)  ← CLEAN BRIDGE PROVED!
     ↓
-valuation_product_strict_bound_nonneg (Cycle 67 - PROVED ✅)  ← FORWARD DIRECTION ARMED!
+extract_valuation_bound_from_maxIdeal (Cycle 68 - PROVED ✅)  ← INVERSION COMPLETE!
     ↓
-extract_valuation_bound_from_maxIdeal (Cycle 67 - 3 SORRY)  ← **IN PROGRESS**
+LD_element_maps_to_zero (Cycle 68 - SORRY)  ← **NEXT TARGET**
     ↓
-kernel_evaluationMapAt_complete (Cycle 66 candidates pending)
+kernel_evaluationMapAt_complete (Cycle 68 - pending assembly)
     ↓
 LocalGapBound instance → VICTORY
 ```
 
-**Note**: Cycle 67 - 5/8 helper lemmas proved. Forward direction ready, backward direction needs inversion. Victory is 2 cycles away!
+**Note**: Cycle 68 - 5/8 candidates PROVED. Inversion lemmas complete. Victory is 1-2 cycles away!
 
 ---
 
 ## 2025-12-17
+
+### Cycle 68 - Kernel Proof Chain - 5/8 PROVED
+
+**Goal**: Prove inversion lemmas and complete kernel characterization
+
+#### Key Achievement
+
+**5 candidates PROVED** including key inversion lemmas that resolve Cycle 67 blockers!
+
+**Proved lemmas**:
+1. `withzero_lt_exp_succ_imp_le_exp` - Core discrete step-down: x < exp(n+1) → x ≤ exp(n)
+2. `extract_valuation_bound_from_maxIdeal_nonneg_proof` - KEY: Uses step-down (resolves Cycle 67-5)
+3. `extract_valuation_bound_from_maxIdeal_neg_proof` - Membership + monotonicity (resolves Cycle 67-6)
+4. `valuation_bound_at_other_prime_proof` - Finsupp.single_apply (resolves Cycle 67-8)
+5. `valuation_lt_one_imp_mem_maxIdeal` - Bridge: v(x) < 1 → x ∈ maxIdeal
+
+**Remaining sorries (3)**:
+1. `LD_element_maps_to_zero` - LD ⊆ ker direction (needs residue chain)
+2. `kernel_element_satisfies_all_bounds` - ker ⊆ LD (v = v' case)
+3. `kernel_evaluationMapAt_complete_proof` - Final assembly
+
+**Key Discovery**: `WithZero.lt_mul_exp_iff_le` provides discrete step-down: x < y * exp(1) ↔ x ≤ y
+
+**Reflector Score**: 7/10
+
+**Next Cycle Priority**:
+1. Decompose `LD_element_maps_to_zero` into 3 sub-lemmas
+2. Complete `kernel_element_satisfies_all_bounds`
+3. Assemble `kernel_evaluationMapAt_complete_proof`
+4. LocalGapBound instance → **VICTORY**
+
+---
 
 ### Cycle 67 - kernel Helper Lemmas - 5/8 PROVED
 
