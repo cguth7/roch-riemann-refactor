@@ -1,10 +1,10 @@
-import RrLean.RiemannRochV2.LocalGapInstance
+import RrLean.RiemannRochV2.RRDefinitions
 
 /-!
 # Kernel Proof for evaluationMapAt
 
 This file contains the kernel characterization lemmas for evaluationMapAt,
-extracted from LocalGapInstance.lean to reduce build times.
+using definitions from RRDefinitions.lean (the clean, minimal extraction).
 
 ## Contents
 
