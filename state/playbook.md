@@ -53,7 +53,7 @@ Where:
 
 ---
 
-## Current Status (Cycle 71 - Kernel Proofs Complete!)
+## Current Status (Cycle 73 - 🎉 VICTORY!)
 
 **Codebase Structure**:
 ```
@@ -62,78 +62,48 @@ RrLean/RiemannRochV2/
 ├── Divisor.lean            # DivisorV2 ✅
 ├── RRSpace.lean            # L(D), ℓ(D) ✅ (1 sorry placeholder)
 ├── Typeclasses.lean        # LocalGapBound ✅
-├── RiemannInequality.lean  # Main theorems ✅ (1 sorry placeholder)
+├── RiemannInequality.lean  # Main theorems ✅ **UNCONDITIONAL!**
 ├── Infrastructure.lean     # Residue, uniformizer ✅ **CLEAN** (0 sorries!)
-├── LocalGapInstance.lean   # Cycles 25-65 (3344 lines, 90s build) ✅
+├── LocalGapInstance.lean   # Cycles 25-65 (3344 lines) - LEGACY, needs cleanup
 ├── KernelProof.lean        # Cycles 66-71 (590 lines) ✅ **KEY PROOFS COMPLETE!**
+├── DimensionCounting.lean  # Cycle 73 (185 lines) ✅ **CLEAN** (0 sorries!)
 └── TestBlockerProofs.lean  # Cycle 58-60: Test proofs
 ```
 
-**Active Development**: `KernelProof.lean` - KEY LEMMAS NOW PROVED!
+### 🎉 MILESTONE ACHIEVED (Cycle 73)
 
-### Key Achievement (Cycle 71)
+**RIEMANN INEQUALITY IS NOW UNCONDITIONALLY PROVED!**
 
-**ALL THREE KERNEL LEMMAS PROVED!** The kernel characterization is now complete:
+```lean
+lemma riemann_inequality_affine [bd : BaseDim R K] {D : DivisorV2 R} (hD : D.Effective) :
+    (ellV2_real R K D : ℤ) ≤ D.deg + bd.basedim
+```
 
-1. **`LD_element_maps_to_zero`** ✅ - Forward direction: L(D) ⊆ ker
-2. **`kernel_element_satisfies_all_bounds`** ✅ - Backward direction: ker ⊆ L(D)
-3. **`kernel_evaluationMapAt_complete_proof`** ✅ - Full characterization: ker = L(D)
-
-**Technical highlights**:
-- Used `erw [IsLocalRing.residue_eq_zero_iff]` to handle definitional mismatch between `valuationRingAt` and `(v.valuation K).valuationSubring`
-- Used `unfold valuationRingAt` before `Valuation.mem_maximalIdeal_iff` rewrites
-- Bridge injectivity via `RingEquiv.injective` for backward direction
+The `[LocalGapBound R K]` hypothesis has been removed - it's now a global instance!
 
 ### Typeclass Hierarchy
 ```
-LocalGapBound R K          -- PROVABLE (gap ≤ 1 via evaluation map)
+LocalGapBound R K          -- ✅ PROVED (Cycle 73 - global instance!)
     ↑ extends
 SinglePointBound R K       -- PROJECTIVE (adds ell_zero = 1)
 
 BaseDim R K                -- SEPARATE (explicit base dimension)
 ```
 
-### Key Blockers (Updated Cycle 71 - ALL RESOLVED!)
+### All Blockers RESOLVED!
 
-| Name | Status | Notes |
+| Name | Status | Cycle |
 |------|--------|-------|
-| `evaluationMapAt_complete` | ✅ **PROVED** | Cycle 56: LinearMap bundle complete |
-| `bridge_residue_algebraMap_clean` | ✅ **PROVED** | Cycle 65: CLEAN BRIDGE PROVED |
-| `uniformizerAt_zpow_valuation` | ✅ **PROVED** | Cycle 70: zpow version |
-| `extract_valuation_bound_zpow` | ✅ **PROVED** | Cycle 70: Unified extraction |
-| `LD_element_maps_to_zero` | ✅ **PROVED** | Cycle 71: Forward direction complete! |
-| `kernel_element_satisfies_all_bounds` | ✅ **PROVED** | Cycle 71: Backward direction complete! |
-| `kernel_evaluationMapAt_complete_proof` | ✅ **PROVED** | Cycle 71: ker(eval) = L(D) PROVED! |
+| `evaluationMapAt_complete` | ✅ **PROVED** | 56 |
+| `kernel_evaluationMapAt_complete_proof` | ✅ **PROVED** | 71 |
+| `localGapBound_of_dedekind` | ✅ **PROVED** | 73 |
+| `riemann_inequality_affine` | ✅ **UNCONDITIONAL** | 73 |
 
-### Next Cycle (72) Instructions - LocalGapBound Instance
-
-**Goal**: Prove `instance : LocalGapBound R K` using rank-nullity theorem.
-
-**Setup**:
-1. Create new file `RrLean/RiemannRochV2/DimensionCounting.lean` to avoid 90s compile time of LocalGapInstance
-2. Import `RrLean.RiemannRochV2.KernelProof` and `Mathlib.LinearAlgebra.Dimension`
-
-**Proof Strategy**:
-1. Define φ : L(D+v) → κ(v) as `evaluationMapAt_complete v D` (already exists!)
-2. Apply **Rank-Nullity**: `LinearMap.finrank_range_add_finrank_ker φ`
-   - This gives: `dim(L(D+v)) = dim(ker φ) + dim(image φ)`
-3. Use `kernel_evaluationMapAt_complete_proof` to show: `ker φ = range(inclusion from L(D))`
-   - Since inclusion is injective: `dim(ker φ) = dim(L(D))`
-4. Use that κ(v) is 1-dimensional: `dim(image φ) ≤ 1`
-5. Conclude: `dim(L(D+v)) ≤ dim(L(D)) + 1` ✓
-
-**Key Mathlib lemmas to use**:
-- `LinearMap.finrank_range_add_finrank_ker` - Rank-Nullity
-- `LinearMap.finrank_range_of_inj` - dim(range) = dim(domain) for injective map
-- `Submodule.inclusion_injective` - inclusion is injective
-
-**LocalGapBound typeclass** (check `Typeclasses.lean` for exact field name):
-```lean
-instance : LocalGapBound R K where
-  gap_le_one := fun v D => <the dimension inequality proof>
-```
-
-**Victory**: Once this instance is proved, `riemann_inequality_affine` becomes unconditional!
+### Cycle 73 Technical Notes (LocalGapBound Instance)
+- **Exact sequence**: `LinearMap.ker_rangeRestrict` + `Submodule.range_subtype` give exactness
+- **`gcongr` tactic**: Handles universe-polymorphic ENat addition
+- **Instance disambiguation**: `haveI : LocalGapBound R K := ...` to specify which instance
+- **ENat arithmetic**: `ENat.toNat_add`, `WithTop.add_eq_top` for finite case
 
 ### Cycle 71 Technical Notes (Kernel Proofs)
 - **`erw` for definitional mismatches**: `erw [IsLocalRing.residue_eq_zero_iff]` sees through `valuationRingAt v` = `(v.valuation K).valuationSubring`
@@ -143,38 +113,86 @@ instance : LocalGapBound R K where
 
 ---
 
-## Victory Path (Updated Cycle 71 - KERNEL COMPLETE!)
+## Victory Path (COMPLETE! 🎉)
 
 ```
-evaluationMapAt_complete (Cycle 56 - PROVED ✅)  ← LINEARMAP COMPLETE!
+evaluationMapAt_complete (Cycle 56 - PROVED ✅)
     ↓
-bridge_residue_algebraMap_clean (Cycle 65 - PROVED ✅)  ← CLEAN BRIDGE PROVED!
+kernel_evaluationMapAt_complete_proof (Cycle 71 - PROVED ✅)
     ↓
-uniformizerAt_zpow_valuation (Cycle 70 - PROVED ✅)  ← ZPOW INFRASTRUCTURE!
+localGapBound_of_dedekind (Cycle 73 - PROVED ✅)
     ↓
-extract_valuation_bound_zpow (Cycle 70 - PROVED ✅)  ← UNIFIED EXTRACTION!
-    ↓
-LD_element_maps_to_zero (Cycle 71 - PROVED ✅)  ← FORWARD DIRECTION!
-    ↓
-kernel_element_satisfies_all_bounds (Cycle 71 - PROVED ✅)  ← BACKWARD DIRECTION!
-    ↓
-kernel_evaluationMapAt_complete (Cycle 71 - PROVED ✅)  ← KERNEL = L(D)!
-    ↓
-LocalGapBound instance → **NEXT TARGET**
+riemann_inequality_affine (Cycle 73 - UNCONDITIONAL ✅)  ← 🎉 VICTORY!
 ```
 
-**Cycle 71 Status**: ALL KERNEL LEMMAS PROVED! Only LocalGapBound instance remains!
+**All checkboxes complete!**
 
-- [x] `uniformizerAt_zpow_valuation` - Cycle 70 (PROVED) - v(π^n) = exp(-n) for all n ∈ ℤ
-- [x] `extract_valuation_bound_zpow` - Cycle 70 (PROVED) - unified for all integers
-- [x] `withzero_lt_exp_succ_imp_le_exp` - Cycle 68 (PROVED) - discrete step-down
-- [x] `extract_valuation_bound_from_maxIdeal_nonneg_proof` - Cycle 68 (PROVED)
-- [x] `valuation_bound_at_other_prime_proof` - Cycle 68 (PROVED)
-- [x] `valuation_lt_one_imp_mem_maxIdeal` - Cycle 68 (PROVED)
-- [x] `LD_element_maps_to_zero` - Cycle 71 (PROVED) - LD ⊆ ker direction
-- [x] `kernel_element_satisfies_all_bounds` - Cycle 71 (PROVED) - ker ⊆ LD direction
-- [x] `kernel_evaluationMapAt_complete_proof` - Cycle 71 (PROVED) - ker(eval) = L(D)
-- [ ] `instance : LocalGapBound R K` (makes riemann_inequality_affine unconditional)
+- [x] `evaluationMapAt_complete` - Cycle 56 (PROVED)
+- [x] `kernel_evaluationMapAt_complete_proof` - Cycle 71 (PROVED)
+- [x] `localGapBound_of_dedekind` - Cycle 73 (PROVED)
+- [x] `riemann_inequality_affine` - Cycle 73 (UNCONDITIONAL)
+
+---
+
+## Cleanup Opportunities (Technical Debt)
+
+### LocalGapInstance.lean (3348 lines → ~600 needed)
+
+**Problem**: Contains 77 sorries from iterative development - most are obsolete.
+
+**Essential definitions to KEEP** (~600 lines):
+- `valuationRingAt` and its lemmas
+- `shiftedElement` and `shiftedElement_mem_valuationRingAt`
+- `evaluationFun_via_bridge` and `evaluationMapAt_complete`
+- `residueFieldBridge_explicit` and supporting lemmas
+- Various infrastructure lemmas used by KernelProof.lean
+
+**OBSOLETE code to DELETE** (~2500 lines):
+- All lemmas with sorry that have `_proof` versions in KernelProof.lean
+- Dead-end approaches from Cycles 30-31 (marked OBSOLETE)
+- Duplicate lemmas with `_v2`, `_v3`, etc. suffixes
+- Test/exploratory code
+
+**Recommended approach**:
+1. Create `LocalGapInfrastructure.lean` with essential definitions
+2. Move used lemmas from LocalGapInstance.lean
+3. Delete LocalGapInstance.lean
+4. Update imports
+
+### KernelProof.lean (12 sorries)
+
+**Problem**: Contains stub versions alongside proved versions.
+
+**Fix**:
+- Delete stubs like `kernel_evaluationMapAt_complete` (sorry)
+- Keep proved versions like `kernel_evaluationMapAt_complete_proof`
+- Rename `_proof` versions to canonical names
+
+---
+
+## Future Work
+
+### Near-term: SinglePointBound
+
+To prove `riemann_inequality_real` (projective version), need:
+```lean
+instance : SinglePointBound R K where
+  gap_le_one := localGapBound_of_dedekind.gap_le_one
+  ell_zero_eq_one := sorry  -- L(0) = R has dimension 1
+```
+
+This requires proving ℓ(0) = 1, i.e., L(0) = R has Module.length 1.
+
+### Long-term: Full Riemann-Roch
+
+```
+ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
+```
+
+Requires:
+1. Canonical divisor K
+2. Genus g (via differentials or Serre duality)
+3. Duality between L(D) and L(K-D)
 
 ---
 

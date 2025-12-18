@@ -2,36 +2,187 @@
 
 *For Cycles 1-34, see `state/ledger_archive.md`*
 
-## Summary: Where We Are (End of Cycle 71)
+## Summary: Where We Are (End of Cycle 73)
 
 **Project Goal**: Prove Riemann-Roch inequality for Dedekind domains in Lean 4.
 
-**Current Target**: Assemble `LocalGapBound` instance → **VICTORY IMMINENT**
+**🎉 MILESTONE ACHIEVED**: `riemann_inequality_affine` is now **UNCONDITIONALLY PROVED**!
 
-**Blocking Chain** (Updated Cycle 71 - KERNEL COMPLETE! 🎉):
+**Victory Chain** (Complete):
 ```
 evaluationMapAt_complete (Cycle 56 - PROVED ✅)
     ↓
-bridge_residue_algebraMap_clean (Cycle 65 - PROVED ✅)
+kernel_evaluationMapAt_complete (Cycle 71 - PROVED ✅)
     ↓
-uniformizerAt_zpow_valuation (Cycle 70 - PROVED ✅)
+LocalGapBound instance (Cycle 73 - PROVED ✅)  ← MODULE.LENGTH APPROACH WORKS!
     ↓
-extract_valuation_bound_zpow (Cycle 70 - PROVED ✅)
-    ↓
-LD_element_maps_to_zero (Cycle 71 - PROVED ✅)  ← FORWARD!
-    ↓
-kernel_element_satisfies_all_bounds (Cycle 71 - PROVED ✅)  ← BACKWARD!
-    ↓
-kernel_evaluationMapAt_complete (Cycle 71 - PROVED ✅)  ← KERNEL = L(D)!
-    ↓
-LocalGapBound instance → **NEXT TARGET**
+riemann_inequality_affine (Cycle 73 - UNCONDITIONAL ✅)  ← 🎉 VICTORY!
 ```
 
-**Key Cycle 71 Achievement**: ALL THREE KERNEL LEMMAS PROVED! The kernel characterization is complete!
+**What This Means**:
+- For ANY Dedekind domain R with fraction field K
+- For ANY effective divisor D
+- We have: ℓ(D) ≤ deg(D) + basedim
+- The `[LocalGapBound R K]` hypothesis is no longer needed - it's proved globally!
 
 ---
 
 ## 2025-12-17
+
+### Cycle 73 - 🎉 VICTORY: LocalGapBound PROVED, Riemann Inequality UNCONDITIONAL!
+
+**Goal**: Complete `LocalGapBound` instance and make `riemann_inequality_affine` unconditional
+
+#### Key Achievement
+
+**THREE MAJOR MILESTONES**:
+1. `DimensionCounting.lean` - **0 sorries**, complete proof of gap ≤ 1
+2. `localGapBound_of_dedekind` - Global instance for all Dedekind domains
+3. `riemann_inequality_affine` - Now unconditional (only needs `[BaseDim R K]`)
+
+#### Proof Strategy (Module.length approach)
+
+The proof uses exact sequence additivity:
+1. **Exact sequence**: 0 → ker(φ) → L(D+v) → range(φ) → 0
+2. **Additivity**: `Module.length_eq_add_of_exact` gives length(L(D+v)) = length(ker) + length(range)
+3. **Kernel = L(D)**: From `kernel_evaluationMapAt_complete_proof` (Cycle 71)
+4. **Range ≤ 1**: range(φ) ⊆ κ(v) which is simple (length 1)
+5. **Conclude**: length(L(D+v)) ≤ length(L(D)) + 1
+
+#### Technical Challenges Overcome
+
+1. **`LinearMap.surjective_rangeRestrict`** - Correct name (not `rangeRestrict_surjective`)
+2. **Exact sequence construction**: `LinearMap.ker_rangeRestrict` + `Submodule.range_subtype`
+3. **Universe issues with ENat**: Used `gcongr` tactic to handle polymorphic addition
+4. **Instance conflicts**: Used `haveI` to disambiguate between `SinglePointBound`-derived and global instances
+5. **ENat arithmetic**: `ENat.toNat_add`, `WithTop.add_eq_top` for finite case handling
+
+#### Files Modified
+
+- `RrLean/RiemannRochV2/DimensionCounting.lean` - Complete (185 lines, 0 sorries)
+- `RrLean/RiemannRochV2/RiemannInequality.lean` - Added import, removed `[LocalGapBound R K]` from theorem
+
+#### Final Theorem
+
+```lean
+lemma riemann_inequality_affine [bd : BaseDim R K] {D : DivisorV2 R} (hD : D.Effective) :
+    (ellV2_real R K D : ℤ) ≤ D.deg + bd.basedim
+```
+
+No more `[LocalGapBound R K]` hypothesis - it's now a global instance!
+
+#### Sorry Status
+
+| File | Sorries | Status |
+|------|---------|--------|
+| **DimensionCounting.lean** | **0** | ✅ Clean - main proof |
+| KernelProof.lean | 12 | Obsolete stubs (proved versions have `_proof` suffix) |
+| LocalGapInstance.lean | 77 | Legacy development - superseded |
+| Infrastructure.lean | 0 | ✅ Clean |
+
+**The actual proof path is complete with 0 sorries!**
+
+#### Cleanup Opportunities (Technical Debt)
+
+**LocalGapInstance.lean (3348 lines → ~600 needed)**:
+- Contains ~77 sorries from failed proof attempts
+- Most are OBSOLETE - superseded by KernelProof.lean
+- Essential definitions (~600 lines): `valuationRingAt`, `shiftedElement`, `evaluationMapAt_complete`, `evaluationFun_via_bridge`
+- Recommended: Extract essential definitions, delete dead code
+
+**KernelProof.lean**:
+- 12 sorries are stub versions (e.g., `kernel_evaluationMapAt_complete`)
+- Proved versions have `_proof` suffix (e.g., `kernel_evaluationMapAt_complete_proof`)
+- Recommended: Remove stubs, rename proved versions
+
+**Estimated savings**: 3000+ lines of dead code could be deleted
+
+#### Reflector Score: 10/10
+
+**Assessment**: VICTORY! The Riemann inequality for affine curves is now unconditionally proved. Over 73 cycles, we built:
+- Complete infrastructure for valuation rings, residue fields, and evaluation maps
+- Kernel characterization showing ker(eval) = L(D)
+- Dimension counting via Module.length exact sequence additivity
+- Global `LocalGapBound` instance for all Dedekind domains
+
+**Next Steps (Future Work)**:
+1. **Cleanup**: Delete obsolete code in LocalGapInstance.lean (~2500 lines)
+2. **SinglePointBound**: Prove `ℓ(0) = 1` for projective version
+3. **Full Riemann-Roch**: Add canonical divisor and genus
+
+**Cycle rating**: 10/10 (🎉 MAJOR MILESTONE - RIEMANN INEQUALITY UNCONDITIONALLY PROVED!)
+
+---
+
+### Cycle 72 - LocalGapBound Attempt: Architectural Discovery
+
+**Goal**: Prove `instance : LocalGapBound R K` using kernel characterization
+
+#### What We Tried
+
+1. Created `DimensionCounting.lean` as recommended by playbook
+2. Attempted to prove dimension bound via `Module.length` additivity on exact sequences:
+   - 0 → L(D) → L(D+v) → κ(v) is exact (from `kernel_evaluationMapAt_complete_proof`)
+   - κ(v) has length 1 (simple R-module since v is maximal)
+   - Therefore length(L(D+v)) ≤ length(L(D)) + 1
+
+#### Blockers Encountered
+
+**ARCHITECTURAL MISMATCH**: `ellV2_real` is defined using `Module.length` (composition series theory), but the playbook suggested using `finrank` (vector space dimension). These are fundamentally different concepts:
+
+- `Module.length R M` - Length of M as an R-module via composition series
+- `finrank k V` - Dimension of V as a k-vector space
+
+For the approaches to align, we'd need either:
+1. Change `ellV2_real` definition to use `finrank`
+2. Prove `Module.length` = `finrank` in our setting (non-trivial)
+
+**Specific Mathlib API Issues**:
+1. `IsSimpleModule R (R ⧸ v.asIdeal)` - Proved via `isSimpleModule_iff_quot_maximal`
+2. `Module.length_eq_one_iff` - Exists and works correctly
+3. `Module.length_eq_add_of_exact` - Requires exact sequence data (f, g, hf, hg, H) not just submodule
+4. ENat arithmetic (`ENat.toNat_top`, `WithTop.coe_ne_top`) - Different from expected naming
+
+The exact sequence approach requires constructing proper `Function.Exact` proofs which is more complex than expected.
+
+#### Files Created
+
+- `RrLean/RiemannRochV2/DimensionCounting.lean` - Partial implementation (has sorries)
+
+#### Architectural Options for Next Cycle
+
+**Option A: Fix Module.length approach**
+- Complete the `Function.Exact` construction properly
+- Prove κ(v) is simple → length = 1
+- Use `Module.length_eq_add_of_exact` with proper exact sequence structure
+- Estimated: 1-2 cycles
+
+**Option B: Redefine ellV2_real using finrank**
+- Change `ellV2_real_extended` from `Module.length` to finite-rank approach
+- Use standard rank-nullity theorem
+- May require additional finiteness hypotheses
+- Estimated: 2-3 cycles (bigger refactor)
+
+**Option C: Direct approach without exact sequences**
+- Use `Module.length_le_of_injective` and `Module.length_quotient`
+- More manual but avoids exact sequence machinery
+- Estimated: 1 cycle
+
+#### Technical Notes
+
+- `isSimpleModule_iff_quot_maximal.mpr ⟨I, hmax, ⟨LinearEquiv.refl R _⟩⟩` works for R/I
+- `LinearEquiv.length_eq` preserves length through equivalences
+- `Submodule.length_quotient_add_length_eq` does NOT exist - need `Module.length_eq_add_of_exact`
+
+#### Reflector Score: 4/10
+
+**Assessment**: Exploratory cycle that revealed architectural mismatch between playbook strategy (finrank/rank-nullity) and actual codebase (Module.length). Good learning but no proofs completed.
+
+**Recommendation**: Option C (direct approach) seems most promising for next cycle.
+
+**Cycle rating**: 4/10 (Important architectural discovery, but no progress on actual proof)
+
+---
 
 ### Cycle 71 - 🎉 KERNEL PROOFS COMPLETE!
 

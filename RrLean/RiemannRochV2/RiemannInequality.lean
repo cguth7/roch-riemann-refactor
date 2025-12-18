@@ -1,4 +1,5 @@
 import RrLean.RiemannRochV2.Typeclasses
+import RrLean.RiemannRochV2.DimensionCounting
 
 /-!
 # Riemann Inequality
@@ -91,6 +92,7 @@ lemma riemann_inequality_real [SinglePointBound R K] {D : DivisorV2 R} (hD : D.E
       intro w _; exact hD' w) hdeg'
     -- Apply single point bound (inherited from LocalGapBound via extends)
     rw [h_decomp]
+    haveI : LocalGapBound R K := SinglePointBound.toLocalGapBound
     have h_step : ellV2_real R K (D' + DivisorV2.single v 1) ≤ ellV2_real R K D' + 1 :=
       LocalGapBound.gap_le_one D' v
     -- Combine
@@ -131,7 +133,7 @@ PROOF STRATEGY (degree induction with explicit base):
    - IH: ℓ(D') ≤ deg(D') + basedim = n + basedim
    - Bound: ℓ(D) ≤ ℓ(D') + 1 (LocalGapBound.gap_le_one)
    - Combine: ℓ(D) ≤ (n + basedim) + 1 = deg(D) + basedim -/
-lemma riemann_inequality_affine [LocalGapBound R K] [bd : BaseDim R K] {D : DivisorV2 R} (hD : D.Effective) :
+lemma riemann_inequality_affine [bd : BaseDim R K] {D : DivisorV2 R} (hD : D.Effective) :
     (ellV2_real R K D : ℤ) ≤ D.deg + bd.basedim := by
   -- Induction on n = (deg D).toNat
   have h_deg_nonneg : 0 ≤ D.deg := by
@@ -188,8 +190,9 @@ lemma riemann_inequality_affine [LocalGapBound R K] [bd : BaseDim R K] {D : Divi
       unfold DivisorV2.deg
       apply Finsupp.sum_nonneg
       intro w _; exact hD' w) hdeg'
-    -- Apply single point bound
+    -- Apply gap bound (now unconditional via DimensionCounting.lean)
     rw [h_decomp]
+    haveI : LocalGapBound R K := localGapBound_of_dedekind R K
     have h_step : ellV2_real R K (D' + DivisorV2.single v 1) ≤ ellV2_real R K D' + 1 :=
       LocalGapBound.gap_le_one D' v
     -- Combine
