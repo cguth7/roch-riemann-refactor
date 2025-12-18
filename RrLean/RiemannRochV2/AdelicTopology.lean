@@ -264,78 +264,31 @@ theorem compact_adelic_quotient [DiscreteCocompactEmbedding R K] :
 
 end Cocompactness
 
-/-! ## Main Theorem: H¹(D) is finite-dimensional
-
-Combining local compactness, discrete embedding, and cocompactness,
-we can prove that H¹(D) = A_K / (K + A_K(D)) is finite-dimensional.
--/
-
-section MainTheorem
-
-variable (k : Type*) [Field k]
-variable (R : Type*) [CommRing R] [IsDomain R] [IsDedekindDomain R] [Algebra k R]
-variable (K : Type*) [Field K] [Algebra k K] [Algebra R K] [IsFractionRing R K]
-variable [IsScalarTower k R K]
-
-open RiemannRochV2 in
-/-- Main theorem: H¹(D) is finite-dimensional under our hypotheses.
-
-The proof uses:
-1. The finite adele ring is locally compact (from `locallyCompactSpace_finiteAdeleRing`)
-2. K embeds discretely and cocompactly (from `DiscreteCocompactEmbedding`)
-3. A_K(D) is an open subset containing the "integral" adeles for effective D
-4. The quotient inherits compactness, hence finite-dimensionality as a k-space
-
-**Mathematical Sketch**:
-- The fundamental domain F from `compact_adelic_quotient` is compact
-- For effective D, A_K(D) ⊇ ∏_v O_v (integral adeles)
-- So the quotient A_K / (K + A_K(D)) is a quotient of F / ((K + A_K(D)) ∩ F)
-- Since F is compact and K is discrete, the intersection is finite
-- A compact space with finite equivalence classes gives finite quotient (over k)
-
-**Status**: This lemma requires measure-theoretic machinery (Haar measure, fundamental
-domains) to prove rigorously. The statement is correct mathematically, but the
-full proof requires infrastructure that combines:
-- `MeasureTheory.IsAddFundamentalDomain` from Mathlib
-- Haar measure on locally compact groups
-- Finiteness of lattice points in compact sets (Blichfeldt's theorem)
--/
-theorem h1_module_finite [AllIntegersCompact R K] [DiscreteCocompactEmbedding R K]
-    (D : DivisorV2 R) (hD : DivisorV2.Effective D) :
-    Module.Finite k (AdelicH1v2.SpaceModule k R K D) := by
-  -- The proof strategy is outlined above.
-  -- The key ingredients are:
-  -- 1. LocallyCompactSpace (FiniteAdeleRing R K) from AllIntegersCompact
-  -- 2. Compact fundamental domain F from DiscreteCocompactEmbedding
-  -- 3. For effective D: integral adeles ⊆ A_K(D), so the quotient is bounded by F
-  -- 4. Discrete subgroup in compact set = finite
-  -- 5. Module over finite set is finite-dimensional
-  --
-  -- This is correct mathematically but requires Haar measure / Blichfeldt infrastructure
-  -- that would be substantial to develop from scratch.
-  sorry
-
-end MainTheorem
-
 /-! ## Summary of Axiomatization
 
-This module provides two levels of axiomatization:
+This module provides two levels of topological axiomatization:
 
 1. **AllIntegersCompact**: Each `adicCompletionIntegers K v` is compact.
-   - This is true for function fields over finite fields
+   - True for function fields over finite base fields
    - Implies `LocallyCompactSpace (FiniteAdeleRing R K)`
 
 2. **DiscreteCocompactEmbedding**: K embeds discretely and cocompactly into A_K.
-   - This captures the "adelic Minkowski theorem"
+   - Captures the "adelic Minkowski theorem"
    - Implies closed_diagonal, discrete_diagonal, compact_adelic_quotient
+
+**Expected Route to H¹(D) Finiteness** (Track B target):
+1. `LocallyCompactSpace (FiniteAdeleRing R K)` - from (1)
+2. Discrete + cocompact embedding - from (2)
+3. Blichfeldt/Haar measure argument: discrete lattice ∩ compact = finite set
+4. Over finite k: finite set spans finite-dimensional k-module
+
+Note: The finiteness of H¹(D) is axiomatized in `AdelicRRData.h1_finite` in
+`AdelicH1v2.lean`, which is the primary Track A axiom for this property.
 
 **Track B Goal**: Prove these axioms for specific function fields.
 For a function field K = k(C) where k is finite:
-- AllIntegersCompact follows from: finite residue field + complete DVR
-- DiscreteCocompactEmbedding follows from: product formula + strong approximation
-
-The `AdelicRRData` typeclass in `AdelicH1v2.lean` packages the consequences of
-these topological properties together with the Serre duality axiom.
+- AllIntegersCompact: finite residue field + complete DVR → compact O_v
+- DiscreteCocompactEmbedding: product formula + strong approximation
 -/
 
 end RiemannRochV2.AdelicTopology

@@ -1397,6 +1397,50 @@ focus on adelic infrastructure**, specifically:
 
 ---
 
+#### Cycle 102 - Cleanup: Removed Redundant Axiom
+
+**Goal**: Review and clean up axiom structure.
+
+**Status**: ✅ COMPLETE (after revision)
+
+**Initial Attempt** (reverted):
+- Added `H1FiniteDimensional` class to "eliminate" the sorry
+- This was misguided: axiom ≈ sorry, just with better documentation
+
+**After Review**:
+- Removed redundant `H1FiniteDimensional` class (weaker than `AdelicRRData.h1_finite`)
+- Removed unused `h1_module_finite` theorem
+- Cleaned up summary documentation
+
+**Key Insight** (from user feedback):
+1. Axioms and sorries are both "unprovable holes" that need eventual discharge
+2. The difference: axioms have clear mathematical justification, sorries are TODOs
+3. Adding axiom layers to hide sorries is cosmetic, not substantive
+
+**Actual Axiom Structure** (no redundancy):
+
+| File | Axiom Class | Content |
+|------|------------|---------|
+| AdelicTopology.lean | `AllIntegersCompact` | Each O_v compact (implies locally compact A_K) |
+| AdelicTopology.lean | `DiscreteCocompactEmbedding` | K discrete + cocompact in A_K |
+| AdelicH1v2.lean | `AdelicRRData` | h¹ finite, vanishing, Serre duality, adelic RR |
+| FullRRData.lean | `FullRRData` | Full RR equation (DERIVED from AdelicRRData) |
+
+**Expected Route to H¹(D) Finiteness** (when discharging AdelicRRData.h1_finite):
+1. Locally compact A_K (from AllIntegersCompact)
+2. Discrete + cocompact K → A_K (from DiscreteCocompactEmbedding)
+3. Discrete lattice ∩ compact set = finite set (Blichfeldt)
+4. Over finite k: finite set spans finite-dimensional module
+
+**Sorry Status** (unchanged from Cycle 101):
+- TraceDualityProof.lean: 1 sorry (`finrank_dual_eq` - NOT on critical path)
+
+**Total**: 1 sorry in main path
+
+**Forward Direction**: Track B - Start discharging axioms rather than adding new ones.
+
+---
+
 ## References
 
 ### Primary (Validated)
