@@ -99,9 +99,9 @@ RrLean/RiemannRochV2/
 ├── FullRRData.lean         # ✅ Full RR typeclass + theorem (Cycle 80)
 ├── DifferentIdealBridge.lean # ✅ Track B bridge (Cycle 82, 0 sorries)
 ├── TraceDualityProof.lean  # ⏳ Track B duality (Cycle 83, 3 sorries)
-├── TestBlockerProofs.lean  # Experimental proofs
 └── archive/
-    └── LocalGapInstance.lean  # ARCHIVED
+    ├── LocalGapInstance.lean   # ARCHIVED
+    └── TestBlockerProofs.lean  # ARCHIVED (Cycle 58 experiments)
 ```
 
 **Phase 2 (Complete)**: 0 sorries - Riemann inequality proved!
