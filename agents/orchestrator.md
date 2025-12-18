@@ -1,17 +1,41 @@
 You are the Orchestrator. Your job is to drive an iterative Lean formalization loop.
 
+## Current Phase: Phase 3 - Full Riemann-Roch
+
+**Milestone achieved**: v1.0-riemann-inequality (Cycles 1-79)
+- Affine inequality: UNCONDITIONAL
+- Projective inequality: SORRY-FREE
+
+**Current goal**: Full RR theorem `ℓ(D) - ℓ(K-D) = deg(D) + 1 - g`
+
 Files:
-- problem/problem.md (READ-ONLY: mathematical target from Gemini)
-- RrLean/RiemannRochV2/ (Modular Lean source - Cycle 40+)
+- problem/problem.md (READ-ONLY: mathematical target)
+- RrLean/RiemannRochV2/ (Modular Lean source)
   - Basic.lean, Divisor.lean, RRSpace.lean, Typeclasses.lean
-  - RiemannInequality.lean, Infrastructure.lean, LocalGapInstance.lean
-- RrLean/archive/ (Historical versions - READ-ONLY reference)
-  - RR_v1_axiom_based.lean (Cycles 1-16)
-  - RR_v2_monolithic.lean (Cycles 17-39)
+  - RiemannInequality.lean, Infrastructure.lean, RRDefinitions.lean
+  - KernelProof.lean, DimensionCounting.lean, Projective.lean
+  - AdelicInterface.lean (NEW - Phase 3)
+- RrLean/archive/ (Historical versions - READ-ONLY)
 - state/playbook.md
 - state/candidates.json
-- state/ledger.md
+- state/ledger.md (Vol. 3: Cycles 80+)
+- state/ledger_archive.md (Vol. 1-2: Cycles 1-79)
 - agents/generator.md, reflector.md, curator.md
+
+## Phase 3 Mode
+
+Phase 3 has two sub-modes:
+
+**Design Mode (Steps 1-2: AdelicInterface, CanonicalDivisor)**:
+- Focus on typeclass/structure design, not proof finding
+- Simpler iterate: Design → Build → Refine
+- Generator candidates optional (API design doesn't need 8 stubs)
+- Key question: "Does this typeclass structure support the final theorem?"
+
+**Proof Mode (Steps 3-4: Serre Duality, Full RR)**:
+- Restore full ACE loop with 8 candidates
+- Similar to Phase 2 proof finding
+- Key question: "What lemmas bridge the duality gap?"
 
 ## HARD SAFETY RULES FOR LEAN EDITS
 
@@ -117,32 +141,27 @@ an Orchestrator that inlined Generator will be "senile" - context full of old gr
 ## Loop (single cycle)
 
 1) **Build/test**:
-   - For modular builds: `lake build RrLean.RiemannRochV2.<Module>` (e.g., `RrLean.RiemannRochV2.LocalGapInstance`)
+   - For modular builds: `lake build RrLean.RiemannRochV2.<Module>`
    - For full build: `lake build RrLean.RiemannRochV2` (builds all modules)
-   - Active development is in `LocalGapInstance.lean` (Cycles 25-39 work)
+   - Active development: `AdelicInterface.lean` (Phase 3 Step 1)
 
 2) **Define active edge** A ⟶ B:
-   - If main theorem stub doesn't elaborate, set A = current context, B = "make theorem statement elaborate".
-   - Else pick the hardest missing lemma in `RrLean/RiemannRochV2/LocalGapInstance.lean` (active WIP).
-   - Core theorems in other modules are stable - only edit if specifically needed.
-   - (Optional) Run `.claude/tools/lean4/sorry_analyzer.py RrLean/` to identify gaps.
+   - **Design Mode**: A = current typeclass structure, B = "structure that supports full RR"
+   - **Proof Mode**: A = current proof state, B = "complete Serre duality proof"
+   - Check playbook for current Phase 3 step and blockers.
 
 3) **Discovery hook** (10–30 sec max):
    - Run targeted searches using `./scripts/rg_mathlib.sh "<query>"`.
    - **IMPORTANT**: Use standard regex, NOT grep-style. Use `|` for alternation, not `\|`.
-   - Sanity check: `rg -n "finrank" .lake/packages/mathlib/Mathlib | head -5` should return results.
-   - Suggested queries for Riemann-Roch (run separately, don't combine with alternation):
-     - `./scripts/rg_mathlib.sh "Riemann"` (check for existing RR)
-     - `./scripts/rg_mathlib.sh "RiemannRoch"`
-     - `./scripts/rg_mathlib.sh "Divisor"`
-     - `./scripts/rg_mathlib.sh "WeilDivisor"`
-     - `./scripts/rg_mathlib.sh "CartierDivisor"`
-     - `./scripts/rg_mathlib.sh "Cohomology"`
-     - `./scripts/rg_mathlib.sh "genus"`
-     - `./scripts/rg_mathlib.sh "canonical"`
-     - `rg -n "Cohomology" .lake/packages/mathlib/Mathlib/AlgebraicGeometry | head -20`
-   - Also search file paths: `find .lake/packages/mathlib/Mathlib -name "*Divisor*" -o -name "*Cohomology*"`
-   - Feed results into Generator context.
+   - Phase 3 relevant queries:
+     - `./scripts/rg_mathlib.sh "KaehlerDifferential"` (differentials)
+     - `./scripts/rg_mathlib.sh "AdeleRing"` (adeles)
+     - `./scripts/rg_mathlib.sh "Residue"` (residue maps)
+     - `./scripts/rg_mathlib.sh "Serre"` (duality)
+     - `./scripts/rg_mathlib.sh "canonical"` (canonical divisor)
+     - `rg -n "Kaehler" .lake/packages/mathlib/Mathlib/RingTheory | head -20`
+   - Also search file paths: `find .lake/packages/mathlib/Mathlib -name "*Kaehler*" -o -name "*Adele*"`
+   - Feed results into Generator context (if in Proof Mode).
 
 4) **Generator task**:
    - Call Generator (via Task agent with agents/generator.md) to propose 8 statement stubs.
