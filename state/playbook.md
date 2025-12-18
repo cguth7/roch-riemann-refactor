@@ -99,6 +99,7 @@ RrLean/RiemannRochV2/
 ├── FullRRData.lean         # ✅ Full RR typeclass + theorem (Cycle 80)
 ├── DifferentIdealBridge.lean # ✅ Track B bridge (Cycle 82, 0 sorries)
 ├── TraceDualityProof.lean  # ⏳ Track B duality (Cycle 83, 3 sorries)
+├── Adeles.lean             # ✅ Track B adeles (Cycle 84, 0 sorries)
 └── archive/
     ├── LocalGapInstance.lean   # ARCHIVED
     └── TestBlockerProofs.lean  # ARCHIVED (Cycle 58 experiments)
@@ -183,8 +184,11 @@ DifferentIdealBridge.lean (Cycle 82) ✅ COMPLETE
     ↓ Connect differentIdeal to DivisorV2 via FractionalIdeal.count
 TraceDualityProof.lean (Cycle 83) ✅ Infrastructure laid
     ↓ Key insight: trace dual gives H¹(K-D), not L(K-D) directly
-AdelicCohomology.lean (Cycle 84+)
-    ↓ Define H¹(D) via adelic cokernel
+Adeles.lean (Cycle 84) ✅ COMPLETE
+    ↓ A_K = FiniteAdeleRing (Mathlib), A_K(D) defined
+    ↓ L(D) ⊆ A_K(D) proved via valuedAdicCompletion_eq_valuation'
+H¹ Quotient (Cycle 85+)
+    ↓ Define H¹(D) = A_K / (K + A_K(D)) as quotient module
     ↓ Prove h¹(D) = ℓ(K-D) (Serre duality)
     ↓ This discharges serre_duality_eq axiom → FULL RR PROVED
 ```
@@ -208,8 +212,8 @@ Track A (Cycle 80): ✅ COMPLETE
 Track B (Cycles 81+) - Required for full proof:
 - [x] Bridge `differentIdeal` → `DivisorV2 R` (Cycle 82)
 - [x] TraceDualityProof infrastructure (Cycle 83)
-- [ ] Define adeles A_K as restricted product (Cycle 84)
-- [ ] Define H¹(D) via adelic cokernel (Cycle 85)
+- [x] Define adeles A_K as restricted product (Cycle 84) ✅
+- [ ] Define H¹(D) via adelic quotient (Cycle 85)
 - [ ] Prove Serre duality: h¹(D) = ℓ(K-D) (Cycles 86-88)
 - [ ] Instantiate `FullRRData` with proof (Cycle 89+)
 

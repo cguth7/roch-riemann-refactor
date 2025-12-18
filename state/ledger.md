@@ -283,10 +283,55 @@ theorem serre_duality_dimension (frr : FullRRData k R K) (D : DivisorV2 R) ...
 
 **Total**: 6 sorries (4 in main path, 2 experimental)
 
-**Next Steps** (Cycle 84+):
-1. Prove `RRModuleV2_eq_fractionalIdeal_toSubmodule` - connect valuation condition to ideal membership
-2. Prove `finrank_dual_eq` - use trace form nondegeneracy
-3. Or: Pivot to adelic/idelic formulation for H^1
+---
+
+#### Cycle 84 - Adeles.lean (Track B, adelic infrastructure)
+
+**Goal**: Define adeles A_K using Mathlib's `FiniteAdeleRing` and connect to divisor bounds.
+
+**Status**: ✅ COMPLETE
+
+**Created**: `RrLean/RiemannRochV2/Adeles.lean` (~210 lines)
+
+**Key Discovery**: Mathlib already has full adelic infrastructure!
+- `IsDedekindDomain.FiniteAdeleRing R K` = restricted product ∏'_v K_v
+- `HeightOneSpectrum.adicCompletion K v` = completion at place v
+- `valuedAdicCompletion_eq_valuation'` = bridge between K-valuation and completion valuation
+
+**New Definitions**:
+```lean
+-- Adeles bounded by divisor D
+def AdeleBoundedByDivisor (D : DivisorV2 R) : Set (FiniteAdele R K) :=
+  {x | ∀ v, Valued.v (x v) ≤ WithZero.exp (D v)}
+
+-- Adelic subspace K + A_K(D)
+def adelicSubspace (D : DivisorV2 R) : Set (FiniteAdele R K) :=
+  {a | ∃ f : K, ∃ x ∈ AdeleBoundedByDivisor R K D, a = diagonalEmbedding R K f + x}
+```
+
+**Lemmas Proved**:
+1. `zero_mem_adeleBoundedByDivisor` - 0 ∈ A_K(D) for any D
+2. `adeleBoundedByDivisor_add` - A_K(D) closed under addition
+3. `adeleBoundedByDivisor_neg` - A_K(D) closed under negation
+4. `RRSpace_subset_AdeleBounded` - L(D) ⊆ A_K(D) via diagonal embedding
+5. `K_subset_adelicSubspace` - K ⊆ K + A_K(D)
+6. `adeleBounded_subset_adelicSubspace` - A_K(D) ⊆ K + A_K(D)
+
+**Technical Fix**: Corrected sign convention for valuation bounds.
+- L(D) uses `v(f) ≤ exp(D(v))` (allows poles up to order D(v))
+- A_K(D) now uses the same bound, matching L(D) directly
+
+**Sorry Status**:
+- Adeles.lean: 0 sorries (NEW!)
+- TraceDualityProof.lean: 3 sorries (unchanged)
+- FullRRData.lean: 1 sorry (unchanged)
+
+**Total**: 4 sorries in main path (unchanged)
+
+**Next Steps** (Cycle 85+):
+1. Define H¹(D) = dim_k(A_K / (K + A_K(D))) more formally as a quotient
+2. Prove finiteness of H¹(D) using compactness/restricted product structure
+3. Prove Serre duality: h¹(D) = ℓ(K - D) via local trace pairings
 
 ---
 
