@@ -6,12 +6,12 @@
 
 ---
 
-## ⚡ Quick Reference: Current Axiom/Sorry Status (Cycle 113)
+## ⚡ Quick Reference: Current Axiom/Sorry Status (Cycle 114)
 
 | File | Item | Type | Status | Discharge Path |
 |------|------|------|--------|----------------|
 | `ResidueFieldIso.lean` | `toResidueField_surjective` | theorem | ✅ PROVED | Via `residue_of_K_element` (with sorries) |
-| `ResidueFieldIso.lean` | `residue_of_K_element` | lemma | 🔶 2 sorries | Coercion management S↔C |
+| `ResidueFieldIso.lean` | `residue_of_K_element` | lemma | 🔶 2 sorries | Coercion chain Units↔Subtype↔Completion |
 | `TraceDualityProof.lean` | `finrank_dual_eq` | sorry | ⚪ NOT CRITICAL | Not on main proof path |
 | `AllIntegersCompactProof.lean` | `FiniteCompletionResidueFields` | class | ✅ DISCHARGED | Via `residueFieldIso` (needs surjectivity) |
 | `AdelicTopology.lean` | `AllIntegersCompact` | class | ✅ PROVED | Via DVR + RankOne (Cycles 105-107) |
@@ -19,7 +19,7 @@
 
 **Build Status**: ⚠️ Compiles with 3 sorries (no axioms!)
 
-**Next Priority**: Fill 2 sorries in `residue_of_K_element` via coercion bridge lemmas + simp
+**Next Priority**: Fill 2 sorries in `residue_of_K_element` via coercion bridge lemmas (see Cycle 114 notes)
 
 ---
 
@@ -1047,6 +1047,54 @@ simp [hs_coe, ...]
 1. Add explicit coercion bridge lemmas and use `simp` throughout
 2. For `s ∈ v.asIdeal, v(k) = 1`: Either factor via uniformizers or use `Localization.AtPrime` API
 3. Consider using `native_decide` for definitional equalities if simp fails
+
+---
+
+#### Cycle 114 - Coercion Analysis + Structure Clarification
+
+**Goal**: Fill the 2 sorries in `residue_of_K_element` using coercion bridge lemmas.
+
+**Status**: 🔶 IN PROGRESS (code restructured, sorries documented)
+
+**Results**:
+- [x] Fixed variable naming inconsistency (b → s) throughout
+- [x] Restructured `residue_of_K_element` with clearer proof strategy
+- [x] Added v(k) < 1 subcase handling for s ∈ v.asIdeal (returns 0)
+- [x] Documented the mathematical content of remaining sorries
+- [ ] Fill s ∉ v.asIdeal sorry (coercion: Units ↔ Subtype ↔ Completion)
+- [ ] Fill s ∈ v.asIdeal, v(k) = 1 sorry (uniformizer factoring)
+
+**Key Insight**: The mathematical content is clear in both cases:
+1. **s ∉ v.asIdeal**: `residue(a*t) = residue(a) * residue(s)⁻¹ = residue(a/s)` where t is the mod-v inverse of s
+2. **s ∈ v.asIdeal, v(k) = 1**: After factoring uniformizers, reduces to case 1
+
+**Blocking Issue**: The coercion chain is complex:
+```
+(v.adicCompletionIntegers K)ˣ  -- units of integer ring
+    ↓ coercion
+v.adicCompletionIntegers K     -- integer ring (subtype)
+    ↓ coercion
+v.adicCompletion K             -- completion
+```
+The `Units.val_inv_eq_inv_val` lemma and `map_units_inv` need careful application to navigate this.
+
+**Sorries** (unchanged count, clearer location):
+- ResidueFieldIso.lean:395 - s ∈ v.asIdeal, v(k) = 1 case
+- ResidueFieldIso.lean:465 - s ∉ v.asIdeal coercion case
+- TraceDualityProof.lean:150 - `finrank_dual_eq` (NOT on critical path)
+
+**Total**: 3 sorries in proof path
+
+**Build**: ✅ Compiles successfully
+
+**Recommended Approach** (for Cycle 115+):
+1. Create explicit bridge lemmas for the coercion chain:
+   ```lean
+   lemma units_coe_inv_eq_inv_coe (u : Sˣ) : ((u⁻¹ : Sˣ) : S) = (u : S)⁻¹
+   lemma residue_units_inv (u : Sˣ) : residue (u⁻¹ : S) = (residue u)⁻¹
+   ```
+2. Use `simp only [...]` with these lemmas to unfold coercions
+3. For s ∈ v.asIdeal case: Consider using `IsLocalization.surj` to get a better representation
 
 ---
 
