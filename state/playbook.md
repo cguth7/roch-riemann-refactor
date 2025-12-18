@@ -2,7 +2,7 @@
 
 ## Ultimate Goal: Riemann-Roch Theorem
 
-**IMPORTANT CONTEXT FOR ALL LOOPS**: The current target (`LocalGapBound R K`) is a milestone, NOT the final goal.
+**IMPORTANT CONTEXT FOR ALL LOOPS**: The Riemann inequality milestones are complete. Next target is full Riemann-Roch.
 
 The **ultimate objective** is a complete formalization of the **Riemann-Roch theorem** for algebraic curves/function fields in Lean 4:
 ```
@@ -15,9 +15,9 @@ Where:
 - `g` = genus of the curve/function field
 - `deg(D)` = degree of divisor D
 
-**Current Phase**: We're proving the **Riemann inequality** (`ℓ(D) ≤ deg(D) + 1 - g` or affine variant) as a stepping stone. This requires:
-1. ✅ `riemann_inequality_affine` theorem (PROVED, but needs `LocalGapBound` instance)
-2. ⚠️ `LocalGapBound R K` instance (CURRENT TARGET)
+**Current Phase**: Both affine and projective Riemann inequalities are **COMPLETE**!
+1. ✅ `riemann_inequality_affine` — UNCONDITIONALLY PROVED (Cycle 73)
+2. ✅ `riemann_inequality_proj` — SORRY-FREE (Cycle 79)
 3. 🔮 Full Riemann-Roch with canonical divisor and genus (FUTURE)
 
 **Why this matters for decision-making**:
@@ -53,7 +53,7 @@ Where:
 
 ---
 
-## Current Status (Cycle 76 - Projective Layer Added!)
+## Current Status (Cycle 79 - Projective Complete! 🎉)
 
 **Codebase Structure**:
 ```
@@ -67,14 +67,14 @@ RrLean/RiemannRochV2/
 ├── RRDefinitions.lean      # Essential definitions ✅ **CLEAN** (0 sorries!)
 ├── KernelProof.lean        # Kernel proofs ✅ **CLEAN** (0 sorries!)
 ├── DimensionCounting.lean  # Cycle 73 ✅ **CLEAN** (0 sorries!)
-├── Projective.lean         # **NEW** Cycle 76: finrank-based ℓ(D) (1 sorry)
+├── Projective.lean         # Cycle 79 ✅ **CLEAN** (0 sorries!)
 ├── TestBlockerProofs.lean  # Cycle 58-60: Test proofs
 └── archive/
     └── LocalGapInstance.lean  # ARCHIVED: exploration history
 ```
 
 **Affine codebase**: 0 sorries (complete!)
-**Projective layer**: 1 sorry (quotient → κ(v) injection)
+**Projective layer**: 0 sorries (complete!)
 
 ### 🎉 MILESTONE ACHIEVED (Cycle 73)
 
@@ -156,11 +156,10 @@ All technical debt has been addressed:
 
 ## Future Work
 
-### Near-term: Projective Layer Completion (Cycle 76)
+### ✅ Projective Layer (Cycle 79 - COMPLETE)
 
-**NEW**: Projective RR now exists in `Projective.lean` with `finrank k`-based dimension!
+**Status**: Projective RR is now **SORRY-FREE**!
 
-**Current State**:
 ```lean
 theorem riemann_inequality_proj [ProperCurve k R K] [AllRational k R]
     {D : DivisorV2 R} (hD : D.Effective)
@@ -168,21 +167,13 @@ theorem riemann_inequality_proj [ProperCurve k R K] [AllRational k R]
     (ell_proj k R K D : ℤ) ≤ D.deg + 1
 ```
 
-**1 Sorry Remaining** in `gap_le_one_proj_of_rational`:
-- Need: k-linear injection from quotient L(D+v)/L(D) to κ(v)
-- Have: R-linear evaluation map with correct kernel
-- Missing: Bridge showing quotient embeds into 1-dim κ(v) as k-space
+**Solution Used** (Cycle 79):
+1. Derived `Module.Finite k κ(v)` from `RationalPoint` via `κ(v) ≃ₐ[k] k`
+2. Constructed k-linear map `ψ` using scalar tower `IsScalarTower.algebraMap_smul`
+3. Proved `LD = ker(ψ)` using `LD_element_maps_to_zero` and `kernel_evaluationMapAt_complete_proof`
+4. Applied `Submodule.liftQ` + `LinearMap.finrank_le_finrank_of_injective`
 
-**Proposed Fix (Cycle 77)**:
-```lean
--- Use restrictScalars to convert R-linear eval to k-linear
-let φ_k := φ_R.restrictScalars k
--- Show ker(φ_k) = LD.comap LD_v.subtype via kernel_evaluationMapAt_complete_proof
--- Apply LinearMap.finrank_range_add_finrank_ker for dimension counting
--- Bound dim(range φ_k) ≤ dim(κ(v)) = 1 via Submodule.finrank_le
-```
-
-**Key Typeclasses** (Cycle 76):
+**Key Typeclasses**:
 - `RationalPoint k R v` — κ(v) ≅ₐ[k] k
 - `ProperCurve k R K` — axiom `ell_proj 0 = 1`
 - `AllRational k R` — all points are rational

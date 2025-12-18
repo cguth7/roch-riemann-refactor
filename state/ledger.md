@@ -2,13 +2,13 @@
 
 *For Cycles 1-34, see `state/ledger_archive.md`*
 
-## Summary: Where We Are (End of Cycle 77)
+## Summary: Where We Are (End of Cycle 79)
 
 **Project Goal**: Prove Riemann-Roch inequality for Dedekind domains in Lean 4.
 
 **🎉 MILESTONE ACHIEVED**: `riemann_inequality_affine` is now **UNCONDITIONALLY PROVED**!
 
-**🎉 NEW**: Projective layer with `finrank`-based dimension added!
+**🎉 MILESTONE ACHIEVED**: `riemann_inequality_proj` is now **SORRY-FREE**!
 
 **Victory Chain - Affine** (Complete & Sorry-Free):
 ```
@@ -21,22 +21,123 @@ DimensionCounting.lean (0 sorries ✅)
 RiemannInequality.lean (UNCONDITIONAL ✅)  ← 🎉 AFFINE VICTORY!
 ```
 
-**Victory Chain - Projective** (1 sorry):
+**Victory Chain - Projective** (Complete & Sorry-Free):
 ```
-Projective.lean (1 sorry)
+Projective.lean (0 sorries ✅)
     ↓
 riemann_inequality_proj [ProperCurve k R K] [AllRational k R]
     ↓
-ℓ(D) ≤ deg(D) + 1  ← 🎉 PROJECTIVE RR!
+ℓ(D) ≤ deg(D) + 1  ← 🎉 PROJECTIVE VICTORY!
 ```
 
 **What This Means**:
 - **Affine**: For ANY Dedekind domain R, ℓ(D) ≤ deg(D) + basedim (0 sorries)
-- **Projective**: For proper curves with rational points, ℓ(D) ≤ deg(D) + 1 (1 sorry)
+- **Projective**: For proper curves with rational points, ℓ(D) ≤ deg(D) + 1 (0 sorries)
 
 ---
 
 ## 2025-12-18
+
+### Cycle 79 - Projective Layer Complete! 🎉
+
+**Goal**: Fix the remaining sorry in `gap_le_one_proj_of_rational`
+
+#### Key Achievement
+
+**PROJECTIVE RIEMANN INEQUALITY NOW SORRY-FREE!**
+
+```lean
+theorem riemann_inequality_proj [ProperCurve k R K] [AllRational k R]
+    {D : DivisorV2 R} (hD : D.Effective)
+    [∀ E, Module.Finite k (RRSpace_proj k R K E)] :
+    (ell_proj k R K D : ℤ) ≤ D.deg + 1
+```
+
+#### What We Did
+
+1. **Derived `Module.Finite k κ(v)`** from `RationalPoint` typeclass via `κ(v) ≃ₐ[k] k`
+
+2. **Constructed k-linear evaluation map `ψ`** using the scalar tower `k → R → K`:
+   - Used `IsScalarTower.algebraMap_smul` to convert between k-scalar and R-scalar multiplication
+   - Same underlying function as R-linear `φ`, but with k-linear proof obligations
+
+3. **Proved `LD = ker(ψ)`**:
+   - Forward: `LD_element_maps_to_zero` shows L(D) elements map to 0
+   - Backward: `kernel_evaluationMapAt_complete_proof` gives kernel = range(inclusion)
+
+4. **Applied finrank bound**:
+   - `Submodule.liftQ` gives descended map `desc : quotient →ₗ[k] κ(v)`
+   - `Submodule.ker_liftQ` + `Submodule.mkQ_map_self` show kernel is trivial
+   - `LinearMap.finrank_le_finrank_of_injective` gives dimension bound
+
+#### Technical Insights
+
+**Scalar Tower Pattern**: When bridging R-linear maps to k-linear:
+```lean
+-- k-smul becomes R-smul via algebraMap
+have h1 : (c • x).val = (algebraMap k R c) • x.val :=
+  (IsScalarTower.algebraMap_smul R c x.val).symm
+-- And back again for the codomain
+have h3 : (algebraMap k R c) • φ(x) = c • φ(x) :=
+  IsScalarTower.algebraMap_smul R c _
+```
+
+**Lemma Names in Mathlib4**:
+- `Submodule.ker_liftQ` (not `liftQ_ker`)
+- `Submodule.mkQ_map_self` (not `comap_mkQ_self`)
+- `Submodule.coe_subtype` (not `coeSubtype`)
+
+#### Reflector Score: 10/10
+
+**Assessment**: Major milestone achieved! Both affine and projective Riemann inequalities are now fully proved without sorries.
+
+---
+
+### Cycle 78 - Projective Sorry Simplification
+
+**Goal**: Simplify and focus the sorry in `gap_le_one_proj_of_rational`
+
+#### What We Did
+
+1. **Simplified proof structure**: Removed ~100 lines of complex, failing proof attempts
+2. **Build now succeeds**: Just 1 clean sorry remains at line 243
+3. **Identified key lemma**: `LinearMap.finrank_le_finrank_of_injective` is the tool we need
+
+#### Current State of Sorry
+
+The sorry is now a clean, focused goal:
+```lean
+-- After rw [h_residue_dim], we need:
+Module.finrank k (↥(RRSpace_proj k R K (D + DivisorV2.single v 1)) ⧸ LD) ≤ 1
+```
+
+#### What We Learned
+
+**Type mismatch issues**:
+- `evaluationMapAt_complete` is R-linear: `L(D+v) →ₗ[R] κ(v)`
+- `LD` is a k-submodule of `RRSpace_proj k R K (D+v)`
+- `ker(φ)` is an R-submodule of `RRModuleV2_real R K (D+v)`
+- These have the **same carrier** (same sets) but different scalar structures
+
+**Key insight**: The quotient `L(D+v)/LD` over k has the same carrier as `L(D+v)/ker(φ)` over R. The first isomorphism theorem gives quotient ≃ range(φ), and range(φ) ⊆ κ(v) which is 1-dimensional.
+
+**Proposed solution** (for next cycle):
+```lean
+-- 1. Construct a k-linear injection from quotient to κ(v)
+-- 2. Use LinearMap.finrank_le_finrank_of_injective
+-- 3. Combine with h_residue_dim to get ≤ 1
+```
+
+**Technical approaches to try**:
+1. Use `Submodule.liftQ` with `φ.restrictScalars k`
+2. Show `LD.restrictScalars R ≤ ker(φ)` to satisfy liftQ precondition
+3. Or: construct the quotient map manually via `Quotient.lift`
+
+#### Reflector Score: 7/10
+
+**Assessment**: Good progress on simplification. Build succeeds, sorry is focused, strategy is clear. Next cycle should complete the proof.
+
+---
 
 ### Cycle 77 - Projective Sorry Investigation
 

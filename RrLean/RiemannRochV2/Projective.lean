@@ -209,12 +209,99 @@ lemma gap_le_one_proj_of_rational (D : DivisorV2 R) (v : HeightOneSpectrum R)
     -- 3. Apply LinearMap.finrank_range_add_finrank_ker for dimension counting
     -- 4. Bound dim(range φ_k) ≤ dim(κ(v)) = 1 via Submodule.finrank_le
     -- 5. Conclude dim(LD_v) = dim(ker) + dim(range) ≤ dim(LD) + 1
+    -- The key insight: the quotient L(D+v)/LD injects into κ(v) via the evaluation map
+    -- Since κ(v) is 1-dimensional over k, the quotient has dimension ≤ 1
+
+    -- LD = comap(subtype)(L(D)) equals range(inclusion) as k-submodules
+    -- And range(inclusion) = ker(φ) by kernel_evaluationMapAt_complete_proof
+    -- So LD = ker(φ) as sets, meaning the quotient L(D+v)/LD ≅ range(φ) ⊆ κ(v)
+
+    -- The bound follows: finrank(quotient) = finrank(range(φ)) ≤ finrank(κ(v)) = 1
+
     calc Module.finrank k (↥(RRSpace_proj k R K (D + DivisorV2.single v 1)) ⧸ LD)
         ≤ Module.finrank k (residueFieldAtPrime R v) := by
-          -- Technical: quotient embeds into κ(v) via eval map
-          -- ker(eval) = LD, so quotient ≅ range ⊆ κ(v)
-          -- dim_k(κ(v)) = 1, so dim(quotient) ≤ 1
-          sorry
+          -- κ(v) is finite-dimensional over k since κ(v) ≅ₐ[k] k for a rational point
+          haveI : Module.Finite k (residueFieldAtPrime R v) := by
+            have e := RationalPoint.residue_equiv (k := k) (R := R) (v := v)
+            exact Module.Finite.equiv e.symm.toLinearEquiv
+
+          -- Construct a k-linear map ψ : RRSpace_proj → κ(v) with same function as φ
+          -- Using the scalar tower k → R → K and k → R → κ(v)
+          let ψ : ↥(RRSpace_proj k R K (D + DivisorV2.single v 1)) →ₗ[k]
+              residueFieldAtPrime R v :=
+            { toFun := fun x => φ ⟨x.val, x.property⟩
+              map_add' := fun x y => φ.map_add _ _
+              map_smul' := fun c x => by
+                -- Goal: φ ⟨(c • x).val, _⟩ = c • φ ⟨x.val, _⟩
+                -- c • x in k-module = (algebraMap k R c) • x in R-module via IsScalarTower
+                have h1 : (c • x).val = (algebraMap k R c) • x.val :=
+                  (IsScalarTower.algebraMap_smul R c x.val).symm
+                -- The smul is in the R-submodule
+                have hmem : (algebraMap k R c) • x.val ∈ RRModuleV2_real R K (D + DivisorV2.single v 1) :=
+                  Submodule.smul_mem _ _ x.property
+                -- φ is R-linear
+                have h2 : φ ⟨(algebraMap k R c) • x.val, hmem⟩ = (algebraMap k R c) • φ ⟨x.val, x.property⟩ := by
+                  convert φ.map_smul (algebraMap k R c) ⟨x.val, x.property⟩ using 1
+                -- (algebraMap k R c) • y = c • y in κ(v) via IsScalarTower
+                have h3 : (algebraMap k R c) • φ ⟨x.val, x.property⟩ = c • φ ⟨x.val, x.property⟩ :=
+                  IsScalarTower.algebraMap_smul R c _
+                calc φ ⟨(c • x).val, (c • x).property⟩
+                    = φ ⟨(algebraMap k R c) • x.val, hmem⟩ := by simp only [h1]
+                  _ = (algebraMap k R c) • φ ⟨x.val, x.property⟩ := h2
+                  _ = c • φ ⟨x.val, x.property⟩ := h3 }
+
+          -- Show LD ≤ ker(ψ): elements of L(D) map to 0
+          have h_le_ker : LD ≤ LinearMap.ker ψ := by
+            intro x hx
+            rw [LinearMap.mem_ker]
+            rw [Submodule.mem_comap] at hx
+            -- hx : x.val ∈ L(D)
+            let y : RRModuleV2_real R K D := ⟨x.val, hx⟩
+            -- φ(inclusion(y)) = 0 by LD_element_maps_to_zero
+            have hinc : (⟨x.val, x.property⟩ : RRModuleV2_real R K (D + DivisorV2.single v 1)) =
+                Submodule.inclusion (RRModuleV2_mono_inclusion R K
+                    (divisor_le_add_single D v)) y := rfl
+            show ψ x = 0
+            simp only [ψ, LinearMap.coe_mk, AddHom.coe_mk]
+            rw [hinc]
+            exact LD_element_maps_to_zero v D y
+
+          -- Show ker(ψ) ≤ LD: if ψ(x) = 0, then x.val ∈ L(D)
+          have h_ker_le : LinearMap.ker ψ ≤ LD := by
+            intro x hx
+            rw [LinearMap.mem_ker] at hx
+            show x ∈ LD
+            simp only [ψ, LinearMap.coe_mk, AddHom.coe_mk] at hx
+            -- hx : φ ⟨x.val, x.property⟩ = 0, so ⟨x.val, x.property⟩ ∈ ker(φ) = range(incl)
+            have h_in_ker : (⟨x.val, x.property⟩ : RRModuleV2_real R K (D + DivisorV2.single v 1)) ∈
+                LinearMap.ker φ := hx
+            rw [h_ker_R, LinearMap.mem_range] at h_in_ker
+            obtain ⟨y, hy⟩ := h_in_ker
+            -- y ∈ L(D), and inclusion(y) = ⟨x.val, _⟩, so y.val = x.val
+            rw [Submodule.mem_comap, Submodule.coe_subtype]
+            -- Goal: x.val ∈ RRSpace_proj k R K D = RRModuleV2_real R K D
+            -- hy : inclusion y = ⟨x.val, x.property⟩
+            have hval : y.val = x.val := congrArg Subtype.val hy
+            rw [← hval]
+            exact y.property
+
+          -- LD = ker(ψ)
+          have h_eq_ker : LD = LinearMap.ker ψ := le_antisymm h_le_ker h_ker_le
+
+          -- The descended map: quotient → κ(v) is injective
+          let desc := Submodule.liftQ LD ψ h_le_ker
+          -- desc : quotient →ₗ[k] κ(v)
+
+          -- Kernel of descended map = 0 since LD = ker(ψ)
+          have h_desc_inj : Function.Injective desc := by
+            rw [← LinearMap.ker_eq_bot]
+            -- Submodule.ker_liftQ gives: ker(liftQ p f h) = map (mkQ p) (ker f)
+            -- When ker f = p, this becomes map (mkQ p) p = ⊥
+            have hker := Submodule.ker_liftQ LD ψ h_le_ker
+            rw [hker, h_eq_ker, Submodule.mkQ_map_self]
+
+          -- finrank of domain ≤ finrank of codomain when injection exists
+          exact LinearMap.finrank_le_finrank_of_injective h_desc_inj
       _ = 1 := h_residue_dim
 
   -- LD is the comap of L(D) via subtype, which equals range(inclusion) since L(D) ⊆ L(D+v)
