@@ -53,7 +53,7 @@ Where:
 
 ---
 
-## Current Status (Cycle 70 - zpow Fix)
+## Current Status (Cycle 71 - Kernel Proofs Complete!)
 
 **Codebase Structure**:
 ```
@@ -65,27 +65,24 @@ RrLean/RiemannRochV2/
 ├── RiemannInequality.lean  # Main theorems ✅ (1 sorry placeholder)
 ├── Infrastructure.lean     # Residue, uniformizer ✅ **CLEAN** (0 sorries!)
 ├── LocalGapInstance.lean   # Cycles 25-65 (3344 lines, 90s build) ✅
-├── KernelProof.lean        # Cycles 66-70 (480 lines, 4.6s build) ✅
+├── KernelProof.lean        # Cycles 66-71 (590 lines) ✅ **KEY PROOFS COMPLETE!**
 └── TestBlockerProofs.lean  # Cycle 58-60: Test proofs
 ```
 
-**Active Development**: `KernelProof.lean` (fast iteration ~5s builds)
+**Active Development**: `KernelProof.lean` - KEY LEMMAS NOW PROVED!
 
-### Key Discovery (Cycle 70)
+### Key Achievement (Cycle 71)
 
-**The shiftedElement `.toNat` bug was CRITICAL**. Using `.toNat` clamped negative exponents to 0, breaking the evaluation map for negative divisors.
+**ALL THREE KERNEL LEMMAS PROVED!** The kernel characterization is now complete:
 
-**Old (broken)**:
-```lean
-f * algebraMap R K ((uniformizerAt v) ^ (D v + 1).toNat)
-```
+1. **`LD_element_maps_to_zero`** ✅ - Forward direction: L(D) ⊆ ker
+2. **`kernel_element_satisfies_all_bounds`** ✅ - Backward direction: ker ⊆ L(D)
+3. **`kernel_evaluationMapAt_complete_proof`** ✅ - Full characterization: ker = L(D)
 
-**New (correct)**:
-```lean
-f * (algebraMap R K (uniformizerAt v)) ^ (D v + 1)  -- uses zpow
-```
-
-With zpow, the proof of `extract_valuation_bound` works **uniformly for ALL integers**, not just D v + 1 ≥ 0!
+**Technical highlights**:
+- Used `erw [IsLocalRing.residue_eq_zero_iff]` to handle definitional mismatch between `valuationRingAt` and `(v.valuation K).valuationSubring`
+- Used `unfold valuationRingAt` before `Valuation.mem_maximalIdeal_iff` rewrites
+- Bridge injectivity via `RingEquiv.injective` for backward direction
 
 ### Typeclass Hierarchy
 ```
@@ -96,34 +93,57 @@ SinglePointBound R K       -- PROJECTIVE (adds ell_zero = 1)
 BaseDim R K                -- SEPARATE (explicit base dimension)
 ```
 
-### Key Blockers (Updated Cycle 70)
+### Key Blockers (Updated Cycle 71 - ALL RESOLVED!)
 
 | Name | Status | Notes |
 |------|--------|-------|
 | `evaluationMapAt_complete` | ✅ **PROVED** | Cycle 56: LinearMap bundle complete |
 | `bridge_residue_algebraMap_clean` | ✅ **PROVED** | Cycle 65: CLEAN BRIDGE PROVED |
-| `uniformizerAt_zpow_valuation` | ✅ **PROVED** | Cycle 70: zpow version (NEW!) |
-| `extract_valuation_bound_zpow` | ✅ **PROVED** | Cycle 70: Unified extraction (NEW!) |
-| `extract_valuation_bound_nonneg_proof` | ✅ **PROVED** | Cycle 68: Uses step-down |
-| `valuation_bound_at_other_prime_proof` | ✅ **PROVED** | Cycle 68: Finsupp.single_apply |
-| `LD_element_maps_to_zero` | ⚠️ **SORRY** | LD ⊆ ker direction |
-| `kernel_evaluationMapAt_complete_proof` | ⚠️ **SORRY** | ker(eval) = L(D) - no hn needed! |
+| `uniformizerAt_zpow_valuation` | ✅ **PROVED** | Cycle 70: zpow version |
+| `extract_valuation_bound_zpow` | ✅ **PROVED** | Cycle 70: Unified extraction |
+| `LD_element_maps_to_zero` | ✅ **PROVED** | Cycle 71: Forward direction complete! |
+| `kernel_element_satisfies_all_bounds` | ✅ **PROVED** | Cycle 71: Backward direction complete! |
+| `kernel_evaluationMapAt_complete_proof` | ✅ **PROVED** | Cycle 71: ker(eval) = L(D) PROVED! |
 
-### Next Cycle (71) Priorities
-1. **Prove `LD_element_maps_to_zero`**: Connect f ∈ L(D) → v(shiftedElement) < 1
-2. **Complete `kernel_evaluationMapAt_complete_proof`**: Both directions
-3. **Assemble LocalGapBound instance → VICTORY**
+### Next Cycle (72) Instructions - LocalGapBound Instance
 
-### Cycle 70 Technical Notes (zpow Fix)
-- **Key insight**: `.toNat` was WRONG for negative D v + 1
-- **Solution**: Use zpow in field K, which handles negative exponents correctly
-- **New lemma**: `uniformizerAt_zpow_valuation` - v(π^n) = exp(-n) for ALL n ∈ ℤ
-- **New lemma**: `extract_valuation_bound_zpow` - unified extraction for all integers
-- **Removed**: `hn : 0 ≤ D v + 1` hypothesis from kernel lemmas!
+**Goal**: Prove `instance : LocalGapBound R K` using rank-nullity theorem.
+
+**Setup**:
+1. Create new file `RrLean/RiemannRochV2/DimensionCounting.lean` to avoid 90s compile time of LocalGapInstance
+2. Import `RrLean.RiemannRochV2.KernelProof` and `Mathlib.LinearAlgebra.Dimension`
+
+**Proof Strategy**:
+1. Define φ : L(D+v) → κ(v) as `evaluationMapAt_complete v D` (already exists!)
+2. Apply **Rank-Nullity**: `LinearMap.finrank_range_add_finrank_ker φ`
+   - This gives: `dim(L(D+v)) = dim(ker φ) + dim(image φ)`
+3. Use `kernel_evaluationMapAt_complete_proof` to show: `ker φ = range(inclusion from L(D))`
+   - Since inclusion is injective: `dim(ker φ) = dim(L(D))`
+4. Use that κ(v) is 1-dimensional: `dim(image φ) ≤ 1`
+5. Conclude: `dim(L(D+v)) ≤ dim(L(D)) + 1` ✓
+
+**Key Mathlib lemmas to use**:
+- `LinearMap.finrank_range_add_finrank_ker` - Rank-Nullity
+- `LinearMap.finrank_range_of_inj` - dim(range) = dim(domain) for injective map
+- `Submodule.inclusion_injective` - inclusion is injective
+
+**LocalGapBound typeclass** (check `Typeclasses.lean` for exact field name):
+```lean
+instance : LocalGapBound R K where
+  gap_le_one := fun v D => <the dimension inequality proof>
+```
+
+**Victory**: Once this instance is proved, `riemann_inequality_affine` becomes unconditional!
+
+### Cycle 71 Technical Notes (Kernel Proofs)
+- **`erw` for definitional mismatches**: `erw [IsLocalRing.residue_eq_zero_iff]` sees through `valuationRingAt v` = `(v.valuation K).valuationSubring`
+- **`unfold valuationRingAt`**: Required before `Valuation.mem_maximalIdeal_iff` rewrites
+- **Bridge injectivity**: `RingEquiv.injective` + `map_zero` for backward direction
+- **Strict bound for forward**: f ∈ L(D) gives v(f) ≤ exp(D v), so v(shiftedElement) ≤ exp(-1) < 1
 
 ---
 
-## Victory Path (Updated Cycle 70)
+## Victory Path (Updated Cycle 71 - KERNEL COMPLETE!)
 
 ```
 evaluationMapAt_complete (Cycle 56 - PROVED ✅)  ← LINEARMAP COMPLETE!
@@ -134,14 +154,16 @@ uniformizerAt_zpow_valuation (Cycle 70 - PROVED ✅)  ← ZPOW INFRASTRUCTURE!
     ↓
 extract_valuation_bound_zpow (Cycle 70 - PROVED ✅)  ← UNIFIED EXTRACTION!
     ↓
-LD_element_maps_to_zero (SORRY)  ← **NEXT TARGET**
+LD_element_maps_to_zero (Cycle 71 - PROVED ✅)  ← FORWARD DIRECTION!
     ↓
-kernel_evaluationMapAt_complete (SORRY - no hn needed!)
+kernel_element_satisfies_all_bounds (Cycle 71 - PROVED ✅)  ← BACKWARD DIRECTION!
     ↓
-LocalGapBound instance → VICTORY
+kernel_evaluationMapAt_complete (Cycle 71 - PROVED ✅)  ← KERNEL = L(D)!
+    ↓
+LocalGapBound instance → **NEXT TARGET**
 ```
 
-**Cycle 70 Status**: Key zpow fix complete. No more `hn : 0 ≤ D v + 1` restrictions!
+**Cycle 71 Status**: ALL KERNEL LEMMAS PROVED! Only LocalGapBound instance remains!
 
 - [x] `uniformizerAt_zpow_valuation` - Cycle 70 (PROVED) - v(π^n) = exp(-n) for all n ∈ ℤ
 - [x] `extract_valuation_bound_zpow` - Cycle 70 (PROVED) - unified for all integers
@@ -149,8 +171,9 @@ LocalGapBound instance → VICTORY
 - [x] `extract_valuation_bound_from_maxIdeal_nonneg_proof` - Cycle 68 (PROVED)
 - [x] `valuation_bound_at_other_prime_proof` - Cycle 68 (PROVED)
 - [x] `valuation_lt_one_imp_mem_maxIdeal` - Cycle 68 (PROVED)
-- [ ] `LD_element_maps_to_zero` - LD ⊆ ker direction
-- [ ] `kernel_evaluationMapAt_complete_proof` - ker(eval) = L(D)
+- [x] `LD_element_maps_to_zero` - Cycle 71 (PROVED) - LD ⊆ ker direction
+- [x] `kernel_element_satisfies_all_bounds` - Cycle 71 (PROVED) - ker ⊆ LD direction
+- [x] `kernel_evaluationMapAt_complete_proof` - Cycle 71 (PROVED) - ker(eval) = L(D)
 - [ ] `instance : LocalGapBound R K` (makes riemann_inequality_affine unconditional)
 
 ---
@@ -222,6 +245,7 @@ LocalGapBound instance → VICTORY
 | 66-68 | KernelProof extraction, discrete step-down lemmas |
 | 69 | Refactoring: Split LocalGapInstance (3.3K lines, 86s) into separate KernelProof.lean |
 | 70 | **zpow fix**: shiftedElement now uses zpow (not toNat), uniformizerAt_zpow_valuation + extract_valuation_bound_zpow PROVED |
+| 71 | **🎉 KERNEL COMPLETE**: LD_element_maps_to_zero + kernel_element_satisfies_all_bounds + kernel_evaluationMapAt_complete_proof ALL PROVED |
 
 ---
 

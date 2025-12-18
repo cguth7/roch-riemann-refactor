@@ -404,21 +404,94 @@ lemma valuation_lt_one_imp_mem_maxIdeal
   rw [WithZero.exp_zero] at hx_lt
   exact hx_lt
 
--- Candidate 6 [tag: rr_bundle_bridge] [status: SORRY] [cycle: 68]
+-- Candidate 6 [tag: rr_bundle_bridge] [status: PROVED] [cycle: 68 → 71]
 /-- Complete LD ⊆ ker direction: if f ∈ L(D), then evaluationFun f = 0.
-Uses that shifted element lands in maxIdeal, so residue is zero. -/
+Uses that shifted element lands in maxIdeal, so residue is zero.
+
+CYCLE 71: Completed using zpow-based arithmetic:
+- f ∈ L(D) means v(f) ≤ exp(D v) (STRICT bound, not D v + 1)
+- shiftedElement = f * π^(D v + 1)
+- v(shiftedElement) = v(f) * exp(-(D v + 1)) ≤ exp(D v) * exp(-(D v + 1)) = exp(-1) < 1
+- So shiftedElement ∈ maximalIdeal, and residue sends it to 0 -/
 lemma LD_element_maps_to_zero
     (v : HeightOneSpectrum R) (D : DivisorV2 R)
     (f : RRModuleV2_real R K D) :
     evaluationFun_via_bridge v D
       (Submodule.inclusion (RRModuleV2_mono_inclusion R K (divisor_le_add_single D v)) f) = 0 := by
-  -- Need to show the composition through residueFieldBridge gives 0
-  -- Step 1: f ∈ L(D), so v(f) ≤ exp(D v)
-  -- Step 2: shiftedElement = f · π^{(D v + 1).toNat}
-  -- Step 3: v(shiftedElement) < 1 by valuation_product_strict_bound_nonneg or _neg
-  -- Step 4: shiftedElement ∈ maxIdeal
-  -- Step 5: residue of maxIdeal element = 0
-  sorry
+  -- Key observation: (Submodule.inclusion hle f).val = f.val
+  -- So shiftedElement v D (inclusion f).val = shiftedElement v D f.val
+  set f' := Submodule.inclusion (RRModuleV2_mono_inclusion R K (divisor_le_add_single D v)) f with hf'_def
+  have hf'_val : (f' : K) = (f : K) := rfl
+  -- Get f's membership in L(D)
+  have hf_mem : (f : K) ∈ RRModuleV2_real R K D := f.property
+  -- RRModuleV2_real membership: f = 0 ∨ (∀ v', v'.valuation K f ≤ exp(D v'))
+  rcases hf_mem with hf_zero | hf_bound
+  · -- Case 1: f.val = 0
+    -- The inclusion of f into L(D+v) has the same underlying value, which is 0
+    -- shiftedElement = 0 * π^n = 0
+    -- residue(⟨0, _⟩) = 0 by map_zero
+    -- bridge(0) = 0 by map_zero
+    have h1 : shiftedElement v D (f' : K) = 0 := by
+      simp only [hf'_val, hf_zero, shiftedElement, zero_mul]
+    simp only [evaluationFun_via_bridge]
+    -- We need to show (residueFieldBridge_explicit v) ((valuationRingAt.residue v) ⟨0, _⟩) = 0
+    -- Since h1 : shiftedElement v D (f' : K) = 0, the subtype is ⟨0, _⟩
+    -- residue maps ⟨0, _⟩ to 0
+    have h2 : (⟨shiftedElement v D (f' : K), shiftedElement_mem_valuationRingAt v D f'⟩ :
+        valuationRingAt (R := R) (K := K) v) = ⟨0, Subring.zero_mem _⟩ := by
+      apply Subtype.ext
+      exact h1
+    rw [h2]
+    -- residue maps 0 to 0
+    have h3 : valuationRingAt.residue (R := R) (K := K) v (⟨0, Subring.zero_mem _⟩) = 0 :=
+      map_zero (valuationRingAt.residue (R := R) (K := K) v)
+    rw [h3]
+    -- bridge maps 0 to 0
+    exact map_zero (residueFieldBridge_explicit (R := R) (K := K) v)
+  · -- Case 2: f.val ≠ 0 and ∀ v', v'.valuation K f.val ≤ exp(D v')
+    -- Get the bound at v specifically
+    have hfv : v.valuation K (f : K) ≤ WithZero.exp (D v) := hf_bound v
+    -- Compute v(shiftedElement) using zpow
+    -- shiftedElement v D f.val = f.val * π^(D v + 1)
+    -- v(shiftedElement) = v(f.val) * exp(-(D v + 1)) ≤ exp(D v) * exp(-(D v + 1)) = exp(-1)
+    have h_val_bound : v.valuation K (shiftedElement v D (f : K)) ≤ WithZero.exp (-1 : ℤ) := by
+      unfold shiftedElement
+      rw [Valuation.map_mul, uniformizerAt_zpow_valuation]
+      calc v.valuation K (f : K) * WithZero.exp (-(D v + 1))
+          ≤ WithZero.exp (D v) * WithZero.exp (-(D v + 1)) := mul_le_mul_right' hfv _
+        _ = WithZero.exp (D v + (-(D v + 1))) := by rw [← WithZero.exp_add]
+        _ = WithZero.exp (-1) := by ring_nf
+    -- exp(-1) < 1 = exp(0)
+    have h_strict : v.valuation K (shiftedElement v D (f : K)) < 1 := by
+      calc v.valuation K (shiftedElement v D (f : K))
+          ≤ WithZero.exp (-1 : ℤ) := h_val_bound
+        _ < WithZero.exp (0 : ℤ) := exp_neg_one_lt_one
+        _ = 1 := WithZero.exp_zero
+    -- Since f'.val = f.val, the shiftedElement for f' equals that for f
+    have h_shifted_eq : shiftedElement v D (f' : K) = shiftedElement v D (f : K) := by
+      rw [hf'_val]
+    -- v(shiftedElement f') < 1 as well
+    have h_strict' : v.valuation K (shiftedElement v D (f' : K)) < 1 := by
+      rw [h_shifted_eq]; exact h_strict
+    -- shiftedElement f' ∈ maximalIdeal since v(shiftedElement) < 1
+    -- valuationRingAt v = (v.valuation K).valuationSubring by definition
+    have h_mem_maxIdeal :
+        (⟨shiftedElement v D (f' : K), shiftedElement_mem_valuationRingAt v D f'⟩ :
+          valuationRingAt (R := R) (K := K) v) ∈
+        IsLocalRing.maximalIdeal (valuationRingAt (R := R) (K := K) v) := by
+      -- Unfold valuationRingAt to expose (v.valuation K).valuationSubring
+      unfold valuationRingAt
+      rw [Valuation.mem_maximalIdeal_iff]
+      exact h_strict'
+    -- residue sends maximalIdeal elements to 0
+    -- valuationRingAt.residue is defined as IsLocalRing.residue (valuationRingAt v)
+    have h_res_zero : valuationRingAt.residue (R := R) (K := K) v
+        ⟨shiftedElement v D (f' : K), shiftedElement_mem_valuationRingAt v D f'⟩ = 0 := by
+      -- Use erw to see through definitional equalities
+      erw [IsLocalRing.residue_eq_zero_iff]
+      exact h_mem_maxIdeal
+    -- bridge preserves 0
+    simp only [evaluationFun_via_bridge, h_res_zero, map_zero]
 
 -- Candidate 7 [tag: rr_bundle_bridge] [status: PARTIAL] [cycle: 68 → 70]
 /-- Complete ker ⊆ LD direction: if evaluationFun f = 0, then f ∈ L(D).
@@ -439,11 +512,35 @@ lemma kernel_element_satisfies_all_bounds
   · right
     intro v'
     by_cases hv'_eq : v' = v
-    · -- At v: use extract_valuation_bound_zpow
-      subst hv'_eq
-      -- Need to trace: evaluationFun f = 0 → shifted ∈ maxIdeal → v(shifted) < 1
-      -- Then apply extract_valuation_bound_zpow (works for ALL D v + 1)
-      sorry -- TODO: Connect evaluationFun = 0 to v(shiftedElement) < 1
+    · -- At v' = v: use extract_valuation_bound_zpow
+      rw [hv'_eq]
+      -- Trace: evaluationFun f = 0 → residue(shifted) = 0 → shifted ∈ maxIdeal → v(shifted) < 1
+      -- Then apply extract_valuation_bound_zpow
+      -- Step 1: evaluationFun f = 0 means bridge(residue(shifted)) = 0
+      -- Step 2: bridge is RingEquiv, hence injective, so residue(shifted) = 0
+      have h_res_zero : valuationRingAt.residue (R := R) (K := K) v
+          ⟨shiftedElement v D f.val, shiftedElement_mem_valuationRingAt v D f⟩ = 0 := by
+        -- evaluationFun_via_bridge v D f = bridge(residue(shifted)) = 0
+        -- Since bridge is a RingEquiv, it's injective, so residue(shifted) = 0
+        simp only [evaluationFun_via_bridge] at hf
+        -- hf : (residueFieldBridge_explicit v) (residue shifted) = 0
+        -- Use that RingEquiv maps x to 0 iff x = 0
+        have h_inj := (residueFieldBridge_explicit (R := R) (K := K) v).injective
+        exact h_inj (hf.trans (map_zero _).symm)
+      -- Step 3: residue(shifted) = 0 → shifted ∈ maximalIdeal
+      have h_mem_maxIdeal :
+          (⟨shiftedElement v D f.val, shiftedElement_mem_valuationRingAt v D f⟩ :
+            valuationRingAt (R := R) (K := K) v) ∈
+          IsLocalRing.maximalIdeal (valuationRingAt (R := R) (K := K) v) := by
+        erw [← IsLocalRing.residue_eq_zero_iff]
+        exact h_res_zero
+      -- Step 4: shifted ∈ maximalIdeal → v(shifted) < 1
+      have h_val_lt_one : v.valuation K (shiftedElement v D f.val) < 1 := by
+        unfold valuationRingAt at h_mem_maxIdeal
+        rw [Valuation.mem_maximalIdeal_iff] at h_mem_maxIdeal
+        exact h_mem_maxIdeal
+      -- Step 5: Apply extract_valuation_bound_zpow
+      exact extract_valuation_bound_zpow v D f.val hf_ne h_val_lt_one
     · -- At v' ≠ v: use valuation_bound_at_other_prime_proof
       exact (valuation_bound_at_other_prime_proof v v' D f.val f.property hv'_eq).resolve_left hf_ne
 
@@ -466,15 +563,29 @@ lemma kernel_evaluationMapAt_complete_proof
   · -- ker ⊆ range: if x ∈ ker, show x ∈ range of inclusion
     intro hx
     rw [LinearMap.mem_ker] at hx
-    -- x.val ∈ L(D) by kernel_element_satisfies_all_bounds (no hn needed with zpow!)
-    sorry
+    -- hx : evaluationMapAt_complete v D x = 0
+    -- evaluationMapAt_complete is defined with toFun = evaluationFun_via_bridge
+    -- So hx means evaluationFun_via_bridge v D x = 0
+    have hx' : evaluationFun_via_bridge v D x = 0 := hx
+    -- By kernel_element_satisfies_all_bounds, x.val ∈ L(D)
+    have h_mem_LD : x.val ∈ RRModuleV2_real R K D :=
+      kernel_element_satisfies_all_bounds v D x hx'
+    -- Construct element of L(D) with same underlying value
+    let f : RRModuleV2_real R K D := ⟨x.val, h_mem_LD⟩
+    -- Show x = inclusion(f)
+    rw [LinearMap.mem_range]
+    use f
+    -- inclusion(f).val = f.val = x.val, so they're equal as subtypes
+    apply Subtype.ext
+    rfl
   · -- range ⊆ ker: if x = inclusion(f) for f ∈ L(D), show x ∈ ker
     intro hx
     rw [LinearMap.mem_range] at hx
     obtain ⟨f, hf⟩ := hx
     rw [LinearMap.mem_ker, ← hf]
-    -- evaluationMapAt_complete applied to inclusion(f) is evaluationFun(inclusion f)
-    sorry
+    -- evaluationMapAt_complete v D (inclusion f) = evaluationFun_via_bridge v D (inclusion f)
+    -- By LD_element_maps_to_zero, this equals 0
+    exact LD_element_maps_to_zero v D f
 
 end Cycle68Candidates
 

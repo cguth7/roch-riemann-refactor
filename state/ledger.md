@@ -2,34 +2,95 @@
 
 *For Cycles 1-34, see `state/ledger_archive.md`*
 
-## Summary: Where We Are (End of Cycle 70)
+## Summary: Where We Are (End of Cycle 71)
 
 **Project Goal**: Prove Riemann-Roch inequality for Dedekind domains in Lean 4.
 
-**Current Target**: Prove `LD_element_maps_to_zero` and complete kernel characterization
+**Current Target**: Assemble `LocalGapBound` instance → **VICTORY IMMINENT**
 
-**Blocking Chain** (Updated Cycle 70 - ZPOW FIX COMPLETE):
+**Blocking Chain** (Updated Cycle 71 - KERNEL COMPLETE! 🎉):
 ```
 evaluationMapAt_complete (Cycle 56 - PROVED ✅)
     ↓
 bridge_residue_algebraMap_clean (Cycle 65 - PROVED ✅)
     ↓
-uniformizerAt_zpow_valuation (Cycle 70 - PROVED ✅)  ← NEW!
+uniformizerAt_zpow_valuation (Cycle 70 - PROVED ✅)
     ↓
-extract_valuation_bound_zpow (Cycle 70 - PROVED ✅)  ← UNIFIED!
+extract_valuation_bound_zpow (Cycle 70 - PROVED ✅)
     ↓
-LD_element_maps_to_zero (SORRY)  ← **NEXT TARGET**
+LD_element_maps_to_zero (Cycle 71 - PROVED ✅)  ← FORWARD!
     ↓
-kernel_evaluationMapAt_complete (SORRY - no hn needed!)
+kernel_element_satisfies_all_bounds (Cycle 71 - PROVED ✅)  ← BACKWARD!
     ↓
-LocalGapBound instance → VICTORY
+kernel_evaluationMapAt_complete (Cycle 71 - PROVED ✅)  ← KERNEL = L(D)!
+    ↓
+LocalGapBound instance → **NEXT TARGET**
 ```
 
-**Key Cycle 70 Achievement**: The zpow fix resolved the `.toNat` bug that was breaking negative divisors!
+**Key Cycle 71 Achievement**: ALL THREE KERNEL LEMMAS PROVED! The kernel characterization is complete!
 
 ---
 
 ## 2025-12-17
+
+### Cycle 71 - 🎉 KERNEL PROOFS COMPLETE!
+
+**Goal**: Prove `LD_element_maps_to_zero` and complete kernel characterization
+
+#### Key Achievement
+
+**ALL THREE KERNEL LEMMAS PROVED!** The kernel characterization is now complete:
+
+1. **`LD_element_maps_to_zero`** - Forward direction: if f ∈ L(D), then evaluationFun(inclusion(f)) = 0
+2. **`kernel_element_satisfies_all_bounds`** - Backward direction: if evaluationFun(f) = 0, then f.val ∈ L(D)
+3. **`kernel_evaluationMapAt_complete_proof`** - Full characterization: ker(evaluationMapAt) = range(inclusion from L(D))
+
+#### Proof Techniques
+
+**Forward direction (`LD_element_maps_to_zero`)**:
+- f ∈ L(D) means v(f) ≤ exp(D v) (STRICT bound, not D v + 1)
+- shiftedElement = f * π^(D v + 1)
+- v(shiftedElement) = v(f) * exp(-(D v + 1)) ≤ exp(D v) * exp(-(D v + 1)) = exp(-1) < 1
+- So shiftedElement ∈ maximalIdeal, and residue sends it to 0
+- Used `erw [IsLocalRing.residue_eq_zero_iff]` to handle definitional mismatch
+
+**Backward direction (`kernel_element_satisfies_all_bounds`)**:
+- evaluationFun f = 0 means bridge(residue(shiftedElement)) = 0
+- Bridge is RingEquiv → injective → residue(shiftedElement) = 0
+- By `IsLocalRing.residue_eq_zero_iff`, shiftedElement ∈ maximalIdeal
+- By `Valuation.mem_maximalIdeal_iff`, v(shiftedElement) < 1
+- By `extract_valuation_bound_zpow`, v(f) ≤ exp(D v)
+
+#### Results
+
+| Lemma | Status | Notes |
+|-------|--------|-------|
+| `LD_element_maps_to_zero` | ✅ **PROVED** | Forward: L(D) ⊆ ker |
+| `kernel_element_satisfies_all_bounds` | ✅ **PROVED** | Backward: ker ⊆ L(D) |
+| `kernel_evaluationMapAt_complete_proof` | ✅ **PROVED** | ker = range(inclusion) |
+
+#### Technical Notes
+
+- **`erw` vs `rw`**: Used `erw [IsLocalRing.residue_eq_zero_iff]` because `valuationRingAt v` is definitionally equal to `(v.valuation K).valuationSubring`, but `rw` doesn't see through this
+- **`unfold valuationRingAt`**: Required before `Valuation.mem_maximalIdeal_iff` rewrites to expose the underlying structure
+- **Bridge injectivity**: Used `(residueFieldBridge_explicit v).injective` with `hf.trans (map_zero _).symm` for backward direction
+
+#### Reflector Score: 10/10
+
+**Assessment**: Major milestone achieved! All kernel lemmas proved. The kernel characterization is mathematically complete. Only the `LocalGapBound` instance assembly remains.
+
+**Next Steps (Cycle 72)**:
+1. Create `RrLean/RiemannRochV2/DimensionCounting.lean` (avoids 90s LocalGapInstance compile)
+2. Import `KernelProof` and `Mathlib.LinearAlgebra.Dimension`
+3. Apply Rank-Nullity: `dim(L(D+v)) = dim(ker) + dim(image)`
+4. Use `kernel_evaluationMapAt_complete_proof`: `ker = L(D)` → `dim(ker) = dim(L(D))`
+5. Use κ(v) is 1-dim: `dim(image) ≤ 1`
+6. Conclude: `dim(L(D+v)) ≤ dim(L(D)) + 1` → `LocalGapBound` instance
+7. **VICTORY** - Riemann inequality unconditional!
+
+**Cycle rating**: 10/10 (ALL THREE KERNEL LEMMAS PROVED, victory imminent!)
+
+---
 
 ### Cycle 70 - zpow Fix for shiftedElement
 
