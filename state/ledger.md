@@ -6,23 +6,28 @@
 
 ---
 
-## ⚡ Quick Reference: Current Axiom/Sorry Status (Cycle 118)
+## ⚡ Quick Reference: Current Axiom/Sorry Status (Cycle 119)
 
 ### Sorries (proof holes)
 | File | Item | Status | Notes |
 |------|------|--------|-------|
 | `TraceDualityProof.lean` | `finrank_dual_eq` | ⚪ 1 sorry | NOT on critical path |
+| `FqPolynomialInstance.lean` | `valuation_eq_one_almost_all` | ⚪ 1 sorry | Finiteness of divisors |
+| `FqPolynomialInstance.lean` | `discrete_diagonal_embedding` | ⚪ 1 sorry | Discreteness of K |
+| `FqPolynomialInstance.lean` | `closed_diagonal_embedding` | ⚪ 1 sorry | Closedness from discrete |
+| `FqPolynomialInstance.lean` | `isCompact_integralAdeles` | ⚪ 1 sorry | Product compactness |
+| `FqPolynomialInstance.lean` | `exists_K_translate_in_integralAdeles` | ⚪ 1 sorry | Weak approximation for PIDs |
 
 ### Axiom Classes (still need instantiation for concrete types)
 | File | Class | Status | Notes |
 |------|-------|--------|-------|
 | `AllIntegersCompactProof.lean` | `FiniteCompletionResidueFields` | ✅ INSTANTIATED | For Fq[X] in FqPolynomialInstance.lean |
 | `AdelicTopology.lean` | `AllIntegersCompact` | ✅ INSTANTIATED | For Fq[X] in FqPolynomialInstance.lean |
-| `AdelicTopology.lean` | `DiscreteCocompactEmbedding` | ⏳ CLASS | TODO - needs class group finiteness |
+| `AdelicTopology.lean` | `DiscreteCocompactEmbedding` | ✅ INSTANTIATED | For Fq[X] (with sorries) |
 | `AdelicH1v2.lean` | `AdelicRRData` | ⏳ CLASS | Full adelic RR axioms |
 | `FullRRData.lean` | `FullRRData` | 🔗 CLASS | Derived from `AdelicRRData` |
 
-### Proofs (now sorry-free!)
+### Proofs (sorry-free)
 | File | Item | Status | Notes |
 |------|------|--------|-------|
 | `ResidueFieldIso.lean` | `residueFieldIso` | ✅ PROVED | R/v.asIdeal ≃ ResidueField(completion) |
@@ -31,14 +36,42 @@
 | `FqPolynomialInstance.lean` | `finite_quotient_polynomial` | ✅ PROVED | Fq[X]/v finite for all v |
 | `FqPolynomialInstance.lean` | `instFiniteCompletionResidueFields` | ✅ INSTANCE | For Fq[X] / RatFunc(Fq) |
 | `FqPolynomialInstance.lean` | `instAllIntegersCompact` | ✅ INSTANCE | For Fq[X] / RatFunc(Fq) |
+| `FqPolynomialInstance.lean` | `instDiscreteCocompactEmbedding` | ✅ INSTANCE | For Fq[X] (sorries in proofs) |
 
-**Build Status**: ✅ Compiles with 1 sorry (NOT on critical path!)
+**Build Status**: ✅ Compiles with 6 sorries (1 non-critical, 5 for DiscreteCocompact)
 
 **Key Distinction**:
-- **Sorries**: Holes in existing proofs → 1 remaining (non-critical)
-- **Axiom Classes**: `AllIntegersCompact` now has concrete instance for Fq[X]!
+- **Sorries**: Holes in existing proofs → 6 remaining (5 are for DiscreteCocompactEmbedding)
+- **Axiom Classes**: BOTH `AllIntegersCompact` AND `DiscreteCocompactEmbedding` now have instances for Fq[X]!
 
-**Next Priority**: Work on `DiscreteCocompactEmbedding` for Fq[X] using PID + product formula
+**Next Priority**: Fill sorries in DiscreteCocompactEmbedding proofs (weak approximation, discreteness)
+
+---
+
+## ⚠️ SPEC RISK: Finite Places Only (Important for Next Claude)
+
+**Critical Note**: Our `FiniteAdeleRing R K` uses only **finite places** (HeightOneSpectrum primes).
+For function fields, the **place at infinity** is NOT included.
+
+**Classical Full Adeles**: A_K = ∏'_v K_v where v ranges over ALL places (finite + ∞)
+
+**Our Finite Adeles**: Only HeightOneSpectrum R (finite places)
+
+**Why This Matters**:
+- The classical product formula ∏_v |x|_v = 1 uses ALL places
+- Full adelic cocompactness requires the infinite place
+- Our `DiscreteCocompactEmbedding` is a **weaker statement** (finite adeles only)
+
+**Current Assessment**: The weaker statement IS correct for PIDs via weak approximation,
+and our `AdelicH1v2.lean` axioms are self-consistent with this definition. BUT:
+
+1. **Before filling DiscreteCocompactEmbedding sorries**: Verify statements match classical theorems
+2. **If we need full adeles later**: Use `FunctionField.inftyValuation` from Mathlib
+3. **H¹(D) finiteness**: May need the infinite place for the full proof
+
+**Recommendation**: Treat Fq[X] as validation milestone. If topology API makes remaining
+sorries 10× harder than the math, consider alternatives (e.g., discharge axioms via
+different machinery, or accept axioms with clear mathematical justification).
 
 ---
 
@@ -1365,6 +1398,82 @@ instAllIntegersCompact (via allIntegersCompact_of_axioms)
 1. **Option A**: Work on `DiscreteCocompactEmbedding` for Fq[X] (PID case is simpler)
 2. **Option B**: Generalize to other function fields (ringOfIntegers Fq F)
 3. **Option C**: Tag milestone for AllIntegersCompact concrete instance
+
+---
+
+#### Cycle 119 - DiscreteCocompactEmbedding Instance for Fq[X] (Structure Complete!)
+
+**Goal**: Create instance of `DiscreteCocompactEmbedding` for Fq[X] / RatFunc(Fq).
+
+**Status**: ✅ COMPLETE (instance created with sorries for deep proofs)
+
+**Results**:
+- [x] Extended `FqPolynomialInstance.lean` with DiscreteCocompactEmbedding section
+- [x] `valuation_eq_one_almost_all` - finiteness of non-trivial valuations (sorry)
+- [x] `discrete_diagonal_embedding` - K is discrete in finite adeles (sorry)
+- [x] `closed_diagonal_embedding` - K is closed in finite adeles (sorry)
+- [x] `integralAdeles` - defined as {a | ∀ v, a_v ∈ O_v}
+- [x] `isCompact_integralAdeles` - integral adeles are compact (sorry)
+- [x] `exists_K_translate_in_integralAdeles` - weak approximation for PIDs (sorry)
+- [x] `instDiscreteCocompactEmbedding` - INSTANCE for Fq[X] / RatFunc(Fq)!
+
+**Key Structure**:
+```lean
+instance instDiscreteCocompactEmbedding [AllIntegersCompact Fq[X] (RatFunc Fq)] :
+    DiscreteCocompactEmbedding Fq[X] (RatFunc Fq) where
+  discrete := discrete_diagonal_embedding Fq
+  closed := closed_diagonal_embedding Fq
+  compact_fundamental_domain := ⟨integralAdeles Fq, isCompact_integralAdeles Fq, ...⟩
+```
+
+**Remaining Sorries** (5 in DiscreteCocompactEmbedding):
+
+1. **`valuation_eq_one_almost_all`**: Nonzero elements have trivial valuation at almost all places
+   - Mathematical content: Only finitely many irreducible polynomials divide a nonzero rational function
+   - Mathlib path: Factor through `RatFunc.div_surjective`, use `Polynomial.irreducible_factors`
+
+2. **`discrete_diagonal_embedding`**: K is discrete in finite adeles
+   - Mathematical content: Follows from (1) - bounded support → isolated points
+   - Mathlib path: Use restricted product topology characterization
+
+3. **`closed_diagonal_embedding`**: K is closed in finite adeles
+   - Mathematical content: Discrete subgroups of locally compact groups are closed
+   - Mathlib path: Use `Subgroup.isClosed_of_discrete` (requires additive version)
+
+4. **`isCompact_integralAdeles`**: ∏_v O_v is compact
+   - Mathematical content: Product of compact sets in restricted product is compact
+   - Mathlib path: `RestrictedProduct` compactness lemmas + `AllIntegersCompact`
+
+5. **`exists_K_translate_in_integralAdeles`**: Weak approximation for PIDs
+   - Mathematical content: For PID, can clear denominators at all places simultaneously
+   - Mathlib path: Use `IsPrincipalIdealRing`, `Associates.factors_unique`
+
+**Significance**:
+- BOTH key adelic axiom classes now have instances for Fq[X]!
+- The "Track A → Track B" pattern is validated: axiomatize first, then discharge
+- For Fq[X] (PID), the sorries are all standard number-theoretic facts
+- The structure shows the path for general function fields (with class group modifications)
+
+**Mathematical Background** (why PIDs are simpler):
+- For a PID, every fractional ideal is principal
+- Weak approximation holds unconditionally (no class group obstruction)
+- The fundamental domain is simply ∏_v O_v (no need for idele class group quotient)
+- For non-PIDs, would need to quotient by class group or use Minkowski's theorem
+
+**Sorry Status**:
+- TraceDualityProof.lean: 1 sorry (`finrank_dual_eq` - NOT on critical path)
+- FqPolynomialInstance.lean: 5 sorries (DiscreteCocompactEmbedding proofs)
+
+**Total**: 6 sorries in proof path
+
+**Build**: ✅ Compiles successfully
+
+**Next Steps** (Cycle 120+):
+1. Fill `valuation_eq_one_almost_all` using polynomial factorization
+2. Fill `isCompact_integralAdeles` using RestrictedProduct API
+3. Fill discreteness/closedness from the above
+4. Fill weak approximation using PID structure
+5. Or: Move to other axioms (`AdelicRRData`)
 
 ---
 
