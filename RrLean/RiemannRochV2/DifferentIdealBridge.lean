@@ -95,6 +95,54 @@ lemma fractionalIdealToDivisor_mul {I J : FractionalIdeal R⁰ K} (hI : I ≠ 0)
       fractionalIdealToDivisor_apply R K hJ]
   exact count_mul K v hI hJ
 
+/-! ## Valuation-Membership Bridge
+
+The key connection between fractional ideal membership and valuations.
+For `x ∈ K`, we have:
+- `x ∈ divisorToFractionalIdeal R K D` iff `∀ v, v.valuation K x ≤ exp(-D v)`
+
+This connects our valuation-based L(D) definition to fractional ideals.
+-/
+
+section ValuationMembership
+
+open FractionalIdeal
+
+/-- The count of divisorToFractionalIdeal at v equals D v.
+This is the key property: div(I_D) = D. -/
+lemma count_divisorToFractionalIdeal (D : DivisorV2 R) (v : HeightOneSpectrum R) :
+    count K v (divisorToFractionalIdeal R K D) = D v := by
+  -- divisorToFractionalIdeal D = D.prod (fun v n => P_v^n)
+  -- By count_finsuppProd: count v (D.prod ...) = D v
+  unfold divisorToFractionalIdeal
+  exact count_finsuppProd K v D
+
+/-- Membership in divisorToFractionalIdeal is characterized by valuation bounds.
+
+This is the key bridge between our valuation-based L(D) and fractional ideal membership.
+For nonzero x ∈ K:
+  x ∈ I_D  ⟺  (x) ≤ I_D  ⟺  count v (x) ≥ D v for all v  ⟺  v(x) ≤ exp(-D v) for all v
+
+Note: The condition `v.valuation K x ≤ exp(-D v)` means:
+- If D v > 0: x must vanish to order ≥ D v at v (zero of order D v)
+- If D v < 0: x may have a pole of order ≤ |D v| at v
+- If D v = 0: x has no pole at v
+-/
+lemma mem_divisorToFractionalIdeal_iff (D : DivisorV2 R) (x : K) :
+    x ∈ divisorToFractionalIdeal R K D ↔
+      x = 0 ∨ ∀ v : HeightOneSpectrum R, v.valuation K x ≤ WithZero.exp (-D v) := by
+  -- The proof requires connecting:
+  -- 1. x ∈ I iff spanSingleton x ≤ I
+  -- 2. For fractional ideals I, J: I ≤ J iff count v I ≥ count v J for all v
+  -- 3. count v (spanSingleton x) corresponds to -log(v.valuation K x)
+  --
+  -- This is foundational infrastructure that connects the two views of L(D):
+  -- - Valuation view: {f ∈ K : v(f) ≤ exp(D v) for all v}
+  -- - Ideal view: fractional ideal ∏ P_v^{-D v}
+  sorry -- Track B: Valuation-fractional ideal bridge
+
+end ValuationMembership
+
 end FractionalIdealBridge
 
 /-! ## Canonical Divisor from Different Ideal

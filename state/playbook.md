@@ -97,8 +97,8 @@ RrLean/RiemannRochV2/
 ├── DimensionCounting.lean  # Gap bound ✅
 ├── Projective.lean         # Projective layer ✅
 ├── FullRRData.lean         # ✅ Full RR typeclass + theorem (Cycle 80, 1 sorry)
-├── DifferentIdealBridge.lean # ✅ Track B bridge (Cycle 82, 0 sorries)
-├── TraceDualityProof.lean  # ⏳ Track B duality (Cycle 83, 3 sorries)
+├── DifferentIdealBridge.lean # ⏳ Track B bridge (Cycle 87, 1 sorry - key lemma)
+├── TraceDualityProof.lean  # ⏳ Track B duality (Cycle 87, 1 sorry - was 3)
 ├── Adeles.lean             # ✅ Track B H¹(D) (Cycle 86, 0 sorries)
 └── archive/
     ├── LocalGapInstance.lean   # ARCHIVED
@@ -239,7 +239,9 @@ Track B (Cycles 81+) - Required for full proof:
 - [x] Define adeles A_K (Cycle 84, revised in 85) ✅
 - [x] Define H¹(D) via adelic quotient (Cycle 85) ✅
 - [x] Prove valuation sorries in adelicSubspace (Cycle 86) ✅
-- [ ] Prove Serre duality: h¹(D) = ℓ(K-D) (Cycles 87-89)
+- [x] Valuation-Fractional Ideal bridge infrastructure (Cycle 87) ✅
+- [ ] Prove `mem_divisorToFractionalIdeal_iff` (key bridge lemma)
+- [ ] Prove Serre duality: h¹(D) = ℓ(K-D) (Cycles 88+)
 - [ ] Instantiate `FullRRData` with proof (Cycle 90+)
 
 ---

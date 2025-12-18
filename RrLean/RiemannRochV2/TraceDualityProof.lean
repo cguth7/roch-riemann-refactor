@@ -58,21 +58,36 @@ This corresponds to the fractional ideal I_{-D} = ∏ P_v^{-D(v)}. -/
 noncomputable def RRSpaceFractionalIdeal (D : DivisorV2 R) : FractionalIdeal R⁰ K :=
   divisorToFractionalIdeal R K (-D)
 
-/-- The RRSpace as an R-submodule equals the fractional ideal viewed as a submodule. -/
+/-- The RRSpace as an R-submodule equals the fractional ideal viewed as a submodule.
+
+This uses `mem_divisorToFractionalIdeal_iff` which characterizes membership in
+`divisorToFractionalIdeal R K D` via valuation bounds:
+  x ∈ I_D ↔ x = 0 ∨ ∀ v, v.valuation K x ≤ exp(-D v)
+
+For RRSpaceFractionalIdeal R K D = divisorToFractionalIdeal R K (-D):
+  x ∈ L(D) ↔ x = 0 ∨ ∀ v, v.valuation K x ≤ exp(D v)
+
+Which matches exactly with `satisfiesValuationCondition R K D f`. -/
 lemma RRModuleV2_eq_fractionalIdeal_toSubmodule (D : DivisorV2 R) :
     (RRModuleV2_real R K D).toAddSubmonoid =
       ((RRSpaceFractionalIdeal R K D) : Submodule R K).toAddSubmonoid := by
-  -- The proof requires showing that the valuation condition defining RRModuleV2_real
-  -- is equivalent to membership in the fractional ideal.
-  -- This is a foundational lemma connecting our two representations.
+  -- The proof follows from mem_divisorToFractionalIdeal_iff
+  -- which characterizes membership via valuation bounds.
   ext f
-  constructor
-  · -- f ∈ L(D) implies f ∈ I_{-D}
-    intro hf
-    sorry -- Needs detailed valuation/ideal correspondence
-  · -- f ∈ I_{-D} implies f ∈ L(D)
-    intro hf
-    sorry -- Needs detailed valuation/ideal correspondence
+  simp only [Submodule.mem_toAddSubmonoid, RRModuleV2_real,
+    AddSubmonoid.mem_mk, AddSubsemigroup.mem_mk, Set.mem_setOf_eq]
+  unfold satisfiesValuationCondition RRSpaceFractionalIdeal
+  -- Now we need: (f = 0 ∨ ∀ v, v(f) ≤ exp(D v)) ↔ f ∈ ↑(divisorToFractionalIdeal R K (-D))
+  -- By mem_divisorToFractionalIdeal_iff: f ∈ I_E ↔ f = 0 ∨ ∀ v, v(f) ≤ exp(-E v)
+  -- For E = -D: f ∈ I_{-D} ↔ f = 0 ∨ ∀ v, v(f) ≤ exp(-(-D v)) = exp(D v)
+  -- The coercion from FractionalIdeal to Submodule preserves membership
+  rw [FractionalIdeal.mem_coe, mem_divisorToFractionalIdeal_iff]
+  -- After rewrite: (f = 0 ∨ ∀ v, v(f) ≤ exp(D v)) ↔ (f = 0 ∨ ∀ v, v(f) ≤ exp(-(-D v)))
+  -- Since (-D) v = -(D v) for Finsupp, -(-D v) = D v
+  -- Need to show: -(-D v) = D v for DivisorV2 = Finsupp
+  have h_neg : ∀ v : HeightOneSpectrum R, -(-D) v = D v := fun v => by
+    simp only [Finsupp.coe_neg, Pi.neg_apply, neg_neg]
+  simp_rw [h_neg]
 
 end RRSpaceFractionalIdeal
 

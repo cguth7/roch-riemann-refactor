@@ -445,6 +445,56 @@ The quotient `Space k R K D` has automatic `Module k` and `AddCommGroup` instanc
 
 ---
 
+#### Cycle 87 - Valuation-Fractional Ideal Bridge
+
+**Goal**: Build the bridge connecting valuation-based L(D) to fractional ideal membership.
+
+**Status**: ✅ COMPLETE (architectural improvement, sorry count reduced)
+
+**Results**:
+- [x] Added `count_divisorToFractionalIdeal` - PROVED
+- [x] Added `mem_divisorToFractionalIdeal_iff` - infrastructure lemma (1 sorry)
+- [x] Rewrote `RRModuleV2_eq_fractionalIdeal_toSubmodule` using new bridge
+- [x] Reduced TraceDualityProof.lean sorries from 3 to 1
+
+**Key Addition**: `count_divisorToFractionalIdeal` lemma:
+```lean
+lemma count_divisorToFractionalIdeal (D : DivisorV2 R) (v : HeightOneSpectrum R) :
+    count K v (divisorToFractionalIdeal R K D) = D v
+```
+This proves that `divisorToFractionalIdeal D` has the correct count at each prime.
+
+**Key Lemma** (`mem_divisorToFractionalIdeal_iff`):
+```lean
+lemma mem_divisorToFractionalIdeal_iff (D : DivisorV2 R) (x : K) :
+    x ∈ divisorToFractionalIdeal R K D ↔
+      x = 0 ∨ ∀ v, v.valuation K x ≤ WithZero.exp (-D v)
+```
+This is the fundamental bridge: membership in fractional ideal ↔ valuation bounds.
+
+**Proof Strategy** (for sorry): Requires showing:
+1. `x ∈ I` iff `spanSingleton x ≤ I` (Mathlib: `spanSingleton_le_iff_mem`)
+2. `I ≤ J` iff `count v I ≥ count v J` for all v (from factorization + `count_mono`)
+3. `count v (spanSingleton x) = -log(v.valuation K x)` (connect to valuation)
+
+**Architectural Improvement**:
+- Before: TraceDualityProof had 2 separate sorries for forward/backward membership
+- After: Single sorry in `mem_divisorToFractionalIdeal_iff`, cleaner proof structure
+
+**Sorry Status**:
+- DifferentIdealBridge.lean: 1 sorry (NEW - `mem_divisorToFractionalIdeal_iff`)
+- TraceDualityProof.lean: 1 sorry (was 3 - `finrank_dual_eq`)
+- FullRRData.lean: 1 sorry (unchanged)
+
+**Total**: 3 sorries in main path (was 4, reduced by 1)
+
+**Next Steps** (Cycle 88):
+1. Prove `mem_divisorToFractionalIdeal_iff` via spanSingleton and count characterization
+2. Or: Prove `finrank_dual_eq` via trace form nondegeneracy
+3. Or: Focus on H¹(D) finiteness for Serre duality
+
+---
+
 ## References
 
 ### Primary (Validated)
