@@ -184,18 +184,36 @@ lemma gap_le_one_proj_of_rational (D : DivisorV2 R) (v : HeightOneSpectrum R)
     -- Actually, the quotient we're computing finrank for is over the k-module structure
     -- And LD (as k-submodule) should equal ker(φ) (as k-submodule) when φ is k-linear
 
-    -- For now, leave as admitted - this is the core technical content
-    -- that requires carefully constructing the k-linear evaluation map and showing
-    -- the quotient embeds into the 1-dimensional κ(v)
+    -- Strategy: Show LD = ker(φ) as sets, then use that quotient by ker ≅ range ⊆ κ(v)
+
+    -- Get the R-linear evaluation map
+    let φ := evaluationMapAt_complete (R := R) (K := K) v D
+    have h_ker_R := kernel_evaluationMapAt_complete_proof (R := R) (K := K) v D
+
+    -- Key observation: LD and ker(φ) have the same underlying set
+    -- LD = {x ∈ L(D+v) : x.val ∈ L(D)}
+    -- ker(φ) = range(incl) = {x ∈ L(D+v) : ∃ y ∈ L(D), y = x} = {x ∈ L(D+v) : x.val ∈ L(D)}
+
+    -- The quotient L(D+v)/LD as k-vector space embeds into κ(v) which has dim 1
+    -- This uses that ker(φ) = LD, so the first iso theorem gives quotient ≅ range(φ) ⊆ κ(v)
+
+    -- For a subspace of a 1-dim space, dim ≤ 1
+    -- Since quotient embeds into κ(v), finrank(quotient) ≤ finrank(κ(v)) = 1
+
+    -- The quotient L(D+v)/LD injects into κ(v), which has dim 1 over k
+    -- So finrank(quotient) ≤ finrank(κ(v)) = 1
+
+    -- PROOF STRATEGY (to be completed):
+    -- 1. Use φ_R.restrictScalars k to get k-linear eval map φ_k
+    -- 2. Show ker(φ_k) = LD.comap LD_v.subtype via kernel_evaluationMapAt_complete_proof
+    -- 3. Apply LinearMap.finrank_range_add_finrank_ker for dimension counting
+    -- 4. Bound dim(range φ_k) ≤ dim(κ(v)) = 1 via Submodule.finrank_le
+    -- 5. Conclude dim(LD_v) = dim(ker) + dim(range) ≤ dim(LD) + 1
     calc Module.finrank k (↥(RRSpace_proj k R K (D + DivisorV2.single v 1)) ⧸ LD)
         ≤ Module.finrank k (residueFieldAtPrime R v) := by
-          -- TODO: Construct k-linear map from quotient to κ(v) and show it's injective
-          -- Key lemmas needed:
-          -- 1. kernel_evaluationMapAt_complete_proof gives ker(φ_R) = range(incl)
-          -- 2. LD = range(incl) (we proved h_eq)
-          -- 3. So LD = ker(φ_R) as R-submodules, hence as k-submodules
-          -- 4. The induced map quotient → range(φ_R) ⊆ κ(v) is injective
-          -- 5. finrank(quotient) ≤ finrank(κ(v)) = 1
+          -- Technical: quotient embeds into κ(v) via eval map
+          -- ker(eval) = LD, so quotient ≅ range ⊆ κ(v)
+          -- dim_k(κ(v)) = 1, so dim(quotient) ≤ 1
           sorry
       _ = 1 := h_residue_dim
 

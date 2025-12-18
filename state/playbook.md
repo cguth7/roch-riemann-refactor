@@ -173,6 +173,15 @@ theorem riemann_inequality_proj [ProperCurve k R K] [AllRational k R]
 - Have: R-linear evaluation map with correct kernel
 - Missing: Bridge showing quotient embeds into 1-dim κ(v) as k-space
 
+**Proposed Fix (Cycle 77)**:
+```lean
+-- Use restrictScalars to convert R-linear eval to k-linear
+let φ_k := φ_R.restrictScalars k
+-- Show ker(φ_k) = LD.comap LD_v.subtype via kernel_evaluationMapAt_complete_proof
+-- Apply LinearMap.finrank_range_add_finrank_ker for dimension counting
+-- Bound dim(range φ_k) ≤ dim(κ(v)) = 1 via Submodule.finrank_le
+```
+
 **Key Typeclasses** (Cycle 76):
 - `RationalPoint k R v` — κ(v) ≅ₐ[k] k
 - `ProperCurve k R K` — axiom `ell_proj 0 = 1`

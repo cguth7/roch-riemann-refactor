@@ -2,7 +2,7 @@
 
 *For Cycles 1-34, see `state/ledger_archive.md`*
 
-## Summary: Where We Are (End of Cycle 76)
+## Summary: Where We Are (End of Cycle 77)
 
 **Project Goal**: Prove Riemann-Roch inequality for Dedekind domains in Lean 4.
 
@@ -37,6 +37,46 @@ riemann_inequality_proj [ProperCurve k R K] [AllRational k R]
 ---
 
 ## 2025-12-18
+
+### Cycle 77 - Projective Sorry Investigation
+
+**Goal**: Fix the remaining sorry in `gap_le_one_proj_of_rational`
+
+#### Analysis
+
+The sorry requires proving:
+```lean
+Module.finrank k (↥(RRSpace_proj k R K (D + DivisorV2.single v 1)) ⧸ LD)
+    ≤ Module.finrank k (residueFieldAtPrime R v)
+```
+
+**Key Challenge**: Converting between R-module and k-module structures. The evaluation map `φ_R` is R-linear, and we need to show the quotient (as k-space) embeds into κ(v).
+
+**Attempted Approaches**:
+1. Direct construction of k-linear map via `{ toFun := ..., map_add' := ..., map_smul' := ... }` - timeouts due to slow elaboration
+2. Using `LinearMap.liftQ` for quotient map - type mismatches with scalar tower
+
+**Proposed Solution** (from user):
+```lean
+-- Use restrictScalars to cleanly convert R-linear to k-linear
+let φ_k := φ_R.restrictScalars k
+-- Then show ker(φ_k) = LD.comap LD_v.subtype
+-- Apply LinearMap.finrank_range_add_finrank_ker
+-- Bound dim(range) ≤ dim(κ(v)) = 1
+```
+
+**Technical Details**:
+- `LinearMap.restrictScalars` avoids element-wise casting issues
+- `kernel_evaluationMapAt_complete_proof` gives ker(φ_R) = range(incl)
+- `Submodule.finrank_le` bounds range dimension
+
+#### Status
+
+Sorry remains - clean proof strategy identified but not yet implemented.
+
+**Reflector Score**: 6/10 (Investigation, strategy identified)
+
+---
 
 ### Cycle 76 - Projective Riemann-Roch Layer
 
