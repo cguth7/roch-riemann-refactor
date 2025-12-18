@@ -184,56 +184,74 @@ instance completeSpace_adicCompletionIntegers (v : HeightOneSpectrum R) :
     isClosed_adicCompletionIntegers (R := R) K v
   exact IsClosed.completeSpace_coe
 
-/-- Each adicCompletionIntegers is compact, given the remaining axioms.
-Note: DVR is now automatically available via DedekindDVR.lean! -/
+/-- Each adicCompletionIntegers is compact, given only the finite residue field axiom.
+Note: DVR and RankOne are now automatically available as theorems! -/
 theorem compactSpace_adicCompletionIntegers
-    [RankOneValuations R K]
     [FiniteCompletionResidueFields R K]
     (v : HeightOneSpectrum R) :
     CompactSpace (v.adicCompletionIntegers K) := by
-  -- Get axiom instances
-  letI hrank := RankOneValuations.rankOne (R := R) (K := K) v
-  -- DVR is now automatic! (from DedekindDVR.lean)
+  -- RankOne is now a theorem! (from rankOne_adicCompletionValuation)
+  letI hrank := rankOne_adicCompletionValuation R K v
+  -- DVR is now a theorem! (from DedekindDVR.lean)
   haveI hdvr : IsDiscreteValuationRing (v.adicCompletionIntegers K) :=
     RiemannRochV2.DedekindDVR.isDiscreteValuationRing_adicCompletionIntegers (K := K) v
+  -- Only the finite residue field is still an axiom
   haveI hfinite := FiniteCompletionResidueFields.finite (R := R) (K := K) v
   -- adicCompletionIntegers K v = 𝒪[adicCompletion K v] by definition
   exact Valued.integer.compactSpace_iff_completeSpace_and_isDiscreteValuationRing_and_finite_residueField.mpr
     ⟨completeSpace_adicCompletionIntegers (R := R) K v, hdvr, hfinite⟩
 
-/-- AllIntegersCompact follows from our axioms.
-Note: Only RankOne + FiniteResidueFields needed now that DVR is proved! -/
+/-- AllIntegersCompact follows from only the FiniteCompletionResidueFields axiom.
+DVR and RankOne are now proved for ALL Dedekind domains! -/
 theorem allIntegersCompact_of_axioms
-    [RankOneValuations R K]
     [FiniteCompletionResidueFields R K] :
     RiemannRochV2.AdelicTopology.AllIntegersCompact R K :=
   ⟨fun v => compactSpace_adicCompletionIntegers R K v⟩
 
-/-! ## Summary
+/-! ## Summary (Cycle 107 Update)
 
-**Axiom hierarchy** (simplified now that DVR is proved!):
+**Axiom hierarchy** (simplified - TWO of THREE requirements now PROVED!):
 ```
-PROVED:
+PROVED (Cycle 105):
   IsDiscreteValuationRing (v.adicCompletionIntegers K)  ← DedekindDVR.lean
 
-REMAINING AXIOMS:
-  RankOneValuations R K
-         +
+PROVED (Cycle 106):
+  RankOne (Valued.v : Valuation (v.adicCompletion K) ℤᵐ⁰)  ← rankOne_adicCompletionValuation
+
+PROVED (automatic):
+  CompleteSpace (v.adicCompletionIntegers K)  ← completeSpace_adicCompletionIntegers
+
+REMAINING AXIOM (ONLY ONE!):
   FiniteCompletionResidueFields R K
          |
          v
-  compactSpace_adicCompletionIntegers
+  compactSpace_adicCompletionIntegers  (uses compactSpace_iff...)
          |
          v
   AllIntegersCompact R K
 ```
 
-**To discharge for function fields k(C) over finite k**:
-1. ✅ `IsDiscreteValuationRing`: PROVED for all Dedekind domains! (DedekindDVR.lean)
-2. `RankOneValuations`: Construct using |R/v| as exponential base
-3. `FiniteCompletionResidueFields`: Residue field = R/v is finite extension of k
+**Residue Field Analysis**:
 
-**Progress**: One of three requirements for compactness is now proved!
+The remaining axiom requires: `Finite (Valued.ResidueField (v.adicCompletion K))`
+
+Where `Valued.ResidueField K = IsLocalRing.ResidueField (Valued.integer K) = 𝒪[K] ⧸ 𝓂[K]`
+
+**Key Mathematical Fact** (not yet in Mathlib for general Dedekind domains):
+- The residue field of the completion equals the residue field of the original local ring
+- That is: `IsLocalRing.ResidueField (v.adicCompletionIntegers K) ≃ R ⧸ v.asIdeal`
+- This is because completion preserves residue fields of local rings
+
+**Discharge Path for Function Fields k(C) over finite k**:
+1. ✅ `IsDiscreteValuationRing`: PROVED for ALL Dedekind domains (Cycle 105)
+2. ✅ `RankOne`: PROVED for ALL Dedekind domains (Cycle 106)
+3. ✅ `CompleteSpace`: Automatic from completion construction
+4. ⏳ `FiniteCompletionResidueFields`: Need to show residue field is finite
+   - Mathematical path: Residue field of completion ≃ R/v.asIdeal
+   - For function fields over finite k: R/v.asIdeal is finite extension of k, hence finite
+
+**Progress**: TWO of THREE compactness requirements are now proved as theorems!
+Only finite residue fields remains as an axiom.
 -/
 
 end RiemannRochV2.AllIntegersCompactProof
