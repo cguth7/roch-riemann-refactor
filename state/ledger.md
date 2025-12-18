@@ -1439,6 +1439,26 @@ focus on adelic infrastructure**, specifically:
 
 **Forward Direction**: Track B - Start discharging axioms rather than adding new ones.
 
+**Recommended First Target**: `AllIntegersCompact`
+
+Rationale:
+1. **Foundation** - LocallyCompactSpace(A_K) depends on this; other axioms build on it
+2. **Single-place property** - Only requires showing each O_v is compact, no global coordination
+3. **Mathlib coverage** - Should have: finite residue field + complete DVR → compact valuation ring
+4. **Clear scope** - For function field K/k with finite k: residue fields are finite extensions of k
+
+Expected proof route:
+```
+Finite k → finite residue field at each v
+         → CompactSpace (v.adicCompletionIntegers K)  [Mathlib: Valued.LocallyCompact?]
+         → AllIntegersCompact R K
+```
+
+Search targets in Mathlib:
+- `compactSpace_iff_completeSpace_and_isDiscreteValuationRing_and_finite_residueField`
+- `Valued.LocallyCompact` module
+- `IsNonarchimedeanLocalField` instances
+
 ---
 
 ## References
