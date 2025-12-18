@@ -117,19 +117,37 @@ open FractionalIdeal
 
 /-- For finite-dimensional spaces, the trace dual preserves dimension structure.
 
-This is the key fact: the trace pairing gives a perfect duality, so
-dim_k(I) = dim_k(dual(I)) when both are finite-dimensional.
+**Status**: This lemma may not be the correct approach for Serre duality.
 
-Note: This requires the trace form to be nondegenerate, which holds
-for separable extensions.
+**Issue (Cycle 90 analysis)**:
+1. The trace dual `dual A K_A I` corresponds to divisor `K + div(I)`, not `K - div(I)`.
+   See `fractionalIdealToDivisor_dual`: `div(dual I) = canonicalDivisorFrom A - div(I)`.
+   Since `L(D) ↔ div(I) = -D`, we have `dual(L(D)) ↔ L(K + D)`, not `L(K - D)`.
+
+2. The `[Module.Finite k I]` hypothesis is very restrictive. Fractional ideals are
+   typically infinite-dimensional over k unless k is the full constant field.
+
+3. For Serre duality `ℓ(D) = ℓ(K-D) + deg(D) + 1 - g`, we need a different approach.
+
+**Correct path for Track B**:
+The adelic machinery in `Adeles.lean` defines H¹(D) = A_K / (K + A_K(D)).
+Serre duality states h¹(D) = ℓ(K-D), which combined with RR in the form
+`ℓ(D) - h¹(D) = deg(D) + 1 - g` gives the full theorem.
+
+The key remaining steps are:
+1. Prove finiteness: h¹(D) is finite for all D
+2. Prove vanishing: h¹(D) = 0 for deg(D) >> 0 (strong approximation)
+3. Prove Serre duality: h¹(D) = ℓ(K-D) via local trace residues
+
+This lemma is left as a sorry since it's not on the critical path.
 -/
 lemma finrank_dual_eq (I : FractionalIdeal R⁰ K) (hI : I ≠ 0)
     [hfin : Module.Finite k I] :
     Module.finrank k (dual A K_A I) = Module.finrank k I := by
-  -- The trace form is nondegenerate for separable extensions.
-  -- This gives a k-linear isomorphism I ≃ dual(I)^*.
-  -- Since duals of f.d. spaces have the same dimension: dim(I) = dim(dual(I)).
-  sorry -- Requires trace form nondegeneracy + linear algebra
+  -- NOTE (Cycle 90): This lemma is likely not the right approach.
+  -- See docstring above for detailed analysis.
+  -- The adelic approach via H¹(D) in Adeles.lean is the correct path.
+  sorry
 
 /-- The trace dual operation is involutive on fractional ideals. -/
 lemma dual_dual_eq (I : FractionalIdeal R⁰ K) (hI : I ≠ 0) :
@@ -215,29 +233,35 @@ theorem serre_duality_dimension
 
 end SerreDuality
 
-/-! ## Next Steps for Track B
+/-! ## Next Steps for Track B (Updated Cycle 90)
 
-To fully discharge the `serre_duality_eq` axiom, we need to:
+**Status**: The trace dual approach in this file provides infrastructure but is
+not the correct path to Serre duality. The adelic approach in `Adeles.lean` is
+the right direction.
 
-1. **Connect RRSpace to FractionalIdeal**: Prove `RRModuleV2_eq_fractionalIdeal_toSubmodule`
-   by showing the valuation condition matches ideal membership.
+**What this file establishes**:
+- ✅ `RRModuleV2_eq_fractionalIdeal_toSubmodule`: L(D) ↔ fractional ideal correspondence
+- ✅ `fractionalIdealToDivisor_dual`: div(dual I) = K - div(I)
+- ❌ `finrank_dual_eq`: Not the right lemma (dual gives L(K+D), not L(K-D))
 
-2. **Trace Pairing Structure**: Use `Submodule.traceDual` and `FractionalIdeal.dual`
-   to establish the duality pairing.
+**Correct path via Adeles.lean**:
 
-3. **Adelic Exact Sequence**: Define H^1(D) via the adelic/idelic cokernel:
-   ```
-   0 → K → ∏_v K_v → coker → 0
-   ```
-   and show h^1(D) = dim(coker ∩ conditions).
+1. **H¹(D) structure** (✅ Cycle 85): `AdelicH1.Space k R K D = A_K ⧸ (K + A_K(D))`
 
-4. **Local-Global Principle**: Use the product formula and local duality at each v
-   to piece together the global Serre duality.
+2. **Finiteness** (TODO): Prove `Module.Finite k (AdelicH1.Space k R K D)`
+   - Key insight: For large deg(D), H¹(D) = 0 (strong approximation)
+   - Use compactness of adele class group A_K/K
 
-For Cycle 83, we've established:
-- The conceptual framework connecting our definitions to Mathlib's trace dual
-- The key lemmas needed (with sorries marking what remains)
-- The path from `fractionalIdealToDivisor_dual` to dimension equality
+3. **Serre duality** (TODO): `AdelicH1.h1_finrank k R K D = ell_proj k R K (K - D)`
+   - Local duality: At each place v, residue pairing gives local duality
+   - Global piecing: Product formula assembles local dualities
+
+4. **Discharge axiom** (TODO): Instantiate `FullRRData` with proved duality
+   - Set `canonical := canonicalDivisorFrom A` from DifferentIdealBridge.lean
+   - Set `genus := ell_proj k R K canonical` (ℓ(K) = g)
+   - Prove `serre_duality_eq` from h¹(D) = ℓ(K-D)
+
+**Estimated remaining work**: 3-4 cycles for finiteness + Serre duality
 -/
 
 end RiemannRochV2

@@ -72,6 +72,14 @@ lemma Effective_iff (D : DivisorV2 R) : Effective D ↔ ∀ v, 0 ≤ D v := Iff.
 
 lemma Effective_zero : Effective (0 : DivisorV2 R) := le_refl 0
 
+/-- Effective divisors have non-negative degree.
+Since all coefficients are ≥ 0, their sum is ≥ 0. -/
+lemma deg_nonneg_of_effective {D : DivisorV2 R} (hD : Effective D) : 0 ≤ D.deg := by
+  unfold deg
+  apply Finsupp.sum_nonneg
+  intro v _
+  exact hD v
+
 end
 
 /-! ## Divisor Helpers for Riemann Inequality

@@ -235,14 +235,16 @@ Track A (Cycle 80): ✅ COMPLETE
 
 Track B (Cycles 81+) - Required for full proof:
 - [x] Bridge `differentIdeal` → `DivisorV2 R` (Cycle 82)
-- [x] TraceDualityProof infrastructure (Cycle 83)
+- [x] TraceDualityProof infrastructure (Cycle 83) - NOTE: Trace duals give L(K+D), not L(K-D)
 - [x] Define adeles A_K (Cycle 84, revised in 85) ✅
 - [x] Define H¹(D) via adelic quotient (Cycle 85) ✅
 - [x] Prove valuation sorries in adelicSubspace (Cycle 86) ✅
 - [x] Valuation-Fractional Ideal bridge infrastructure (Cycle 87) ✅
-- [ ] Prove `mem_divisorToFractionalIdeal_iff` (key bridge lemma)
-- [ ] Prove Serre duality: h¹(D) = ℓ(K-D) (Cycles 88+)
-- [ ] Instantiate `FullRRData` with proof (Cycle 90+)
+- [x] Prove `le_iff_forall_count_ge` (Cycle 89) ✅
+- [x] Architectural analysis: adelic approach is correct path (Cycle 90)
+- [ ] Prove H¹(D) finiteness (strong approximation)
+- [ ] Prove Serre duality: h¹(D) = ℓ(K-D) via local trace residues
+- [ ] Instantiate `FullRRData` with proof
 
 ---
 
