@@ -572,6 +572,181 @@ for general Dedekind domains in Mathlib.
 
 ---
 
+#### Cycle 108 - Residue Field Isomorphism Research
+
+**Goal**: Research whether Mathlib has the residue field isomorphism needed to discharge
+`FiniteCompletionResidueFields`.
+
+**Status**: ✅ COMPLETE (research done, blocker identified)
+
+**Results**:
+- [x] Comprehensive search of Mathlib for residue field preservation under completion
+- [x] Identified key theorem: `compactSpace_iff_completeSpace_and_isDiscreteValuationRing_and_finite_residueField`
+- [x] Confirmed: Residue field isomorphism NOT in Mathlib (v4.16.0)
+- [x] Updated AllIntegersCompactProof.lean with detailed analysis
+- [x] Documented three possible approaches for discharge
+
+**Key Finding**: The standard mathematical fact that "completion preserves residue fields" is
+**NOT formalized in Mathlib**:
+
+```
+ResidueField(O_v^) ≅ R ⧸ v.asIdeal
+```
+
+**Mathlib HAS**:
+- `Valued.ResidueField K := IsLocalRing.ResidueField 𝒪[K]` (definition)
+- `compactSpace_iff_completeSpace_and_isDiscreteValuationRing_and_finite_residueField`
+- `finite_quotient_maximalIdeal_pow_of_finite_residueField`
+- DVR instances for NumberFields (with finite residue field hypothesis)
+
+**Mathlib does NOT have**:
+- ResidueField(completion) ≃ ResidueField(original localization)
+- Any direct connection between R ⧸ v.asIdeal and the completion's residue field
+- This isomorphism for general Dedekind domains
+
+**Why This Matters**:
+
+For function fields k(C)/k where k is finite, the discharge path would be:
+1. R ⧸ v.asIdeal is a finite extension of k (standard)
+2. Therefore R ⧸ v.asIdeal is finite
+3. **BLOCKER**: Need isomorphism ResidueField(completion) ≅ R ⧸ v.asIdeal
+4. Then: Finite (Valued.ResidueField (v.adicCompletion K))
+
+**Three Options Identified**:
+
+1. **Prove the isomorphism directly**: Show that the natural map
+   `R → v.adicCompletion K → 𝒪[K_v] → 𝓀[K_v]` factors through R ⧸ v.asIdeal
+   and is an isomorphism. This is doable but requires significant work.
+
+2. **Axiomatize more fundamentally**: Replace `FiniteCompletionResidueFields` with
+   `FiniteResidueFields R` (each R ⧸ v.asIdeal is finite). More natural for function fields
+   but still requires the isomorphism to connect to compactness.
+
+3. **Accept current axiom**: Keep `FiniteCompletionResidueFields` as the single axiom,
+   with clear documentation of the discharge path.
+
+**Interesting Discovery**: Mathlib's `FinitePlaces.lean` (for NumberFields) proves DVR
+instances with a `Finite (A ⧸ v.asIdeal)` hypothesis in scope, but the proofs don't actually
+USE this hypothesis - confirming our Cycle 105 generalization was correct.
+
+**Sorry Status** (unchanged from Cycle 107):
+- TraceDualityProof.lean: 1 sorry (`finrank_dual_eq` - NOT on critical path)
+
+**Total**: 1 sorry in main path (unchanged)
+
+**Current Axiom Status for AllIntegersCompact**:
+
+| Requirement | Status | Notes |
+|-------------|--------|-------|
+| IsDiscreteValuationRing | ✅ PROVED | Cycle 105, general Dedekind domains |
+| RankOne | ✅ PROVED | Cycle 106, general Dedekind domains |
+| CompleteSpace | ✅ PROVED | Automatic from completion |
+| Finite ResidueField | ⏳ AXIOM | Blocker: residue field isomorphism |
+
+**Recommendation**: Focus on a different axiom (DiscreteCocompactEmbedding) for next cycles,
+or attempt to prove the residue field isomorphism. The isomorphism proof would require:
+1. Showing the uniformizer of R_v maps to a uniformizer of the completion
+2. Showing the residue field map R → 𝒪[K_v] → 𝓀[K_v] factors through R ⧸ v.asIdeal
+3. Showing surjectivity (density argument) and injectivity (kernel = v.asIdeal)
+
+**Next Steps** (Cycle 109+):
+1. Option A: Attempt to prove residue field isomorphism (moderate effort)
+2. Option B: Move to DiscreteCocompactEmbedding (different direction)
+3. Option C: Accept axiom and document thoroughly (minimal effort)
+
+---
+
+#### Cycle 108 Part 2 - Residue Field Isomorphism PROVED (Major Progress!)
+
+**Goal**: Follow user guidance to prove the residue field isomorphism using Mathlib's building blocks.
+
+**Status**: ✅ COMPLETE (isomorphism proved, one axiom remains)
+
+**Key Insight from User**: The search was looking for the wrong thing. Instead of a
+pre-packaged "ResidueField(completion) ≃ original" lemma, Mathlib has building blocks:
+- `AdicCompletion.evalOneₐ_surjective` - canonical surjection from completion
+- `isLocalRing_of_isAdicComplete_maximal` - completion is local
+- `Valuation.Integers.isUnit_iff_valuation_eq_one` - unit ↔ valuation = 1
+
+**Results**:
+- [x] Created `ResidueFieldIso.lean` with full proof structure (~190 lines)
+- [x] PROVED: `algebraMap_mem_asIdeal_val_lt_one` - r ∈ v.asIdeal ⇒ val < 1
+- [x] PROVED: `toResidueField_mem_asIdeal` - r ∈ v.asIdeal ⇒ residue = 0
+- [x] PROVED: `ker_toResidueField_le_asIdeal` - kernel ⊆ v.asIdeal (injectivity direction)
+- [x] PROVED: `ker_toResidueField_eq_asIdeal` - kernel = v.asIdeal (exact characterization)
+- [x] AXIOM: `toResidueField_surjective` - density argument (still needed)
+- [x] PROVED: `residueFieldIso` - R ⧸ v.asIdeal ≃+* ResidueField(completion)
+- [x] PROVED: `finite_residueField_of_finite_quotient` - finiteness transfers
+- [x] PROVED: `finiteCompletionResidueFields_of_finite_quotients` - connects to axiom class
+
+**New File**: `RrLean/RiemannRochV2/ResidueFieldIso.lean`
+
+**Key Theorems**:
+```lean
+/-- The residue field of the adic completion is isomorphic to R ⧸ v.asIdeal. -/
+def residueFieldIso (v : HeightOneSpectrum R) :
+    (R ⧸ v.asIdeal) ≃+* Valued.ResidueField (v.adicCompletion K)
+
+/-- If R ⧸ v.asIdeal is finite, then the residue field of the completion is finite. -/
+theorem finite_residueField_of_finite_quotient (v : HeightOneSpectrum R)
+    [h : Finite (R ⧸ v.asIdeal)] :
+    Finite (Valued.ResidueField (v.adicCompletion K))
+```
+
+**Remaining Axiom**: `toResidueField_surjective`
+
+This is the "density" argument: every element of the residue field is representable by an
+element of R. The proof requires showing that R is dense enough in the completion. This
+is a standard fact but requires either:
+1. Direct construction via approximation
+2. Appeal to completion density + quotient lifting
+
+**Simplified Axiom Path for AllIntegersCompact**:
+
+```
+For function fields k(C)/k where k is finite:
+
+HYPOTHESIS: ∀ v, Finite (R ⧸ v.asIdeal)
+    |  (standard for function fields over finite k)
+    v
+finite_residueField_of_finite_quotient (uses residueFieldIso + surjectivity axiom)
+    |
+    v
+FiniteCompletionResidueFields R K
+    |
+    v
+AllIntegersCompact R K (using DVR + RankOne + Complete, all PROVED)
+```
+
+**Progress Summary**:
+
+| Requirement for AllIntegersCompact | Status |
+|-----------------------------------|--------|
+| IsDiscreteValuationRing | ✅ PROVED (Cycle 105) |
+| RankOne | ✅ PROVED (Cycle 106) |
+| CompleteSpace | ✅ PROVED (automatic) |
+| Finite ResidueField | 🔶 REDUCED to surjectivity axiom |
+
+**Significance**: The "FiniteCompletionResidueFields" axiom is now MUCH simpler:
+- Old: Need to prove ResidueField(completion) is finite (seemed hard, no direct path)
+- New: Need surjectivity of R → ResidueField(completion) + hypothesis that R/v.asIdeal is finite
+
+The hypothesis "R/v.asIdeal is finite" is the natural condition for function fields over
+finite fields and is easy to verify in concrete cases.
+
+**Sorry Status** (unchanged from Cycle 107):
+- TraceDualityProof.lean: 1 sorry (`finrank_dual_eq` - NOT on critical path)
+- ResidueFieldIso.lean: 1 axiom (`toResidueField_surjective` - density argument)
+
+**Total**: 1 sorry + 1 new axiom in proof path
+
+**Next Steps** (Cycle 109+):
+1. Prove `toResidueField_surjective` via density argument
+2. Or: Move to DiscreteCocompactEmbedding (different axiom)
+3. For concrete function fields: verify Finite (R ⧸ v.asIdeal) holds
+
+---
+
 ## References
 
 ### Primary (Validated)
