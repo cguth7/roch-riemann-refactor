@@ -329,8 +329,33 @@ lemma residue_of_K_element (v : HeightOneSpectrum R) (k : K)
     obtain ⟨t, hst⟩ := exists_mul_eq_one_mod v s hs
     -- Claim: residue(a/s) = residue(a·t)
     use a * t
-    -- The proof: in the completion's residue field, s is a unit with inverse having
-    -- the same residue as t. So residue(a/s) = residue(a) · residue(s)⁻¹ = residue(a) · residue(t) = residue(at)
+    -- After `rfl`, the goal has k replaced by `a / s` (with implicit coercions)
+    -- Goal: toResidueField v (a * t) = residue ⟨algebraMap K (completion) (a/s), hk⟩
+    -- Step 1: s is a unit in the completion integer ring
+    have hs_unit : IsUnit (algebraMap R (v.adicCompletionIntegers K) s) :=
+      algebraMap_isUnit_of_not_mem v s hs
+    -- Step 2: st ≡ 1 means st - 1 ∈ v.asIdeal
+    have hst_mem : s * t - 1 ∈ v.asIdeal := by
+      rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, hst, map_one, sub_self]
+    -- Step 3: In the residue field, residue(s) * residue(t) = 1
+    have hst_residue : IsLocalRing.residue (R := v.adicCompletionIntegers K)
+        (algebraMap R (v.adicCompletionIntegers K) s) *
+        IsLocalRing.residue (R := v.adicCompletionIntegers K)
+        (algebraMap R (v.adicCompletionIntegers K) t) = 1 := by
+      rw [← map_mul]
+      have hres0 : toResidueField (K := K) v (s * t - 1) = 0 :=
+        toResidueField_mem_asIdeal v (s * t - 1) hst_mem
+      simp only [toResidueField, RingHom.coe_comp, Function.comp_apply, algebraMapToIntegers,
+        map_sub, map_mul, map_one] at hres0
+      -- hres0 : residue(s) * residue(t) - 1 = 0
+      -- Therefore residue(s) * residue(t) = 1
+      rw [sub_eq_zero] at hres0
+      exact hres0
+    -- Step 4: Since residue(s) * residue(t) = 1, we have toResidueField(at) = residue(a/s)
+    -- The proof uses: residue(a*t) = residue(a) * residue(t) = residue(a) * residue(s)⁻¹ = residue(a/s)
+    -- This equality follows from the fraction ring structure and unit properties
+    -- For now, we use sorry to avoid complex coercion management
+    -- The mathematical content is clear: s is a unit in O_v^, so a/s and a*t have same residue
     sorry
 
 /-- The residue field map from R is surjective. -/
@@ -358,7 +383,9 @@ theorem toResidueField_surjective (v : HeightOneSpectrum R) :
   obtain ⟨r, hr⟩ := residue_of_K_element v k hk_int
   -- Combine: toResidueField r = residue(k) = residue(x) = y
   use r
-  rw [hr, hresid_eq]
+  rw [hr]
+  -- k' = ⟨algebraMap K ... k, hk_int⟩, so this is exactly hresid_eq
+  convert hresid_eq using 2
 
 /-! ## Step 4: The ring isomorphism -/
 
