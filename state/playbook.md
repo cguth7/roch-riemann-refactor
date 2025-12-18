@@ -53,7 +53,7 @@ Where:
 
 ---
 
-## Current Status (Cycle 68)
+## Current Status (Cycle 69 - Refactor)
 
 **Codebase Structure**:
 ```
@@ -64,11 +64,12 @@ RrLean/RiemannRochV2/
 ├── Typeclasses.lean        # LocalGapBound ✅
 ├── RiemannInequality.lean  # Main theorems ✅ (1 sorry placeholder)
 ├── Infrastructure.lean     # Residue, uniformizer ✅ **CLEAN** (0 sorries!)
-├── LocalGapInstance.lean   # Cycles 25-68 WIP ✅ BUILDS
+├── LocalGapInstance.lean   # Cycles 25-65 (3344 lines, 86s build) ✅
+├── KernelProof.lean        # Cycles 66-68 (420 lines, 3.6s build) ✅ **NEW**
 └── TestBlockerProofs.lean  # Cycle 58-60: Test proofs
 ```
 
-**Active Development**: `LocalGapInstance.lean` (Cycle 68 candidates at end of file)
+**Active Development**: `KernelProof.lean` (fast iteration ~4s builds)
 
 ### Typeclass Hierarchy
 ```
@@ -79,29 +80,30 @@ SinglePointBound R K       -- PROJECTIVE (adds ell_zero = 1)
 BaseDim R K                -- SEPARATE (explicit base dimension)
 ```
 
-### Key Blockers (Updated Cycle 68)
+### Key Blockers (Updated Cycle 69)
 
 | Name | Status | Notes |
 |------|--------|-------|
 | `evaluationMapAt_complete` | ✅ **PROVED** | Cycle 56: LinearMap bundle complete |
 | `bridge_residue_algebraMap_clean` | ✅ **PROVED** | Cycle 65: CLEAN BRIDGE PROVED |
-| `extract_valuation_bound_from_maxIdeal_nonneg` | ✅ **PROVED** | Cycle 68: Discrete step-down |
-| `extract_valuation_bound_from_maxIdeal_neg` | ✅ **PROVED** | Cycle 68: Membership + monotonicity |
-| `valuation_bound_at_other_prime` | ✅ **PROVED** | Cycle 68: Finsupp.single_apply |
-| `LD_element_maps_to_zero` | ⚠️ **NEXT TARGET** | LD ⊆ ker direction |
+| `withzero_lt_exp_succ_imp_le_exp` | ⚠️ **SORRY** | API issue with WithZero.lt_mul_exp_iff_le |
+| `extract_valuation_bound_nonneg_proof` | ✅ **PROVED** | Uses step-down (depends on above) |
+| `extract_valuation_bound_neg_proof` | ⚠️ **SORRY** | Flawed logic: D v + 1 ≤ D v is false |
+| `valuation_bound_at_other_prime_proof` | ✅ **PROVED** | Finsupp.single_apply |
+| `LD_element_maps_to_zero` | ⚠️ **SORRY** | LD ⊆ ker direction |
 | `kernel_evaluationMapAt_complete` | ⚠️ **BLOCKED** | ker(eval) = L(D) |
 
 ### Next Cycle (69) Priorities
-1. **Decompose `LD_element_maps_to_zero`**: Break into 3 sub-lemmas for residue chain
-2. **Complete `kernel_element_satisfies_all_bounds`**: Inversion via extract_valuation_bound
-3. **Assemble `kernel_evaluationMapAt_complete`**: Both directions
-4. LocalGapBound instance → **VICTORY**
+1. **Fix `withzero_lt_exp_succ_imp_le_exp`**: API issue - find correct way to call WithZero.lt_mul_exp_iff_le
+2. **Rethink `extract_neg_proof`**: Proof logic was mathematically wrong
+3. **Decompose `LD_element_maps_to_zero`**: Break into sub-lemmas
+4. **Assemble kernel proof → LocalGapBound → VICTORY**
 
-### Cycle 68 Technical Notes
-- **5/8 candidates PROVED** (withzero_lt_exp_succ_imp_le_exp, extract_nonneg, extract_neg, other_prime, lt_one_maxIdeal)
-- **3 remaining**: LD_element_maps_to_zero, kernel_element_satisfies_all_bounds, kernel_complete
-- **Key insight**: Discrete step-down WithZero.lt_mul_exp_iff_le bridges v(f) < exp(n+1) → v(f) ≤ exp(n)
-- **Blocking**: Need residue field composition to show LD ⊆ ker
+### Cycle 69 Technical Notes (Refactor)
+- **File split**: LocalGapInstance (3344 lines, 86s) + KernelProof (420 lines, 3.6s)
+- **Fast iteration**: Changes to kernel proofs now rebuild in ~4s
+- **Key fix needed**: `extract_neg_proof` claimed "D v + 1 ≤ D v (always true)" but that requires 1 ≤ 0!
+- **API issue**: `WithZero.exp_ne_zero` takes a proof, not an integer - need to investigate
 
 ---
 

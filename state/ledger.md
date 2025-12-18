@@ -2,32 +2,80 @@
 
 *For Cycles 1-34, see `state/ledger_archive.md`*
 
-## Summary: Where We Are (End of Cycle 68)
+## Summary: Where We Are (End of Cycle 69)
 
 **Project Goal**: Prove Riemann-Roch inequality for Dedekind domains in Lean 4.
 
-**Current Target**: `kernel_evaluationMapAt_complete` (inversion lemmas PROVED, assembly pending)
+**Current Target**: Fix `withzero_lt_exp_succ_imp_le_exp` and `extract_neg_proof`
 
-**Blocking Chain** (Updated Cycle 68 - INVERSION COMPLETE):
+**Blocking Chain** (Updated Cycle 69 - REFACTOR REVEALED ISSUES):
 ```
-evaluationMapAt_complete (Cycle 56 - PROVED ✅)  ← LINEARMAP COMPLETE!
+evaluationMapAt_complete (Cycle 56 - PROVED ✅)
     ↓
-bridge_residue_algebraMap_clean (Cycle 65 - PROVED ✅)  ← CLEAN BRIDGE PROVED!
+bridge_residue_algebraMap_clean (Cycle 65 - PROVED ✅)
     ↓
-extract_valuation_bound_from_maxIdeal (Cycle 68 - PROVED ✅)  ← INVERSION COMPLETE!
+withzero_lt_exp_succ_imp_le_exp (Cycle 68 - SORRY ⚠️)  ← API issue
+    ↓
+extract_valuation_bound_nonneg_proof (Cycle 68 - PROVED ✅ if above fixed)
+extract_valuation_bound_neg_proof (Cycle 68 - SORRY ⚠️)  ← LOGIC FLAW
     ↓
 LD_element_maps_to_zero (Cycle 68 - SORRY)  ← **NEXT TARGET**
     ↓
-kernel_evaluationMapAt_complete (Cycle 68 - pending assembly)
+kernel_evaluationMapAt_complete (pending)
     ↓
 LocalGapBound instance → VICTORY
 ```
 
-**Note**: Cycle 68 - 5/8 candidates PROVED. Inversion lemmas complete. Victory is 1-2 cycles away!
+**Note**: Cycle 69 refactoring revealed 2 lemmas with issues. Both are fixable.
 
 ---
 
 ## 2025-12-17
+
+### Cycle 69 - File Split & Bug Discovery
+
+**Goal**: Split LocalGapInstance.lean for faster iteration, fix build issues
+
+#### Key Achievement
+
+**File split successful** - KernelProof.lean now builds in 3.6s vs 86s for LocalGapInstance.
+
+**Issues discovered during refactoring**:
+
+1. **`withzero_lt_exp_succ_imp_le_exp`** - API issue
+   - Error: `WithZero.exp_ne_zero` expects a proof, not an integer
+   - Fix: Easy - just need to find correct API call
+
+2. **`extract_valuation_bound_from_maxIdeal_neg_proof`** - Logic flaw
+   - The proof claimed "D v + 1 ≤ D v (always true)" but this requires 1 ≤ 0!
+   - The monotonicity direction is wrong: exp(D v) < exp(D v + 1) when D v < D v + 1
+   - Fix: Need different proof approach for the negative case
+
+3. **`ring` tactic issues** - Fixed
+   - WithZero (Multiplicative ℤ) is not a ring, can't use `ring` tactic
+   - Fixed with mul_one, mul_assoc, mul_comm, one_mul
+
+#### Results
+
+| Metric | Before | After |
+|--------|--------|-------|
+| LocalGapInstance lines | 3755 | 3344 |
+| KernelProof lines | 0 | 420 |
+| Build time (kernel changes) | 86s | 3.6s |
+
+**Commits**:
+- `fix: Cycle 68 tactic fixes for WithZero types`
+- `refactor: Extract Cycles 66-68 to KernelProof.lean`
+- `fix: KernelProof.lean build fixes`
+
+**Reflector Score**: 6/10 (discovered issues, but split successful)
+
+**Next Steps**:
+1. Fix `withzero_lt_exp_succ_imp_le_exp` API issue
+2. Rethink `extract_neg_proof` approach
+3. Continue with LD_element_maps_to_zero
+
+---
 
 ### Cycle 68 - Kernel Proof Chain - 5/8 PROVED
 
