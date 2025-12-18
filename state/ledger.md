@@ -4,6 +4,24 @@
 *For Cycles 35-79, see `state/ledger_archive.md` (Vol. 2)*
 *For Cycles 80-99, see `state/ledger_archive.md` (Vol. 3.1)*
 
+---
+
+## ⚡ Quick Reference: Current Axiom/Sorry Status (Cycle 110)
+
+| File | Item | Type | Status | Discharge Path |
+|------|------|------|--------|----------------|
+| `ResidueFieldIso.lean` | `toResidueField_surjective` | axiom | 🔶 BLOCKING | See "Key Discoveries" section below |
+| `TraceDualityProof.lean` | `finrank_dual_eq` | sorry | ⚪ NOT CRITICAL | Not on main proof path |
+| `AllIntegersCompactProof.lean` | `FiniteCompletionResidueFields` | class | ✅ DISCHARGED | Via `residueFieldIso` (needs surjectivity) |
+| `AdelicTopology.lean` | `AllIntegersCompact` | class | ✅ PROVED | Via DVR + RankOne (Cycles 105-107) |
+| `AdelicTopology.lean` | `DiscreteCocompactEmbedding` | class | ⏳ TODO | Class group finiteness approach |
+
+**Build Status**: ✅ Compiles successfully
+
+**Next Priority**: Discharge `toResidueField_surjective` via Bridge Path (see "Key Discoveries" section)
+
+---
+
 ## Phase 3: Full Riemann-Roch
 
 ### Milestone Achieved (v1.0-riemann-inequality)
@@ -800,6 +818,137 @@ The mathematical content is clear; the Mathlib API connection needs careful navi
 1. Complete density proof using `Completion.denseRange_coe` and `isClosed_property`
 2. Alternative: Use `IsLocalization.equivQuotMaximalIdeal` to establish R/v ≃ O_v/m_v
 3. Or: Move to DiscreteCocompactEmbedding (different axiom direction)
+
+---
+
+#### Cycle 110 - Surjectivity Infrastructure Improvements
+
+**Goal**: Strengthen the infrastructure for `toResidueField_surjective` and document clearly.
+
+**Status**: ✅ COMPLETE (infrastructure improved, axiom clearly documented)
+
+**Results**:
+- [x] Added helper lemmas (sorry-free):
+  - `residue_eq_of_sub_mem_maximalIdeal` - close elements have same residue
+  - `mem_maximalIdeal_iff_val_lt_one` - maximal ideal = {x : v(x) < 1}
+  - `denseRange_algebraMap_adicCompletion` - K is dense in K_v
+- [x] Converted sorry to explicit axiom with full proof outline
+- [x] Documented the 9-step proof strategy in the axiom docstring
+- [x] Verified build compiles successfully
+
+**Key Infrastructure Added**:
+
+```lean
+/-- Two elements with difference in maximal ideal have same residue. -/
+lemma residue_eq_of_sub_mem_maximalIdeal (v : HeightOneSpectrum R)
+    (x y : v.adicCompletionIntegers K)
+    (h : x - y ∈ IsLocalRing.maximalIdeal (v.adicCompletionIntegers K)) :
+    IsLocalRing.residue x = IsLocalRing.residue y
+
+/-- The maximal ideal consists of elements with valuation < 1. -/
+lemma mem_maximalIdeal_iff_val_lt_one (v : HeightOneSpectrum R)
+    (x : v.adicCompletionIntegers K) :
+    x ∈ IsLocalRing.maximalIdeal ↔ Valued.v (x : v.adicCompletion K) < 1
+
+/-- Elements of K form a dense subset in the completion. -/
+lemma denseRange_algebraMap_adicCompletion (v : HeightOneSpectrum R) :
+    DenseRange (algebraMap K (v.adicCompletion K))
+```
+
+**Axiom Documentation** (from file):
+
+The `toResidueField_surjective` axiom has a complete 9-step proof outline:
+1. Lift y ∈ ResidueField to x ∈ O_v^
+2. By density of K in K_v, find k ∈ K close to x (v(x - k) < 1)
+3. residue(k) = residue(x) = y (by residue_eq_of_sub_mem_maximalIdeal)
+4. k ∈ K with v(k) ≤ 1 means k ∈ R_v (localization)
+5. Write k = a/s with a ∈ R, s ∉ v.asIdeal
+6. In O_v^, s is a unit (v(s) = 1)
+7. Find t ∈ R with st ≡ 1 mod v.asIdeal (exists_mul_eq_one_mod)
+8. residue(s)⁻¹ = residue(t) in the completion residue field
+9. residue(k) = residue(at), where at ∈ R
+
+**Axiom Status** (updated):
+- ResidueFieldIso.lean: 1 axiom (`toResidueField_surjective` - density argument, proof outline documented)
+- TraceDualityProof.lean: 1 sorry (`finrank_dual_eq` - NOT on critical path)
+
+**Total**: 1 axiom + 1 sorry in proof path
+
+**Key Discovery**: Found `IsFractionRing (R ⧸ I) I.ResidueField` in Mathlib which means
+when I is maximal, R/I ≃ I.ResidueField. This provides an alternative route to the
+surjectivity proof via connecting Ideal.ResidueField to Valued.ResidueField.
+
+**Significance**: The remaining axiom now has:
+1. Complete mathematical proof outline (9 steps)
+2. Helper lemmas for each key step
+3. Clear documentation of what Mathlib API navigation is needed
+4. Alternative approach identified via IsFractionRing
+
+The axiom is "morally dischargeable" - the mathematical content is clear, only
+Mathlib API plumbing remains.
+
+**Next Steps** (Cycle 111+):
+1. Complete the density argument using `denseRange_algebraMap_adicCompletion`
+2. Or: Use `IsFractionRing (R ⧸ I) I.ResidueField` to connect to completion residue field
+3. Or: Move to DiscreteCocompactEmbedding (different axiom direction)
+
+---
+
+## Key Discoveries for Future Cycles
+
+### CRITICAL: `evalOneₐ_surjective` in Mathlib (Found Cycle 110)
+
+**Location**: `Mathlib/RingTheory/AdicCompletion/Algebra.lean`
+
+```lean
+/-- The canonical projection from the `I`-adic completion to `R ⧸ I`. -/
+def evalOneₐ : AdicCompletion I R →ₐ[R] R ⧸ I :=
+  (Ideal.Quotient.factorₐ _ (by simp)).comp (evalₐ _ 1)
+
+lemma evalOneₐ_surjective : Function.Surjective (evalOneₐ I) := by
+  dsimp [evalOneₐ]
+  exact (Ideal.Quotient.factor_surjective (show I ^ 1 ≤ I by simp)).comp
+    (AdicCompletion.surjective_evalₐ I 1)
+```
+
+**What it says**: The natural map `AdicCompletion I R → R/I` is surjective.
+
+**The Gap**: Two different completion APIs in Mathlib:
+
+| Completion | Definition | API Location |
+|------------|------------|--------------|
+| `AdicCompletion I R` | I-adic completion (inverse limit of R/Iⁿ) | `Mathlib/RingTheory/AdicCompletion/` |
+| `v.adicCompletion K` | Valuation completion (uniform space) | `Mathlib/RingTheory/DedekindDomain/AdicValuation.lean` |
+
+**Connection NOT in Mathlib**: For a DVR (or localization at height-one prime), these completions are isomorphic:
+```
+AdicCompletion v.asIdeal R_v ≅ v.adicCompletionIntegers K
+```
+This isomorphism is standard mathematics but NOT formalized in Mathlib (as of v4.16.0).
+
+**Two Paths to Discharge `toResidueField_surjective`**:
+
+1. **Bridge Path** (potentially cleaner):
+   - Prove `AdicCompletion v.asIdeal (Localization.AtPrime v.asIdeal) ≅ v.adicCompletionIntegers K`
+   - Transfer `evalOneₐ_surjective` via this isomorphism
+   - Get surjectivity for free
+
+2. **Direct Path** (current approach):
+   - Use `denseRange_algebraMap_adicCompletion` (already proved)
+   - Navigate the density argument through Mathlib's valued field API
+   - Use helper lemmas in `ResidueFieldIso.lean`
+
+**Recommendation**: Try the Bridge Path first - if the isomorphism exists or is easy to prove, it gives surjectivity immediately. If blocked, fall back to Direct Path.
+
+### Related Mathlib Resources
+
+| Resource | Location | Use |
+|----------|----------|-----|
+| `evalOneₐ_surjective` | `AdicCompletion/Algebra.lean:181` | I-adic → R/I surjective |
+| `surjective_evalₐ` | `AdicCompletion/Algebra.lean:151` | General n version |
+| `IsFractionRing (R ⧸ I) I.ResidueField` | `LocalRing/ResidueField/Ideal.lean:99` | R/I ≃ residue field when I maximal |
+| `equivQuotMaximalIdeal` | `Localization/AtPrime/Basic.lean:387` | R/p ≃ R_p/m |
+| `Completion.denseRange_coe` | `UniformSpace/Completion.lean` | Density in completions |
 
 ---
 

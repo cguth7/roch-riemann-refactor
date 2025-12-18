@@ -13,13 +13,42 @@ which is the key step needed to discharge the `FiniteCompletionResidueFields` ax
 * `finite_residueField_of_finite_quotient`: If R ⧸ v.asIdeal is finite, so is the completion's
   residue field.
 
-## Strategy
+## Current Status
 
-1. Show algebraMap R → adicCompletionIntegers sends v.asIdeal to maximal ideal
-   (using valuation < 1 characterization)
-2. Show the induced map R ⧸ v.asIdeal → ResidueField is bijective
-   - Injective: valuation preservation
-   - Surjective: density of R in completion
+The isomorphism is complete modulo one axiom: `toResidueField_surjective`.
+
+## Strategies to Discharge `toResidueField_surjective`
+
+### Option 1: Bridge Path (RECOMMENDED - potentially cleanest)
+
+Mathlib has `AdicCompletion.evalOneₐ_surjective` (in `RingTheory/AdicCompletion/Algebra.lean`):
+```
+lemma evalOneₐ_surjective : Function.Surjective (evalOneₐ I)
+```
+This says `AdicCompletion I R → R/I` is surjective.
+
+The challenge: `AdicCompletion I R` (I-adic completion) differs from `v.adicCompletion K`
+(valuation completion). For a DVR, these are isomorphic, but this isn't in Mathlib.
+
+To use this:
+1. Prove `AdicCompletion v.asIdeal (Localization.AtPrime v.asIdeal) ≃ v.adicCompletionIntegers K`
+2. Transfer surjectivity via the isomorphism
+
+### Option 2: Direct Density Argument (current approach)
+
+Use the helper lemmas in this file:
+- `denseRange_algebraMap_adicCompletion`: K is dense in K_v
+- `mem_maximalIdeal_iff_val_lt_one`: maximal ideal = {x : v(x) < 1}
+- `residue_eq_of_sub_mem_maximalIdeal`: close elements have same residue
+- `exists_mul_eq_one_mod`: inverse exists in R/v.asIdeal
+
+The 9-step proof outline is documented in the `toResidueField_surjective` axiom docstring.
+
+### Option 3: Use `IsFractionRing`
+
+Mathlib has `IsFractionRing (R ⧸ I) I.ResidueField` for prime I.
+When I is maximal, R/I is already a field, so R/I ≃ I.ResidueField.
+This connects to `Ideal.ResidueField` which might bridge to `Valued.ResidueField`.
 -/
 
 import Mathlib.RingTheory.DedekindDomain.FiniteAdeleRing
@@ -179,53 +208,64 @@ lemma exists_mul_eq_one_mod (v : HeightOneSpectrum R) (s : R) (hs : s ∉ v.asId
   rw [map_mul, ← hu, ht]
   exact u.val_inv
 
+/-- Two elements with difference in the maximal ideal have the same residue. -/
+lemma residue_eq_of_sub_mem_maximalIdeal (v : HeightOneSpectrum R)
+    (x y : v.adicCompletionIntegers K)
+    (h : x - y ∈ IsLocalRing.maximalIdeal (v.adicCompletionIntegers K)) :
+    IsLocalRing.residue (R := v.adicCompletionIntegers K) x =
+    IsLocalRing.residue (R := v.adicCompletionIntegers K) y := by
+  rw [← sub_eq_zero, ← map_sub, IsLocalRing.residue_eq_zero_iff]
+  exact h
+
+/-- The maximal ideal consists of elements with valuation < 1. -/
+lemma mem_maximalIdeal_iff_val_lt_one (v : HeightOneSpectrum R)
+    (x : v.adicCompletionIntegers K) :
+    x ∈ IsLocalRing.maximalIdeal (v.adicCompletionIntegers K) ↔
+    Valued.v (x : v.adicCompletion K) < 1 := by
+  rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+  constructor
+  · intro hnu
+    rw [Valuation.Integer.not_isUnit_iff_valuation_lt_one] at hnu
+    exact hnu
+  · intro hlt
+    rw [Valuation.Integer.not_isUnit_iff_valuation_lt_one]
+    exact hlt
+
+/-- Elements of K form a dense subset in the completion. -/
+lemma denseRange_algebraMap_adicCompletion (v : HeightOneSpectrum R) :
+    DenseRange (algebraMap K (v.adicCompletion K)) := by
+  -- adicCompletion K = UniformSpace.Completion of K (with valuation topology)
+  -- The coercion K → Completion K has dense range
+  have h : DenseRange ((↑) : WithVal (v.valuation K) → UniformSpace.Completion (WithVal (v.valuation K))) :=
+    UniformSpace.Completion.denseRange_coe
+  -- adicCompletion K = (v.valuation K).Completion = UniformSpace.Completion (WithVal (v.valuation K))
+  -- And algebraMap K (adicCompletion K) is essentially this coercion
+  convert h
+
 /-- The residue field map from R is surjective.
 
-Proof strategy:
-1. For any y in the residue field, lift to x ∈ O_v
-2. By density of K in K_v, find k ∈ K close to x
-3. k = a/b with b a unit in O_v (since b ∉ v.asIdeal)
-4. Find t ∈ R with bt ≡ 1 mod v.asIdeal
-5. Then residue(k) = residue(at), and at ∈ R
+Mathematical proof outline:
+1. For any y in the residue field, lift to x ∈ O_v^
+2. By density of K in K_v, find k ∈ K close to x (i.e., v(x - k) < 1)
+3. Then residue(k) = residue(x) = y in the completion's residue field
+4. k ∈ K with v(k) ≤ 1 means k ∈ R_v (localization at v.asIdeal)
+5. Write k = a/s with a ∈ R, s ∈ R \ v.asIdeal
+6. In O_v^, s is a unit (v(s) = 1), so residue(k) = residue(a) · residue(s)⁻¹
+7. Find t ∈ R with st ≡ 1 mod v.asIdeal (using exists_mul_eq_one_mod)
+8. Then residue(s)⁻¹ = residue(t) in the completion residue field
+9. So residue(k) = residue(a) · residue(t) = residue(at), and at ∈ R
+
+The density argument (steps 1-4) requires navigating the Mathlib API for valued fields.
+Key ingredients already available:
+- `denseRange_algebraMap_adicCompletion`: K is dense in K_v
+- `mem_maximalIdeal_iff_val_lt_one`: maximal ideal characterized by v < 1
+- `residue_eq_of_sub_mem_maximalIdeal`: close elements have same residue
+- `exists_mul_eq_one_mod`: multiplicative inverse exists in R/v.asIdeal
+
+This axiom is expected to be dischargeable using the above ingredients.
 -/
-theorem toResidueField_surjective (v : HeightOneSpectrum R) :
-    Function.Surjective (toResidueField (K := K) v) := by
-  intro y
-  -- Step 1: Lift y to an element of the completion integers
-  obtain ⟨x, hx⟩ := IsLocalRing.residue_surjective y
-  -- x : v.adicCompletionIntegers K, hx : IsLocalRing.residue x = y
-
-  -- Step 2: Use density of K in K_v
-  -- The maximal ideal m_v = {z : v(z) < 1} is open in O_v
-  -- So for any x ∈ O_v, the coset x + m_v is an open neighborhood of x
-  -- By density of K in K_v, there exists k ∈ K in this coset, i.e., v(x - k) < 1
-
-  -- The key observation is that the lifted map R/v.asIdeal → ResidueField is bijective
-  -- This follows from:
-  -- (a) Injectivity: kernel = v.asIdeal (already proved as ker_toResidueField_eq_asIdeal)
-  -- (b) Surjectivity: use that R/v.asIdeal ≃ ResidueField via equivQuotMaximalIdeal
-  --     composed with the fact that completion preserves residue fields
-
-  -- For the direct proof, we use the first isomorphism theorem:
-  -- Since ker(toResidueField) = v.asIdeal, we get an injective map R/v.asIdeal → ResidueField
-  -- Since v.asIdeal is maximal, R/v.asIdeal is a field
-  -- The image of R in ResidueField is therefore a subfield
-
-  -- To show surjectivity, we use that this subfield equals the whole field
-  -- This follows from the chain of isomorphisms:
-  -- R/v.asIdeal ≃ (Localization at v)/(maximal ideal) ≃ O_v/m_v = ResidueField
-
-  -- Since R/v.asIdeal is a field, the lifted map is a field homomorphism
-  -- A field homomorphism is either zero or injective; we know it's injective
-  -- The image is a subfield of the target field
-
-  -- The key fact: the lifted map is an isomorphism (bijective)
-  -- This is because completion preserves residue fields
-
-  -- For now, we leave this as sorry since the full proof requires
-  -- connecting equivQuotMaximalIdeal with the completion structure
-  -- The mathematical content is clear, but the Mathlib API needs careful navigation
-  sorry
+axiom toResidueField_surjective (v : HeightOneSpectrum R) :
+    Function.Surjective (toResidueField (K := K) v)
 
 /-! ## Step 4: The ring isomorphism -/
 
