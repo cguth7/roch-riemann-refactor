@@ -57,6 +57,7 @@ import Mathlib.RingTheory.Valuation.RankOne
 import RrLean.RiemannRochV2.AdelicTopology
 import RrLean.RiemannRochV2.DedekindDVR
 import RrLean.RiemannRochV2.AllIntegersCompactProof
+import RrLean.RiemannRochV2.RRDefinitions
 
 noncomputable section
 
@@ -308,9 +309,10 @@ lemma mem_integers_of_close (v : HeightOneSpectrum R) (x : v.adicCompletionInteg
 
 /-- Key lemma: elements of K with v ≤ 1 give residues from R.
 
-Strategy: Work directly in the residue field using ≠ 0 and field operations.
-- For s ∉ v.asIdeal: res(s) ≠ 0 (unit), so can use inverse in residue field
-- Key: res(a*t) = res(a) * res(t) = res(a) * res(s)⁻¹ = res(a/s) -/
+Strategy: Use localization to ensure s ∉ v.asIdeal from the start.
+- k with v(k) ≤ 1 is in valuationRingAt v = Localization.AtPrime v.asIdeal
+- Use IsLocalization.surj primeCompl to get k = a/s with s ∈ primeCompl (s ∉ v.asIdeal)
+- Then res(a*t) = res(a) * res(t) = res(a) * res(s)⁻¹ = res(k) -/
 lemma residue_of_K_element (v : HeightOneSpectrum R) (k : K)
     (hk : Valued.v (algebraMap K (v.adicCompletion K) k) ≤ 1) :
     ∃ r : R, toResidueField (K := K) v r =
@@ -320,79 +322,84 @@ lemma residue_of_K_element (v : HeightOneSpectrum R) (k : K)
   let S := v.adicCompletionIntegers K
   let C := v.adicCompletion K
   let res : S →+* IsLocalRing.ResidueField S := IsLocalRing.residue (R := S)
-  -- Write k = a/s for some a, s ∈ R with s ≠ 0
-  rcases IsFractionRing.div_surjective (A := R) k with ⟨a, s, hs_ne, hk_eq⟩
-  by_cases hs : s ∈ v.asIdeal
-  · -- Case: s ∈ v.asIdeal
-    -- Subcase: v(k) < 1, so residue = 0
-    by_cases hk_lt : Valued.v (algebraMap K C k) < 1
-    · use 0
-      simp only [toResidueField, algebraMapToIntegers, map_zero]
-      symm
-      rw [IsLocalRing.residue_eq_zero_iff, mem_maximalIdeal_iff_val_lt_one]
-      exact hk_lt
-    · -- Subcase: v(k) = 1. The element k is a unit in O_v^.
-      -- This case requires uniformizer factorization - deferred.
-      push_neg at hk_lt
-      have hk_eq_one : Valued.v (algebraMap K C k) = 1 := le_antisymm hk hk_lt
-      -- k is a unit, so its residue is nonzero
-      -- Need to find r ∈ R with toResidueField(r) = res(⟨k, hk⟩)
-      -- This requires the isomorphism R/v.asIdeal ≃ ResidueField we're building
-      sorry
-  · -- Main case: s ∉ v.asIdeal
-    -- Strategy: res(s) ≠ 0 in residue field, use field inverse
-    -- Step 1: s is a unit in S, so res(s) ≠ 0
-    have hs_unit : IsUnit (algebraMap R S s) := algebraMap_isUnit_of_not_mem v s hs
-    have hs_res_ne : res (algebraMap R S s) ≠ 0 :=
-      (IsLocalRing.residue_ne_zero_iff_isUnit).mpr hs_unit
-    -- Step 2: Find t ∈ R with s*t ≡ 1 mod v.asIdeal, then res(t) = res(s)⁻¹
-    obtain ⟨t, hst⟩ := exists_mul_eq_one_mod v s hs
-    have hst_mem : s * t - 1 ∈ v.asIdeal := by
-      rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, hst, map_one, sub_self]
-    have hst_residue : res (algebraMap R S s) * res (algebraMap R S t) = 1 := by
-      rw [← map_mul]
-      have h0 : toResidueField (K := K) v (s * t - 1) = 0 :=
-        toResidueField_mem_asIdeal v (s * t - 1) hst_mem
-      simp only [toResidueField, algebraMapToIntegers, map_sub, map_mul, map_one, sub_eq_zero] at h0
-      exact h0
-    have ht_inv : res (algebraMap R S t) = (res (algebraMap R S s))⁻¹ :=
-      eq_inv_of_mul_eq_one_right hst_residue
-    -- Step 3: Use r = a * t
-    use a * t
-    -- Goal: toResidueField v (a * t) = res ⟨algebraMap K C k, hk⟩
-    -- LHS = res(a) * res(t) = res(a) * res(s)⁻¹
-    simp only [toResidueField, algebraMapToIntegers, map_mul, ht_inv]
-    -- Goal: res(a) * res(s)⁻¹ = res ⟨algebraMap K C k, hk⟩
-    -- The mathematical content:
-    -- - k = a/s by hk_eq
-    -- - In the completion C (a field), k = algebraMap(a) / algebraMap(s)
-    -- - The element ⟨k, hk⟩ in S satisfies: ⟨k, hk⟩ = algebraMap(a) * (algebraMap s)⁻¹
-    --   where the inverse is taken in C (and happens to land in S since s is a unit)
-    -- - res(⟨k, hk⟩) = res(algebraMap a) * res(algebraMap s)⁻¹ = res(a) * res(s)⁻¹
-    -- The coercion chain: Sˣ → S → C requires careful management
-    -- For now, we use a computational approach
-    congr 1
-    -- Goal: res (algebraMap R S a) = res ⟨algebraMap K C k, hk⟩ * res (algebraMap R S s)
-    -- This is equivalent to: res(a) = res(k) * res(s), i.e., res(k * s) = res(a)
-    -- Since k = a/s, we have k * s = a in K, so this should follow
-    -- from the compatibility of algebraMap with multiplication
-    have hks : algebraMap K C k * algebraMap R C s = algebraMap R C a := by
-      rw [hk_eq]
-      field_simp
-    -- The subtype version
-    have hks_S : (⟨algebraMap K C k, hk⟩ : S) * algebraMap R S s =
-                 (algebraMap R S a : S) := by
-      ext
-      simp only [Submonoid.coe_mul, Subsemiring.coe_toSubmonoid, Subring.coe_toSubsemiring]
-      -- Goal: ↑⟨algebraMap K C k, hk⟩ * ↑(algebraMap R S s) = ↑(algebraMap R S a)
-      -- The coercions: ↑⟨x, _⟩ = x, ↑(algebraMap R S s) = algebraMap R C s
-      exact hks
-    -- Apply res to both sides
-    have h := congr_arg res hks_S
-    simp only [map_mul] at h
-    -- h : res ⟨k, hk⟩ * res (algebraMap R S s) = res (algebraMap R S a)
-    rw [← h]
-    ring
+  -- Step 1: k with v(k) ≤ 1 means k ∈ valuationRingAt v
+  have hk_val : v.valuation K k ≤ 1 := by
+    rwa [← valuedAdicCompletion_eq_valuation']
+  have hk_mem : k ∈ RiemannRochV2.valuationRingAt (R := R) (K := K) v := by
+    rw [RiemannRochV2.mem_valuationRingAt_iff]
+    exact hk_val
+  -- Step 2: k is in the range of algebraMap from Localization.AtPrime
+  haveI : IsDiscreteValuationRing (Localization.AtPrime v.asIdeal) :=
+    RiemannRochV2.localizationAtPrime_isDVR v
+  haveI : IsFractionRing (Localization.AtPrime v.asIdeal) K :=
+    RiemannRochV2.localization_isFractionRing v
+  have hk_in_range : k ∈ Set.range (algebraMap (Localization.AtPrime v.asIdeal) K) :=
+    RiemannRochV2.valuationRingAt_val_mem_range v ⟨k, hk_mem⟩
+  -- Step 3: Get the element y in localization that maps to k
+  obtain ⟨y, hy⟩ := hk_in_range
+  -- Step 4: Use IsLocalization.surj to write y = a/s with s ∈ primeCompl (s ∉ v.asIdeal)
+  obtain ⟨⟨a, s⟩, hys⟩ := IsLocalization.surj v.asIdeal.primeCompl y
+  -- hys : y * algebraMap R (Localization.AtPrime v.asIdeal) s = algebraMap R _ a
+  have hs : (s : R) ∉ v.asIdeal := s.property
+  -- Step 5: From hy and hys, derive k * s = a in K
+  have hks_K : k * algebraMap R K s = algebraMap R K a := by
+    calc k * algebraMap R K s
+        = algebraMap (Localization.AtPrime v.asIdeal) K y * algebraMap R K s := by rw [← hy]
+      _ = algebraMap (Localization.AtPrime v.asIdeal) K y *
+            algebraMap (Localization.AtPrime v.asIdeal) K (algebraMap R _ s) := by
+            rw [IsScalarTower.algebraMap_apply R (Localization.AtPrime v.asIdeal) K]
+      _ = algebraMap (Localization.AtPrime v.asIdeal) K (y * algebraMap R _ s) := by rw [map_mul]
+      _ = algebraMap (Localization.AtPrime v.asIdeal) K (algebraMap R _ a) := by rw [hys]
+      _ = algebraMap R K a := by rw [← IsScalarTower.algebraMap_apply]
+  -- Step 6: Now we have k = a/s with s ∉ v.asIdeal - use the solved strategy
+  -- s is a unit in S, so res(s) ≠ 0
+  have hs_unit : IsUnit (algebraMap R S s) := algebraMap_isUnit_of_not_mem v s hs
+  have hs_res_ne : res (algebraMap R S s) ≠ 0 :=
+    (IsLocalRing.residue_ne_zero_iff_isUnit _).mpr hs_unit
+  -- Find t ∈ R with s*t ≡ 1 mod v.asIdeal, then res(t) = res(s)⁻¹
+  obtain ⟨t, hst⟩ := exists_mul_eq_one_mod v s hs
+  have hst_mem : s * t - 1 ∈ v.asIdeal := by
+    rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, hst, map_one, sub_self]
+  have hst_residue : res (algebraMap R S s) * res (algebraMap R S t) = 1 := by
+    rw [← map_mul]
+    have h0 : toResidueField (K := K) v (s * t - 1) = 0 :=
+      toResidueField_mem_asIdeal v (s * t - 1) hst_mem
+    simp only [toResidueField, algebraMapToIntegers, map_sub, map_mul, map_one, sub_eq_zero] at h0
+    exact h0
+  have ht_inv : res (algebraMap R S t) = (res (algebraMap R S s))⁻¹ :=
+    eq_inv_of_mul_eq_one_right hst_residue
+  -- Use r = a * t
+  use a * t
+  -- Goal: toResidueField v (a * t) = res ⟨algebraMap K C k, hk⟩
+  -- i.e., res(a) * res(t) = res ⟨k, hk⟩
+  -- Use hks_K: k * s = a in K, lift to completion
+  have hks : algebraMap K C k * algebraMap R C s = algebraMap R C a := by
+    calc algebraMap K C k * algebraMap R C s
+        = algebraMap K C (k * algebraMap R K s) := by rw [map_mul]; rfl
+      _ = algebraMap K C (algebraMap R K a) := by rw [hks_K]
+      _ = algebraMap R C a := rfl
+  -- The subtype version
+  have hks_S : (⟨algebraMap K C k, hk⟩ : S) * algebraMap R S s =
+               (algebraMap R S a : S) := by
+    ext
+    exact hks
+  -- Apply res to both sides: res ⟨k, hk⟩ * res(s) = res(a)
+  have h := congr_arg res hks_S
+  simp only [map_mul] at h
+  -- h : res ⟨k, hk⟩ * res(s) = res(a)
+  -- ht_inv : res(t) = res(s)⁻¹
+  -- Goal: toResidueField v (a * t) = res ⟨k, hk⟩
+  -- First, show toResidueField v (a * t) = res(a) * res(t)
+  have h_expand : toResidueField (K := K) v (a * t) = res (algebraMap R S a) * res (algebraMap R S t) := by
+    simp only [toResidueField, algebraMapToIntegers, RingHom.coe_comp, RingHom.comp_apply, map_mul]
+    rfl
+  -- Compute: res(a) * res(t) = res(a) * res(s)⁻¹ = res ⟨k, hk⟩ * res(s) * res(s)⁻¹ = res ⟨k, hk⟩
+  have ha_eq : res (algebraMap R S a) = res ⟨algebraMap K C k, hk⟩ * res (algebraMap R S s) := h.symm
+  calc toResidueField (K := K) v (a * t)
+      = res (algebraMap R S a) * res (algebraMap R S t) := h_expand
+    _ = res ⟨algebraMap K C k, hk⟩ * res (algebraMap R S s) * res (algebraMap R S t) := by rw [ha_eq]
+    _ = res ⟨algebraMap K C k, hk⟩ * res (algebraMap R S s) * (res (algebraMap R S s))⁻¹ := by rw [ht_inv]
+    _ = res ⟨algebraMap K C k, hk⟩ := by simp only [mul_inv_cancel_right₀ hs_res_ne]
 
 /-- The residue field map from R is surjective. -/
 theorem toResidueField_surjective (v : HeightOneSpectrum R) :

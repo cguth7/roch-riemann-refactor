@@ -6,20 +6,21 @@
 
 ---
 
-## ⚡ Quick Reference: Current Axiom/Sorry Status (Cycle 115)
+## ⚡ Quick Reference: Current Axiom/Sorry Status (Cycle 116)
 
 | File | Item | Type | Status | Discharge Path |
 |------|------|------|--------|----------------|
-| `ResidueFieldIso.lean` | `toResidueField_surjective` | theorem | ✅ PROVED | Via `residue_of_K_element` (with 1 sorry) |
-| `ResidueFieldIso.lean` | `residue_of_K_element` | lemma | 🔶 1 sorry | `s ∈ v.asIdeal, v(k)=1` case (uniformizer factoring) |
+| `ResidueFieldIso.lean` | `toResidueField_surjective` | theorem | ✅ PROVED | SORRY-FREE! Via localization approach |
+| `ResidueFieldIso.lean` | `residue_of_K_element` | lemma | ✅ PROVED | SORRY-FREE! Via IsLocalization.surj + primeCompl |
+| `ResidueFieldIso.lean` | `residueFieldIso` | def | ✅ PROVED | SORRY-FREE! R/v.asIdeal ≃ ResidueField(completion) |
 | `TraceDualityProof.lean` | `finrank_dual_eq` | sorry | ⚪ NOT CRITICAL | Not on main proof path |
-| `AllIntegersCompactProof.lean` | `FiniteCompletionResidueFields` | class | ✅ DISCHARGED | Via `residueFieldIso` (needs surjectivity) |
-| `AdelicTopology.lean` | `AllIntegersCompact` | class | ✅ PROVED | Via DVR + RankOne (Cycles 105-107) |
+| `AllIntegersCompactProof.lean` | `FiniteCompletionResidueFields` | class | ✅ DISCHARGED | Via `residueFieldIso` (now sorry-free!) |
+| `AdelicTopology.lean` | `AllIntegersCompact` | class | ✅ PROVED | Via DVR + RankOne + residueFieldIso |
 | `AdelicTopology.lean` | `DiscreteCocompactEmbedding` | class | ⏳ TODO | Class group finiteness approach |
 
-**Build Status**: ⚠️ Compiles with 2 sorries (no axioms!)
+**Build Status**: ✅ Compiles with 1 sorry (NOT on critical path!)
 
-**Next Priority**: Fill remaining sorry in `residue_of_K_element` (s ∈ v.asIdeal case) OR eliminate via localization at primeCompl
+**Next Priority**: Focus on `DiscreteCocompactEmbedding` for full adelic theory
 
 ---
 
@@ -1133,54 +1134,55 @@ The `Units.val_inv_eq_inv_val` lemma and `map_units_inv` need careful applicatio
 
 ---
 
-### 🎯 CRITICAL BRIEFING FOR NEXT CYCLE
+#### Cycle 116 - ResidueFieldIso: SORRY-FREE! (Major Milestone!)
 
-**File**: `RrLean/RiemannRochV2/ResidueFieldIso.lean`
-**Function**: `residue_of_K_element` (line 341)
-**Sorries**: 1 remaining - Line 341 (s ∈ v.asIdeal, v(k) = 1 case)
+**Goal**: Fill the remaining sorry in `residue_of_K_element` (s ∈ v.asIdeal case).
 
-**PROGRESS**: The `s ∉ v.asIdeal` case is now SORRY-FREE (Cycle 115)!
+**Status**: ✅ COMPLETE - SORRY ELIMINATED!
 
----
+**Results**:
+- [x] Used **Approach 1**: `IsLocalization.surj v.asIdeal.primeCompl` to eliminate the `s ∈ v.asIdeal` branch entirely
+- [x] `residue_of_K_element` is now SORRY-FREE
+- [x] `toResidueField_surjective` is now SORRY-FREE
+- [x] `residueFieldIso` is now SORRY-FREE
+- [x] Full proof chain for `FiniteCompletionResidueFields` → `AllIntegersCompact` is now axiom-free!
 
-## ⚠️ THE REMAINING SORRY: s ∈ v.asIdeal with v(k) = 1
+**Key Insight**: Elements with `v(k) ≤ 1` belong to `valuationRingAt v`, which equals `Localization.AtPrime v.asIdeal` (via `valuationRingAt_val_mem_range`). Using `IsLocalization.surj v.asIdeal.primeCompl`, we get a representation `k = a/s` where `s ∈ primeCompl` (i.e., `s ∉ v.asIdeal`). This eliminates the problematic `s ∈ v.asIdeal` case from the proof entirely!
 
-When `k = a/s` and both `a, s ∈ v.asIdeal` with `v(k) = 1`, we need to find `r ∈ R` with `toResidueField(r) = res(⟨k, hk⟩)`.
-
-**Two approaches**:
-
-### Approach 1: Eliminate this branch entirely (RECOMMENDED)
-
-Use `IsLocalization.surj v.asIdeal.primeCompl` to force `s ∉ v.asIdeal` from the start:
+**Proof Structure**:
 ```lean
--- For k with v(k) ≤ 1, k is in the valuation ring = Localization.AtPrime v.asIdeal
--- Use IsLocalization.sec/surj to get representation with s ∈ primeCompl
--- This eliminates the s ∈ v.asIdeal case!
+-- Step 1: k with v(k) ≤ 1 means k ∈ valuationRingAt v
+-- Step 2: k is in the range of algebraMap from Localization.AtPrime
+-- Step 3: Get the element y in localization that maps to k
+-- Step 4: Use IsLocalization.surj to write y = a/s with s ∈ primeCompl (s ∉ v.asIdeal)
+-- Step 5: From hy and hys, derive k * s = a in K
+-- Step 6: Now we're in the solved s ∉ v.asIdeal case!
 ```
 
-Key insight: Elements with `v(k) ≤ 1` are exactly those representable as `a/s` where `s ∉ v.asIdeal`.
+**Sorry Status**:
+- TraceDualityProof.lean: 1 sorry (`finrank_dual_eq` - NOT on critical path)
 
-### Approach 2: Uniformizer factorization (complex)
+**Total**: 1 sorry remaining (NOT on critical path!)
 
-If `s ∈ v.asIdeal` and `v(k) = 1`, then both `a` and `s` have the same v-adic order. Factor out the common uniformizer power:
+**Build**: ✅ Compiles successfully
+
+**Significance**: The `ResidueFieldIso.lean` file is now completely sorry-free! This completes the chain:
 ```
-a = π^n · a', s = π^n · s'  where a', s' ∉ v.asIdeal
-k = a/s = a'/s' with s' ∉ v.asIdeal
-```
-This reduces to the already-solved case.
-
----
-
-## ✅ SOLVED: s ∉ v.asIdeal case (Cycle 115)
-
-**Key insight**: Work in the residue field directly using `res(k) * res(s) = res(a)`:
-```lean
--- Prove: algebraMap K C k * algebraMap R C s = algebraMap R C a (from k = a/s)
--- Lift to S via ext: ⟨k, hk⟩ * algebraMap R S s = algebraMap R S a
--- Apply res and use ring to get: res(a) * res(s)⁻¹ = res(⟨k, hk⟩)
+Finite (R ⧸ v.asIdeal)      (hypothesis for function fields over finite k)
+       ↓
+residueFieldIso             (R/v.asIdeal ≃ ResidueField(completion)) ← NOW SORRY-FREE!
+       ↓
+finite_residueField_of_finite_quotient
+       ↓
+FiniteCompletionResidueFields R K
+       ↓
+AllIntegersCompact R K      (via DVR + RankOne, both already proved)
 ```
 
-No Units construction needed! Just field operations and `ring` tactic.
+**Next Steps** (Cycle 117+):
+1. Focus on `DiscreteCocompactEmbedding` - the remaining axiom for full adelic theory
+2. This requires class group finiteness / fundamental domain arguments
+3. Or: Tag a milestone for the sorry-free `AllIntegersCompact` achievement
 
 ---
 
