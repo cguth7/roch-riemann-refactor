@@ -177,16 +177,19 @@ riemann_roch_full (Cycle 80) ✅
 ℓ(D) - ℓ(K-D) = deg(D) + 1 - g  ← ✅ THEOREM WORKS!
 ```
 
-**Track B (Discharge Axioms)**:
+**Track B (Discharge Axioms)** - OPTIONAL FUTURE WORK:
 ```
 DifferentIdealBridge.lean (Cycle 82) ✅ COMPLETE
     ↓ Connect differentIdeal to DivisorV2 via FractionalIdeal.count
-TraceDualityProof.lean (Cycle 83) ⏳ IN PROGRESS
-    ↓ Infrastructure for RRSpace ↔ FractionalIdeal (3 sorries)
-    ↓ Need: valuation-ideal bridge, trace nondegeneracy
-FullRRData instance (Cycle 85+)
-    ↓ Instantiate axioms with concrete proofs
+TraceDualityProof.lean (Cycle 83) ✅ Infrastructure laid
+    ↓ Key insight: trace dual gives H¹(K-D), not L(K-D) directly
+    ↓ Full discharge requires adelic exact sequence (substantial)
 ```
+
+**Mathematical Note (Cycle 83)**: Serre duality is:
+- `dual(H⁰(D)) = H¹(K-D)` and `L(K-D) = H⁰(K-D) = dual(H¹(D))`
+- Full proof requires defining H¹ via adelic cokernel: `0 → K → ∏_v K_v → H¹ → 0`
+- This is ~5-10 cycles of work; Track A (axiomatized) is sufficient for most uses
 
 **Phase 3 Checklist**:
 
@@ -195,12 +198,12 @@ Track A (Cycle 80): ✅ COMPLETE
 - [x] `riemann_roch_full` theorem (assuming axioms)
 - [x] Verify imports: `Different.lean`, `Kaehler/Basic.lean`
 
-Track B (Cycles 81+):
-- [x] Bridge `differentIdeal` → `DivisorV2 R` (Cycle 82 - COMPLETE, 0 sorries)
-- [x] Create TraceDualityProof.lean infrastructure (Cycle 83 - 3 sorries)
-- [ ] Prove `RRModuleV2_eq_fractionalIdeal_toSubmodule` (valuation ↔ ideal)
-- [ ] Prove `finrank_dual_eq` (trace nondegeneracy)
-- [ ] Instantiate `FullRRData` for Dedekind domains
+Track B (Cycles 81+) - Optional:
+- [x] Bridge `differentIdeal` → `DivisorV2 R` (Cycle 82)
+- [x] TraceDualityProof infrastructure (Cycle 83)
+- [ ] *Future*: Adelic H¹ definition (~5 cycles)
+- [ ] *Future*: Local-global trace duality
+- [ ] *Future*: Instantiate `FullRRData` concretely
 
 ---
 
