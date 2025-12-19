@@ -80,11 +80,19 @@ theorem residueAtX_add (f g : RatFunc Fq) :
 /-- The X-adic residue respects scalar multiplication. -/
 theorem residueAtX_smul (c : Fq) (f : RatFunc Fq) :
     residueAtX (c • f) = c • residueAtX f := by
-  simp only [residueAtX, Algebra.smul_def, map_mul]
-  -- The coercion is a ring hom, so (c • f) maps to (c : LaurentSeries) * (f : LaurentSeries)
-  -- For constant c, (c : LaurentSeries) = C c = single 0 c
-  -- Then (single 0 c * f).coeff (-1) = c * f.coeff (-1) when c acts as scalar
-  sorry
+  simp only [residueAtX]
+  -- c • f = RatFunc.C c * f
+  rw [RatFunc.smul_eq_C_mul]
+  rw [map_mul]
+  -- Show that (RatFunc.C c : LaurentSeries) = HahnSeries.C c
+  have h : ((RatFunc.C c : RatFunc Fq) : LaurentSeries Fq) = HahnSeries.C c := by
+    -- RatFunc.C c = (Polynomial.C c : RatFunc)
+    rw [← RatFunc.algebraMap_C c]
+    -- (Polynomial.C c : RatFunc : LaurentSeries) = (Polynomial.C c : PowerSeries : LaurentSeries)
+    rw [show ((algebraMap Fq[X] (RatFunc Fq) (Polynomial.C c) : RatFunc Fq) : LaurentSeries Fq) =
+            ((Polynomial.C c : PowerSeries Fq) : LaurentSeries Fq) from (RatFunc.coe_coe _).symm]
+    rw [Polynomial.coe_C, HahnSeries.ofPowerSeries_C]
+  rw [h, HahnSeries.C_mul_eq_smul, HahnSeries.coeff_smul]
 
 /-- The X-adic residue as a linear map. -/
 def residueAtX_linearMap : RatFunc Fq →ₗ[Fq] Fq where
@@ -134,10 +142,12 @@ so the coefficient of X^{-1} is always 0.
 theorem residueAtX_polynomial (p : Polynomial Fq) :
     residueAtX (p : RatFunc Fq) = 0 := by
   simp only [residueAtX]
-  -- The coercion Polynomial → RatFunc → LaurentSeries factors through PowerSeries
-  -- PowerSeries has support in ℕ, and -1 ∉ ℕ, so coeff (-1) = 0
-  -- The proof needs to unpack the coercion chain: Polynomial → RatFunc → LaurentSeries
-  -- For Cycle 158, we leave this as a sorry and focus on the structure
+  -- (p : RatFunc : LaurentSeries) = (p : PowerSeries : LaurentSeries) by coe_coe
+  rw [show ((p : RatFunc Fq) : LaurentSeries Fq) =
+          ((p : PowerSeries Fq) : LaurentSeries Fq) from (RatFunc.coe_coe _).symm]
+  -- PowerSeries embeds via ofPowerSeries which uses embDomain with Nat.cast
+  -- The support is in ℕ ⊆ ℤ≥0, so coeff at -1 is 0
+  -- Need: HahnSeries.embDomain_notin_range or similar
   sorry
 
 /-! ## Section 2: Residue at Infinity

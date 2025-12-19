@@ -6,11 +6,11 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 ## Current State
 
-**Build**: ✅ 2771 jobs, compiles cleanly
+**Build**: ✅ 2375 jobs, compiles cleanly
 **Phase**: 3 - Serre Duality
-**Cycle**: 158 (complete)
+**Cycle**: 159 (complete)
 
-### Sorry Count: 17 (+6 in new Residue.lean)
+### Sorry Count: 16 (-1 from residueAtX_smul filled)
 
 | File | Count | Notes |
 |------|-------|-------|
@@ -18,13 +18,32 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 | `FqPolynomialInstance.lean` | 4 | concrete Fq[X] instance |
 | `TraceDualityProof.lean` | 1 | abandoned approach |
 | `SerreDuality.lean` | 5 | pairing types defined, proofs pending |
-| `Residue.lean` | 6 | **NEW** X-adic residue, structure in place |
+| `Residue.lean` | 5 | X-adic residue, `residueAtX_smul` filled |
 
 ---
 
-## Next Steps (Cycle 159+): RESIDUE APPROACH
+## Next Steps (Cycle 160+): RESIDUE APPROACH
 
-### Progress: Cycle 158 Complete ✅
+### Progress: Cycle 159 Complete ✅
+
+Filled `residueAtX_smul` proof:
+- Key insight: Use `RatFunc.coe_coe` to factor through PowerSeries
+- Chain: `RatFunc.C c → Polynomial.C c → PowerSeries.C c → HahnSeries.C c`
+- Then `HahnSeries.C_mul_eq_smul` and `HahnSeries.coeff_smul` finish
+
+### Cycle 160 Task: Fill `residueAtX_polynomial`
+
+The proof is partially set up:
+```lean
+rw [show ((p : RatFunc Fq) : LaurentSeries Fq) =
+        ((p : PowerSeries Fq) : LaurentSeries Fq) from (RatFunc.coe_coe _).symm]
+```
+**Remaining**: Show `(ofPowerSeries Γ R x).coeff (-1) = 0` because:
+- `ofPowerSeries` uses `embDomain` with `Nat.cast : ℕ → ℤ`
+- Support is in `ℕ ⊆ ℤ≥0`, so `-1` is not in range
+- Need: `HahnSeries.embDomain_notin_range` or unfold `embDomain_coeff`
+
+### Cycle 158 Summary (for reference)
 
 Created `Residue.lean` with:
 - `residueAtX` defined using `HahnSeries.coeff (-1)`
@@ -127,6 +146,17 @@ lake build RrLean.RiemannRochV2.DifferentIdealBridge
 ---
 
 ## Recent Cycles
+
+### Cycle 159 (2025-12-19)
+- **Filled `residueAtX_smul` proof** - Key lemma for linear map structure
+- Proof technique:
+  1. Use `RatFunc.smul_eq_C_mul` to convert scalar mult to multiplication by constant
+  2. Use `RatFunc.coe_coe` to factor coercion through PowerSeries
+  3. Use `HahnSeries.C_mul_eq_smul` and `HahnSeries.coeff_smul`
+- Partial progress on `residueAtX_polynomial`:
+  - Set up: `RatFunc.coe_coe` gives `(p : PowerSeries : LaurentSeries)`
+  - Remaining: show `embDomain` with `Nat.cast` has no `-1` in range
+- Sorry count: 17→16
 
 ### Cycle 158 (2025-12-19)
 - **Created `Residue.lean`** - Foundation for residue-based Serre duality
