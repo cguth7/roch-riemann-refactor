@@ -8,9 +8,9 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Build**: ✅ 2375 jobs, compiles cleanly
 **Phase**: 3 - Serre Duality
-**Cycle**: 159 (complete)
+**Cycle**: 160 (complete)
 
-### Sorry Count: 16 (-1 from residueAtX_smul filled)
+### Sorry Count: 15 (-1 from residueAtX_polynomial filled)
 
 | File | Count | Notes |
 |------|-------|-------|
@@ -18,45 +18,51 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 | `FqPolynomialInstance.lean` | 4 | concrete Fq[X] instance |
 | `TraceDualityProof.lean` | 1 | abandoned approach |
 | `SerreDuality.lean` | 5 | pairing types defined, proofs pending |
-| `Residue.lean` | 5 | X-adic residue, `residueAtX_smul` filled |
+| `Residue.lean` | 4 | X-adic residue core complete ✅ |
 
 ---
 
-## Next Steps (Cycle 160+): RESIDUE APPROACH
+## Next Steps (Cycle 161+): RESIDUE APPROACH
 
-### Progress: Cycle 159 Complete ✅
+### Progress: Cycle 160 Complete ✅
 
-Filled `residueAtX_smul` proof:
-- Key insight: Use `RatFunc.coe_coe` to factor through PowerSeries
-- Chain: `RatFunc.C c → Polynomial.C c → PowerSeries.C c → HahnSeries.C c`
-- Then `HahnSeries.C_mul_eq_smul` and `HahnSeries.coeff_smul` finish
+X-adic residue foundation is now complete:
+- `residueAtX_add` ✅
+- `residueAtX_smul` ✅
+- `residueAtX_polynomial` ✅ (filled this cycle)
+- `residueAtX_inv_X = 1` ✅
+- `residueAtX_inv_X_sq = 0` ✅
+- `residueAtX_linearMap` ✅
 
-### Cycle 160 Task: Fill `residueAtX_polynomial`
+### Cycle 161 Task: Define `residueAtInfty`
 
-The proof is partially set up:
+The residue at infinity using X ↦ 1/X substitution:
 ```lean
-rw [show ((p : RatFunc Fq) : LaurentSeries Fq) =
-        ((p : PowerSeries Fq) : LaurentSeries Fq) from (RatFunc.coe_coe _).symm]
+-- Mathematical definition: res_∞(f) = -res_X(f(1/X) · X⁻²)
+-- For f = P(X)/Q(X), expand at infinity by substituting X ↦ 1/Y
+def residueAtInfty (f : RatFunc Fq) : Fq := ...
 ```
-**Remaining**: Show `(ofPowerSeries Γ R x).coeff (-1) = 0` because:
-- `ofPowerSeries` uses `embDomain` with `Nat.cast : ℕ → ℤ`
-- Support is in `ℕ ⊆ ℤ≥0`, so `-1` is not in range
-- Need: `HahnSeries.embDomain_notin_range` or unfold `embDomain_coeff`
 
-### Cycle 158 Summary (for reference)
+**Approach options**:
+1. Use `RatFunc.eval₂` with X ↦ X⁻¹ (needs eval on RatFunc)
+2. Define directly on numerator/denominator degrees
+3. Use the fact that for p/q, res_∞ = coefficient of X^{deg q - deg p - 1} in p/q
+
+### Key references for Cycle 158
 
 Created `Residue.lean` with:
 - `residueAtX` defined using `HahnSeries.coeff (-1)`
 - Key lemmas proved: `residueAtX_add`, `residueAtX_inv_X = 1`, `residueAtX_inv_X_sq = 0`
 - Structure in place for `residueAtInfty` and general `residueAt`
 
-### Remaining Plan (~10-12 cycles)
+### Remaining Plan (~9-11 cycles)
 
-**Phase A: Complete Residue Definitions (Cycles 159-160)**
-- Cycle 159: Fill `residueAtX_smul`, `residueAtX_polynomial` proofs
-- Cycle 160: Define `residueAtInfty` using X ↦ 1/X substitution
+**Phase A: Complete Residue Definitions (Cycles 159-161)**
+- Cycle 159: Fill `residueAtX_smul` proof ✅
+- Cycle 160: Fill `residueAtX_polynomial` proof ✅
+- Cycle 161: Define `residueAtInfty` using X ↦ 1/X substitution
 
-**Phase B: Residue Theorem (Cycles 161-163)**
+**Phase B: Residue Theorem (Cycles 162-164)**
 ```lean
 -- Use partial fractions: f = q + ∑ rᵢ/gᵢ where deg(rᵢ) < deg(gᵢ)
 -- Polynomial q contributes 0 residue
@@ -66,14 +72,14 @@ theorem residue_sum_eq_zero (f : RatFunc Fq) :
     (∑ᶠ v, residue_at v f) + residue_infty f = 0 := ...
 ```
 
-**Phase C: Wire to Serre Pairing (Cycles 164-166)**
+**Phase C: Wire to Serre Pairing (Cycles 165-167)**
 ```lean
 -- The pairing: for [a] ∈ H¹(D) and f ∈ L(K-D)
 -- ⟨[a], f⟩ := ∑_v res_v(aᵥ · f)
 def serrePairing : H¹(D) →ₗ[k] L(K-D) →ₗ[k] k := ...
 ```
 
-**Phase D: Non-degeneracy (Cycles 167-170)**
+**Phase D: Non-degeneracy (Cycles 168-171)**
 ```lean
 -- Left: if ⟨[a], f⟩ = 0 for all f, then [a] = 0
 -- Right: if ⟨[a], f⟩ = 0 for all [a], then f = 0
@@ -146,6 +152,16 @@ lake build RrLean.RiemannRochV2.DifferentIdealBridge
 ---
 
 ## Recent Cycles
+
+### Cycle 160 (2025-12-19)
+- **Filled `residueAtX_polynomial` proof** - Polynomials have zero residue at X=0
+- Proof technique:
+  1. Use `RatFunc.coe_coe` to factor: `(p : RatFunc : LaurentSeries) = (p : PowerSeries : LaurentSeries)`
+  2. Use `ofPowerSeries_apply` to expose `embDomain` structure
+  3. Apply `embDomain_notin_range` since `-1 ∉ range(Nat.cast : ℕ → ℤ)`
+  4. Finish with `Int.natCast_nonneg` and `omega`
+- **X-adic residue foundation complete**: all lemmas for `residueAtX_linearMap` now proved
+- Sorry count: 16→15
 
 ### Cycle 159 (2025-12-19)
 - **Filled `residueAtX_smul` proof** - Key lemma for linear map structure

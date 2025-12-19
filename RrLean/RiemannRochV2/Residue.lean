@@ -145,10 +145,15 @@ theorem residueAtX_polynomial (p : Polynomial Fq) :
   -- (p : RatFunc : LaurentSeries) = (p : PowerSeries : LaurentSeries) by coe_coe
   rw [show ((p : RatFunc Fq) : LaurentSeries Fq) =
           ((p : PowerSeries Fq) : LaurentSeries Fq) from (RatFunc.coe_coe _).symm]
-  -- PowerSeries embeds via ofPowerSeries which uses embDomain with Nat.cast
-  -- The support is in ℕ ⊆ ℤ≥0, so coeff at -1 is 0
-  -- Need: HahnSeries.embDomain_notin_range or similar
-  sorry
+  -- PowerSeries embeds via ofPowerSeries which uses embDomain with Nat.cast : ℕ → ℤ
+  -- The support is in ℕ ⊆ ℤ≥0, so -1 is not in the range
+  rw [ofPowerSeries_apply]
+  apply embDomain_notin_range
+  simp only [Set.mem_range, not_exists]
+  intro n hn
+  simp only [RelEmbedding.coe_mk, Function.Embedding.coeFn_mk] at hn
+  have h : (0 : ℤ) ≤ n := Int.natCast_nonneg n
+  omega
 
 /-! ## Section 2: Residue at Infinity
 
