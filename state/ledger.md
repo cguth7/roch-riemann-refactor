@@ -10,46 +10,66 @@
 
 ---
 
-## 🎯 NEXT CLAUDE: Start Here (Cycle 146)
+## 🎯 NEXT CLAUDE: Start Here (Cycle 147)
 
 ### Current State
-Build: ❌ **~15 ERRORS** in FullAdelesCompact.lean (down from 41)
+Build: ✅ **COMPILES** with ~12 sorries in FullAdelesCompact.lean
 
-### What Cycle 145 Fixed
-- Early errors (lines 68-147): Simplified proofs, added missing instances
-- `completeSpace_FqtInfty` - explicitly instantiated from Completion
-- `isCompact_of_compactSpace_subtype` → `isCompact_iff_compactSpace.mpr`
-- `valuation_of_algebraMap_le` → `valuation_of_algebraMap` + `intValuation_le_one`
-- `Finset.Finite` → `nf.finite_toSet`
-- Added `open scoped WithZero` for ℤᵐ⁰ notation
+### What Cycle 146 Did
+- **Got FullAdelesCompact.lean to compile** (was 15 errors, now 0 errors + sorries)
+- Fixed API mismatches: `Finset.prod_ne_zero_iff.mpr`, `Ideal.IsPrime`, `Valued.v.map_sub`
+- Converted complex broken proofs to **documented sorries** preserving proof approaches
+- Each sorried proof has inline comments explaining the mathematical approach and blocking API issues
 
-### Sorried (need correct mathlib API investigation)
-- `isPrincipalIdealRing_integer_FqtInfty`
-- `isDiscreteValuationRing_integer_FqtInfty`
-- `exists_local_approximant`
-- `intValuation_ge_exp_neg_natDegree`
+### Sorries in FullAdelesCompact.lean (~12 total)
+1. `isPrincipalIdealRing_integer_FqtInfty` - needs DVR proof
+2. `isDiscreteValuationRing_integer_FqtInfty` - needs uniformizer argument
+3. `isOpen_ball_le_one_FqtInfty` - WithZero.coe_lt_coe rewrite issue
+4. `polynomial_integral_at_finite_places` - valuedAdicCompletion_eq_valuation issue
+5. `exists_local_approximant` - density argument
+6. `HeightOneSpectrum.finite_divisors` - normalizedFactors finiteness
+7. `intValuation_ge_exp_neg_natDegree` - multiplicity bound
+8. `exists_finite_integral_translate` - CRT proof (approach documented inline)
+9. `exists_finite_integral_translate_with_infty_bound` - polynomial division (approach documented)
+10. `exists_translate_in_integralFullAdeles` - combining above (approach documented)
 
-### Remaining ~15 Errors
-1. Line 233: rewrite pattern in `isOpen_ball_le_one_FqtInfty`
-2. Line 343: `HeightOneSpectrum.finite_divisors` type mismatch
-3. Line 422: `Finset.prod_ne_zero` → use `Finset.prod_ne_zero_iff.mpr`
-4. Line 459: simp looping on `RatFunc.algebraMap_apply`
-5. Line 480: `Submodule.Prime` → use `v.isPrime` directly
-6. Lines 709+: Polynomial division (`div_add_mod` → `modByMonic_add_div`)
-7. Lines 709+: `RingHom.map_div₀` → just `map_div₀`
-8. `exists_finite_integral_translate` - complex CRT proof with many issues
-
-### Next Steps for Cycle 146
-1. Fix `Finset.prod_ne_zero` → `Finset.prod_ne_zero_iff.mpr`
-2. Fix `Submodule.Prime` → `v.isPrime`
-3. Fix polynomial division using `modByMonic_add_div` or EuclideanDomain API
-4. Sorry or simplify `exists_finite_integral_translate`
-5. Get file to compile with sorries, then revisit
+### Next Steps for Cycle 147
+1. **Option A**: Fill the simpler sorries first (polynomial_integral_at_finite_places, isOpen_ball_le_one)
+2. **Option B**: Work on the key lemma `intValuation_ge_exp_neg_natDegree` (unlocks CRT proofs)
+3. **Option C**: Enable FullAdelesCompact import in FullAdeles.lean and verify main build
 
 ### File Split (for faster builds)
-- **FullAdelesBase.lean** (685 lines) - General defs, basic FqInstance → ✅ COMPILES
-- **FullAdelesCompact.lean** (~850 lines) - Compactness, weak approx → ❌ ~15 ERRORS
+- **FullAdelesBase.lean** (~685 lines) - General defs, basic FqInstance → ✅ COMPILES
+- **FullAdelesCompact.lean** (~500 lines) - Compactness, weak approx → ✅ COMPILES (12 sorries)
 - **FullAdeles.lean** - Re-export hub (imports Base, Compact commented out)
+
+---
+
+## Cycle 146 Summary - FILE NOW COMPILES
+
+**Goal**: Get FullAdelesCompact.lean to compile (was 15 errors)
+
+**Status**: ✅ COMPILES with ~12 sorries
+
+**Fixed APIs**:
+- `Finset.prod_ne_zero` → `Finset.prod_ne_zero_iff.mpr`
+- `Submodule.Prime` → `Ideal.IsPrime` (via `v.isPrime`)
+- `Valuation.map_sub_le_max'` → `Valued.v.map_sub`
+- `Valuation.map_add_le` → `Valued.v.map_add_le`
+- `RingHom.map_div₀` → `map_div₀`
+- Removed redundant `h1` rewrite that broke after earlier changes
+
+**Key decision**: Converted broken proofs to documented sorries
+- Each proof has inline block comment explaining:
+  - The mathematical approach
+  - Key steps and lemmas needed
+  - Specific API issues blocking completion
+- This preserves knowledge for future filling while unblocking build
+
+**Sorried proofs with documented approaches**:
+- `exists_finite_integral_translate` - Full CRT proof outline
+- `exists_finite_integral_translate_with_infty_bound` - Polynomial division outline
+- `exists_translate_in_integralFullAdeles` - Combination outline
 
 ---
 
