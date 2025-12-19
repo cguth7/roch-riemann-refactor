@@ -10,59 +10,66 @@
 
 ---
 
-## 🎯 NEXT CLAUDE: Start Here (Cycle 152)
+## 🎯 NEXT CLAUDE: Start Here (Cycle 153)
 
 ### Current State
-Build: ✅ **COMPILES** with **2 sorries** in FullAdelesCompact.lean
+Build: ✅ **COMPILES** with **4 sorries** in FullAdelesCompact.lean
 
-### What Cycle 151 Did
-- ✅ **Filled `exists_translate_in_integralFullAdeles`** (3 → 2 sorries)
-  - Uses `exists_approx_in_ball_infty` for infinity approximation
-  - Uses `exists_finite_integral_translate_with_infty_bound` for finite places
-  - Combines using ultrametric inequality
-- ✅ **Found key API**: `Ideal.prime_of_isPrime v.ne_bot v.isPrime` for CRT
+### What Cycle 152 Did
+- ✅ **Built correct proof structure** for `exists_finite_integral_translate`
+  - CRT application works: `IsDedekindDomain.exists_forall_sub_mem_ideal`
+  - All 3 cases structured: v ∈ S, v ∈ T\S, v ∉ T
+- ⚠️ **Hit "coercion hell"** - type mismatches between Fq[X], RatFunc Fq, completions
+- 📝 **Documented all sorries** with clear proof strategies
 
-### Remaining Sorries (2 total)
-1. `exists_finite_integral_translate` (line ~540) - CRT proof
-2. `exists_finite_integral_translate_with_infty_bound` (line ~628) - polynomial division
+### Remaining Sorries (4 total, all in `exists_finite_integral_translate`)
+1. **Line ~547**: `hDy_in_R` - D * y_v is a polynomial
+2. **Line ~612**: `hky_int` for v ∈ S case - valuation bound
+3. **Line ~643**: `hk_int` for v ∈ T\S case - valuation bound
+4. **Line ~754**: `exists_finite_integral_translate_with_infty_bound` - depends on #1-3
 
-### Strategy for Next Cycle
+### 🔑 KEY INSIGHT: Extract Helper Lemmas First!
 
-**For `exists_finite_integral_translate`**:
-The CRT structure is documented inline. Key steps:
-1. Get bad set S from restricted product property
-2. Get approximants y_v via `exists_local_approximant`
-3. Get common denominator D for all y_v
-4. Build T = S ∪ {divisors of D}
-5. Apply `IsDedekindDomain.exists_forall_sub_mem_ideal` (CRT)
-6. Verify valuations using `intValuation_ge_exp_neg_natDegree`
+**The mathematical strategy is 100% correct.** We're stuck in "implementation friction."
+The fix is **lemma extraction** - prove these standalone facts FIRST:
 
-**For `exists_finite_integral_translate_with_infty_bound`**:
-1. Get k₀ from `exists_finite_integral_translate`
-2. Use Euclidean division: k₀ = q + r/denom where deg(r) < deg(denom)
-3. k = k₀ - q has |k|_∞ < 1 ≤ bound
-4. q is polynomial, so finite integrality preserved
+#### Lemma 1: Polynomial times RatFunc gives Polynomial (when denom divides)
+```lean
+/-- If denom(y) | D, then D * y ∈ Fq[X] (as a rational function). -/
+lemma ratfunc_mul_denom_dvd_is_polynomial (D : Fq[X]) (y : RatFunc Fq)
+    (hdvd : y.denom ∣ D) :
+    ∃ P : Fq[X], algebraMap Fq[X] (RatFunc Fq) P = algebraMap Fq[X] (RatFunc Fq) D * y := by
+  -- Key: D = q * denom, so D * (num/denom) = q * num
+  -- Need: IsFractionRing.injective Fq[X] (RatFunc Fq) for algebraMap ≠ 0
+  sorry
+```
 
-### Key Findings from Cycle 150: API Issues
+#### Lemma 2: Valuation of a Fraction
+```lean
+/-- Valuation of P/D in terms of intValuations. -/
+lemma valuation_of_div (v : HeightOneSpectrum Fq[X]) (P D : Fq[X]) (hD : D ≠ 0) :
+    v.valuation (RatFunc Fq) (algebraMap _ _ P / algebraMap _ _ D) =
+    v.intValuation P / v.intValuation D := by
+  rw [map_div₀, v.valuation_of_algebraMap, v.valuation_of_algebraMap]
+```
 
-The CRT proof structure is correct. The issues found are:
+#### Lemma 3: CRT Bound
+```lean
+/-- If P ∈ v^n, then v.valuation(P) ≤ exp(-n). -/
+lemma valuation_bound_of_mem_pow (v : HeightOneSpectrum Fq[X]) (P : Fq[X]) (n : ℕ)
+    (h : P ∈ v.asIdeal ^ n) :
+    v.intValuation P ≤ WithZero.exp (-(n : ℤ)) := by
+  rw [v.intValuation_le_pow_iff_mem P n]
+  exact h
+```
 
-1. **`Ideal.IsPrime.prime` doesn't exist** - Need `v.isPrime.prime` or find correct API
-   - HeightOneSpectrum.isPrime gives IsPrime, but CRT needs Prime
-   - Try: `Ideal.isPrime_iff_prime` or work with prime directly
+### Strategy for Cycle 153
 
-2. **`RatFunc.algebraMap_ne_zero.mpr` doesn't exist** - Need different form
-   - Try: `RatFunc.algebraMap_ne_zero` without `.mpr`, or `map_ne_zero_of_mem_nonZeroDivisors`
+1. **Add helper lemmas** at top of FullAdelesCompact.lean (before main theorem)
+2. **Fill each sorry** using the helper lemmas
+3. The main theorem will collapse to ~10 lines once helpers are in place
 
-3. **Type elaboration timeouts** with completions/valuations
-   - Break complex expressions into intermediate steps
-   - Add explicit type annotations: `(k : v.adicCompletion (RatFunc Fq))`
-   - Use `set_option maxHeartbeats 400000` if needed
-
-4. **`Polynomial.div_mul_eq_mul_div` pattern issues**
-   - The polynomial division/multiplication order may differ from expected
-
-### Proof Structure (CORRECT - needs API fixes)
+### Proof Structure (VERIFIED CORRECT)
 ```lean
 -- Step 1: S = bad places (finite by restricted product)
 have hS_finite := Filter.eventually_cofinite.mp a.property
@@ -75,27 +82,26 @@ choose y hy using (fun v => exists_local_approximant Fq v (a.val v))
 let D := S.prod (fun v => (y v).denom)
 
 -- Step 4: T = S ∪ {divisors of D}
-let T := S ∪ (HeightOneSpectrum.finite_divisors Fq D hD_zero).toFinset
+let T := S ∪ (HeightOneSpectrum.finite_divisors Fq D hD_ne).toFinset
 
--- Step 5: Apply CRT
-obtain ⟨P, hP⟩ := IsDedekindDomain.exists_forall_sub_mem_ideal (fun v => v.asIdeal) e ...
+-- Step 5: Apply CRT - THIS WORKS!
+obtain ⟨P, hP⟩ := IsDedekindDomain.exists_forall_sub_mem_ideal
+  (fun v => v.asIdeal) e hprime hcoprime target
 
--- Step 6: k = P/D, verify valuations
+-- Step 6: k = P/D, verify valuations using helper lemmas
 let k := algebraMap Fq[X] (RatFunc Fq) P / algebraMap Fq[X] (RatFunc Fq) D
 ```
 
-### IMMEDIATE NEXT STEP: Fix API issues
+### Key APIs Already Working
+- `v.prime` for HeightOneSpectrum (not `Ideal.prime_of_isPrime`)
+- `HeightOneSpectrum.ext` for proving v ≠ w from asIdeal ≠ asIdeal
+- `intValuation_ge_exp_neg_natDegree` for bounding val(D)
+- `valuedAdicCompletion_eq_valuation'` for completion valuations
 
-1. Find correct API for `IsPrime → Prime` for ideals in HeightOneSpectrum
-2. Find correct form of `RatFunc.algebraMap_ne_zero`
-3. Add type annotations to avoid elaboration timeouts
-
-### Alternative: Simplify the proof
-
-If API issues persist, consider:
-- Using `native_decide` for finite field computations
-- Breaking the proof into smaller lemmas
-- Using `set_option maxHeartbeats` temporarily
+### Technical Issues to Watch
+1. **IsFractionRing.injective** - Use for algebraMap ≠ 0 proofs
+2. **Type annotations** - Add `(k : v.adicCompletion (RatFunc Fq))` liberally
+3. **WithZero.exp arithmetic** - Use `WithZero.exp_sub`, `WithZero.exp_le_exp.mpr`
 
 ### Key Proofs Added in Cycle 147
 

@@ -501,43 +501,169 @@ lemma intValuation_ge_exp_neg_natDegree (v : HeightOneSpectrum Fq[X]) (D : Fq[X]
 -/
 theorem exists_finite_integral_translate (a : FiniteAdeleRing Fq[X] (RatFunc Fq)) :
     ∃ k : RatFunc Fq, ∀ v, (a.val v - k) ∈ v.adicCompletionIntegers (RatFunc Fq) := by
+  -- Step 1: S = bad set (finite by restricted product property)
+  have hS_finite := Filter.eventually_cofinite.mp a.property
+  let S := hS_finite.toFinset
+  have hS_mem : ∀ v, v ∈ S ↔ ¬(a.val v ∈ v.adicCompletionIntegers (RatFunc Fq)) := by
+    intro v
+    simp only [S, Set.Finite.mem_toFinset]
+    rfl
+
+  -- Step 2: Get approximants y_v for each v
+  -- For v ∈ S, we need y_v ∈ K with a_v - y_v ∈ O_v
+  -- For v ∉ S, a_v is already integral, so we can use y_v = 0
+  choose y hy using (fun v => exists_local_approximant Fq v (a.val v))
+
+  -- Step 3: D = product of denominators of y_v for v ∈ S
+  let D : Fq[X] := S.prod (fun v => (y v).denom)
+  have hD_ne : D ≠ 0 := Finset.prod_ne_zero_iff.mpr (fun v _ => (y v).denom_ne_zero)
+
+  -- For each v ∈ S: D * y_v ∈ Fq[X] because D contains (y_v).denom as a factor
+  -- Let Py_v = D * y_v (as a polynomial)
+  -- Actually, we need to be more careful: D * y_v = (D / denom_v) * num_v
+  -- where D / denom_v is a polynomial (since denom_v | D)
   /-
-  **Proof approach** (CRT with enlarged set - preserved for future reference):
+  **LEMMA NEEDED**: D * y_v is a polynomial when denom(y_v) | D
 
-  1. S = {v : a.val v ∉ O_v} is finite (restricted product property)
-  2. For each v ∈ S, use `exists_local_approximant` to get y_v ∈ K with a_v - y_v ∈ O_v
-  3. Let D = ∏_{v∈S} (y_v).denom - clears all denominators
-  4. D · y_v ∈ R for all v ∈ S, call it Py_v
-  5. T = S ∪ {v : v.intValuation D < 1} - finite by HeightOneSpectrum.finite_divisors
-  6. Apply CRT: ∃ P with P ≡ Py_v (mod v^{deg(D)+1}) for v ∈ S, P ≡ 0 for v ∈ T\S
-  7. Let k = P / D
+  Statement: ∀ v ∈ S, ∃ Py : Fq[X], algebraMap Py = algebraMap D * y v
 
-  Verification for v ∈ S:
-  - a_v - k = (a_v - y_v) - (k - y_v)
-  - k - y_v = (P - Py_v)/D
-  - val_v(P - Py_v) ≤ exp(-(deg(D)+1)) (from CRT)
-  - val_v(D) ≥ exp(-deg(D)) (by intValuation_ge_exp_neg_natDegree)
-  - So val_v((P - Py_v)/D) ≤ exp(-1) ≤ 1, hence k - y_v ∈ O_v
-  - By ultrametric: a_v - k ∈ O_v
+  Proof sketch:
+  - denom(y v) | D by construction (D = ∏ denom)
+  - D = q * denom for some q
+  - D * y = q * denom * (num/denom) = q * num
+  - Py = q * num
 
-  Verification for v ∈ T\S:
-  - a_v ∈ O_v (since v ∉ S)
-  - val_v(P) ≤ exp(-(deg(D)+1)) (from CRT)
-  - val_v(D) ≥ exp(-deg(D))
-  - So val_v(k) = val_v(P/D) ≤ exp(-1) ≤ 1
-
-  Verification for v ∉ T:
-  - a_v ∈ O_v (since v ∉ S ⊆ T)
-  - val_v(D) = 1 (since v doesn't divide D)
-  - val_v(P) ≤ 1 (P is polynomial)
-  - val_v(k) = val_v(P)/val_v(D) ≤ 1
-
-  API issues blocking this proof:
-  - simp issues with RatFunc.algebraMap_apply
-  - CRT application type mismatches
-  - Various valuation computation issues
+  Technical issue: Need `algebraMap Fq[X] (RatFunc Fq)` to be injective for
+  `map_ne_zero_of_mem_nonZeroDivisors`. Use `IsFractionRing.injective`.
   -/
-  sorry
+  have hDy_in_R : ∀ v ∈ S, ∃ Py : Fq[X],
+      algebraMap Fq[X] (RatFunc Fq) Py = algebraMap Fq[X] (RatFunc Fq) D * y v := by
+    intro v hv
+    have hdenom_dvd : (y v).denom ∣ D := Finset.dvd_prod_of_mem (fun v => (y v).denom) hv
+    obtain ⟨q, hq⟩ := hdenom_dvd
+    use q * (y v).num
+    -- Proof: D * y = q * denom * (num/denom) = q * num
+    -- Need: algebraMap (denom) ≠ 0 for the division cancellation
+    sorry
+
+  -- Choose Py for each v ∈ S
+  choose Py hPy using hDy_in_R
+
+  -- Step 4: T = S ∪ {divisors of D} - the set of places we need to handle
+  let divD := (HeightOneSpectrum.finite_divisors Fq D hD_ne).toFinset
+  let T := S ∪ divD
+  have hS_sub_T : S ⊆ T := Finset.subset_union_left
+  have hdivD_sub_T : divD ⊆ T := Finset.subset_union_right
+
+  -- The exponent for CRT
+  let e : HeightOneSpectrum Fq[X] → ℕ := fun _ => D.natDegree + 1
+
+  -- Target values for CRT: Py_v if v ∈ S, 0 otherwise
+  let target : T → Fq[X] := fun ⟨v, hv⟩ =>
+    if hvS : v ∈ S then Py v hvS else 0
+
+  -- Step 5: Apply CRT
+  have hprime : ∀ v ∈ T, Prime (v.asIdeal) := fun v _ => v.prime
+  have hcoprime : ∀ᵉ (i ∈ T) (j ∈ T), i ≠ j → i.asIdeal ≠ j.asIdeal := by
+    intro i _ j _ hij
+    exact fun h => hij (HeightOneSpectrum.ext h)
+
+  obtain ⟨P, hP⟩ := IsDedekindDomain.exists_forall_sub_mem_ideal
+    (fun v : HeightOneSpectrum Fq[X] => v.asIdeal) e hprime hcoprime target
+
+  -- Step 6: k = P / D
+  let k : RatFunc Fq := algebraMap Fq[X] (RatFunc Fq) P / algebraMap Fq[X] (RatFunc Fq) D
+
+  use k
+
+  -- Step 7: Verify a_v - k ∈ O_v for all v
+  intro v
+
+  -- Three cases: v ∈ S, v ∈ T \ S, v ∉ T
+  by_cases hvS : v ∈ S
+  · -- Case: v ∈ S
+    -- a_v - k = (a_v - y_v) - (k - y_v)
+    -- a_v - y_v ∈ O_v by choice of y
+    -- k - y_v = (P - Py_v)/D, need to show this is in O_v
+    have hv_in_T : v ∈ T := hS_sub_T hvS
+    have hay : (a.val v - y v) ∈ v.adicCompletionIntegers (RatFunc Fq) := hy v
+    have hPy_eq := hPy v hvS
+    -- P - Py v hvS ∈ v.asIdeal ^ e v by CRT
+    have hP_cong : P - target ⟨v, hv_in_T⟩ ∈ v.asIdeal ^ e v := hP v hv_in_T
+    simp only [target, hvS, ↓reduceDIte] at hP_cong
+    /-
+    **Valuation bound for case v ∈ S** (documented for next instance):
+
+    Need to prove: val_v((P - Py)/D) ≤ 1
+
+    Key facts available:
+    - hP_cong : P - Py v hvS ∈ v.asIdeal ^ (D.natDegree + 1)
+    - By intValuation_le_pow_iff_mem: val(P-Py) ≤ exp(-(deg+1))
+    - By intValuation_ge_exp_neg_natDegree: val(D) ≥ exp(-deg)
+    - Therefore: val((P-Py)/D) ≤ exp(-(deg+1))/exp(-deg) = exp(-1) ≤ 1
+
+    API issues to resolve:
+    - Coercion from Fq[X] to RatFunc Fq in completion
+    - The hky equation: k - y = (P - Py)/D needs careful type handling
+    - valuedAdicCompletion_eq_valuation' connects Valued.v to v.valuation
+    -/
+    have hky_int : ((k : v.adicCompletion (RatFunc Fq)) - y v) ∈
+        v.adicCompletionIntegers (RatFunc Fq) := by
+      sorry -- See documentation above for proof strategy
+    -- a_v - k = (a_v - y_v) - (k - y_v), use ultrametric
+    have heq : (a.val v - k) = (a.val v - y v) - ((k : v.adicCompletion (RatFunc Fq)) - y v) := by
+      ring
+    rw [heq]
+    exact (v.adicCompletionIntegers (RatFunc Fq)).sub_mem hay hky_int
+
+  · -- Case: v ∉ S
+    -- a_v ∈ O_v by definition of S
+    have ha_int : a.val v ∈ v.adicCompletionIntegers (RatFunc Fq) := by
+      by_contra h
+      exact hvS ((hS_mem v).mpr h)
+    by_cases hvT : v ∈ T
+    · -- Subcase: v ∈ T \ S (v divides D)
+      -- P ≡ 0 (mod v^{deg(D)+1}) by CRT (since target v = 0 for v ∉ S)
+      have hP_cong : P - target ⟨v, hvT⟩ ∈ v.asIdeal ^ e v := hP v hvT
+      simp only [target, hvS, ↓reduceDIte, sub_zero] at hP_cong
+      /-
+      **Valuation bound for case v ∈ T \ S** (documented for next instance):
+
+      Need to prove: val_v(k) = val_v(P/D) ≤ 1
+
+      Key facts:
+      - hP_cong : P ∈ v.asIdeal ^ (D.natDegree + 1)  (since target = 0 for v ∉ S)
+      - By intValuation_le_pow_iff_mem: val(P) ≤ exp(-(deg+1))
+      - By intValuation_ge_exp_neg_natDegree: val(D) ≥ exp(-deg)
+      - Therefore: val(P/D) ≤ exp(-(deg+1))/exp(-deg) = exp(-1) ≤ 1
+
+      Same API pattern as case v ∈ S.
+      -/
+      have hk_int : (k : v.adicCompletion (RatFunc Fq)) ∈ v.adicCompletionIntegers (RatFunc Fq) := by
+        sorry -- See documentation above for proof strategy
+      exact (v.adicCompletionIntegers (RatFunc Fq)).sub_mem ha_int hk_int
+
+    · -- Subcase: v ∉ T
+      -- v doesn't divide D, so val_v(D) = 1
+      have hvdivD : v ∉ divD := fun h => hvT (hdivD_sub_T h)
+      have hD_not_mem : D ∉ v.asIdeal := by
+        intro hD_mem
+        apply hvdivD
+        simp only [divD, Set.Finite.mem_toFinset, Set.mem_setOf_eq]
+        exact (intValuation_lt_one_iff_mem v D).mpr hD_mem
+      have hD_val_one : v.intValuation D = 1 := intValuation_eq_one_iff.mpr hD_not_mem
+      -- val_v(P) ≤ 1 (P is polynomial)
+      have hP_val : v.intValuation P ≤ 1 := intValuation_le_one v P
+      -- val_v(k) = val_v(P)/val_v(D) ≤ 1/1 = 1
+      have hk_val : v.valuation (RatFunc Fq) k ≤ 1 := by
+        simp only [k]
+        rw [map_div₀, v.valuation_of_algebraMap, v.valuation_of_algebraMap, hD_val_one, div_one]
+        exact hP_val
+      -- a_v - k ∈ O_v
+      have hk_int : (k : v.adicCompletion (RatFunc Fq)) ∈ v.adicCompletionIntegers (RatFunc Fq) := by
+        rw [mem_adicCompletionIntegers, valuedAdicCompletion_eq_valuation']
+        exact hk_val
+      exact (v.adicCompletionIntegers (RatFunc Fq)).sub_mem ha_int hk_int
 
 /-- Combined: existence of translate with controlled infinity valuation.
 
