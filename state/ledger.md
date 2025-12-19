@@ -10,47 +10,52 @@
 
 ---
 
-## 🎯 NEXT CLAUDE: Start Here (Cycle 148)
+## 🎯 NEXT CLAUDE: Start Here (Cycle 149)
 
 ### Current State
-Build: ✅ **COMPILES** with **7 sorries** in FullAdelesCompact.lean (down from 12!)
+Build: ✅ **COMPILES** with **5 sorries** in FullAdelesCompact.lean (down from 7!)
 
-### What Cycle 147 Did
-- ✅ **FILLED `intValuation_ge_exp_neg_natDegree`** - Key lemma bounding multiplicity by degree
-- ✅ **FILLED `polynomial_integral_at_finite_places`** - One-liner using `coe_algebraMap_mem`
-- ✅ **FILLED `isOpen_ball_le_one_FqtInfty`** - Using `Valued.isOpen_integer` + convert
-- ⚠️ **PARTIAL `exists_local_approximant`** - Proof structure complete but has UniformSpace instance mismatch
+### What Cycle 148 Did
+- ✅ **FILLED `exists_local_approximant`** - Fixed UniformSpace mismatch by factoring through `WithVal`
+- ✅ **FILLED `HeightOneSpectrum.finite_divisors`** - Injective map to normalizedFactors + UFM API
 
-### Remaining Sorries (7 total)
+### Remaining Sorries (5 total)
 1. `isPrincipalIdealRing_integer_FqtInfty` (line 113) - needs DVR proof
 2. `isDiscreteValuationRing_integer_FqtInfty` (line 122) - needs uniformizer argument
-3. `exists_local_approximant` (line ~294) - **ALMOST DONE** - density proof blocked by instance mismatch
-4. `HeightOneSpectrum.finite_divisors` (line ~312) - normalizedFactors finiteness
-5. `exists_finite_integral_translate` (line ~385) - CRT proof (approach documented inline)
-6. `exists_finite_integral_translate_with_infty_bound` (line ~440) - polynomial division
-7. `exists_translate_in_integralFullAdeles` (line ~483) - combining above
+3. `exists_finite_integral_translate` (line ~454) - CRT proof (approach documented inline)
+4. `exists_finite_integral_translate_with_infty_bound` (line ~509) - polynomial division
+5. `exists_translate_in_integralFullAdeles` (line ~552) - combining above
 
-### IMMEDIATE NEXT STEP: Fix `exists_local_approximant`
+### Key Fix in Cycle 148: `exists_local_approximant`
 
-The proof is 90% done. The issue is a UniformSpace instance mismatch when using `UniformSpace.Completion.denseRange_coe`. The proof structure:
+The UniformSpace instance mismatch was fixed by factoring density through `WithVal`:
 
 ```lean
-theorem exists_local_approximant (v : HeightOneSpectrum Fq[X]) (a_v : v.adicCompletion (RatFunc Fq)) :
-    ∃ y : RatFunc Fq, (a_v - y) ∈ v.adicCompletionIntegers (RatFunc Fq) := by
-  -- Step 1: {x : Valued.v (a_v - x) ≤ 1} is open ✅ DONE
-  -- Step 2: This set is non-empty (contains a_v) ✅ DONE
-  -- Step 3: K is dense in K_v ❌ BLOCKED - instance mismatch
-  -- Step 4: By density, K intersects the open non-empty set ✅ DONE (once hdense works)
+-- The fix: factor algebraMap through WithVal to use the correct uniform space
+have hdense : DenseRange (algebraMap (RatFunc Fq) (v.adicCompletion (RatFunc Fq))) := by
+  let W := WithVal (v.valuation (RatFunc Fq))
+  have hdense_withval : DenseRange ((↑) : W → UniformSpace.Completion W) :=
+    UniformSpace.Completion.denseRange_coe
+  have hsurj : Function.Surjective (algebraMap (RatFunc Fq) W) := fun w => ⟨w, rfl⟩
+  exact hdense_withval.comp hsurj.denseRange (UniformSpace.Completion.continuous_coe W)
 ```
 
-**The blocking error**: `synthesized type class instance is not definitionally equal`
-- `adicCompletion` uses `(WithVal.instValued (valuation K v)).toUniformSpace`
-- `Completion.denseRange_coe` expects the standard uniform space
+### Key Fix in Cycle 148: `HeightOneSpectrum.finite_divisors`
 
-**Possible fixes**:
-1. Find a direct density lemma for `adicCompletion` in mathlib
-2. Use `congr_arg` or other typeclass manipulation
-3. Prove a helper `denseRange_adicCompletion` lemma
+Used injective map to `normalizedFactors`:
+- Map each v to `normalize (generator v.asIdeal)`
+- Show image ⊆ `normalizedFactors D` (via `exists_mem_normalizedFactors_of_dvd`)
+- Show injectivity (associated generators ⟹ same ideal)
+- Conclude finiteness via `Set.Finite.of_finite_image`
+
+### IMMEDIATE NEXT STEP: Work on CRT-based proofs
+
+The remaining sorries are all interconnected:
+- `exists_finite_integral_translate` - Main CRT application
+- `exists_finite_integral_translate_with_infty_bound` - Adds infinity bound
+- `exists_translate_in_integralFullAdeles` - Combines both
+
+These require careful work with `IsDedekindDomain.exists_forall_sub_mem_ideal` API.
 
 ### Key Proofs Added in Cycle 147
 
@@ -69,6 +74,31 @@ theorem exists_local_approximant (v : HeightOneSpectrum Fq[X]) (a_v : v.adicComp
 - **FullAdelesBase.lean** (~685 lines) - General defs → ✅ COMPILES
 - **FullAdelesCompact.lean** (~505 lines) - Compactness, weak approx → ✅ COMPILES (7 sorries)
 - **FullAdeles.lean** - Re-export hub
+
+---
+
+## Cycle 148 Summary - 2 SORRIES FILLED
+
+**Goal**: Fill sorries in FullAdelesCompact.lean
+
+**Status**: ✅ Reduced from 7 to 5 sorries
+
+**Filled**:
+1. `exists_local_approximant` - Density argument via WithVal type synonym
+2. `HeightOneSpectrum.finite_divisors` - Injective map to normalizedFactors
+
+**Key techniques**:
+- **WithVal factoring**: To avoid UniformSpace instance mismatch, factor density through `WithVal`:
+  - `algebraMap K (adicCompletion K v)` factors as `coeRingHom ∘ algebraMap K (WithVal ...)`
+  - Since `WithVal` is a type synonym, `algebraMap K (WithVal ...)` is surjective
+  - `coeRingHom` has dense range by `denseRange_coe`
+  - Composition of surjective + dense range = dense range
+
+- **UFM normalizedFactors API**:
+  - `exists_mem_normalizedFactors_of_dvd` gives `q ∈ normalizedFactors D` with `p ~ᵤ q`
+  - `normalize_normalized_factor` gives `normalize q = q` for normalized factors
+  - `normalize_eq_normalize` gives equality from divisibility both ways
+  - `Ideal.span_singleton_eq_span_singleton` for associated → same ideal
 
 ---
 
