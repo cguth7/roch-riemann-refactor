@@ -684,38 +684,126 @@ To use the compactness characterization theorem
 we need a `RankOne` instance for the infinity valuation.
 -/
 
-/-! ### RankOne Instance for FqtInfty (TODO - Cycle 134)
+/-- The valuation on RatFunc Fq extended to FqtInfty agrees with inftyValuationDef on elements of K.
 
-**Cycle 133 Progress**: Full structure written for infinity compactness.
-
-## What's needed:
-
-### 1. Nontriviality theorem
-```
-theorem inftyValuation_isNontrivial :
-    Valuation.IsNontrivial (Valued.v (R := FqtInfty Fq)) := by
-  refine ⟨inftyRingHom Fq RatFunc.X, ?_, ?_⟩
-  -- v(X) ≠ 0: use Valued.extension_extends + inftyValuation.X
-  -- v(X) ≠ 1: exp(1) ≠ exp(0) via WithZero.exp_injective
-```
-Issue: Proof nearly complete but `Valued.extension_extends` rewrite not working.
-
-### 2. RankOne instance
-```
-noncomputable instance instRankOneFqtInfty :
-    Valuation.RankOne (Valued.v (R := FqtInfty Fq)) where
-  toIsNontrivial := inftyValuation_isNontrivial Fq
-  hom := WithZeroMulInt.toNNReal h2  -- where h2 : (2 : ℝ≥0) ≠ 0
-  strictMono' := WithZeroMulInt.toNNReal_strictMono h1  -- where h1 : (1 : ℝ≥0) < 2
-```
-Issue: ℝ≥0 literal proofs - try `NNReal.coe_lt_coe.mp (by norm_num : (1:ℝ) < 2)`
-
-### 3. Compactness (uses same pattern as AllIntegersCompactProof.lean)
-- CompleteSpace: closed subset of complete space
-- DVR: value group is ℤ
-- Finite residue field: isomorphic to Fq
-- Then apply `compactSpace_iff_completeSpace_and_isDiscreteValuationRing_and_finite_residueField`
+This is a helper to connect Valued.v on the completion with inftyValuationDef on RatFunc Fq.
 -/
+theorem valued_FqtInfty_eq_inftyValuationDef (x : RatFunc Fq) :
+    Valued.v (inftyRingHom Fq x) = FunctionField.inftyValuationDef Fq x := by
+  simp only [inftyRingHom, FunctionField.valuedFqtInfty.def]
+  letI : Valued (RatFunc Fq) (WithZero (Multiplicative ℤ)) := FunctionField.inftyValuedFqt Fq
+  exact Valued.extension_extends x
+
+/-- The FqtInfty valuation is nontrivial: 1/X has valuation exp(-1) < 1 and ≠ 0.
+
+This is needed to get RankOne via MulArchimedean.
+-/
+instance isNontrivial_FqtInfty :
+    (Valued.v (R := FqtInfty Fq)).IsNontrivial := by
+  rw [Valuation.isNontrivial_iff_exists_lt_one]
+  -- Use 1/X which has inftyValuation = exp(-1) < 1
+  use inftyRingHom Fq (1 / RatFunc.X)
+  constructor
+  · -- v(1/X) ≠ 0
+    intro h0
+    have hval : Valued.v (inftyRingHom Fq (1 / RatFunc.X)) =
+        FunctionField.inftyValuationDef Fq (1 / RatFunc.X) :=
+      valued_FqtInfty_eq_inftyValuationDef Fq (1 / RatFunc.X)
+    rw [h0] at hval
+    -- inftyValuationDef (1/X) = exp(-1) ≠ 0 (using inftyValuation.X_inv)
+    have hX_inv : FunctionField.inftyValuationDef Fq (1 / RatFunc.X) = WithZero.exp (-1) := by
+      rw [← FunctionField.inftyValuation_apply]
+      exact FunctionField.inftyValuation.X_inv Fq
+    rw [hX_inv] at hval
+    exact WithZero.coe_ne_zero hval.symm
+  · -- v(1/X) < 1
+    have hval : Valued.v (inftyRingHom Fq (1 / RatFunc.X)) =
+        FunctionField.inftyValuationDef Fq (1 / RatFunc.X) :=
+      valued_FqtInfty_eq_inftyValuationDef Fq (1 / RatFunc.X)
+    rw [hval]
+    have hX_inv : FunctionField.inftyValuationDef Fq (1 / RatFunc.X) = WithZero.exp (-1) := by
+      rw [← FunctionField.inftyValuation_apply]
+      exact FunctionField.inftyValuation.X_inv Fq
+    rw [hX_inv]
+    -- exp(-1) < exp(0) = 1
+    rw [← WithZero.exp_zero]
+    exact WithZero.exp_lt_exp.mpr (by norm_num : (-1 : ℤ) < 0)
+
+/-- RankOne for the FqtInfty valuation follows from MulArchimedean.
+
+Since ℤ is Archimedean, WithZero (Multiplicative ℤ) is MulArchimedean, and
+with IsNontrivial we get RankOne.
+-/
+def rankOne_FqtInfty :
+    Valuation.RankOne (Valued.v (R := FqtInfty Fq)) :=
+  (Valuation.nonempty_rankOne_iff_mulArchimedean.mpr inferInstance).some
+
+/-- The integer ring of FqtInfty is closed in FqtInfty. -/
+lemma isClosed_integer_FqtInfty :
+    IsClosed (Valued.integer (FqtInfty Fq) : Set (FqtInfty Fq)) :=
+  Valued.isClosed_valuationSubring (FqtInfty Fq)
+
+/-- The integer ring of FqtInfty is complete (as a closed subset of a complete space). -/
+instance completeSpace_integer_FqtInfty :
+    CompleteSpace (Valued.integer (FqtInfty Fq)) := by
+  haveI : IsClosed (Valued.integer (FqtInfty Fq) : Set (FqtInfty Fq)) :=
+    isClosed_integer_FqtInfty Fq
+  exact IsClosed.completeSpace_coe
+
+/-- The valuation range on FqtInfty is nontrivial.
+
+This is used to show the integer ring is a PID.
+-/
+lemma range_nontrivial_FqtInfty :
+    (Valued.v : Valuation (FqtInfty Fq) ℤᵐ⁰).toMonoidWithZeroHom.range_nontrivial := by
+  rw [MonoidWithZeroHom.range_nontrivial]
+  use Valued.v (inftyRingHom Fq (1 / RatFunc.X))
+  constructor
+  · -- ≠ 0
+    rw [valued_FqtInfty_eq_inftyValuationDef, ← FunctionField.inftyValuation_apply,
+        FunctionField.inftyValuation.X_inv]
+    exact WithZero.coe_ne_zero
+  · -- ≠ 1
+    rw [valued_FqtInfty_eq_inftyValuationDef, ← FunctionField.inftyValuation_apply,
+        FunctionField.inftyValuation.X_inv, ← WithZero.exp_zero]
+    exact (WithZero.exp_injective).ne (by norm_num : (-1 : ℤ) ≠ 0)
+
+/-- The integer ring of FqtInfty is a principal ideal ring. -/
+instance isPrincipalIdealRing_integer_FqtInfty :
+    IsPrincipalIdealRing (Valued.integer (FqtInfty Fq)) := by
+  rw [(Valuation.valuationSubring.integers (Valued.v (R := FqtInfty Fq))).isPrincipalIdealRing_iff_not_denselyOrdered,
+    WithZero.denselyOrdered_set_iff_subsingleton]
+  exact (range_nontrivial_FqtInfty Fq).not_subsingleton
+
+/-- The integer ring of FqtInfty is a discrete valuation ring.
+
+This follows from being a PID that is not a field (uniformizer 1/X has valuation < 1).
+-/
+instance isDiscreteValuationRing_integer_FqtInfty :
+    IsDiscreteValuationRing (Valued.integer (FqtInfty Fq)) where
+  not_a_field' := by
+    simp only [ne_eq, Ideal.ext_iff, Valuation.mem_maximalIdeal_iff, Ideal.mem_bot, Subtype.ext_iff,
+      ZeroMemClass.coe_zero, Subtype.forall, Valuation.mem_valuationSubring_iff, not_forall,
+      exists_prop]
+    -- Use 1/X as uniformizer: it's in the integers (v(1/X) = exp(-1) ≤ 1) and has v < 1
+    use inftyRingHom Fq (1 / RatFunc.X)
+    constructor
+    · -- 1/X is in the integers: v(1/X) ≤ 1
+      rw [valued_FqtInfty_eq_inftyValuationDef, ← FunctionField.inftyValuation_apply,
+          FunctionField.inftyValuation.X_inv]
+      rw [← WithZero.exp_zero]
+      exact (WithZero.exp_le_exp.mpr (by norm_num : (-1 : ℤ) ≤ 0))
+    constructor
+    · -- v(1/X) < 1
+      rw [valued_FqtInfty_eq_inftyValuationDef, ← FunctionField.inftyValuation_apply,
+          FunctionField.inftyValuation.X_inv, ← WithZero.exp_zero]
+      exact WithZero.exp_lt_exp.mpr (by norm_num : (-1 : ℤ) < 0)
+    · -- 1/X ≠ 0 in FqtInfty
+      intro h0
+      have : (inftyRingHom Fq (1 / RatFunc.X) : FqtInfty Fq) ≠ 0 := by
+        rw [map_ne_zero]
+        exact one_div_ne_zero RatFunc.X_ne_zero
+      exact this h0
 
 /-- Compactness of integral full adeles.
 
@@ -723,8 +811,13 @@ The integral full adeles form a compact set because:
 1. ∏_v O_v is compact (AllIntegersCompact for finite adeles)
 2. {x ∈ FqtInfty | |x|_∞ ≤ 1} is compact (integer ring of local field)
 3. Product of compact sets is compact
+
+**Axioms used**:
+- `AllIntegersCompact Fq[X] (RatFunc Fq)` for finite adeles compactness
+- `Finite (Valued.ResidueField (FqtInfty Fq))` for infinity compactness
 -/
-theorem isCompact_integralFullAdeles [AllIntegersCompact Fq[X] (RatFunc Fq)] :
+theorem isCompact_integralFullAdeles [AllIntegersCompact Fq[X] (RatFunc Fq)]
+    [Finite (Valued.ResidueField (FqtInfty Fq))] :
     IsCompact (integralFullAdeles Fq) := by
   -- Step 1: Show integralFullAdeles = (integral finite adeles) ×ˢ (integers at ∞)
   -- Step 2: Show each factor is compact
@@ -766,13 +859,23 @@ theorem isCompact_integralFullAdeles [AllIntegersCompact Fq[X] (RatFunc Fq)] :
 
   -- Prove compactness of the infinity factor
   have hCompactInfty : IsCompact integralInfty := by
-    -- **Cycle 133 Progress**: Structure established, needs 3 conditions for FqtInfty:
-    -- 1. CompleteSpace (Valued.integer (FqtInfty Fq)) - closed subset of complete
-    -- 2. IsDiscreteValuationRing - value group is ℤ
-    -- 3. Finite (Valued.ResidueField) - residue field is Fq
-    -- Then use compactSpace_iff + continuous_subtype_val conversion
-    -- Same pattern as AllIntegersCompactProof.compactSpace_adicCompletionIntegers
-    sorry
+    -- Use the compactSpace_iff characterization:
+    -- CompactSpace 𝒪[K] ↔ CompleteSpace 𝒪[K] ∧ IsDiscreteValuationRing 𝒪[K] ∧ Finite 𝓀[K]
+    -- All three conditions are now available as instances!
+    letI hrank := rankOne_FqtInfty Fq
+    haveI hcompact : CompactSpace (Valued.integer (FqtInfty Fq)) :=
+      Valued.integer.compactSpace_iff_completeSpace_and_isDiscreteValuationRing_and_finite_residueField.mpr
+        ⟨completeSpace_integer_FqtInfty Fq,
+         isDiscreteValuationRing_integer_FqtInfty Fq,
+         inferInstance⟩
+    -- Convert CompactSpace to IsCompact via isCompact_univ and subtype embedding
+    -- integralInfty = Valued.integer as a set
+    have heq : integralInfty = (Valued.integer (FqtInfty Fq) : Set (FqtInfty Fq)) := by
+      ext x
+      simp only [Valuation.mem_valuationSubring_iff]
+      rfl
+    rw [heq]
+    exact isCompact_of_compactSpace_subtype
 
   -- Combine using IsCompact.prod
   rw [hprod]
@@ -785,8 +888,7 @@ For Fq[X] (a PID), this is straightforward:
 - Find a polynomial that "clears denominators" at all these places
 - The result lands in the integral adeles
 -/
-theorem exists_translate_in_integralFullAdeles [AllIntegersCompact Fq[X] (RatFunc Fq)]
-    (a : FqFullAdeleRing Fq) :
+theorem exists_translate_in_integralFullAdeles (a : FqFullAdeleRing Fq) :
     ∃ x : RatFunc Fq, a - fqFullDiagonalEmbedding Fq x ∈ integralFullAdeles Fq := by
   sorry
 
@@ -797,8 +899,13 @@ theorem exists_translate_in_integralFullAdeles [AllIntegersCompact Fq[X] (RatFun
 This is the CORRECT axiom class for function fields over finite fields.
 Unlike `DiscreteCocompactEmbedding` for finite adeles (which is FALSE),
 this instance is TRUE because the infinite place is included.
+
+**Axioms used**:
+- `AllIntegersCompact Fq[X] (RatFunc Fq)` for finite adeles compactness
+- `Finite (Valued.ResidueField (FqtInfty Fq))` for infinity compactness
 -/
-instance instFullDiscreteCocompactEmbedding [AllIntegersCompact Fq[X] (RatFunc Fq)] :
+instance instFullDiscreteCocompactEmbedding [AllIntegersCompact Fq[X] (RatFunc Fq)]
+    [Finite (Valued.ResidueField (FqtInfty Fq))] :
     FullDiscreteCocompactEmbedding Fq[X] (RatFunc Fq) (FqtInfty Fq) where
   discrete := fq_discrete_in_fullAdeles Fq
   closed := fq_closed_in_fullAdeles Fq

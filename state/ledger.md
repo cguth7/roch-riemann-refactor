@@ -10,34 +10,58 @@
 
 ---
 
-## 🎯 NEXT CLAUDE: Start Here (Cycle 136)
+## 🎯 NEXT CLAUDE: Start Here (Cycle 137)
 
 ### Current State
-**REVERTED TO CYCLE 133** - Cycle 134 introduced broken code (see postmortem below).
-
-Build: ✅ Compiles with 2 sorries in FullAdeles.lean
+Build: ✅ Compiles with 1 sorry in FullAdeles.lean
 
 ### What's Done
 - ✅ `fq_discrete_in_fullAdeles` - K is discrete in full adeles
 - ✅ `fq_closed_in_fullAdeles` - K is closed in full adeles
+- ✅ `isCompact_integralFullAdeles` - Integral adeles are compact (Cycle 136!)
 
-### What's Needed (2 sorries remain)
+### What's Needed (1 sorry remains)
 
-**1. `isCompact_integralFullAdeles` - Infinity compactness (line ~727)**
-- Need: RankOne instance for FqtInfty valuation
-- Need: DVR instance for integer ring
-- Need: Finite residue field
-- Pattern: Use `compactSpace_iff_completeSpace_and_isDiscreteValuationRing_and_finite_residueField`
-
-**2. `exists_translate_in_integralFullAdeles` - Weak approximation (line ~788)**
+**`exists_translate_in_integralFullAdeles` - Weak approximation (line ~891)**
 - For any adele a, find x ∈ K such that a - diag(x) is integral
-- Uses: Density of K in completions + CRT for PIDs
+- Approach: Use finite adele structure + CRT for PIDs
+- At finite places: Only finitely many are non-integral, use CRT to clear denominators
+- At infinity: Find polynomial adjustment to ensure |a_∞ - x|_∞ ≤ 1
 
 ### Axioms Used
 | Axiom | Purpose |
 |-------|---------|
 | `[AllIntegersCompact Fq[X] (RatFunc Fq)]` | Finite adeles compactness |
 | `[Finite (Valued.ResidueField (FqtInfty Fq))]` | Infinity compactness |
+
+---
+
+## Cycle 136 Summary
+
+**Goal**: Prove infinity compactness (`isCompact_integralFullAdeles`)
+
+**Status**: ✅ COMPLETE
+
+**Key accomplishments**:
+1. Proved `valued_FqtInfty_eq_inftyValuationDef` - connects Valued.v to inftyValuationDef
+2. Proved `isNontrivial_FqtInfty` - 1/X has valuation exp(-1) < 1
+3. Defined `rankOne_FqtInfty` - from MulArchimedean via `nonempty_rankOne_iff_mulArchimedean`
+4. Proved `range_nontrivial_FqtInfty` - valuation range is nontrivial
+5. Proved `isPrincipalIdealRing_integer_FqtInfty` - PID from non-dense ordering
+6. Proved `isDiscreteValuationRing_integer_FqtInfty` - DVR with 1/X as uniformizer
+7. Proved `completeSpace_integer_FqtInfty` - closed subset of complete space
+8. Proved `isCompact_integralFullAdeles` - using compactSpace_iff theorem
+
+**Pattern used** (same as AllIntegersCompactProof.lean):
+```
+CompactSpace 𝒪[K] ↔ CompleteSpace 𝒪[K] ∧ DVR 𝒪[K] ∧ Finite 𝓀[K]
+```
+
+**Key mathlib APIs**:
+- `Valued.extension_extends` - connects valuation on completion to original
+- `FunctionField.inftyValuation.X_inv` - v(1/X) = exp(-1)
+- `Valuation.nonempty_rankOne_iff_mulArchimedean` - RankOne without ℝ≥0 literals
+- `WithZero.exp_lt_exp` - ordering on exp values
 
 ---
 
@@ -103,7 +127,7 @@ K = RatFunc Fq embeds diagonally:
 Key theorems (in FullAdeles.lean):
   ✅ fq_discrete_in_fullAdeles  -- K is discrete
   ✅ fq_closed_in_fullAdeles    -- K is closed
-  ⚪ isCompact_integralFullAdeles  -- integral adeles compact (sorry)
+  ✅ isCompact_integralFullAdeles  -- integral adeles compact
   ⚪ exists_translate_in_integralFullAdeles  -- weak approximation (sorry)
 ```
 
