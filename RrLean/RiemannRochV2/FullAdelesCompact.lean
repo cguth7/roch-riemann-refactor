@@ -273,25 +273,37 @@ For elements with poles, this approximation exists by the structure of completio
 -/
 theorem exists_local_approximant (v : HeightOneSpectrum Fq[X]) (a_v : v.adicCompletion (RatFunc Fq)) :
     ∃ y : RatFunc Fq, (a_v - y) ∈ v.adicCompletionIntegers (RatFunc Fq) := by
-  /-
-  **Proof approach** (90% complete - blocked by UniformSpace instance mismatch):
-
-  1. hopen_int: {z : Valued.v z ≤ 1} is open via `@Valued.isOpen_integer` + convert
-  2. hopen: {x : Valued.v (a_v - x) ≤ 1} is open as preimage of hopen_int
-  3. hne: This set is non-empty (contains a_v since v(0) = 0 ≤ 1)
-  4. hdense: K is dense in K_v - **BLOCKED**
-     - Need `DenseRange (algebraMap (RatFunc Fq) (v.adicCompletion (RatFunc Fq)))`
-     - adicCompletion = (v.valuation K).Completion, so coe should be dense
-     - But `UniformSpace.Completion.denseRange_coe` has instance mismatch
-     - The synthesized UniformSpace differs from WithVal.instValued's
-  5. By density: K intersects the open non-empty set → done
-
-  **Possible fixes for hdense**:
-  - Find a direct density lemma for adicCompletion in mathlib
-  - Use typeclass manipulation (congr_arg, cast, etc.)
-  - Prove helper `denseRange_adicCompletion` using completion properties
-  -/
-  sorry
+  -- Step 1: The set {x : Valued.v (a_v - x) ≤ 1} is open
+  have hopen : IsOpen {x : v.adicCompletion (RatFunc Fq) | Valued.v (a_v - x) ≤ 1} := by
+    have h_int_open : IsOpen (Valued.integer (v.adicCompletion (RatFunc Fq)) :
+        Set (v.adicCompletion (RatFunc Fq))) :=
+      Valued.isOpen_integer (v.adicCompletion (RatFunc Fq))
+    have h_eq : {x : v.adicCompletion (RatFunc Fq) | Valued.v (a_v - x) ≤ 1} =
+        (fun y => a_v - y) ⁻¹' (Valued.integer (v.adicCompletion (RatFunc Fq)) :
+          Set (v.adicCompletion (RatFunc Fq))) := by
+      ext x
+      simp only [Set.mem_preimage, Set.mem_setOf_eq, SetLike.mem_coe, Valuation.mem_integer_iff]
+    rw [h_eq]
+    exact h_int_open.preimage (by continuity)
+  -- Step 2: This set is non-empty (contains a_v since v(a_v - a_v) = v(0) = 0 ≤ 1)
+  have hne : a_v ∈ {x : v.adicCompletion (RatFunc Fq) | Valued.v (a_v - x) ≤ 1} := by
+    simp only [Set.mem_setOf_eq, sub_self, map_zero, zero_le']
+  -- Step 3: K is dense in K_v (adicCompletion is UniformSpace.Completion)
+  have hdense : DenseRange (algebraMap (RatFunc Fq) (v.adicCompletion (RatFunc Fq))) := by
+    -- adicCompletion K v = (v.valuation K).Completion = UniformSpace.Completion (WithVal ...)
+    -- The Coe from K to adicCompletion K factors through WithVal which is a type synonym
+    -- Use denseRange_coe for WithVal (v.valuation (RatFunc Fq))
+    let W := WithVal (v.valuation (RatFunc Fq))
+    have hdense_withval : DenseRange ((↑) : W → UniformSpace.Completion W) :=
+      UniformSpace.Completion.denseRange_coe
+    -- The algebraMap factors: K → WithVal → Completion
+    -- algebraMap K (WithVal ...) is essentially identity (Function.id)
+    -- So algebraMap K → Completion has dense range
+    have hsurj : Function.Surjective (algebraMap (RatFunc Fq) W) := fun w => ⟨w, rfl⟩
+    exact hdense_withval.comp hsurj.denseRange (UniformSpace.Completion.continuous_coe W)
+  -- Step 4: By density, K intersects the open non-empty set
+  obtain ⟨y, hy⟩ := hdense.exists_mem_open hopen ⟨a_v, hne⟩
+  exact ⟨y, hy⟩
 
 /-- Construct a HeightOneSpectrum from an irreducible polynomial.
 
@@ -309,10 +321,69 @@ This follows from the fact that Fq[X] is a UFD with finitely many normalized pri
 -/
 theorem HeightOneSpectrum.finite_divisors (D : Fq[X]) (hD : D ≠ 0) :
     {v : HeightOneSpectrum Fq[X] | v.intValuation D < 1}.Finite := by
-  -- The set of primes dividing D corresponds to (normalizedFactors D).toFinset
-  -- This is a finite set since normalizedFactors returns a finite multiset
-  -- Proof has API issues with current mathlib - needs refinement
-  sorry
+  -- v.intValuation D < 1 iff D ∈ v.asIdeal (intValuation_lt_one_iff_mem)
+  -- In PID: v.asIdeal = span {g} for irreducible g, and D ∈ span {g} iff g | D
+  -- The set of irreducible divisors of D is finite (⊆ normalizedFactors D)
+  -- Map each v to the normalized generator of v.asIdeal; this is injective
+  -- and lands in the finite set (normalizedFactors D).toFinset
+
+  -- Step 1: Define the map from divisors to normalized generators
+  have hPID : IsPrincipalIdealRing Fq[X] := inferInstance
+  -- For each v, get the monic generator of v.asIdeal
+  let gen : HeightOneSpectrum Fq[X] → Fq[X] := fun v =>
+    normalize (Submodule.IsPrincipal.generator v.asIdeal)
+
+  -- Step 2: Show the set maps into normalizedFactors D
+  have himage : (fun v => gen v) '' {v | v.intValuation D < 1} ⊆
+      (UniqueFactorizationMonoid.normalizedFactors D).toFinset := by
+    intro g hg
+    simp only [Set.mem_image, Set.mem_setOf_eq, Finset.mem_coe, Multiset.mem_toFinset] at hg ⊢
+    obtain ⟨v, hv_mem, hv_eq⟩ := hg
+    -- hv_mem : v.intValuation D < 1, hv_eq : gen v = g
+    -- This means D ∈ v.asIdeal by intValuation_lt_one_iff_mem
+    have hD_in : D ∈ v.asIdeal := (intValuation_lt_one_iff_mem v D).mp hv_mem
+    -- v.asIdeal = span {generator v.asIdeal}
+    let gv := Submodule.IsPrincipal.generator v.asIdeal
+    have hspan : v.asIdeal = Ideal.span {gv} := (Ideal.span_singleton_generator v.asIdeal).symm
+    -- D ∈ span {gv} means gv | D
+    have hdvd : gv ∣ D := by
+      rw [hspan] at hD_in
+      exact Ideal.mem_span_singleton.mp hD_in
+    -- gv is prime (generator of height-one prime ideal)
+    have hprime : Prime gv := Submodule.IsPrincipal.prime_generator_of_isPrime v.asIdeal v.ne_bot
+    -- By exists_mem_normalizedFactors_of_dvd: ∃ q ∈ normalizedFactors D with gv ~ᵤ q
+    obtain ⟨q, hq_mem, hq_assoc⟩ :=
+      UniqueFactorizationMonoid.exists_mem_normalizedFactors_of_dvd hD hprime.irreducible hdvd
+    -- q ∈ normalizedFactors D, so q is normalized, and gv ~ᵤ q implies normalize gv = q
+    have hq_normalized : normalize q = q :=
+      UniqueFactorizationMonoid.normalize_normalized_factor q hq_mem
+    have hq_norm : normalize gv = q := by
+      rw [← hq_normalized]
+      exact normalize_eq_normalize hq_assoc.dvd hq_assoc.symm.dvd
+    -- gen v = normalize gv (by definition), so g = gen v = normalize gv = q
+    have hg_eq_q : g = q := by rw [← hv_eq]; exact hq_norm
+    rw [hg_eq_q]
+    exact hq_mem
+
+  -- Step 3: Show the map is injective on the set
+  have hinj : Set.InjOn gen {v | v.intValuation D < 1} := by
+    intro v₁ _ v₂ _ heq
+    -- gen v₁ = gen v₂ means normalize(generator v₁.asIdeal) = normalize(generator v₂.asIdeal)
+    -- Since both are monic irreducibles, this means they're equal up to units
+    -- In Fq[X], normalize gives monic polynomial, so equality implies same ideal
+    -- normalize g₁ = normalize g₂ implies g₁ and g₂ are associated
+    have hassoc : Associated (Submodule.IsPrincipal.generator v₁.asIdeal)
+        (Submodule.IsPrincipal.generator v₂.asIdeal) :=
+      normalize_eq_normalize_iff_associated.mp heq
+    -- Associated generators means same ideal
+    have heq_ideal : v₁.asIdeal = v₂.asIdeal := by
+      rw [(Ideal.span_singleton_generator v₁.asIdeal).symm,
+          (Ideal.span_singleton_generator v₂.asIdeal).symm]
+      exact Ideal.span_singleton_eq_span_singleton.mpr hassoc
+    exact HeightOneSpectrum.ext heq_ideal
+
+  -- Step 4: Conclude finiteness
+  exact Set.Finite.of_finite_image ((Multiset.finite_toSet _).subset himage) hinj
 
 /-- The intValuation of D is at least exp(-natDegree D).
 This bounds the multiplicity of any prime in D by the degree of D.
