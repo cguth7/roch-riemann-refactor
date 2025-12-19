@@ -10,25 +10,54 @@
 
 ---
 
-## 🎯 NEXT CLAUDE: Start Here (Cycle 153)
+## 🎯 NEXT CLAUDE: Start Here (Cycle 154)
 
 ### Current State
-Build: ✅ **COMPILES** with **4 sorries** in FullAdelesCompact.lean
+Build: ✅ **COMPILES** with **1 sorry** in FullAdelesCompact.lean (line ~868)
 
-### What Cycle 152 Did
-- ✅ **Built correct proof structure** for `exists_finite_integral_translate`
-  - CRT application works: `IsDedekindDomain.exists_forall_sub_mem_ideal`
-  - All 3 cases structured: v ∈ S, v ∈ T\S, v ∉ T
-- ⚠️ **Hit "coercion hell"** - type mismatches between Fq[X], RatFunc Fq, completions
-- 📝 **Documented all sorries** with clear proof strategies
+### What Cycle 153 Did - MAJOR PROGRESS (4→1 sorries!)
+- ✅ **FILLED sorry #1**: `hDy_in_R` - D * y_v is polynomial
+  - Key APIs: `RatFunc.num_div_denom`, `RatFunc.algebraMap_ne_zero`, `mul_div_cancel₀`
+  - Pattern: D = q * denom, so D * y = q * num
+- ✅ **FILLED sorry #2**: `hky_int` - v ∈ S case valuation bound
+  - Key APIs: `div_le_iff₀`, `intValuation_le_pow_iff_mem`, `intValuation_ge_exp_neg_natDegree`
+  - Coercion: `(algebraMap K Completion).map_sub` for subtraction preservation
+- ✅ **FILLED sorry #3**: `hk_int` - v ∈ T\S case valuation bound
+  - Same pattern as #2 (simpler, no y subtraction)
+- 🔄 **Sorry #4 strategy documented**: `exists_finite_integral_translate_with_infty_bound`
+  - Proof ~90% complete for bound ≥ 1 case (see code comments at line ~840)
+  - Uses Euclidean division to extract fractional part with |·|_∞ < 1
 
-### Remaining Sorries (4 total, all in `exists_finite_integral_translate`)
-1. **Line ~547**: `hDy_in_R` - D * y_v is a polynomial
-2. **Line ~612**: `hky_int` for v ∈ S case - valuation bound
-3. **Line ~643**: `hk_int` for v ∈ T\S case - valuation bound
-4. **Line ~754**: `exists_finite_integral_translate_with_infty_bound` - depends on #1-3
+### Remaining Sorry (1 total)
+**Line ~868**: `exists_finite_integral_translate_with_infty_bound`
 
-### 🔑 KEY INSIGHT: Extract Helper Lemmas First!
+**Strategy (documented in code)**:
+```lean
+-- For bound ≥ 1 (only case needed for main theorem):
+let num := k₀.num, denom := k₀.denom
+let q := num / denom  -- EuclideanDomain quotient
+let r := num % denom  -- remainder, deg(r) < deg(denom)
+let k := r / denom    -- fractional part, |k|_∞ < 1
+-- Finite integrality: a - k = (a - k₀) + q, q is polynomial → integral
+-- Infinity: |r/denom|_∞ = exp(deg(r) - deg(denom)) < 1 ≤ bound
+```
+
+### API Issues for Next Claude
+1. **WithZero.exp comparison**: Need `exp(n) < 1` when `n < 0`
+   - Try `WithZero.exp_lt_exp.mpr` or construct via `exp(neg) < exp(0) = 1`
+2. **ValuationSubring.add_mem**: Syntax is `add_mem _ _ h1 h2`
+3. **Ring tactic with coercions**: Use `calc` or explicit `show` for type unification
+
+### Key APIs Discovered in Cycle 153
+- `RatFunc.num_div_denom k₀`: k₀ = num/denom in RatFunc
+- `RatFunc.monic_denom`, `RatFunc.denom_ne_zero`: denominator properties
+- `EuclideanDomain.div_add_mod`: denom * q + r = num
+- `Polynomial.degree_mod_lt`: deg(remainder) < deg(divisor)
+- `Polynomial.natDegree_lt_natDegree`: convert degree to natDegree
+- `FunctionField.inftyValuation.polynomial`: |p|_∞ = exp(natDegree p)
+- `(algebraMap K Completion).map_sub k (y v)` for subtraction coercion
+
+### 🔑 KEY INSIGHT (from previous cycles)
 
 **The mathematical strategy is 100% correct.** We're stuck in "implementation friction."
 The fix is **lemma extraction** - prove these standalone facts FIRST:

@@ -543,8 +543,27 @@ theorem exists_finite_integral_translate (a : FiniteAdeleRing Fq[X] (RatFunc Fq)
     obtain ⟨q, hq⟩ := hdenom_dvd
     use q * (y v).num
     -- Proof: D * y = q * denom * (num/denom) = q * num
-    -- Need: algebraMap (denom) ≠ 0 for the division cancellation
-    sorry
+    -- Key: y v = num / denom by num_div_denom
+    have hy_eq := RatFunc.num_div_denom (y v)
+    have hdenom_ne : (y v).denom ≠ 0 := RatFunc.denom_ne_zero (y v)
+    have hmap_denom_ne : algebraMap Fq[X] (RatFunc Fq) (y v).denom ≠ 0 :=
+      RatFunc.algebraMap_ne_zero hdenom_ne
+    -- D * y = (q * denom) * (num / denom) = q * (denom * num / denom) = q * num
+    calc algebraMap Fq[X] (RatFunc Fq) (q * (y v).num)
+        = algebraMap Fq[X] (RatFunc Fq) q * algebraMap Fq[X] (RatFunc Fq) (y v).num := by
+            rw [map_mul]
+      _ = algebraMap Fq[X] (RatFunc Fq) q *
+          (algebraMap Fq[X] (RatFunc Fq) (y v).denom *
+           (algebraMap Fq[X] (RatFunc Fq) (y v).num / algebraMap Fq[X] (RatFunc Fq) (y v).denom)) := by
+            rw [mul_div_cancel₀ _ hmap_denom_ne]
+      _ = algebraMap Fq[X] (RatFunc Fq) q * algebraMap Fq[X] (RatFunc Fq) (y v).denom *
+          (algebraMap Fq[X] (RatFunc Fq) (y v).num / algebraMap Fq[X] (RatFunc Fq) (y v).denom) := by
+            ring
+      _ = algebraMap Fq[X] (RatFunc Fq) (q * (y v).denom) *
+          (algebraMap Fq[X] (RatFunc Fq) (y v).num / algebraMap Fq[X] (RatFunc Fq) (y v).denom) := by
+            rw [map_mul]
+      _ = algebraMap Fq[X] (RatFunc Fq) D * (y v) := by
+            rw [mul_comm q, hq, hy_eq]
 
   -- Choose Py for each v ∈ S
   choose Py hPy using hDy_in_R
@@ -609,7 +628,60 @@ theorem exists_finite_integral_translate (a : FiniteAdeleRing Fq[X] (RatFunc Fq)
     -/
     have hky_int : ((k : v.adicCompletion (RatFunc Fq)) - y v) ∈
         v.adicCompletionIntegers (RatFunc Fq) := by
-      sorry -- See documentation above for proof strategy
+      -- Step 1: Show k - y v = (P - Py v hvS) / D in K
+      have hky_eq : (k : RatFunc Fq) - y v =
+          algebraMap Fq[X] (RatFunc Fq) (P - Py v hvS) / algebraMap Fq[X] (RatFunc Fq) D := by
+        simp only [k]
+        have hD_ne' : algebraMap Fq[X] (RatFunc Fq) D ≠ 0 := RatFunc.algebraMap_ne_zero hD_ne
+        -- k = P/D, y = Py/D (from hPy_eq: Py = D * y, so y = Py/D)
+        -- So k - y = P/D - Py/D = (P - Py)/D
+        -- First, express y as Py/D
+        have hy_eq : y v = algebraMap Fq[X] (RatFunc Fq) (Py v hvS) / algebraMap Fq[X] (RatFunc Fq) D := by
+          field_simp [hD_ne']
+          rw [mul_comm]
+          exact hPy_eq.symm
+        rw [hy_eq]
+        -- Now both P/D and Py/D have same denominator
+        rw [← sub_div, map_sub]
+      -- Step 2: Compute valuations
+      -- val(P - Py) ≤ exp(-(D.natDegree + 1)) from hP_cong
+      have hPPy_val : v.intValuation (P - Py v hvS) ≤ WithZero.exp (-(↑(D.natDegree + 1) : ℤ)) := by
+        rw [v.intValuation_le_pow_iff_mem]
+        exact hP_cong
+      -- val(D) ≥ exp(-D.natDegree) from intValuation_ge_exp_neg_natDegree
+      have hD_val : v.intValuation D ≥ WithZero.exp (-(D.natDegree : ℤ)) :=
+        intValuation_ge_exp_neg_natDegree Fq v D hD_ne
+      -- val(D) ≠ 0 since D ≠ 0
+      have hD_val_ne : v.intValuation D ≠ 0 := intValuation_ne_zero v D hD_ne
+      -- val(D) > 0
+      have hD_val_pos : 0 < v.intValuation D := zero_lt_iff.mpr hD_val_ne
+      -- Step 3: Compute val((P - Py)/D) ≤ 1
+      have hquot_val : v.valuation (RatFunc Fq)
+          (algebraMap Fq[X] (RatFunc Fq) (P - Py v hvS) / algebraMap Fq[X] (RatFunc Fq) D) ≤ 1 := by
+        rw [map_div₀, v.valuation_of_algebraMap, v.valuation_of_algebraMap]
+        -- Need: val(P-Py) / val(D) ≤ 1, i.e., val(P-Py) ≤ val(D)
+        rw [div_le_iff₀ hD_val_pos]
+        simp only [one_mul]
+        -- val(P-Py) ≤ exp(-(deg+1)) < exp(-deg) ≤ val(D)
+        calc v.intValuation (P - Py v hvS)
+            ≤ WithZero.exp (-(↑(D.natDegree + 1) : ℤ)) := hPPy_val
+          _ ≤ WithZero.exp (-(↑D.natDegree : ℤ)) := by
+              apply WithZero.exp_le_exp.mpr
+              simp only [Nat.cast_add, Nat.cast_one, neg_le_neg_iff, le_add_iff_nonneg_right]
+              norm_num
+          _ ≤ v.intValuation D := hD_val
+      -- Step 4: Transfer to completion
+      rw [mem_adicCompletionIntegers]
+      -- Need to show Valued.v (k - y v : completion) ≤ 1
+      -- The coercion from K to completion preserves valuation
+      have hval_coe : Valued.v ((k - y v : RatFunc Fq) : v.adicCompletion (RatFunc Fq)) =
+          v.valuation (RatFunc Fq) (k - y v) := valuedAdicCompletion_eq_valuation' v (k - y v)
+      -- Subtraction in completion is the coercion of subtraction in K
+      have hsub_coe : (k : v.adicCompletion (RatFunc Fq)) - (y v : v.adicCompletion (RatFunc Fq)) =
+          ((k - y v : RatFunc Fq) : v.adicCompletion (RatFunc Fq)) :=
+        ((algebraMap (RatFunc Fq) (v.adicCompletion (RatFunc Fq))).map_sub k (y v)).symm
+      rw [hsub_coe, hval_coe, hky_eq]
+      exact hquot_val
     -- a_v - k = (a_v - y_v) - (k - y_v), use ultrametric
     have heq : (a.val v - k) = (a.val v - y v) - ((k : v.adicCompletion (RatFunc Fq)) - y v) := by
       ring
@@ -640,7 +712,36 @@ theorem exists_finite_integral_translate (a : FiniteAdeleRing Fq[X] (RatFunc Fq)
       Same API pattern as case v ∈ S.
       -/
       have hk_int : (k : v.adicCompletion (RatFunc Fq)) ∈ v.adicCompletionIntegers (RatFunc Fq) := by
-        sorry -- See documentation above for proof strategy
+        -- Step 1: Compute valuations
+        -- val(P) ≤ exp(-(D.natDegree + 1)) from hP_cong (with target = 0)
+        have hP_val : v.intValuation P ≤ WithZero.exp (-(↑(D.natDegree + 1) : ℤ)) := by
+          rw [v.intValuation_le_pow_iff_mem]
+          exact hP_cong
+        -- val(D) ≥ exp(-D.natDegree) from intValuation_ge_exp_neg_natDegree
+        have hD_val : v.intValuation D ≥ WithZero.exp (-(↑D.natDegree : ℤ)) :=
+          intValuation_ge_exp_neg_natDegree Fq v D hD_ne
+        -- val(D) ≠ 0 since D ≠ 0
+        have hD_val_ne : v.intValuation D ≠ 0 := intValuation_ne_zero v D hD_ne
+        -- val(D) > 0
+        have hD_val_pos : 0 < v.intValuation D := zero_lt_iff.mpr hD_val_ne
+        -- Step 2: Compute val(k) = val(P/D) ≤ 1
+        have hk_val : v.valuation (RatFunc Fq) k ≤ 1 := by
+          simp only [k]
+          rw [map_div₀, v.valuation_of_algebraMap, v.valuation_of_algebraMap]
+          -- Need: val(P) / val(D) ≤ 1, i.e., val(P) ≤ val(D)
+          rw [div_le_iff₀ hD_val_pos]
+          simp only [one_mul]
+          -- val(P) ≤ exp(-(deg+1)) < exp(-deg) ≤ val(D)
+          calc v.intValuation P
+              ≤ WithZero.exp (-(↑(D.natDegree + 1) : ℤ)) := hP_val
+            _ ≤ WithZero.exp (-(↑D.natDegree : ℤ)) := by
+                apply WithZero.exp_le_exp.mpr
+                simp only [Nat.cast_add, Nat.cast_one, neg_le_neg_iff, le_add_iff_nonneg_right]
+                norm_num
+            _ ≤ v.intValuation D := hD_val
+        -- Step 3: Transfer to completion
+        rw [mem_adicCompletionIntegers, valuedAdicCompletion_eq_valuation']
+        exact hk_val
       exact (v.adicCompletionIntegers (RatFunc Fq)).sub_mem ha_int hk_int
 
     · -- Subcase: v ∉ T
@@ -736,21 +837,34 @@ theorem exists_finite_integral_translate_with_infty_bound
   -- Then num = denom * q + r, so k₀ = q + r/denom
   -- deg(r) < deg(denom), so |r/denom|_∞ = exp(deg r - deg denom) < 1
 
-  -- For general bound: we use density to find approximation
-  -- Use exists_approx_in_ball_infty pattern but for arbitrary bound
+  /-
+  **Cycle 153 Progress - Proof Strategy for bound ≥ 1 case (nearly complete)**:
 
-  -- For bound ≥ 1: subtract polynomial part of k₀ to reduce infinity valuation
-  -- k₀ = q + r where q is polynomial quotient, r = remainder/denom has |r|_∞ < 1
-  -- Then k = k₀ - q satisfies finite integrality (q is polynomial) and |k|_∞ < 1 ≤ bound
+  1. Get k₀ from exists_finite_integral_translate (already done above)
+  2. If |k₀|_∞ ≤ bound, done! (already handled above)
+  3. For bound ≥ 1: use polynomial division to extract fractional part
 
-  -- For bound < 1: need more refined polynomial division argument
+  Key steps for bound ≥ 1:
+  - let num := k₀.num, denom := k₀.denom
+  - let q := num / denom (EuclideanDomain quotient)
+  - let r := num % denom (remainder)
+  - EuclideanDomain.div_add_mod: denom * q + r = num
+  - So k₀ = num/denom = q + r/denom (use RatFunc.num_div_denom)
+  - Set k = r/denom = k₀ - q
+  - Finite integrality: (a.val v - k) = (a.val v - k₀) + q
+    * q is polynomial → integral at finite places (polynomial_integral_at_finite_places)
+    * Use ValuationSubring.add_mem with correct argument order: add_mem _ _ h1 h2
+  - Infinity bound: |k|_∞ = |r/denom|_∞ = exp(deg(r) - deg(denom)) < 1 ≤ bound
+    * Polynomial.degree_mod_lt gives deg(r) < deg(denom) when r ≠ 0
+    * Polynomial.natDegree_lt_natDegree converts to natDegree
+    * FunctionField.inftyValuation.polynomial gives valuation = exp(natDegree)
+    * Need: find correct API for WithZero.exp comparison (exp_lt_one or similar)
 
-  -- The full proof requires:
-  -- 1. RatFunc num/denom API
-  -- 2. Euclidean division in Fq[X]
-  -- 3. inftyValuation degree computation
-  -- 4. Type coercion handling between RatFunc, Fq[X], and completions
-
+  API issues remaining:
+  - ValuationSubring.add_mem takes (A : ValuationSubring K) (x y : K) (hx hy : ...)
+  - WithZero.exp_lt_one_iff may not exist - try WithZero.exp_lt_exp.mpr or direct
+  - The hk₀_eq proof may need explicit coercion handling for ring tactic
+  -/
   sorry
 
 /-- Weak approximation: every element can be shifted into integral adeles.
