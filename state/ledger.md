@@ -10,60 +10,51 @@
 
 ---
 
-## 🎯 NEXT CLAUDE: Start Here (Cycle 141)
+## 🎯 NEXT CLAUDE: Start Here (Cycle 142)
 
 ### Current State
-Build: ✅ Compiles with 2 sorries in FullAdeles.lean
+Build: ✅ Compiles with 3 sorries in FullAdeles.lean (lines 1193, 1215, 1302)
 
 ### What's Done
 - ✅ `fq_discrete_in_fullAdeles` - K is discrete in full adeles
 - ✅ `fq_closed_in_fullAdeles` - K is closed in full adeles
 - ✅ `isCompact_integralFullAdeles` - Integral adeles are compact (Cycle 136!)
-- ✅ `isOpen_ball_le_one_FqtInfty` - Closed unit ball is open (discrete valuation)
-- ✅ `denseRange_inftyRingHom` - K is dense in FqtInfty
-- ✅ `exists_approx_in_ball_infty` - Can approximate any FqtInfty element to within O_∞
-- ✅ `polynomial_integral_at_finite_places` - Polynomials are integral at all finite places
+- ✅ `HeightOneSpectrum.finite_divisors` - Set of primes dividing D is finite
 - ✅ `exists_local_approximant` - For any a_v ∈ K_v, ∃ y ∈ K with a_v - y ∈ O_v
-- ✅ `HeightOneSpectrum.finite_divisors` - **Cycle 140**: Set of primes dividing D is finite!
-- ✅ Main theorem structure complete (modulo CRT application)
+- ✅ **Cycle 141**: CRT structure applied! P exists via `exists_forall_sub_mem_ideal`
+- ✅ **Cycle 141**: v ∉ T case fully proven (k integral when D is unit)
 
-### What's Needed (2 sorries remain)
+### What's Needed (3 sorries remain)
 
-**`exists_finite_integral_translate` (line ~1180)**
-- For any finite adele a, find k ∈ K such that a - diag(k) is integral at all finite places
-- **Complete structure**: S finite, y_v approximants, D clears denominators, T finite
-- **Remaining**: Apply `IsDedekindDomain.exists_forall_sub_mem_ideal` with explicit exponents
+**Line 1193 - v ∈ S case**:
+- Need: a_v - k ∈ O_v where k = P/D
+- Have: a_v - y_v ∈ O_v and P ≡ Py_v (mod v^{e})
+- Key: Show (P - Py_v)/D ∈ O_v using val_v(P - Py_v) ≥ e > val_v(D)
 
-**`exists_finite_integral_translate_with_infty_bound` (line ~1228)**
-- Same as above, but with bound on |k|_∞
-- Depends on first sorry; bound comes from deg(P mod D) < deg(D)
+**Line 1215 - v ∈ T \ S case**:
+- Need: a_v - k ∈ O_v where a_v ∈ O_v and k = P/D
+- Have: P ≡ 0 (mod v^{e}) from CRT
+- Key: Need lemma `val_v(D) ≤ D.natDegree` (multiplicity bounded by degree)
+  - This is true: D = ∏ p_i^{m_i}, deg(D) = ∑ m_i·deg(p_i) ≥ m_v = val_v(D)
 
-### CRT Approach (Cycle 140 - FULLY STRUCTURED)
-1. S = bad places (finite), get y_v ∈ K with a_v - y_v ∈ O_v for v ∈ S ✅
-2. D = ∏_{v∈S} denom(y_v) - clears all denominators ✅
-3. T = S ∪ {primes dividing D} - finite by `HeightOneSpectrum.finite_divisors` ✅
-4. Py v ∈ Fq[X] with D · y_v = Py v ✅
-5. CRT targets:
-   - For v ∈ S: P ≡ Py v (mod v^{e_v}) where e_v ≥ val_v(D)
-   - For v ∈ T \ S: P ≡ 0 (mod v^{val_v(D)})
-6. Apply `IsDedekindDomain.exists_forall_sub_mem_ideal` to get P
-7. Set k = P/D
-8. Verify valuation conditions
+**Line 1302 - second theorem**:
+- Depends on first theorem; inherits sorry
 
-**What remains for Cycle 141**:
-1. Set up CRT index type from T (finite union of finsets)
-2. Define exponents using intValuation (may need helper lemmas)
-3. Apply CRT and verify k = P/D works
-
-### Key Mathlib APIs for CRT
+### CRT Structure (Cycle 141 - APPLIED)
 ```lean
--- Main CRT theorem:
-IsDedekindDomain.exists_forall_sub_mem_ideal :
-  ∀ s : Finset ι, P : ι → Ideal R, e : ι → ℕ, prime, coprime, x : s → R,
-  ∃ y, ∀ i ∈ s, y - x i ∈ P i ^ e i
+let e : HeightOneSpectrum Fq[X] → ℕ := fun _ => D.natDegree + 1  -- uniform exponent
+let target : T → Fq[X] := fun ⟨v, hv⟩ => if v ∈ S then Py v else 0
+obtain ⟨P, hP⟩ := IsDedekindDomain.exists_forall_sub_mem_ideal ... target
+let k : RatFunc Fq := P / D
+```
 
--- Valuation-to-ideal:
-intValuation_le_pow_iff_mem : v.intValuation r ≤ exp(-n) ↔ r ∈ v.asIdeal^n
+### Key Lemma Needed for Cycle 142
+```lean
+lemma intValuation_le_natDegree (v : HeightOneSpectrum Fq[X]) (D : Fq[X]) (hD : D ≠ 0) :
+    v.intValuation D ≥ WithZero.exp (-(D.natDegree : ℤ)) := by
+  -- Proof: val_v(D) counts multiplicity of v in D
+  -- D = ∏ p_i^{m_i}, so deg(D) = ∑ m_i·deg(p_i) ≥ m_v = val_v(D)
+  sorry
 ```
 
 ### Axioms Used
@@ -71,6 +62,28 @@ intValuation_le_pow_iff_mem : v.intValuation r ≤ exp(-n) ↔ r ∈ v.asIdeal^n
 |-------|---------|
 | `[AllIntegersCompact Fq[X] (RatFunc Fq)]` | Finite adeles compactness |
 | `[Finite (Valued.ResidueField (FqtInfty Fq))]` | Infinity compactness |
+
+---
+
+## Cycle 141 Summary
+
+**Goal**: Apply CRT to fill `exists_finite_integral_translate`
+
+**Status**: 🔶 PARTIAL - CRT applied, v ∉ T case complete, 2 valuation sorries remain
+
+**Key accomplishments**:
+1. ✅ Fixed Mathlib cache issue (was missing, causing false build errors)
+2. ✅ Set up CRT index type T with uniform exponent e = D.natDegree + 1
+3. ✅ Applied `IsDedekindDomain.exists_forall_sub_mem_ideal` successfully
+4. ✅ Defined k = P/D as the CRT solution
+5. ✅ Completely filled v ∉ T case using ultrametric inequality
+6. 🔶 Structured v ∈ T \ S case (needs multiplicity-degree bound)
+7. 🔶 Structured v ∈ S case (needs similar valuation calculation)
+
+**Key insight from Cycle 141**:
+- The exponent e = D.natDegree + 1 is a uniform bound that works for all v ∈ T
+- The key lemma needed: val_v(D) ≤ D.natDegree for any prime v dividing D
+- This follows from degree additivity: deg(ab) = deg(a) + deg(b)
 
 ---
 

@@ -1146,38 +1146,112 @@ theorem exists_finite_integral_translate (a : FiniteAdeleRing Fq[X] (RatFunc Fq)
   let T := S ∪ (HeightOneSpectrum.finite_divisors Fq D hD_ne).toFinset
 
   -- Step 5: Apply CRT to get P ∈ Fq[X] such that k = P/D works at all places
-  --
-  -- The goal is to find P with:
-  -- - For v ∈ S: P ≡ Py v (mod v^{e_v}) where e_v ≥ val_v(D)
-  -- - For v ∈ T \ S: P ≡ 0 (mod v^{e_v}) where e_v = val_v(D)
-  --
-  -- Then k = P/D satisfies:
-  -- - For v ∈ S: val_v(k - y_v) = val_v((P - Py v)/D) ≥ e_v - val_v(D) ≥ 0
-  -- - For v ∉ S with v ∈ T: val_v(k) = val_v(P) - val_v(D) ≥ 0
-  -- - For v ∉ T: val_v(D) = 0, so val_v(k) = val_v(P) ≥ 0 (P is a polynomial)
-  --
-  -- The CRT theorem `IsDedekindDomain.exists_forall_sub_mem_ideal` provides P
-  -- given distinct prime ideals with specified exponents and targets.
-  --
-  -- The verification requires:
-  -- 1. Setting up T as a Finset with appropriate structure
-  -- 2. Defining the prime ideals v.asIdeal for v ∈ T
-  -- 3. Computing exponents from the UFD factorization of D
-  -- 4. Applying CRT and verifying the valuation conditions
-  --
-  -- This is a substantial amount of infrastructure. The mathematical content is:
-  -- - T is finite (proven via HeightOneSpectrum.finite_divisors)
-  -- - The primes are pairwise coprime (they're distinct height-one primes)
-  -- - CRT gives existence of P
-  -- - The valuation calculations verify k = P/D works
-  --
-  -- For now, we note that the weak approximation theorem for function fields
-  -- guarantees the existence of such k. The full formalization would require
-  -- setting up the CRT machinery with explicit exponent computation.
-  --
-  -- The core mathematical argument is correct; the remaining work is
-  -- connecting the abstract CRT to the specific valuation calculations.
-  sorry
+  -- Use natDegree D as a uniform exponent bound (simpler than computing exact valuations)
+  let e : HeightOneSpectrum Fq[X] → ℕ := fun _ => D.natDegree + 1
+
+  -- CRT targets: Py v for v ∈ S, 0 for v ∈ T \ S
+  let target : T → Fq[X] := fun ⟨v, hv⟩ =>
+    if hvS : v ∈ S then Py v hvS else 0
+
+  -- Prime ideals
+  have hprime : ∀ v ∈ T, (v.asIdeal).Prime := fun v _ => v.isPrime
+
+  -- Distinct primes have distinct ideals
+  have hcoprime : ∀ v₁ ∈ T, ∀ v₂ ∈ T, v₁ ≠ v₂ → v₁.asIdeal ≠ v₂.asIdeal := by
+    intro v₁ _ v₂ _ hne h
+    apply hne
+    ext : 1
+    exact h
+
+  -- Apply CRT
+  obtain ⟨P, hP⟩ := IsDedekindDomain.exists_forall_sub_mem_ideal
+    (fun v : HeightOneSpectrum Fq[X] => v.asIdeal) e hprime hcoprime target
+
+  -- Define k = P / D
+  let k : RatFunc Fq := algebraMap Fq[X] (RatFunc Fq) P / algebraMap Fq[X] (RatFunc Fq) D
+
+  use k
+  intro v
+
+  -- Case split on whether v ∈ T
+  by_cases hvT : v ∈ T
+  · -- v ∈ T: use CRT result
+    have hPv := hP v hvT
+    by_cases hvS : v ∈ S
+    · -- v ∈ S: need a_v - k ∈ O_v
+      -- We have: a_v - y_v ∈ O_v (from hy)
+      -- We have: P - Py_v ∈ v.asIdeal^(natDegree D + 1) (from CRT)
+      -- Need to show: k - y_v ∈ O_v, then a_v - k = (a_v - y_v) - (k - y_v) ∈ O_v
+      have hay := hy v hvS
+      -- k - y_v = (P - D·y_v)/D = (P - Py_v)/D
+      have hPy_eq : algebraMap Fq[X] (RatFunc Fq) (Py v hvS) = D • y v := hPy v hvS
+      -- The CRT gives us P - Py_v ∈ v^{e(v)} where e(v) = natDegree D + 1
+      -- Since natDegree D + 1 > val_v(D), we get val_v(P - Py_v) > val_v(D)
+      -- Hence val_v((P - Py_v)/D) ≥ 1 > 0, so (P - Py_v)/D ∈ O_v
+      -- The verification requires connecting ideal membership to valuation bounds
+      -- This is the core calculation that needs intValuation_le_pow_iff_mem
+      sorry
+    · -- v ∈ T \ S: need a_v - k ∈ O_v
+      -- We have: a_v ∈ O_v (since v ∉ S)
+      -- We have: P ≡ 0 (mod v^{e(v)}) from CRT (target is 0)
+      -- Need: k = P/D ∈ O_v
+      have ha_int : a.val v ∈ v.adicCompletionIntegers (RatFunc Fq) := by
+        simp only [Set.Finite.mem_toFinset, Set.mem_setOf_eq, not_not] at hvS
+        exact hvS
+      -- From CRT: P - target = P - 0 = P ∈ v^{e(v)}
+      have hPv_crt : P - (if hvS' : v ∈ S then Py v hvS' else 0) ∈ v.asIdeal ^ e v := hPv
+      simp only [hvS, ↓reduceDIte, sub_zero] at hPv_crt
+      -- P ∈ v^{e(v)} means val_v(P) ≥ e(v) = D.natDegree + 1
+      have hP_val : v.intValuation P ≤ WithZero.exp (-(D.natDegree + 1 : ℤ)) := by
+        rw [intValuation_le_pow_iff_mem]
+        exact hPv_crt
+      -- val_v(D) ≤ D.natDegree (multiplicity bounded by total degree)
+      -- This is the key bound: for any prime v dividing D, val_v(D) ≤ natDegree D
+      -- This follows from: D = ∏ p_i^{m_i} with deg(D) = ∑ m_i · deg(p_i) ≥ ∑ m_i ≥ val_v(D)
+      -- For now, use that val_v(P) ≥ e(v) > val_v(D) in any case where v | D
+      -- Since e(v) = natDegree D + 1, we need val_v(D) ≤ natDegree D
+      -- Then val_v(k) = val_v(P) - val_v(D) ≥ 1 > 0
+      -- This calculation requires the multiplicity-degree bound
+      sorry
+  · -- v ∉ T: val_v(D) = 0, so val_v(k) = val_v(P) ≥ 0 (P is a polynomial)
+    -- Also a_v ∈ O_v since v ∉ S ⊆ T
+    have hvS : v ∉ S := fun h => hvT (Finset.mem_union_left _ h)
+    have ha_int : a.val v ∈ v.adicCompletionIntegers (RatFunc Fq) := by
+      simp only [Set.Finite.mem_toFinset, Set.mem_setOf_eq, not_not] at hvS
+      exact hvS
+    -- val_v(D) = 0 since v ∉ T ⊇ {divisors of D}
+    have hvD : v.intValuation D = 1 := by
+      by_contra h
+      have hlt : v.intValuation D < 1 := lt_of_le_of_ne (v.intValuation_le_one D) h
+      have hmem : v ∈ (HeightOneSpectrum.finite_divisors Fq D hD_ne).toFinset := by
+        simp only [Set.Finite.mem_toFinset, Set.mem_setOf_eq]
+        exact hlt
+      exact hvT (Finset.mem_union_right S hmem)
+    -- Since P is a polynomial, val_v(P) ≥ 0, i.e., v.intValuation P ≤ 1
+    have hP_int : v.intValuation P ≤ 1 := v.intValuation_le_one P
+    -- k = P/D with val_v(D) = 1, so val_v(k) = val_v(P) ≥ 0
+    -- First show k is integral at v (as element of K)
+    have hk_val : v.valuation k ≤ 1 := by
+      simp only [k]
+      rw [map_div₀]
+      -- val(P/D) = val(P) / val(D) = val(P) (since val(D) = 1)
+      have hD_val : v.valuation (algebraMap Fq[X] (RatFunc Fq) D) = 1 := by
+        rw [v.valuation_of_algebraMap]
+        exact hvD
+      rw [hD_val, div_one]
+      -- val(P) ≤ 1 follows from P being a polynomial
+      rw [v.valuation_of_algebraMap]
+      exact hP_int
+    -- Now show a.val v - k ∈ O_v using ultrametric inequality
+    rw [mem_adicCompletionIntegers]
+    -- Valued.v on completion extends v.valuation on K
+    have hk_coe : Valued.v (k : v.adicCompletion (RatFunc Fq)) ≤ 1 := by
+      rw [valuedAdicCompletion_eq_valuation]
+      exact hk_val
+    have ha_coe : Valued.v (a.val v) ≤ 1 := by
+      rw [← mem_adicCompletionIntegers]
+      exact ha_int
+    exact Valuation.map_sub_le ha_coe hk_coe
 
 /-- Combined: existence of translate with controlled infinity valuation.
 
