@@ -10,49 +10,73 @@
 
 ---
 
-## 🎯 NEXT CLAUDE: Start Here (Cycle 150)
+## 🎯 NEXT CLAUDE: Start Here (Cycle 151)
 
 ### Current State
-Build: ✅ **COMPILES** with **3 sorries** in FullAdelesCompact.lean (down from 5!)
+Build: ✅ **COMPILES** with **3 sorries** in FullAdelesCompact.lean
 
-### What Cycle 149 Did
-- ✅ **FILLED `isPrincipalIdealRing_integer_FqtInfty`** - Used IsCyclic and Nontrivial of valueGroup
-- ✅ **FILLED `isDiscreteValuationRing_integer_FqtInfty`** - Same approach as PIR
+### What Cycle 150 Did
+- 🔶 **Attempted CRT proof for `exists_finite_integral_translate`** - Identified API issues
+- ✅ **Documented proof structure** - The approach is correct, needs API fixes
 
 ### Remaining Sorries (3 total)
 1. `exists_finite_integral_translate` (line ~502) - CRT proof (approach documented inline)
 2. `exists_finite_integral_translate_with_infty_bound` (line ~557) - polynomial division
 3. `exists_translate_in_integralFullAdeles` (line ~600) - combining above
 
-### Key Fix in Cycle 149: PIR and DVR for integer ring
+### Key Findings from Cycle 150: API Issues
 
-The key insight is that the value group of `Valued.v` on `FqtInfty Fq` is a subgroup of `(WithZero (Multiplicative ℤ))ˣ ≅ Multiplicative ℤ`. Since:
-1. `Multiplicative ℤ` is cyclic (because ℤ is additively cyclic)
-2. Every subgroup of a cyclic group is cyclic (`Subgroup.isCyclic`)
-3. The valueGroup is nontrivial (from `isNontrivial_FqtInfty`)
+The CRT proof structure is correct. The issues found are:
 
-With `[IsCyclic (valueGroup v)]` and `[Nontrivial (valueGroup v)]`, mathlib gives us:
-- `Valuation.valuationSubring_isPrincipalIdealRing`
-- `Valuation.valuationSubring_isDiscreteValuationRing`
+1. **`Ideal.IsPrime.prime` doesn't exist** - Need `v.isPrime.prime` or find correct API
+   - HeightOneSpectrum.isPrime gives IsPrime, but CRT needs Prime
+   - Try: `Ideal.isPrime_iff_prime` or work with prime directly
 
+2. **`RatFunc.algebraMap_ne_zero.mpr` doesn't exist** - Need different form
+   - Try: `RatFunc.algebraMap_ne_zero` without `.mpr`, or `map_ne_zero_of_mem_nonZeroDivisors`
+
+3. **Type elaboration timeouts** with completions/valuations
+   - Break complex expressions into intermediate steps
+   - Add explicit type annotations: `(k : v.adicCompletion (RatFunc Fq))`
+   - Use `set_option maxHeartbeats 400000` if needed
+
+4. **`Polynomial.div_mul_eq_mul_div` pattern issues**
+   - The polynomial division/multiplication order may differ from expected
+
+### Proof Structure (CORRECT - needs API fixes)
 ```lean
--- Key pattern: convert x ≠ 0 to v x ≠ 0
-have hx_vne : Valued.v x ≠ 0 := (Valuation.ne_zero_iff Valued.v).mpr hx_ne
--- Build a unit from the valuation
-let vx : (WithZero (Multiplicative ℤ))ˣ := Units.mk0 (Valued.v x) hx_vne
--- Show it's in the valueGroup
-have hvx_mem : vx ∈ MonoidWithZeroHom.valueGroup Valued.v :=
-  MonoidWithZeroHom.mem_valueGroup Valued.v (Set.mem_range.mpr ⟨x, rfl⟩)
+-- Step 1: S = bad places (finite by restricted product)
+have hS_finite := Filter.eventually_cofinite.mp a.property
+let S := hS_finite.toFinset
+
+-- Step 2: Get approximants y_v for each v ∈ S
+choose y hy using (fun v => exists_local_approximant Fq v (a.val v))
+
+-- Step 3: D = product of denominators
+let D := S.prod (fun v => (y v).denom)
+
+-- Step 4: T = S ∪ {divisors of D}
+let T := S ∪ (HeightOneSpectrum.finite_divisors Fq D hD_zero).toFinset
+
+-- Step 5: Apply CRT
+obtain ⟨P, hP⟩ := IsDedekindDomain.exists_forall_sub_mem_ideal (fun v => v.asIdeal) e ...
+
+-- Step 6: k = P/D, verify valuations
+let k := algebraMap Fq[X] (RatFunc Fq) P / algebraMap Fq[X] (RatFunc Fq) D
 ```
 
-### IMMEDIATE NEXT STEP: Work on CRT-based proofs
+### IMMEDIATE NEXT STEP: Fix API issues
 
-The remaining sorries are all interconnected:
-- `exists_finite_integral_translate` - Main CRT application
-- `exists_finite_integral_translate_with_infty_bound` - Adds infinity bound
-- `exists_translate_in_integralFullAdeles` - Combines both
+1. Find correct API for `IsPrime → Prime` for ideals in HeightOneSpectrum
+2. Find correct form of `RatFunc.algebraMap_ne_zero`
+3. Add type annotations to avoid elaboration timeouts
 
-These require careful work with `IsDedekindDomain.exists_forall_sub_mem_ideal` API.
+### Alternative: Simplify the proof
+
+If API issues persist, consider:
+- Using `native_decide` for finite field computations
+- Breaking the proof into smaller lemmas
+- Using `set_option maxHeartbeats` temporarily
 
 ### Key Proofs Added in Cycle 147
 
@@ -71,6 +95,35 @@ These require careful work with `IsDedekindDomain.exists_forall_sub_mem_ideal` A
 - **FullAdelesBase.lean** (~685 lines) - General defs → ✅ COMPILES
 - **FullAdelesCompact.lean** (~505 lines) - Compactness, weak approx → ✅ COMPILES (7 sorries)
 - **FullAdeles.lean** - Re-export hub
+
+---
+
+## Cycle 150 Summary - API INVESTIGATION
+
+**Goal**: Fill `exists_finite_integral_translate` using CRT approach
+
+**Status**: 🔶 PARTIAL - Proof structure complete, API issues identified
+
+**Attempted**:
+1. Wrote full CRT-based proof following the documented approach
+2. Identified 4 key API issues blocking compilation:
+   - `Ideal.IsPrime.prime` doesn't exist
+   - `RatFunc.algebraMap_ne_zero.mpr` has different form
+   - Type elaboration timeouts with completions
+   - Polynomial division API mismatches
+
+**Key insight**: The proof structure is mathematically correct:
+- Use `Filter.eventually_cofinite.mp a.property` to get finite bad set S
+- Use `choose` to get approximants y_v from `exists_local_approximant`
+- Build D = ∏ denom(y_v), then T = S ∪ {divisors of D}
+- Apply `IsDedekindDomain.exists_forall_sub_mem_ideal` for CRT
+- Verify valuations using `intValuation_ge_exp_neg_natDegree`
+
+**What's needed for Cycle 151**:
+1. Search for correct `IsPrime → Prime` API (try `Ideal.isPrime_iff_prime`)
+2. Find correct form of RatFunc algebraMap non-zero lemma
+3. Add explicit type annotations to avoid timeouts
+4. Consider breaking into smaller helper lemmas
 
 ---
 
