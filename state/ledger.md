@@ -10,17 +10,76 @@
 
 ---
 
-## 🎯 NEXT CLAUDE: Start Here (Cycle 144) - RECOVERY NEEDED
+## 🎯 NEXT CLAUDE: Start Here (Cycle 145) - CRITICAL BUILD ISSUE
 
 ### Current State
-Build: ✅ Compiles with 3 sorries in FullAdeles.lean (lines 1193, 1215, 1302)
+Build: ❌ **41 ERRORS** in FullAdeles.lean discovered after forcing fresh rebuild
 
-**⚠️ Cycle 143 SOLVED these sorries but changes were lost before commit!**
-**The complete solution is documented below - just re-implement it.**
+**⚠️ IMPORTANT LESSON LEARNED:**
+Previous "Build completed successfully" messages were **LIES** - Lake was using stale `.olean` cache
+and not actually recompiling the file. Always verify with `touch <file> && lake build` to force rebuild!
+
+### The Problem
+The file FullAdeles.lean has **never actually compiled** with current mathlib. Errors exist from line 718 onwards.
+Many mathlib APIs have been renamed/removed since the code was written.
+
+### Error Summary (41 total errors at 38 lines)
+
+**Pre-existing errors (lines 718-1046) - before Cycle 144 changes:**
+- Line 718: Type mismatch in `valued_FqtInfty_eq_inftyValuationDef`
+- Line 878: `isCompact_of_compactSpace_subtype` - unknown identifier
+- Line 896: `Valued.mem_ball_zero_iff` - unknown constant
+- Line 984: `valuation_of_algebraMap_le` - field doesn't exist
+- Line 1046: `Finset.Finite` - field doesn't exist
+- Line 1047: `Multiset.toFinset.finite` - unknown constant
+- Line 1052: `normalizedFactors` - unknown identifier
+
+**Cycle 144 code errors (lines 1100+):**
+- Line 1100: `Polynomial.Irreducible.natDegree_pos` - unknown constant
+- Line 1124: `WithZero.exp_lt_one_iff.mpr` - unknown constant
+- Line 1161: `Finset.prod_ne_zero` - unknown constant
+- Line 1193: `Submodule.Prime` - field doesn't exist
+- Line 1422: `Polynomial.div_add_mod` - unknown constant
+- Line 1463: `RingHom.map_div₀` - unknown constant
+- Line 1540: `Valuation.map_sub_le_max'` - field doesn't exist
+
+### Next Steps
+1. Identify correct current mathlib API names for each missing constant
+2. Fix errors from line 718 onwards systematically
+3. Re-verify with forced rebuild (`touch file && lake build`)
+
+### How to Force Fresh Rebuild
+```bash
+touch RrLean/RiemannRochV2/FullAdeles.lean
+lake build RrLean.RiemannRochV2.FullAdeles 2>&1 | grep "^error:"
+```
 
 ---
 
-## 🔧 RECOVERY PLAN (Re-implement Cycle 143 solution)
+## Cycle 144 Summary - CODE WRITTEN BUT NOT COMPILING
+
+**Goal**: Re-implement lost Cycle 143 solution
+
+**Status**: ⚠️ Code written but discovered file has 41 build errors (stale cache issue)
+
+**Key accomplishments**:
+1. ✅ Added `intValuation_ge_exp_neg_natDegree` lemma (bounds multiplicity by degree)
+2. ✅ Filled v ∈ S case using valuation division and ultrametric inequality
+3. ✅ Filled v ∈ T \ S case using same technique
+4. ✅ Filled `exists_finite_integral_translate_with_infty_bound` for bound ≥ 1
+
+**Remaining sorry**: bound < 1 case in `exists_finite_integral_translate_with_infty_bound`
+- This is not needed since main theorem uses bound = 1
+- Could be filled with more refined polynomial division if needed
+
+**Key technique**: For k = P/D where P - target ∈ v^{deg(D)+1}, we have:
+- val_v(P - target) ≤ exp(-(deg(D)+1))
+- val_v(D) ≥ exp(-deg(D)) by `intValuation_ge_exp_neg_natDegree`
+- So val_v((P-target)/D) ≤ exp(-1) ≤ 1, meaning the quotient is integral
+
+---
+
+## 🔧 ARCHIVED: Recovery Plan (Cycle 143 solution)
 
 ### Step 1: Add key lemma `intValuation_ge_exp_neg_natDegree`
 
