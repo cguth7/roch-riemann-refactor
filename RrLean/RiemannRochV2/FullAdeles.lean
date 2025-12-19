@@ -39,6 +39,7 @@ import Mathlib.NumberTheory.FunctionField
 import Mathlib.Topology.Algebra.Module.Basic
 import Mathlib.Topology.Algebra.Ring.Basic
 import Mathlib.Topology.Algebra.UniformRing
+import Mathlib.Topology.DiscreteSubset
 import RrLean.RiemannRochV2.AdelicTopology
 import RrLean.RiemannRochV2.FqPolynomialInstance
 
@@ -457,51 +458,56 @@ theorem finite_integral_inftyVal_ge_one (k : RatFunc Fq) (hk : k ≠ 0)
   rw [← hp]
   exact polynomial_inftyVal_ge_one (Fq := Fq) hp_ne
 
-/-! ### Key Properties
+/-! ### Helper Lemmas for Discreteness -/
 
-The following properties establish that K IS discrete in the full adeles.
-This is the key difference from finite adeles where K is NOT discrete.
--/
+/-- The set of integral finite adeles is open. -/
+theorem isOpen_integralFiniteAdeles :
+    IsOpen {a : FiniteAdeleRing Fq[X] (RatFunc Fq) |
+      ∀ v, a.1 v ∈ v.adicCompletionIntegers (RatFunc Fq)} := by
+  have hOv_open : ∀ v : HeightOneSpectrum Fq[X],
+      IsOpen (v.adicCompletionIntegers (RatFunc Fq) : Set (v.adicCompletion (RatFunc Fq))) :=
+    fun v ↦ Valued.isOpen_valuationSubring _
+  exact RestrictedProduct.isOpen_forall_mem hOv_open
+
+/-- For d in the fraction field, if diag(d).1 v ∈ O_v then v.valuation d ≤ 1. -/
+theorem diag_integral_implies_valuation_le (d : RatFunc Fq) (v : HeightOneSpectrum Fq[X])
+    (h : (fqFullDiagonalEmbedding Fq d).1.1 v ∈ v.adicCompletionIntegers (RatFunc Fq)) :
+    v.valuation (RatFunc Fq) d ≤ 1 := by
+  rw [mem_adicCompletionIntegers] at h
+  -- The finite component of diag(d) at v equals algebraMap(d) in the completion
+  -- Valued.v preserves the valuation: Valued.v (↑d) = v.valuation d
+  sorry
+
+/-- The infinity component of diag(d) has valuation equal to inftyValuationDef. -/
+theorem diag_infty_valuation (d : RatFunc Fq) :
+    Valued.v ((fqFullDiagonalEmbedding Fq d).2) = FunctionField.inftyValuationDef Fq d := by
+  -- The second component of fqFullDiagonalEmbedding is algebraMap = inftyRingHom
+  -- inftyRingHom is the completion embedding, so Valued.v gives back the original valuation
+  sorry
 
 /-- Discreteness of Fq(t) in full adeles.
 
-**Key insight**: The infinite place constrains elements globally.
-- Product formula: ∏_v |k|_v = 1 for k ∈ K×
-- If |k|_p ≤ 1 for all finite p AND |k|_∞ ≤ ε, then k has bounded degree
-- Only finitely many k satisfy such bounds → K is discrete
-
-The proof uses that for k ∈ Fq[X], we have:
-- |k|_∞ = q^{deg k} (valuation at infinity = degree)
-- Bounded |k|_∞ means bounded degree
-- Finitely many polynomials of bounded degree over finite field
+**Proof strategy**:
+1. U_fin = {a | ∀ v, a_v ∈ O_v} is open (by isOpen_integralFiniteAdeles using RestrictedProduct.isOpen_forall_mem)
+2. U_infty = {x | |x|_∞ < 1} is open (by isOpen_inftyBall_lt_one)
+3. U = preimage of (U_fin × U_infty) under translation by diag(k) is open
+4. For diag(m) ∈ U: let d = m - k, then diag(d) ∈ U_fin × U_infty
+5. From U_fin: d is integral at all finite places
+6. By finite_integral_implies_polynomial: d is a polynomial
+7. From U_infty: |d|_∞ < 1
+8. By polynomial_inftyVal_ge_one: nonzero polynomial has |·|_∞ ≥ 1
+9. Contradiction unless d = 0, so m = k
 -/
 theorem fq_discrete_in_fullAdeles :
     DiscreteTopology (Set.range (fqFullDiagonalEmbedding Fq)) := by
-  -- Strategy: Show {0} is open in the subspace topology on range(diag)
-  -- This requires finding an open U in full adeles with U ∩ range(diag) = {0}
-  --
-  -- Key insight: For k ∈ K with diag(k) ∈ U:
-  -- 1. U_fin = {a | ∀ v, a_v ∈ O_v} (integral at all finite places) is open
-  -- 2. U_∞ = {x | Valued.v x < 1} is open (by isOpen_inftyBall_lt_one)
-  -- 3. U = U_fin × U_∞ is open in FullAdeleRing
-  -- 4. For diagonal(k) ∈ U:
-  --    - k is integral at all finite places (from U_fin)
-  --    - By finite_integral_implies_polynomial: k is a polynomial
-  --    - |k|_∞ < 1 (from U_∞)
-  --    - By polynomial_inftyVal_ge_one: nonzero polynomial has |·|_∞ ≥ 1
-  --    - Contradiction unless k = 0
-  -- 5. Hence U ∩ range(diag) = {0}, giving discrete topology
-
-  -- For a subspace, DiscreteTopology means every singleton is open
-  -- For an additive subgroup, it suffices to show {0} is open (by translation)
-  -- This requires an open U in FullAdeleRing with U ∩ range(diag) = {diag(0)}
-
-  -- The key technical challenge is showing U_fin is open in FiniteAdeleRing
-  -- This requires RestrictedProduct.isOpen_forall_mem with A_v = O_v
-
-  -- For now, we outline the proof structure but defer the topology API work
-  -- The algebraic content (finite_integral_implies_polynomial, polynomial_inftyVal_ge_one)
-  -- is already proved; the remaining work is pure topology
+  -- The proof follows the strategy above using:
+  -- - isOpen_integralFiniteAdeles: U_fin is open (via RestrictedProduct.isOpen_forall_mem)
+  -- - isOpen_inftyBall_lt_one: U_infty is open
+  -- - finite_integral_implies_polynomial: integral at all finite places ⟹ polynomial
+  -- - polynomial_inftyVal_ge_one: nonzero polynomial has |·|_∞ ≥ 1
+  -- - diag_integral_implies_valuation_le: connects finite adele membership to valuation
+  -- - diag_infty_valuation: connects infinity component to inftyValuationDef
+  -- Technical details of connecting these pieces require careful API navigation
   sorry
 
 /-- Closedness of Fq(t) in full adeles.

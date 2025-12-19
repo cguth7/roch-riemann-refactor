@@ -7,47 +7,40 @@
 
 ---
 
-## 🎯 NEXT CLAUDE: Start Here (Post-Cycle 126)
+## 🎯 NEXT CLAUDE: Start Here (Post-Cycle 128)
 
 ### Critical Context
 **Cycle 121 discovered a spec bug**: K is NOT discrete in the *finite* adeles.
 **Cycle 122 created `FullAdeles.lean`** with the product definition A = A_f × K_∞.
-**Cycle 123 implemented the concrete instance** for `Polynomial Fq / RatFunc Fq / FqtInfty Fq`.
-**Cycle 124 proved helper lemmas** and established the discreteness proof structure.
 **Cycle 125 proved `finite_integral_implies_polynomial`** - the key algebraic lemma!
-**Cycle 126 fixed proof errors** in `finite_integral_implies_polynomial` and documented discreteness strategy.
+**Cycle 128 added helper lemmas** and documented the discreteness proof strategy in detail.
 
 ### Current State
-- ✅ `algebraMap_FqtInfty_injective` - PROVED (using `coe_inj` for T0 spaces)
-- ✅ `polynomial_inftyVal_ge_one` - PROVED: nonzero polynomials have |·|_∞ ≥ 1
-- ✅ `isOpen_inftyBall_lt_one` - PROVED: {x | |x|_∞ < 1} is open (via `Valued.isClopen_ball`)
-- ✅ `finite_integral_inftyVal_ge_one` - PROVED: integral at all finite places + k ≠ 0 ⟹ |k|_∞ ≥ 1
-- ✅ `finite_integral_implies_polynomial` - **PROVED in Cycle 125**: key algebraic lemma!
-- ⚪ `fq_discrete_in_fullAdeles` - SORRY: needs RestrictedProduct topology API work
-- ⚪ `fq_closed_in_fullAdeles` - SORRY: needs T2Space instance + discreteness
-- ⚪ 2 more sorries in FullAdeles.lean (compactness, weak approx)
+- ✅ `algebraMap_FqtInfty_injective` - PROVED
+- ✅ `polynomial_inftyVal_ge_one` - PROVED
+- ✅ `isOpen_inftyBall_lt_one` - PROVED
+- ✅ `finite_integral_implies_polynomial` - **PROVED**: key algebraic lemma!
+- ✅ `isOpen_integralFiniteAdeles` - **PROVED in Cycle 128**: U_fin is open via RestrictedProduct.isOpen_forall_mem
+- ⚪ `diag_integral_implies_valuation_le` - SORRY: connects finite component to valuation
+- ⚪ `diag_infty_valuation` - SORRY: connects infinity component to inftyValuationDef
+- ⚪ `fq_discrete_in_fullAdeles` - SORRY: proof strategy documented, needs API plumbing
+- ⚪ `fq_closed_in_fullAdeles` - SORRY: needs T2Space + discreteness
+- ⚪ 2 more sorries (compactness, weak approx)
 
-### Discreteness Proof Strategy (All Algebraic Lemmas Proved!)
+### Discreteness Proof Strategy (Documented in Cycle 128)
 
-To prove `fq_discrete_in_fullAdeles`:
-1. Take U = U_fin × U_∞ where U_∞ = {x | |x|_∞ < 1} (open ball)
-2. If diagonal(k) ∈ U for k ∈ K:
-   - From U_fin: k is integral at all finite places
-   - From U_∞: |k|_∞ < 1
-3. By `finite_integral_implies_polynomial` ✅: k is a polynomial
-4. By `polynomial_inftyVal_ge_one` ✅: nonzero polynomial has |·|_∞ ≥ 1
-5. Contradiction with |k|_∞ < 1 unless k = 0
-6. Hence U ∩ range(diagonal) = {0}, so {0} is open, and K is discrete
+**Key helper `isOpen_integralFiniteAdeles` is now PROVED!** Uses:
+- `RestrictedProduct.isOpen_forall_mem` with `A_v = v.adicCompletionIntegers K`
+- `Valued.isOpen_valuationSubring` to show each O_v is open
 
-**Remaining technical challenge**: Show U_fin is open using `RestrictedProduct.isOpen_forall_mem`.
+**Remaining work for `fq_discrete_in_fullAdeles`**:
+1. `diag_integral_implies_valuation_le`: Show `(diag d).1 v ∈ O_v ⟹ v.valuation d ≤ 1`
+   - Needs `Valued.valuedCompletion_apply` to equate valuations
+2. `diag_infty_valuation`: Show `Valued.v ((diag d).2) = inftyValuationDef d`
+   - Uses `inftyRingHom = coeRingHom` and `valuedCompletion_apply`
+3. Main proof: connect `isDiscrete_iff_forall_exists_isOpen` to the open set U = U_fin × U_infty
 
-### Key Mathlib Lemma for Discreteness (Found Cycle 126)
-
-`RestrictedProduct.isOpen_forall_mem`: The set `{f | ∀ i, f.1 i ∈ A_i}` is open when each `A_i` is open.
-- Apply with `A_v = v.adicCompletionIntegers K` (which is open by `Valued.isOpen_valuationSubring`)
-- This shows ∏_v O_v is open in FiniteAdeleRing
-
-### Concrete Next Steps (Cycle 127+)
+### Concrete Next Steps (Cycle 129+)
 
 **PRIORITY 1: Complete `fq_discrete_in_fullAdeles`**
 - Use `RestrictedProduct.isOpen_forall_mem` to show U_fin is open
@@ -727,6 +720,54 @@ have hp_not_dvd_n : ¬(p ∣ n) := by
 1. Apply `RestrictedProduct.isOpen_forall_mem` to prove U_fin is open
 2. Complete `fq_discrete_in_fullAdeles` using the documented strategy
 3. Prove `fq_closed_in_fullAdeles` from discreteness + T2Space
+
+---
+
+#### Cycle 128 - Helper Lemmas & Discreteness Structure
+
+**Goal**: Apply `RestrictedProduct.isOpen_forall_mem` and structure the discreteness proof.
+
+**Status**: 🔶 PARTIAL - Key helper proved, main proof has sorry with documented strategy
+
+**Results**:
+- [x] Added import `Mathlib.Topology.DiscreteSubset` for `isDiscrete_iff_forall_exists_isOpen`
+- [x] **PROVED `isOpen_integralFiniteAdeles`**: U_fin = {a | ∀ v, a_v ∈ O_v} is open
+  - Uses `RestrictedProduct.isOpen_forall_mem` with `Valued.isOpen_valuationSubring`
+- [x] Created `diag_integral_implies_valuation_le` (sorry): connects finite component to valuation
+- [x] Created `diag_infty_valuation` (sorry): connects infinity component to inftyValuationDef
+- [x] Documented detailed proof strategy in `fq_discrete_in_fullAdeles` docstring
+
+**Key Progress**:
+```lean
+/-- The set of integral finite adeles is open. -/
+theorem isOpen_integralFiniteAdeles :
+    IsOpen {a : FiniteAdeleRing Fq[X] (RatFunc Fq) |
+      ∀ v, a.1 v ∈ v.adicCompletionIntegers (RatFunc Fq)} := by
+  have hOv_open : ∀ v : HeightOneSpectrum Fq[X],
+      IsOpen (v.adicCompletionIntegers (RatFunc Fq) : Set (v.adicCompletion (RatFunc Fq))) :=
+    fun v ↦ Valued.isOpen_valuationSubring _
+  exact RestrictedProduct.isOpen_forall_mem hOv_open
+```
+
+**Remaining Sorries in FullAdeles.lean** (6 total):
+| Sorry | Description | Difficulty |
+|-------|-------------|------------|
+| `diag_integral_implies_valuation_le` | Connect finite component to valuation | Easy (API) |
+| `diag_infty_valuation` | Connect infinity component to inftyValuationDef | Easy (API) |
+| `fq_discrete_in_fullAdeles` | Main discreteness proof | Medium (plumbing) |
+| `fq_closed_in_fullAdeles` | Discrete + T2 → closed | Easy |
+| `isCompact_integralFullAdeles` | Product of compacts | Medium |
+| `exists_translate_in_integralFullAdeles` | Weak approximation | Medium |
+
+**Technical Lesson**: Extracting helper lemmas (even with sorry) keeps the main proof clean
+and avoids "simp thrash" where repeated simp failures cause wasted cycles.
+
+**Build**: ✅ Compiles successfully with 11 sorries total
+
+**Next Steps** (Cycle 129+):
+1. Fill `diag_integral_implies_valuation_le` using `Valued.valuedCompletion_apply`
+2. Fill `diag_infty_valuation` using completion embedding properties
+3. Fill `fq_discrete_in_fullAdeles` using the documented strategy
 
 ---
 
