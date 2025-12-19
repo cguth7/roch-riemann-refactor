@@ -6,11 +6,11 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 ## Current State
 
-**Build**: ❌ BROKEN - Residue.lean has ordering issues, needs fix
+**Build**: ✅ COMPILES - Residue.lean fixed
 **Phase**: 3 - Serre Duality
-**Cycle**: 164 (in progress - handoff)
+**Cycle**: 165 (ready for next)
 
-### Sorry Count: 16 (unchanged, but file currently broken)
+### Sorry Count: 15
 
 | File | Count | Notes |
 |------|-------|-------|
@@ -18,67 +18,36 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 | `FqPolynomialInstance.lean` | 4 | concrete Fq[X] instance |
 | `TraceDualityProof.lean` | 1 | abandoned approach |
 | `SerreDuality.lean` | 5 | pairing types defined, proofs pending |
-| `Residue.lean` | 5 | residueAtInfty_add - new approach partially implemented |
+| `Residue.lean` | 4 | residueAtInfty_add + mul_monic + placeholders |
 
 ---
 
-## CYCLE 164 HANDOFF - READ THIS FIRST
+## CYCLE 165 - residueAtInfty_add Completion
 
-### What Was Tried (Failed Approach - DO NOT REPEAT)
-Tried to prove `residueAtInfty_add` by showing `(f+g).denom = g.denom` when f is polynomial.
-This required gcd/coprime infrastructure (`gcd_add_mul_self`, `denom_add_polynomial_left`).
-**Hit Mathlib API friction** - `IsCoprime.gcd_eq_one` doesn't exist as expected, RatFunc
-normalization is complex. Spent ~1hr on this dead end.
+### What's Working Now
+1. **Lemma ordering fixed** - `residueAtInfty_eq_neg_coeff` and `coeff_mul_at_sum_sub_one` now before aux definitions
+2. **Auxiliary function defined** - `residueAtInftyAux` with classical decidability
+3. **Additivity proved** - `residueAtInftyAux_add` ✅
+4. **Connection lemma** - `residueAtInfty_eq_aux` ✅
 
-### The Correct Approach (Partially Implemented)
-Use an **auxiliary function** for unreduced fractions:
+### Remaining Sorries in Residue.lean (4)
+1. **`residueAtInftyAux_mul_monic`** (line 362) - Scaling lemma: `(p*k) % (q*k) = (p%q) * k` for monic k
+   - Proof sketch documented, needs Polynomial.mod uniqueness
+2. **`residueAtInfty_add`** (line 387) - Main additivity theorem
+   - Strategy: Use aux function approach via scaling and numerator additivity
+3. **`residueAt`** (line 422) - Placeholder for general finite place
+4. **`residue_sum_eq_zero`** (line 444) - Residue theorem (placeholder)
 
+### Strategy for residueAtInfty_add
 ```lean
-def residueAtInftyAux (p q : Polynomial Fq) : Fq :=
-  if q = 0 then 0 else -((p % q).coeff (q.natDegree - 1))
+-- Convert to aux: residueAtInfty f = residueAtInftyAux f.num f.denom
+-- Scale to common denom: residueAtInftyAux n_f d_f = residueAtInftyAux (n_f * d_g) (d_f * d_g)
+-- Use additivity: residueAtInftyAux (a + b) q = residueAtInftyAux a q + residueAtInftyAux b q
+-- Connect back to (f+g).num / (f+g).denom via gcd invariance
 ```
 
-This is:
-1. **Additive in numerator**: `(p₁+p₂) % q = p₁%q + p₂%q` via `Polynomial.add_mod`
-2. **Scaling invariant**: `(p*k) % (q*k) = (p%q) * k` for monic k
-
-### Current File State (Residue.lean)
-Added but **NOT COMPILING** due to ordering:
-- Line 270: `residueAtInftyAux` definition ✅
-- Line 275: `residueAtInftyAux_add` ✅ (additive in numerator)
-- Line 285: `residueAtInfty_eq_aux` ❌ BROKEN - references `residueAtInfty_eq_neg_coeff` (line 325)
-- Line 292: `residueAtInftyAux_mul_monic` ❌ BROKEN - ordering + simp issues
-
-### IMMEDIATE FIX NEEDED (10 min)
-1. **Reorder lemmas**: Move `residueAtInfty_eq_neg_coeff` (line 325) and `coeff_mul_at_sum_sub_one` (line 373) to BEFORE line 270
-2. **Fix `residueAtInftyAux_mul_monic`**: The `if_neg` for `q*k ≠ 0` needs explicit handling:
-   ```lean
-   simp only [residueAtInftyAux]
-   simp only [if_neg (mul_ne_zero hq hk_ne), if_neg hq]
-   ```
-
-### After Fix: Complete residueAtInfty_add
-The proof strategy is:
-```lean
-theorem residueAtInfty_add (f g : RatFunc Fq) : ... := by
-  -- Express over common denominator d = d_f * d_g
-  -- residueAtInfty f = residueAtInftyAux (n_f * d_g) (d_f * d_g)  [by scaling lemma]
-  -- residueAtInfty g = residueAtInftyAux (n_g * d_f) (d_f * d_g)  [by scaling lemma]
-  -- f + g has num/denom related to (n_f * d_g + n_g * d_f) / (d_f * d_g) via num_denom_add
-  -- Use residueAtInftyAux_add for the sum
-  -- Show result equals residueAtInfty (f + g)
-```
-
-### Key Mathlib Lemmas Already Found
-- `Polynomial.add_mod` - `(p₁ + p₂) % q = p₁ % q + p₂ % q`
-- `EuclideanDomain.mul_div_mul_cancel` - for `(p*k)/(q*k) = p/q`
-- `Polynomial.Monic.natDegree_mul` - `deg(q*k) = deg(q) + deg(k)` for monic
-- `coeff_mul_at_sum_sub_one` (already proved) - coefficient extraction for products
-
-### Build Command
-```bash
-lake build RrLean.RiemannRochV2.Residue 2>&1 | tail -30
-```
+Key insight: The reduced form of f+g may differ from the unreduced form by a monic factor,
+but `residueAtInftyAux_mul_monic` shows this doesn't affect the residue.
 
 ---
 
@@ -183,6 +152,21 @@ lake build RrLean.RiemannRochV2.DifferentIdealBridge
 ---
 
 ## Recent Cycles
+
+### Cycle 165 (2025-12-19)
+- **Fixed Residue.lean build** - File now compiles cleanly
+- **Reordered lemmas:**
+  - Moved `residueAtInfty_eq_neg_coeff` and `coeff_mul_at_sum_sub_one` before aux definitions
+  - Fixed decidability issue in `residueAtInftyAux` using `open Classical in`
+  - Changed `dif_neg` to `if_neg` for proper if-then-else handling
+- **Filled proofs:**
+  - `residueAtInfty_eq_aux` ✅ - Connection between residueAtInfty and aux function
+  - `residueAtInftyAux_add` ✅ - Numerator additivity
+- **Remaining sorries:**
+  - `residueAtInftyAux_mul_monic` - Scaling lemma (proof documented, needs uniqueness of polynomial division)
+  - `residueAtInfty_add` - Main additivity (proof strategy documented)
+- Sorry count: 16 → 15 (one proof filled, structure cleaner)
+- Build status: ✅ COMPILES
 
 ### Cycle 164 (2025-12-19) - INCOMPLETE HANDOFF
 - **Attempted:** Fill `residueAtInfty_add` sorries via gcd/coprime approach

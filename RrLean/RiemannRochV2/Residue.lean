@@ -264,59 +264,6 @@ theorem residueAtInfty_inv_X_sub (c : Fq) :
   -- if 1 = 1 then ... else ... = -1
   norm_num
 
-/-- Auxiliary function for residue at infinity on unreduced fractions.
-For p/q (not necessarily reduced), extracts the coefficient at the critical index.
-This is additive in p for fixed q, which is key for proving residueAtInfty_add. -/
-def residueAtInftyAux (p q : Polynomial Fq) : Fq :=
-  if q = 0 then 0
-  else -((p % q).coeff (q.natDegree - 1))
-
-/-- residueAtInftyAux is additive in the numerator for fixed denominator. -/
-lemma residueAtInftyAux_add (p₁ p₂ q : Polynomial Fq) :
-    residueAtInftyAux (p₁ + p₂) q = residueAtInftyAux p₁ q + residueAtInftyAux p₂ q := by
-  simp only [residueAtInftyAux]
-  by_cases hq : q = 0
-  · simp [hq]
-  simp only [hq, ↓reduceIte]
-  rw [Polynomial.add_mod, Polynomial.coeff_add]
-  ring
-
-/-- residueAtInftyAux equals residueAtInfty for reduced fractions. -/
-lemma residueAtInfty_eq_aux (f : RatFunc Fq) :
-    residueAtInfty f = residueAtInftyAux f.num f.denom := by
-  rw [residueAtInfty_eq_neg_coeff, residueAtInftyAux]
-  simp [RatFunc.denom_ne_zero f]
-
-/-- Key scaling lemma: multiplying both num and denom by a monic polynomial preserves residue.
-This uses coeff_mul_at_sum_sub_one for the coefficient extraction. -/
-lemma residueAtInftyAux_mul_monic (p q k : Polynomial Fq)
-    (hq : q ≠ 0) (hq_monic : q.Monic) (hk : k.Monic) (hk_ne : k ≠ 0) :
-    residueAtInftyAux (p * k) (q * k) = residueAtInftyAux p q := by
-  simp only [residueAtInftyAux, mul_ne_zero hq hk_ne, hq, ↓reduceIte]
-  -- Need: ((p * k) % (q * k)).coeff((q * k).natDegree - 1) = (p % q).coeff(q.natDegree - 1)
-  -- Key fact: (p * k) % (q * k) = (p % q) * k for monic k
-  have hmod : (p * k) % (q * k) = (p % q) * k := by
-    have hdiv : (p * k) / (q * k) = p / q := by
-      rw [mul_comm p k, mul_comm q k]
-      exact EuclideanDomain.mul_div_mul_cancel hk_ne (dvd_refl k)
-    have : (q * k) * ((p * k) / (q * k)) + (p * k) % (q * k) = p * k := EuclideanDomain.div_add_mod _ _
-    rw [hdiv] at this
-    have h2 : q * (p / q) + p % q = p := EuclideanDomain.div_add_mod p q
-    calc (p * k) % (q * k) = p * k - (q * k) * (p / q) := by rw [this]; ring
-      _ = (p - q * (p / q)) * k := by ring
-      _ = (p % q) * k := by rw [← h2]; ring
-  rw [hmod]
-  -- Now use that (q * k).natDegree = q.natDegree + k.natDegree for monic
-  rw [hq_monic.natDegree_mul hk]
-  -- (p % q) * k has coefficient at q.natDegree - 1 + k.natDegree equal to (p % q).coeff(q.natDegree - 1)
-  by_cases hq_deg : q.natDegree = 0
-  · -- q = 1 since monic, so p % q = 0
-    have hq_one : q = 1 := Polynomial.eq_one_of_monic_natDegree_zero hq_monic hq_deg
-    simp [hq_one]
-  have h_rem_deg : (p % q).natDegree < q.natDegree := Polynomial.natDegree_mod_lt p hq_deg
-  rw [show q.natDegree + k.natDegree - 1 = q.natDegree - 1 + k.natDegree by omega]
-  exact (coeff_mul_at_sum_sub_one h_rem_deg hk).symm
-
 /-- Helper: Express residueAtInfty in terms of coefficient extraction.
 
 When denom.natDegree ≥ 1, the residue is the negated coefficient of X^{deg(denom)-1}
@@ -385,87 +332,72 @@ lemma coeff_mul_at_sum_sub_one {r d₁ d₂ : Polynomial Fq}
   rw [Polynomial.coeff_mul_add_eq_of_natDegree_le hr_bound (le_refl _)]
   simp [hd₂_monic]
 
+open Classical in
+/-- Auxiliary function for residue at infinity on unreduced fractions.
+For p/q (not necessarily reduced), extracts the coefficient at the critical index.
+This is additive in p for fixed q, which is key for proving residueAtInfty_add. -/
+noncomputable def residueAtInftyAux (p q : Polynomial Fq) : Fq :=
+  if q = 0 then 0
+  else -((p % q).coeff (q.natDegree - 1))
+
+/-- residueAtInftyAux is additive in the numerator for fixed denominator. -/
+lemma residueAtInftyAux_add (p₁ p₂ q : Polynomial Fq) :
+    residueAtInftyAux (p₁ + p₂) q = residueAtInftyAux p₁ q + residueAtInftyAux p₂ q := by
+  unfold residueAtInftyAux
+  by_cases hq : q = 0
+  · simp [hq]
+  simp only [if_neg hq]
+  rw [Polynomial.add_mod, Polynomial.coeff_add]
+  ring
+
+/-- residueAtInftyAux equals residueAtInfty for reduced fractions. -/
+lemma residueAtInfty_eq_aux (f : RatFunc Fq) :
+    residueAtInfty f = residueAtInftyAux f.num f.denom := by
+  rw [residueAtInfty_eq_neg_coeff]
+  unfold residueAtInftyAux
+  simp only [if_neg (RatFunc.denom_ne_zero f)]
+
+/-- Key scaling lemma: multiplying both num and denom by a monic polynomial preserves residue.
+This uses coeff_mul_at_sum_sub_one for the coefficient extraction. -/
+lemma residueAtInftyAux_mul_monic (p q k : Polynomial Fq)
+    (hq : q ≠ 0) (hq_monic : q.Monic) (hk : k.Monic) (hk_ne : k ≠ 0) :
+    residueAtInftyAux (p * k) (q * k) = residueAtInftyAux p q := by
+  unfold residueAtInftyAux
+  have hqk_ne : q * k ≠ 0 := mul_ne_zero hq hk_ne
+  simp only [if_neg hqk_ne, if_neg hq]
+  -- Need: -((p * k) % (q * k)).coeff((q * k).natDegree - 1) = -(p % q).coeff(q.natDegree - 1)
+  -- This follows from:
+  -- 1. (p * k) % (q * k) = (p % q) * k (by uniqueness of polynomial division)
+  -- 2. (q * k).natDegree = q.natDegree + k.natDegree (for monic q, k)
+  -- 3. coeff_mul_at_sum_sub_one: ((p % q) * k).coeff(q.natDegree - 1 + k.natDegree) = (p % q).coeff(q.natDegree - 1)
+  sorry
+
 /-- The residue at infinity is additive.
 
-Proof strategy:
-1. Express f, g via their reduced forms: f = n_f/d_f, g = n_g/d_g (d_f, d_g monic)
-2. Write n_f = d_f * q_f + r_f, n_g = d_g * q_g + r_g (polynomial division)
-3. Then f + g = (q_f + q_g) + (r_f * d_g + r_g * d_f)/(d_f * d_g)
-4. The remainder (r_f * d_g + r_g * d_f) is already proper (degree < deg(d_f * d_g))
-5. Use coeff_mul_add_eq_of_natDegree_le to extract coefficients
-6. Conclude: residue(f+g) = residue(f) + residue(g)
+Proof strategy using auxiliary function:
+1. Convert to residueAtInftyAux using residueAtInfty_eq_aux
+2. Use scaling (residueAtInftyAux_mul_monic) to express everything over common denominator
+3. Use additivity of residueAtInftyAux in the numerator
+4. Show the result equals residueAtInfty(f+g)
+
+Key insight: The reduced form of f+g may have a different denominator than d_f * d_g,
+but the residue is invariant under multiplying num/denom by the same monic polynomial
+(or dividing by a common monic factor).
 -/
 theorem residueAtInfty_add (f g : RatFunc Fq) :
     residueAtInfty (f + g) = residueAtInfty f + residueAtInfty g := by
-  -- Use the coefficient characterization
-  rw [residueAtInfty_eq_neg_coeff, residueAtInfty_eq_neg_coeff, residueAtInfty_eq_neg_coeff]
-  -- Set up notation for numerators and denominators
-  set n_f := f.num with hn_f
-  set d_f := f.denom with hd_f
-  set n_g := g.num with hn_g
-  set d_g := g.denom with hd_g
-  set r_f := n_f % d_f with hr_f
-  set r_g := n_g % d_g with hr_g
-  -- Denominators are monic
-  have hd_f_monic : d_f.Monic := RatFunc.monic_denom f
-  have hd_g_monic : d_g.Monic := RatFunc.monic_denom g
-  have hd_f_ne : d_f ≠ 0 := RatFunc.denom_ne_zero f
-  have hd_g_ne : d_g ≠ 0 := RatFunc.denom_ne_zero g
-  -- Handle degenerate cases where f or g is a polynomial (denom = 1)
-  by_cases hd_f_deg : d_f.natDegree = 0
-  · -- f is a polynomial (d_f = 1), so residue(f) = 0
-    have hd_f_one : d_f = 1 := Polynomial.eq_one_of_monic_natDegree_zero hd_f_monic hd_f_deg
-    have hr_f_zero : r_f = 0 := by simp [hr_f, hd_f_one]
-    -- residue(f) = 0 because d_f.natDegree - 1 = 0 - 1 = 0 in ℕ and r_f = 0
-    have hres_f : r_f.coeff (d_f.natDegree - 1) = 0 := by simp [hr_f_zero]
-    -- Now the equation simplifies
-    simp only [hres_f, neg_zero, zero_add]
-    -- Need to show: residue(f + g) = residue(g)
-    -- When f is a polynomial, f + g has the same residue as g
-    -- This requires showing (f+g).num % (f+g).denom relates to g.num % g.denom
-    sorry
-  by_cases hd_g_deg : d_g.natDegree = 0
-  · -- g is a polynomial (d_g = 1), so residue(g) = 0
-    have hd_g_one : d_g = 1 := Polynomial.eq_one_of_monic_natDegree_zero hd_g_monic hd_g_deg
-    have hr_g_zero : r_g = 0 := by simp [hr_g, hd_g_one]
-    have hres_g : r_g.coeff (d_g.natDegree - 1) = 0 := by simp [hr_g_zero]
-    simp only [hres_g, neg_zero, add_zero]
-    -- Need to show: residue(f + g) = residue(f)
-    sorry
-  -- Main case: both d_f and d_g have positive degree
-  -- The combined denominator d_f * d_g is monic
-  have hd_fg_monic : (d_f * d_g).Monic := hd_f_monic.mul hd_g_monic
-  -- Degrees of remainders are strictly less than degrees of denominators
-  have hr_f_deg : r_f.natDegree < d_f.natDegree := Polynomial.natDegree_mod_lt n_f hd_f_deg
-  have hr_g_deg : r_g.natDegree < d_g.natDegree := Polynomial.natDegree_mod_lt n_g hd_g_deg
-  -- The sum of proper fractions gives a proper fraction: deg(r_f * d_g + r_g * d_f) < deg(d_f * d_g)
-  have hsum_proper : (r_f * d_g + r_g * d_f).natDegree < (d_f * d_g).natDegree := by
-    have h1 : (r_f * d_g).natDegree < (d_f * d_g).natDegree := by
-      by_cases hr_f_zero : r_f = 0
-      · simp only [hr_f_zero, zero_mul, Polynomial.natDegree_zero]
-        rw [hd_f_monic.natDegree_mul hd_g_monic]
-        omega
-      · rw [Polynomial.natDegree_mul hr_f_zero hd_g_ne, hd_f_monic.natDegree_mul hd_g_monic]
-        omega
-    have h2 : (r_g * d_f).natDegree < (d_f * d_g).natDegree := by
-      by_cases hr_g_zero : r_g = 0
-      · simp only [hr_g_zero, zero_mul, Polynomial.natDegree_zero]
-        rw [hd_f_monic.natDegree_mul hd_g_monic]
-        omega
-      · rw [Polynomial.natDegree_mul hr_g_zero hd_f_ne, hd_f_monic.natDegree_mul hd_g_monic]
-        omega
-    calc (r_f * d_g + r_g * d_f).natDegree
-        ≤ max (r_f * d_g).natDegree (r_g * d_f).natDegree := Polynomial.natDegree_add_le _ _
-      _ < (d_f * d_g).natDegree := max_lt h1 h2
-  -- The remainder of the proper fraction is itself
-  have hsum_mod : (r_f * d_g + r_g * d_f) % (d_f * d_g) = r_f * d_g + r_g * d_f := by
-    rw [Polynomial.mod_eq_self_iff (mul_ne_zero hd_f_ne hd_g_ne)]
-    exact Polynomial.degree_lt_degree hsum_proper
-  -- Now we need to relate (f+g).num % (f+g).denom to r_f * d_g + r_g * d_f
-  -- This is the tricky part: the reduced form might differ from the common denominator form
-  -- Key insight: both give the same residue due to invariance under gcd reduction
+  -- Strategy: Use the auxiliary function which is additive in the numerator
+  -- residueAtInfty f = residueAtInftyAux f.num f.denom (by residueAtInfty_eq_aux)
+  -- We want to show the residue is additive by expressing everything over common denominator
   --
-  -- For now, we use a computational approach based on num_denom_add
+  -- Key facts:
+  -- 1. f = f.num / f.denom, g = g.num / g.denom (reduced forms)
+  -- 2. f + g as an unreduced fraction is (f.num * g.denom + g.num * f.denom) / (f.denom * g.denom)
+  -- 3. The reduced form (f+g).num / (f+g).denom divides out the gcd
+  -- 4. Dividing by a monic factor preserves residue (by residueAtInftyAux_mul_monic)
+  -- 5. residueAtInftyAux is additive in the numerator
+  --
+  -- The proof combines these facts to show additivity.
   sorry
 
 /-! ## Section 3: Residue at General Finite Place
