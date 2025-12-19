@@ -13,7 +13,11 @@
 ## 🎯 NEXT CLAUDE: Start Here (Cycle 155)
 
 ### Current State
-Build: ✅ **COMPILES** with **1 sorry** in FullAdelesCompact.lean (line ~983)
+Build: ✅ **COMPILES** with **1 sorry** in FullAdelesCompact.lean (line ~994) - **2771 jobs**
+
+**IMPORTANT**: The import was previously disabled! Now enabled:
+- FullAdeles.lean imports FullAdelesCompact.lean ✅
+- RiemannRochV2.lean imports FullAdeles.lean ✅
 
 **The remaining sorry is for `bound < 1` case only - NOT on critical path!**
 The main theorem `exists_translate_in_integralFullAdeles` uses `bound = 1`, which is fully proven.
