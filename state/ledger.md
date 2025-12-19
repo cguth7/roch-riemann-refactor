@@ -7,14 +7,15 @@
 
 ---
 
-## 🎯 NEXT CLAUDE: Start Here (Post-Cycle 132)
+## 🎯 NEXT CLAUDE: Start Here (Post-Cycle 133)
 
 ### Critical Context
 **Cycle 121 discovered a spec bug**: K is NOT discrete in the *finite* adeles.
 **Cycle 122 created `FullAdeles.lean`** with the product definition A = A_f × K_∞.
 **Cycle 130 PROVED `fq_discrete_in_fullAdeles`** - the KEY discreteness theorem!
 **Cycle 131 PROVED `fq_closed_in_fullAdeles`** - discrete + T2 → closed!
-**Cycle 132**: PARTIAL progress on `isCompact_integralFullAdeles` - finite adeles part DONE!
+**Cycle 132**: Finite adeles compactness DONE!
+**Cycle 133**: Infinity compactness structure written, RankOne/IsNontrivial proofs blocked on tactic issues
 
 ### Current State
 - ✅ `algebraMap_FqtInfty_injective` - PROVED
@@ -849,6 +850,55 @@ and avoids "simp thrash" where repeated simp failures cause wasted cycles.
 **Next Steps** (Cycle 132+):
 1. Prove `isCompact_integralFullAdeles` - product of compact sets
 2. Prove `exists_translate_in_integralFullAdeles` - weak approximation for PIDs
+
+---
+
+#### Cycle 133 - Infinity Compactness Structure (Blocked on Tactic Issues)
+
+**Goal**: Complete infinity compactness proof for `isCompact_integralFullAdeles`.
+
+**Status**: 🔶 PARTIAL - Structure complete, blocked on ℝ≥0 literal proofs
+
+**Results**:
+- [x] Added imports: `Mathlib.Data.Int.WithZero`, `Mathlib.Topology.Algebra.Valued.LocallyCompact`
+- [x] Wrote `inftyValuation_isNontrivial` theorem (commented out - blocked)
+- [x] Wrote `instRankOneFqtInfty` instance structure (commented out - blocked)
+- [x] Documented full proof strategy following `AllIntegersCompactProof.compactSpace_adicCompletionIntegers`
+- [x] Added detailed TODO section in code for next Claude
+
+**Blocking Issue**: The ℝ≥0 literal proofs like `(2 : ℝ≥0) ≠ 0` and `(1 : ℝ≥0) < 2` fail with:
+- `norm_num` generates `sorry ()` garbage
+- `native_decide` fails ("failed to synthesize OfNat Type 0")
+- Need to use `NNReal.coe_lt_coe.mp (by norm_num : (1:ℝ) < 2)` or similar coercion trick
+
+**Proof Strategy Documented** (in FullAdeles.lean comments):
+
+1. **RankOne instance**:
+   ```lean
+   instance instRankOneFqtInfty : Valuation.RankOne (Valued.v (R := FqtInfty Fq)) where
+     toIsNontrivial := inftyValuation_isNontrivial Fq
+     hom := WithZeroMulInt.toNNReal h2  -- where h2 : (2 : ℝ≥0) ≠ 0
+     strictMono' := WithZeroMulInt.toNNReal_strictMono h1  -- where h1 : (1 : ℝ≥0) < 2
+   ```
+
+2. **Nontriviality**: Show `v(X) = exp(1) ≠ 0, 1` using `Valued.extension_extends`
+
+3. **Compactness** (same pattern as `AllIntegersCompactProof.lean`):
+   - CompleteSpace: `Valued.integer` is closed in complete space
+   - DVR: value group is ℤ (discrete)
+   - Finite residue field: isomorphic to Fq
+   - Apply `compactSpace_iff_completeSpace_and_isDiscreteValuationRing_and_finite_residueField`
+
+**Sorry Status**:
+- FullAdeles.lean: 2 sorries (infinity compactness, weak approx)
+
+**Build**: ✅ Compiles successfully with 2 sorries
+
+**Next Steps** (Cycle 134+):
+1. Fix ℝ≥0 literal proofs using coercion from ℝ
+2. Uncomment and complete RankOne instance
+3. Complete infinity compactness proof
+4. Start weak approximation
 
 ---
 

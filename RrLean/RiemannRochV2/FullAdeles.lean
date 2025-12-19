@@ -40,6 +40,8 @@ import Mathlib.Topology.Algebra.Module.Basic
 import Mathlib.Topology.Algebra.Ring.Basic
 import Mathlib.Topology.Algebra.UniformRing
 import Mathlib.Topology.DiscreteSubset
+import Mathlib.Data.Int.WithZero
+import Mathlib.Topology.Algebra.Valued.LocallyCompact
 import RrLean.RiemannRochV2.AdelicTopology
 import RrLean.RiemannRochV2.FqPolynomialInstance
 
@@ -675,6 +677,46 @@ theorem fq_closed_in_fullAdeles :
   rw [hrange]
   exact AddSubgroup.isClosed_of_discrete
 
+/-! ### RankOne Instance for FqtInfty
+
+To use the compactness characterization theorem
+`compactSpace_iff_completeSpace_and_isDiscreteValuationRing_and_finite_residueField`,
+we need a `RankOne` instance for the infinity valuation.
+-/
+
+/-! ### RankOne Instance for FqtInfty (TODO - Cycle 134)
+
+**Cycle 133 Progress**: Full structure written for infinity compactness.
+
+## What's needed:
+
+### 1. Nontriviality theorem
+```
+theorem inftyValuation_isNontrivial :
+    Valuation.IsNontrivial (Valued.v (R := FqtInfty Fq)) := by
+  refine ⟨inftyRingHom Fq RatFunc.X, ?_, ?_⟩
+  -- v(X) ≠ 0: use Valued.extension_extends + inftyValuation.X
+  -- v(X) ≠ 1: exp(1) ≠ exp(0) via WithZero.exp_injective
+```
+Issue: Proof nearly complete but `Valued.extension_extends` rewrite not working.
+
+### 2. RankOne instance
+```
+noncomputable instance instRankOneFqtInfty :
+    Valuation.RankOne (Valued.v (R := FqtInfty Fq)) where
+  toIsNontrivial := inftyValuation_isNontrivial Fq
+  hom := WithZeroMulInt.toNNReal h2  -- where h2 : (2 : ℝ≥0) ≠ 0
+  strictMono' := WithZeroMulInt.toNNReal_strictMono h1  -- where h1 : (1 : ℝ≥0) < 2
+```
+Issue: ℝ≥0 literal proofs - try `NNReal.coe_lt_coe.mp (by norm_num : (1:ℝ) < 2)`
+
+### 3. Compactness (uses same pattern as AllIntegersCompactProof.lean)
+- CompleteSpace: closed subset of complete space
+- DVR: value group is ℤ
+- Finite residue field: isomorphic to Fq
+- Then apply `compactSpace_iff_completeSpace_and_isDiscreteValuationRing_and_finite_residueField`
+-/
+
 /-- Compactness of integral full adeles.
 
 The integral full adeles form a compact set because:
@@ -724,18 +766,12 @@ theorem isCompact_integralFullAdeles [AllIntegersCompact Fq[X] (RatFunc Fq)] :
 
   -- Prove compactness of the infinity factor
   have hCompactInfty : IsCompact integralInfty := by
-    -- The integer ring {x | Valued.v x ≤ 1} = Valued.integer in a complete valued field is compact
-    -- when the residue field is finite and the valuation has rank 1.
-    -- Use: Valued.integer.compactSpace_iff_completeSpace_and_isDiscreteValuationRing_and_finite_residueField
-    --
-    -- For FqtInfty Fq, we need:
-    -- 1. RankOne instance for Valued.v on FqtInfty Fq (ℤᵐ⁰ embeds into ℝ≥0)
-    -- 2. CompleteSpace (Valued.integer (FqtInfty Fq)) - follows from FqtInfty being a completion
-    -- 3. IsDiscreteValuationRing (Valued.integer (FqtInfty Fq)) - follows from compactness
-    -- 4. Finite (Valued.residueField (FqtInfty Fq)) - residue field is Fq
-    --
-    -- integralInfty = (Valued.integer (FqtInfty Fq) : Set _) by definition
-    -- Then use isCompact_iff_compactSpace to convert CompactSpace to IsCompact
+    -- **Cycle 133 Progress**: Structure established, needs 3 conditions for FqtInfty:
+    -- 1. CompleteSpace (Valued.integer (FqtInfty Fq)) - closed subset of complete
+    -- 2. IsDiscreteValuationRing - value group is ℤ
+    -- 3. Finite (Valued.ResidueField) - residue field is Fq
+    -- Then use compactSpace_iff + continuous_subtype_val conversion
+    -- Same pattern as AllIntegersCompactProof.compactSpace_adicCompletionIntegers
     sorry
 
   -- Combine using IsCompact.prod
