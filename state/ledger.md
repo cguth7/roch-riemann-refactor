@@ -10,19 +10,38 @@
 
 ---
 
-## 🎯 NEXT CLAUDE: Start Here (Cycle 151)
+## 🎯 NEXT CLAUDE: Start Here (Cycle 152)
 
 ### Current State
-Build: ✅ **COMPILES** with **3 sorries** in FullAdelesCompact.lean
+Build: ✅ **COMPILES** with **2 sorries** in FullAdelesCompact.lean
 
-### What Cycle 150 Did
-- 🔶 **Attempted CRT proof for `exists_finite_integral_translate`** - Identified API issues
-- ✅ **Documented proof structure** - The approach is correct, needs API fixes
+### What Cycle 151 Did
+- ✅ **Filled `exists_translate_in_integralFullAdeles`** (3 → 2 sorries)
+  - Uses `exists_approx_in_ball_infty` for infinity approximation
+  - Uses `exists_finite_integral_translate_with_infty_bound` for finite places
+  - Combines using ultrametric inequality
+- ✅ **Found key API**: `Ideal.prime_of_isPrime v.ne_bot v.isPrime` for CRT
 
-### Remaining Sorries (3 total)
-1. `exists_finite_integral_translate` (line ~502) - CRT proof (approach documented inline)
-2. `exists_finite_integral_translate_with_infty_bound` (line ~557) - polynomial division
-3. `exists_translate_in_integralFullAdeles` (line ~600) - combining above
+### Remaining Sorries (2 total)
+1. `exists_finite_integral_translate` (line ~540) - CRT proof
+2. `exists_finite_integral_translate_with_infty_bound` (line ~628) - polynomial division
+
+### Strategy for Next Cycle
+
+**For `exists_finite_integral_translate`**:
+The CRT structure is documented inline. Key steps:
+1. Get bad set S from restricted product property
+2. Get approximants y_v via `exists_local_approximant`
+3. Get common denominator D for all y_v
+4. Build T = S ∪ {divisors of D}
+5. Apply `IsDedekindDomain.exists_forall_sub_mem_ideal` (CRT)
+6. Verify valuations using `intValuation_ge_exp_neg_natDegree`
+
+**For `exists_finite_integral_translate_with_infty_bound`**:
+1. Get k₀ from `exists_finite_integral_translate`
+2. Use Euclidean division: k₀ = q + r/denom where deg(r) < deg(denom)
+3. k = k₀ - q has |k|_∞ < 1 ≤ bound
+4. q is polynomial, so finite integrality preserved
 
 ### Key Findings from Cycle 150: API Issues
 
@@ -93,8 +112,37 @@ If API issues persist, consider:
 
 ### File Split (for faster builds)
 - **FullAdelesBase.lean** (~685 lines) - General defs → ✅ COMPILES
-- **FullAdelesCompact.lean** (~505 lines) - Compactness, weak approx → ✅ COMPILES (7 sorries)
+- **FullAdelesCompact.lean** (~762 lines) - Compactness, weak approx → ✅ COMPILES (2 sorries)
 - **FullAdeles.lean** - Re-export hub
+
+---
+
+## Cycle 151 Summary - 1 SORRY FILLED
+
+**Goal**: Fill remaining sorries in FullAdelesCompact.lean
+
+**Status**: ✅ Reduced from 3 to 2 sorries
+
+**Filled**:
+1. `exists_translate_in_integralFullAdeles` - Weak approximation main theorem
+
+**Key technique**:
+- Get polynomial P approximating a.2 at infinity via `exists_approx_in_ball_infty`
+- Work with b = a - diag(P), which has |b.2|_∞ ≤ 1
+- Get z from `exists_finite_integral_translate_with_infty_bound` with bound = 1
+- Combine x = P + z, verify using:
+  - Finite: (a - diag(x)).1 v = (b - diag(z)).1 v = b.1 v - z ∈ O_v
+  - Infinity: ultrametric inequality |b.2 - z|_∞ ≤ max(|b.2|_∞, |z|_∞) ≤ 1
+
+**Key API discoveries**:
+- `Ideal.prime_of_isPrime v.ne_bot v.isPrime` converts IsPrime to Prime for CRT
+- `(fqFullDiagonalEmbedding Fq).map_add` for ring hom property
+- `Valued.v.map_sub` for ultrametric inequality
+- `(v.adicCompletionIntegers K).add_mem` for integral element addition
+
+**Remaining sorries (2)**:
+1. `exists_finite_integral_translate` - CRT-based proof (complex, API-intensive)
+2. `exists_finite_integral_translate_with_infty_bound` - Polynomial division argument
 
 ---
 

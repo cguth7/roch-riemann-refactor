@@ -580,6 +580,51 @@ theorem exists_finite_integral_translate_with_infty_bound
   - Need FunctionField.inftyValuationDef API for exp(intDegree)
   - Various rewrite patterns not matching current mathlib
   -/
+  -- Step 1: Get k₀ from exists_finite_integral_translate
+  obtain ⟨k₀, hk₀_int⟩ := exists_finite_integral_translate Fq a
+
+  -- Step 2: Check if k₀ already satisfies the bound
+  by_cases hk₀_bound : Valued.v (inftyRingHom Fq k₀) ≤ bound
+  · -- k₀ works!
+    exact ⟨k₀, hk₀_int, hk₀_bound⟩
+
+  -- Step 3: k₀ doesn't satisfy bound, need to modify it
+  -- Strategy: find polynomial p such that k = k₀ - p satisfies the bound
+  -- and still makes finite places integral (polynomials are integral at all finite places)
+
+  -- For bound ≥ 1: use density at infinity to find p
+  -- k₀ - p should have |·|_∞ ≤ bound
+
+  -- Use density: there exists p such that |k₀ - p|_∞ ≤ bound
+  -- Actually, we need a polynomial p. Let's use a different approach.
+
+  -- The key insight: for any polynomial q, adding q to k preserves finite integrality
+  -- So we can subtract the "polynomial part" of k₀
+
+  -- For now, use a simpler approach for bound = 1 (which is what we need)
+  -- Get a polynomial approximation using exists_approx_in_ball_infty
+
+  -- Actually, let's use the structure of RatFunc more directly
+  -- k₀ = num / denom where num, denom ∈ Fq[X]
+  -- Let q = num / denom (polynomial division), r = num % denom
+  -- Then num = denom * q + r, so k₀ = q + r/denom
+  -- deg(r) < deg(denom), so |r/denom|_∞ = exp(deg r - deg denom) < 1
+
+  -- For general bound: we use density to find approximation
+  -- Use exists_approx_in_ball_infty pattern but for arbitrary bound
+
+  -- For bound ≥ 1: subtract polynomial part of k₀ to reduce infinity valuation
+  -- k₀ = q + r where q is polynomial quotient, r = remainder/denom has |r|_∞ < 1
+  -- Then k = k₀ - q satisfies finite integrality (q is polynomial) and |k|_∞ < 1 ≤ bound
+
+  -- For bound < 1: need more refined polynomial division argument
+
+  -- The full proof requires:
+  -- 1. RatFunc num/denom API
+  -- 2. Euclidean division in Fq[X]
+  -- 3. inftyValuation degree computation
+  -- 4. Type coercion handling between RatFunc, Fq[X], and completions
+
   sorry
 
 /-- Weak approximation: every element can be shifted into integral adeles.
@@ -615,7 +660,76 @@ theorem exists_translate_in_integralFullAdeles (a : FqFullAdeleRing Fq) :
   - RestrictedProduct.sub_apply not found
   - Ring arithmetic in completions
   -/
-  sorry
+  -- Step 1: Get polynomial P approximating a.2 at infinity
+  obtain ⟨P, hP_approx⟩ := exists_approx_in_ball_infty Fq a.2
+  -- P : RatFunc Fq, hP_approx : Valued.v (a.2 - inftyRingHom Fq P) ≤ 1
+
+  -- Step 2: b = a - diag(P), so |b.2|_∞ ≤ 1
+  let b : FqFullAdeleRing Fq := a - fqFullDiagonalEmbedding Fq P
+  have hb_infty : Valued.v b.2 ≤ 1 := by
+    -- b.2 = a.2 - (fqFullDiagonalEmbedding Fq P).2 = a.2 - inftyRingHom Fq P
+    show Valued.v (a.2 - (fqFullDiagonalEmbedding Fq P).2) ≤ 1
+    simp only [fqFullDiagonalEmbedding_snd]
+    exact hP_approx
+
+  -- Step 3: Get z from exists_finite_integral_translate_with_infty_bound
+  -- b.1 is the finite adele part of b = a - diag(P)
+  obtain ⟨z, hz_fin, hz_infty⟩ := exists_finite_integral_translate_with_infty_bound Fq b.1 1
+  -- hz_fin : ∀ v, (b.1).val v - z ∈ O_v
+  -- hz_infty : Valued.v (inftyRingHom Fq z) ≤ 1
+
+  -- Step 4: x = P + z
+  use P + z
+
+  -- Step 5: Verify a - diag(x) ∈ integralFullAdeles
+  simp only [integralFullAdeles, Set.mem_setOf_eq]
+  constructor
+
+  -- Part 5a: Finite places - (a - diag(x)).1 v ∈ O_v for all v
+  · intro v
+    -- (a - diag(P + z)).1 v = b.1 v - z (in completion)
+    -- Use that fqFullDiagonalEmbedding is a ring hom, so diag(P+z) = diag(P) + diag(z)
+    have hdiag_add : fqFullDiagonalEmbedding Fq (P + z) =
+        fqFullDiagonalEmbedding Fq P + fqFullDiagonalEmbedding Fq z :=
+      (fqFullDiagonalEmbedding Fq).map_add P z
+    -- a - diag(P+z) = a - diag(P) - diag(z) = b - diag(z)
+    have heq_full : a - fqFullDiagonalEmbedding Fq (P + z) =
+        b - fqFullDiagonalEmbedding Fq z := by
+      rw [hdiag_add]
+      simp only [b]
+      abel
+    -- At finite component v: (b - diag(z)).1.val v = b.1.val v - z
+    have heq : ((a - fqFullDiagonalEmbedding Fq (P + z)).1).val v =
+        (b.1).val v - (z : v.adicCompletion (RatFunc Fq)) := by
+      rw [heq_full]
+      rfl
+    rw [heq]
+    exact hz_fin v
+
+  -- Part 5b: Infinity - |(a - diag(x)).2|_∞ ≤ 1
+  · -- (a - diag(P + z)).2 = b.2 - inftyRingHom(z)
+    have hdiag_add : fqFullDiagonalEmbedding Fq (P + z) =
+        fqFullDiagonalEmbedding Fq P + fqFullDiagonalEmbedding Fq z :=
+      (fqFullDiagonalEmbedding Fq).map_add P z
+    -- (a - diag(P+z)).2 = a.2 - diag(P+z).2 = a.2 - diag(P).2 - diag(z).2
+    -- b.2 = a.2 - diag(P).2, so this equals b.2 - diag(z).2
+    -- diag(z).2 = inftyRingHom z
+    have heq : (a - fqFullDiagonalEmbedding Fq (P + z)).2 = b.2 - inftyRingHom Fq z := by
+      calc (a - fqFullDiagonalEmbedding Fq (P + z)).2
+          = a.2 - (fqFullDiagonalEmbedding Fq (P + z)).2 := rfl
+        _ = a.2 - (fqFullDiagonalEmbedding Fq P + fqFullDiagonalEmbedding Fq z).2 := by
+            rw [hdiag_add]
+        _ = a.2 - ((fqFullDiagonalEmbedding Fq P).2 + (fqFullDiagonalEmbedding Fq z).2) := rfl
+        _ = a.2 - (fqFullDiagonalEmbedding Fq P).2 - (fqFullDiagonalEmbedding Fq z).2 := by ring
+        _ = (a - fqFullDiagonalEmbedding Fq P).2 - (fqFullDiagonalEmbedding Fq z).2 := rfl
+        _ = b.2 - (fqFullDiagonalEmbedding Fq z).2 := rfl
+        _ = b.2 - inftyRingHom Fq z := by rw [fqFullDiagonalEmbedding_snd]
+    rw [heq]
+    -- Use ultrametric: |b.2 - z|_∞ ≤ max(|b.2|_∞, |z|_∞) ≤ max(1, 1) = 1
+    calc Valued.v (b.2 - inftyRingHom Fq z)
+        ≤ max (Valued.v b.2) (Valued.v (inftyRingHom Fq z)) := Valued.v.map_sub _ _
+      _ ≤ max 1 1 := max_le_max hb_infty hz_infty
+      _ = 1 := max_self 1
 
 /-! ### Full Instance -/
 
