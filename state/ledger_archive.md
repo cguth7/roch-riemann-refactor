@@ -5208,3 +5208,76 @@ theorem exists_translate_in_integralFullAdeles : ...
 - `Valued.isOpen_valuationSubring` - Valuation ring is open
 - `coe_algebraMap_mem` - Elements of R are integral in adicCompletion
 
+
+---
+
+## Cycles 166-182 (2025-12-19 to 2025-12-20)
+
+### Cycle 182 - Bilinear pairing infrastructure
+**Achievements:**
+1. `residueSumTotal_smul` ✅ - Scalar multiplication for total residue sum
+2. `residueSumTotal_linearMap` ✅ - Total residue sum as linear map
+3. `residuePairing` ✅ - Bilinear pairing via product: `residuePairing g f := residueSumTotal (g * f)`
+4. `residuePairing_bilinear` ✅ - Full bilinear map structure
+5. `residuePairing_eq_zero_of_splits` ✅ - Residue theorem for pairing
+6. `residuePairing_polynomial_left/right` ✅ - Polynomial cases
+
+**New Sorry:** `residueAtInfty_smul` - Scalar multiplication for residue at infinity
+
+**Key Insight:** The bilinear pairing `residuePairing g f = residueSumTotal(g * f)` captures the multiplication structure needed for the Serre pairing. By the residue theorem, this pairing vanishes whenever the product has a split denominator.
+
+### Cycle 181 - Extended residue theorem to n poles
+- `pairwise_coprime_X_sub_of_injective` ✅ - Helper for coprimality
+- `residueSumTotal_n_poles_finset` ✅ - General residue theorem for n distinct linear poles
+- `residueSumTotal_splits` ✅ - Corollary for split denominators
+
+### Cycle 180 - Two poles residue theorem
+- `residueSumTotal_two_poles` ✅ - Uses partial fractions decomposition
+
+### Cycle 179 - Partial fractions infrastructure
+- Added `Mathlib.Algebra.Polynomial.PartialFractions` import
+- `isCoprime_X_sub_of_ne` ✅, `const_div_X_sub_eq_smul` ✅
+
+### Cycle 178 - Perfect pairing dimension
+- `finrank_eq_of_perfect_pairing` ✅ - Key lemma: perfect pairing → equal dimensions
+- Uses `LinearMap.flip`, `Subspace.dual_finrank_eq`, `finrank_le_finrank_of_injective`
+
+### Cycle 177 - Polynomial residue lemmas
+- `translateBy_polynomial` ✅, `residueAt_polynomial` ✅, `residueSumTotal_polynomial` ✅
+
+### Cycle 176 - residueAtX_inv_X_sub_ne + SerreDuality wiring
+- `residueAtX_inv_X_sub_ne` ✅ - Residue at origin of 1/(X-c) = 0 when c ≠ 0
+- SerreDuality.lean wired to import chain
+
+### Cycle 175 - Residue.lean compilation fixes
+- Fixed `residueAt_inv_X_sub_ne`, Residue.lean now compiles
+
+### Cycle 174 - Build fixes (incomplete)
+- Attempted residueAtX_inv_X_sub_ne fixes, pivoted approach
+
+### Cycle 173 - Residue infrastructure wiring
+- `residueAtX_inv_X_sub_ne` ✅, `residueAt_inv_X_sub_ne` ✅
+- `residueSumFinite`, `residueSumTotal`, `residueSumTotal_eq_zero_simple` ✅
+
+### Cycle 172 - Translation lemmas
+- `translateBy_add` ✅, `translateBy_smul` ✅, `residueAt_eq_residueAtLinear_simple` ✅
+
+### Cycle 171 - Translation-based residues pivot
+- Discovered `residueAtLinear` fails for higher-order poles
+- Defined `translateBy`, `residueAt` via translation to origin
+
+### Cycle 170 - residueAtLinear linearity
+- `residueAtLinear_zero` ✅, `residueAtLinear_smul` ✅, `residueAtLinear_add_aux` (partial)
+
+### Cycle 169 - Completed residue sorries
+- `residueAtInfty_smul_inv_X_sub` ✅, `residueAtLinear_inv_X_sub_ne` ✅
+
+### Cycle 168 - residueAtInfty_smul_inv_X_sub progress
+- gcd breakthrough: `normalize_gcd` + `normalize_eq_one` for unit gcd
+
+### Cycle 167 - Linear place residues
+- `residueAtLinear` ✅, `residueAtLinear_inv_X_sub` ✅, `residue_sum_simple_pole` ✅
+
+### Cycle 166 - residueAtInfty_add completed
+- `residueAtInftyAux_mul_monic` ✅, `residueAtInfty_add` ✅
+

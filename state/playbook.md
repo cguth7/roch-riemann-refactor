@@ -1,6 +1,6 @@
 # Playbook
 
-Strategic guide for formalizing Riemann-Roch. Updated Cycle 158.
+Strategic guide for formalizing Riemann-Roch. Updated Cycle 182.
 
 ---
 
@@ -127,9 +127,9 @@ RrLean/RiemannRochV2/
 ├── FullAdelesCompact.lean  # Compactness, discreteness ✅
 ├── DifferentIdealBridge.lean  # L(D) ↔ FractionalIdeal ✅
 ├── AdelicH1v2.lean         # H¹(D), AdelicRRData ✅
-├── Residue.lean            # Residue extraction via HahnSeries.coeff ✅
-├── SerreDuality.lean       # Residue pairing (in progress)
-└── FullRRData.lean         # Full RR theorem
+├── Residue.lean            # residueAtX, residueAtInfty, residueAt ✅
+├── SerreDuality.lean       # residuePairing, serrePairing (in progress)
+└── FullRRData.lean         # Full RR theorem (pending)
 ```
 
 ---
@@ -178,11 +178,20 @@ lemma riemann_inequality_affine [BaseDim R K] {D : DivisorV2 R} (hD : D.Effectiv
 - Weak approximation
 - Cycles 76-155
 
-### Phase 3: Serre Duality (Current)
-- Need: trace pairing construction
-- Need: non-degeneracy proof
-- Need: instantiate AdelicRRData
-- Cycle 156+
+### Phase 3: Serre Duality (Current - Cycle 182)
+
+**Completed:**
+- Residue at X (X-adic) via HahnSeries.coeff(-1) ✅
+- Residue at infinity via degree formula ✅
+- Residue at linear places via translation ✅
+- Residue theorem for split denominators ✅
+- Bilinear pairing `residuePairing g f := residueSumTotal(g*f)` ✅
+- Perfect pairing → equal dimensions ✅
+
+**In Progress:**
+- Wire serrePairing using residuePairing infrastructure
+- Fill non-degeneracy proofs
+- Instantiate AdelicRRData
 
 ---
 
