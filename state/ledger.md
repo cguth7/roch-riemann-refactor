@@ -8,9 +8,9 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Build**: ✅ COMPILES
 **Phase**: 3 - Serre Duality
-**Cycle**: 170 (ready for next)
+**Cycle**: 171 (ready for next)
 
-### Sorry Count: 15
+### Sorry Count: 16
 
 | File | Count | Notes |
 |------|-------|-------|
@@ -18,7 +18,68 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 | `FqPolynomialInstance.lean` | 4 | concrete Fq[X] instance |
 | `TraceDualityProof.lean` | 1 | abandoned approach |
 | `SerreDuality.lean` | 5 | pairing types defined, proofs pending |
-| `Residue.lean` | 4 | residueAt, residue_sum_eq_zero, residueAtLinear_add_aux (2 cases) |
+| `Residue.lean` | 5 | translateBy lemmas (2), residueAt_eq simple (1), residueAtIrreducible (1), residue_sum_eq_zero (1) |
+
+---
+
+## CYCLE 171 - Strategic Pivot: Translation-Based Residues
+
+### Key Insight (from Gemini feedback)
+**`residueAtLinear` is fundamentally broken for higher-order poles!**
+
+The "multiply by (X-α) and evaluate" formula fails additivity:
+- For `f = 1/(X-α)²` and `g = 1/(X-α)`: res(f) = 0, res(g) = 1
+- But `f + g = (1 + (X-α))/(X-α)²`, and after multiplying by (X-α):
+  - We get `(1 + (X-α))/(X-α)`, which still has a pole at α
+  - Evaluation gives 1/0 = 0, but we expected 0 + 1 = 1!
+
+### Solution: Translation to Origin
+Instead of patching `residueAtLinear`, define residue at α by translating to 0:
+```lean
+def translateBy (α : Fq) (f : RatFunc Fq) : RatFunc Fq :=
+  -- f(X) ↦ f(X + α) via polynomial composition
+  algebraMap _ _ (f.num.comp (X + C α)) / algebraMap _ _ (f.denom.comp (X + C α))
+
+def residueAt (α : Fq) (f : RatFunc Fq) : Fq :=
+  residueAtX (translateBy α f)  -- Uses robust HahnSeries.coeff (-1)
+```
+
+### Achievements
+1. **Filled `residueAtLinear_add_aux` sorries ✅**
+   - Case 1 (both denoms = 0): Proved IMPOSSIBLE via coprimality contradiction
+   - Case 2 (both denoms ≠ 0): Used `field_simp` + `ring_nf` with `num_denom_add` relation
+
+2. **Defined `translateBy` ✅** - Translation f(X) ↦ f(X + α)
+
+3. **Defined `residueAt` via translation ✅** - Robust for all pole orders
+
+4. **Defined `residueAt_linearMap` ✅** - Proper linear map (no edge case issues)
+
+5. **Proved key lemmas:**
+   - `residueAt_add` - Additivity (uses `translateBy_add`)
+   - `residueAt_smul` - Scalar multiplication
+   - `residueAt_zero'` - Zero element
+   - `residueAt_zero_eq_residueAtX` - Translation by 0 is identity
+
+### New Sorries (3)
+- `translateBy_add` - Translation preserves addition (fraction arithmetic)
+- `translateBy_smul` - Translation preserves scalar mult
+- `residueAt_eq_residueAtLinear_simple` - Link to computational formula
+
+### Sorry Count Change
+- Before: 15 sorries
+- Filled: 2 (residueAtLinear_add_aux cases)
+- Added: 3 (translation infrastructure)
+- After: 16 sorries
+
+### Architecture Note
+`residueAtLinear` is kept as a **computational helper** for simple poles only.
+`residueAt` is the **canonical definition** for general use.
+
+### Next Steps (Cycle 172)
+1. Fill `translateBy_add` and `translateBy_smul` using `num_denom_add` etc.
+2. Fill `residueAt_eq_residueAtLinear_simple` to link the two approaches
+3. Wire `residueAt_linearMap` to SerreDuality.lean
 
 ---
 

@@ -781,46 +781,170 @@ private lemma residueAtLinear_add_aux (α : Fq) (f g : RatFunc Fq)
   have hprod_ne : fX.denom.eval α * gX.denom.eval α ≠ 0 := mul_ne_zero hf_denom hg_denom
   by_cases hsum_denom : (fX + gX).denom.eval α = 0
   · -- If (fX + gX).denom.eval α = 0
+    -- This is actually impossible via coprimality!
     -- From heval: lhs * (fX.denom * gX.denom).eval α = rhs * 0 = 0
-    -- But (fX.denom * gX.denom).eval α ≠ 0, so lhs = 0
+    -- But (fX.denom * gX.denom).eval α ≠ 0, so lhs = (fX + gX).num.eval α = 0
     rw [hsum_denom, mul_zero] at heval
     have hsum_num : (fX + gX).num.eval α = 0 := by
       by_contra h
       have : (fX + gX).num.eval α * (fX.denom.eval α * gX.denom.eval α) = 0 := heval
       simp only [mul_eq_zero, h, hprod_ne, or_self] at this
-    simp only [hsum_num, hsum_denom, zero_div]
-    -- Need: fX.num.eval α / fX.denom.eval α + gX.num.eval α / gX.denom.eval α = 0
-    -- From heval: 0 = (fX.num * gX.denom + fX.denom * gX.num).eval α * 0 = 0
-    -- This doesn't directly give us the sum = 0...
-    -- Actually, we also need that the gcd doesn't introduce issues
-    -- This case is subtle; let's use field_simp
-    -- Actually, from hadd with denom.eval = 0 and prod_ne ≠ 0, we have num.eval = 0
-    -- And hadd gives: 0 * prod = (fX.num * gX.denom + fX.denom * gX.num).eval α * 0
-    -- So 0 = 0, which is fine but doesn't help.
-    -- We need to show: fn/fd + gn/gd = 0
-    -- From hadd at eval: (fn*gd + fd*gn) * sum_denom = sum_num * (fd * gd)
-    -- With sum_denom.eval = 0 and sum_num.eval = 0: 0 = 0, no info
-    -- But we know sum_denom.eval = 0, and (fn*gd + fd*gn) might not be 0
-    -- Hmm, this case needs more careful analysis
-    -- For now, let's add an assumption that we're in the "nice" case
-    sorry
+    -- But now we have both num and denom evaluating to 0, which contradicts coprimality
+    -- (X - C α) would divide both, but gcd(num, denom) = 1
+    exfalso
+    have hcoprime := RatFunc.isCoprime_num_denom (fX + gX)
+    have hroot_denom : Polynomial.IsRoot (fX + gX).denom α := by
+      rwa [Polynomial.IsRoot.def]
+    have hroot_num : Polynomial.IsRoot (fX + gX).num α := by
+      rwa [Polynomial.IsRoot.def]
+    have hdvd_denom := Polynomial.dvd_iff_isRoot.mpr hroot_denom
+    have hdvd_num := Polynomial.dvd_iff_isRoot.mpr hroot_num
+    have hXa_ne : Polynomial.X - Polynomial.C α ≠ 0 := by
+      intro h; have := congr_arg Polynomial.natDegree h; simp at this
+    have hdeg : (Polynomial.X - Polynomial.C α).natDegree = 1 := Polynomial.natDegree_X_sub_C α
+    have hdvd1 : (Polynomial.X - Polynomial.C α) ∣ 1 := by
+      have h1 := hcoprime.isUnit_of_dvd' hdvd_num hdvd_denom
+      exact h1.dvd
+    have hdeg1 := Polynomial.natDegree_le_of_dvd hdvd1 one_ne_zero
+    rw [hdeg, Polynomial.natDegree_one] at hdeg1
+    omega
   · -- (fX + gX).denom.eval α ≠ 0
-    -- This case needs more careful analysis using heval and the field structure
-    -- The core relation is from heval (reordered):
-    -- (fX + gX).num.eval α * (fX.denom.eval α * gX.denom.eval α) =
-    -- (fX.num.eval α * gX.denom.eval α + gX.num.eval α * fX.denom.eval α) * (fX + gX).denom.eval α
-    -- TODO: Complete this proof in future cycle
-    sorry
+    -- All three denominators are nonzero, so we can use field_simp
+    -- Goal: (fX + gX).num.eval α / (fX + gX).denom.eval α
+    --     = fX.num.eval α / fX.denom.eval α + gX.num.eval α / gX.denom.eval α
+    -- Using div_eq_div_iff to reduce to multiplication equation
+    rw [div_add_div _ _ hf_denom hg_denom]
+    rw [div_eq_div_iff hsum_denom (mul_ne_zero hf_denom hg_denom)]
+    -- Goal: (fX + gX).num.eval α * (fX.denom.eval α * gX.denom.eval α) =
+    --       (fX.num.eval α * gX.denom.eval α + gX.num.eval α * fX.denom.eval α) * (fX + gX).denom.eval α
+    -- This follows from heval with ring manipulation
+    have h := heval
+    ring_nf at h ⊢
+    exact h
 
-/-- Placeholder for residue at an arbitrary finite place.
+/-- Additivity for residueAtLinear when both functions have at most simple poles at α.
 
-For a prime p ∈ Fq[X], the residue at (p) is the coefficient of p^{-1}
-in the p-adic expansion of f.
+The hypothesis conditions are equivalent to: f and g have poles of order at most 1 at α.
+This is a "conditional" additivity - it holds when the pole conditions are satisfied.
 
-For degree-1 primes (X - α), use `residueAtLinear` instead.
-General finite places will be handled via partial fractions in future cycles.
+**Important**: residueAtLinear is NOT additive in general for higher-order poles.
+For a truly linear residue functional, use `residueAt` which is defined via translation
+to the origin where `residueAtX` (using HahnSeries.coeff) handles all pole orders correctly.
 -/
-def residueAt (p : Polynomial Fq) (hp : p.Monic) (hirr : Irreducible p)
+theorem residueAtLinear_add (α : Fq) (f g : RatFunc Fq)
+    (hf : ((RatFunc.X - RatFunc.C α) * f).denom.eval α ≠ 0)
+    (hg : ((RatFunc.X - RatFunc.C α) * g).denom.eval α ≠ 0) :
+    residueAtLinear α (f + g) = residueAtLinear α f + residueAtLinear α g :=
+  residueAtLinear_add_aux α f g hf hg
+
+/-! ## Section 3b: General Residue via Translation
+
+The `residueAtLinear` definition using "multiply by (X-α) and evaluate" only works
+correctly for simple poles. For higher-order poles it returns 0, which breaks additivity.
+
+The correct approach: define residue at α by translating to the origin and using
+the robust `residueAtX` definition (HahnSeries.coeff (-1)).
+
+  res_α(f(X)) := res_0(f(X + α))
+
+This inherits linearity from `residueAtX` automatically!
+-/
+
+/-- Helper: translate a rational function by α, i.e., f(X) ↦ f(X + α).
+
+For f = p/q, this computes (p.comp (X + C α)) / (q.comp (X + C α)).
+Composition preserves coprimality and non-zero denominators.
+-/
+def translateBy (α : Fq) (f : RatFunc Fq) : RatFunc Fq :=
+  let p' := f.num.comp (Polynomial.X + Polynomial.C α)
+  let q' := f.denom.comp (Polynomial.X + Polynomial.C α)
+  algebraMap (Polynomial Fq) (RatFunc Fq) p' / algebraMap (Polynomial Fq) (RatFunc Fq) q'
+
+/-- Translation by α is additive. -/
+theorem translateBy_add (α : Fq) (f g : RatFunc Fq) :
+    translateBy α (f + g) = translateBy α f + translateBy α g := by
+  sorry  -- Proof requires showing composition distributes over the fraction addition
+
+/-- Translation by α respects scalar multiplication. -/
+theorem translateBy_smul (α : Fq) (c : Fq) (f : RatFunc Fq) :
+    translateBy α (c • f) = c • translateBy α f := by
+  sorry  -- Proof requires showing c • (p/q) translates to c • (p'/q')
+
+/-- Translation of zero is zero. -/
+@[simp]
+theorem translateBy_zero (α : Fq) : translateBy α (0 : RatFunc Fq) = 0 := by
+  simp only [translateBy, RatFunc.num_zero, RatFunc.denom_zero, Polynomial.zero_comp,
+             Polynomial.one_comp, map_zero, zero_div]
+
+/-- Residue at a finite place α ∈ Fq, defined via translation to the origin.
+
+This is the coefficient of (X - α)^{-1} in the Laurent expansion of f at α.
+Unlike `residueAtLinear`, this handles all pole orders correctly and is
+genuinely additive/linear.
+
+Mathematical idea: shift coordinates so the pole at α becomes a pole at 0,
+then extract the (-1) coefficient using HahnSeries.
+-/
+def residueAt (α : Fq) (f : RatFunc Fq) : Fq :=
+  residueAtX (translateBy α f)
+
+/-- Residue at α is additive. Follows from translation being additive
+    and residueAtX being additive. -/
+theorem residueAt_add (α : Fq) (f g : RatFunc Fq) :
+    residueAt α (f + g) = residueAt α f + residueAt α g := by
+  simp only [residueAt, translateBy_add, residueAtX_add]
+
+/-- Residue at α respects scalar multiplication. -/
+theorem residueAt_smul (α : Fq) (c : Fq) (f : RatFunc Fq) :
+    residueAt α (c • f) = c * residueAt α f := by
+  simp only [residueAt, translateBy_smul]
+  rw [residueAtX_smul, smul_eq_mul]
+
+/-- Residue at α of zero is zero. -/
+@[simp]
+theorem residueAt_zero' (α : Fq) : residueAt α (0 : RatFunc Fq) = 0 := by
+  simp only [residueAt, translateBy_zero, residueAtX_zero]
+
+/-- The residue at a finite place as a linear map.
+
+This is the proper linear map for residues, handling all pole orders correctly.
+-/
+def residueAt_linearMap (α : Fq) : RatFunc Fq →ₗ[Fq] Fq where
+  toFun := residueAt α
+  map_add' := residueAt_add α
+  map_smul' := residueAt_smul α
+
+/-- Residue at 0 equals residueAtX (translation by 0 is identity). -/
+theorem residueAt_zero_eq_residueAtX (f : RatFunc Fq) :
+    residueAt (0 : Fq) f = residueAtX f := by
+  simp only [residueAt, translateBy]
+  simp only [Polynomial.C_0, add_zero, Polynomial.comp_X]
+  rw [RatFunc.num_div_denom f]
+
+/-- Link residueAt to residueAtLinear for simple poles.
+
+For f = c • (X - α)⁻¹ with a simple pole at α, both definitions give c.
+This bridges the computational formula with the abstract definition.
+-/
+theorem residueAt_eq_residueAtLinear_simple (α c : Fq) :
+    residueAt α (c • (RatFunc.X - RatFunc.C α)⁻¹) = c := by
+  simp only [residueAt, translateBy]
+  -- f = c • (X - C α)⁻¹ has num = C c (up to normalization) and denom = X - C α
+  -- After translation: num' = (C c).comp(X + C α) = C c
+  --                    denom' = (X - C α).comp(X + C α) = X
+  -- So translated f = C c / X = c • X⁻¹
+  -- Key insight: need to work with the actual num/denom of c • (X - C α)⁻¹
+  sorry  -- Proof requires careful analysis of smul and inv num/denom
+
+/-- Placeholder for residue at an arbitrary irreducible polynomial place.
+
+For a prime p ∈ Fq[X] of degree > 1, the residue at (p) requires working
+in the residue field Fq[X]/(p).
+
+For degree-1 primes (X - α), use `residueAt α` instead.
+General higher-degree places will be handled via extension fields in future cycles.
+-/
+def residueAtIrreducible (p : Polynomial Fq) (hp : p.Monic) (hirr : Irreducible p)
     (f : RatFunc Fq) : Fq :=
   sorry
 
@@ -931,11 +1055,14 @@ theorem residueAtLinear_inv_X_sub_ne (α β c : Fq) (hne : α ≠ β) :
 
 /-- The sum of all residues is zero (statement only, proof in future cycle).
 
-Full residue theorem for general rational functions requires partial fractions. -/
+Full residue theorem for general rational functions requires partial fractions.
+
+Note: For linear places (X - α), use `residueAt α f`. For higher-degree irreducible
+places, `residueAtIrreducible` is a placeholder that needs extension field treatment. -/
 theorem residue_sum_eq_zero (f : RatFunc Fq) :
     residueAtX f + residueAtInfty f +
     ∑ᶠ p : {q : Polynomial Fq | q.Monic ∧ Irreducible q ∧ q ≠ Polynomial.X},
-      residueAt p.val p.prop.1 p.prop.2.1 f = 0 := by
+      residueAtIrreducible p.val p.prop.1 p.prop.2.1 f = 0 := by
   sorry
 
 end RiemannRochV2.Residue
