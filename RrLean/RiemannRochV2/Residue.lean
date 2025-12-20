@@ -537,11 +537,20 @@ theorem residueAtInfty_smul_inv_X_sub (α c : Fq) :
         isUnit_of_dvd_unit hdvd hunit
       rw [← normalize_gcd (Polynomial.C c) (Polynomial.X - Polynomial.C α)]
       exact normalize_eq_one.mpr hgcd_unit
-    simp only [hgcd, div_one, Polynomial.leadingCoeff_X_sub_C, inv_one, Polynomial.C_1, one_mul]
-    -- After simplification: goal involves remainder and leading coefficients
-    -- This is routine simplification that should close the goal
-    -- TODO Cycle 169: Complete this computational simplification
-    sorry
+    -- Simplify / 1 and leadingCoeff(X - C α) = 1 structures from RatFunc.denom_div
+    simp only [hgcd, EuclideanDomain.div_one, Polynomial.leadingCoeff_X_sub_C, inv_one,
+               Polynomial.C_1, one_mul]
+    -- Now goal is: (if (C c % (X - C α)).natDegree + 1 = (X - C α).natDegree
+    --               then -((C c % (X - C α)).leadingCoeff / (X - C α).leadingCoeff)
+    --               else 0) = -c
+    -- Show (C c) % (X - C α) = C c since deg(C c) < deg(X - C α)
+    have hrem : (Polynomial.C c) % (Polynomial.X - Polynomial.C α) = Polynomial.C c := by
+      rw [Polynomial.mod_eq_self_iff hXa_ne]
+      simp only [Polynomial.degree_X_sub_C]
+      exact Polynomial.degree_C_lt
+    -- Combine: remainder = C c, natDegree(C c) = 0, if-condition true, leadingCoeff(C c) = c
+    simp only [hrem, Polynomial.natDegree_C, Polynomial.natDegree_X_sub_C, zero_add,
+               ↓reduceIte, Polynomial.leadingCoeff_C]
 
 /-! ## Section 3: Residue at Linear Places (X - α)
 
@@ -681,37 +690,86 @@ theorem residue_sum_simple_pole (α c : Fq) :
   rw [residueAtLinear_inv_X_sub, residueAtInfty_smul_inv_X_sub]
   ring
 
+-- Helper lemmas for residueAtLinear_inv_X_sub_ne
+
+open Classical in
+private lemma RatFunc_num_X_sub_C' (β : Fq) :
+    (RatFunc.X - RatFunc.C β : RatFunc Fq).num = Polynomial.X - Polynomial.C β := by
+  simp only [RatFunc.X, ← RatFunc.algebraMap_C, ← map_sub, RatFunc.num_algebraMap,
+             (Polynomial.monic_X_sub_C β).normalize_eq_self]
+
+open Classical in
+private lemma RatFunc_denom_X_sub_C' (β : Fq) :
+    (RatFunc.X - RatFunc.C β : RatFunc Fq).denom = 1 := by
+  rw [RatFunc.X, ← RatFunc.algebraMap_C β, ← map_sub, RatFunc.denom_algebraMap]
+
+open Classical in
+private lemma denom_inv_X_sub_C_dvd (α : Fq) :
+    ((RatFunc.X - RatFunc.C α)⁻¹ : RatFunc Fq).denom ∣ (Polynomial.X - Polynomial.C α) := by
+  have hne : (Polynomial.X - Polynomial.C α) ≠ (0 : Polynomial Fq) := by
+    intro h; have hdeg := congr_arg Polynomial.natDegree h; simp at hdeg
+  rw [RatFunc.denom_dvd hne]
+  use 1
+  rw [map_one, RatFunc.X, ← RatFunc.algebraMap_C α, ← map_sub, one_div]
+
+open Classical in
+private lemma denom_smul_inv_X_sub_dvd (α c : Fq) :
+    (c • (RatFunc.X - RatFunc.C α)⁻¹ : RatFunc Fq).denom ∣ (Polynomial.X - Polynomial.C α) := by
+  by_cases hc : c = 0
+  · simp only [hc, zero_smul, RatFunc.denom_zero]
+    exact one_dvd _
+  · have hh_eq : (c • (RatFunc.X - RatFunc.C α)⁻¹ : RatFunc Fq) =
+                 RatFunc.C c * (RatFunc.X - RatFunc.C α)⁻¹ := by
+      rw [Algebra.smul_def, RatFunc.algebraMap_eq_C]
+    rw [hh_eq]
+    have hdvd := RatFunc.denom_mul_dvd (RatFunc.C c) (RatFunc.X - RatFunc.C α)⁻¹
+    rw [RatFunc.denom_C, one_mul] at hdvd
+    exact hdvd.trans (denom_inv_X_sub_C_dvd α)
+
+private lemma Polynomial.eval_ne_zero_of_dvd' {R : Type*} [CommRing R] [NoZeroDivisors R]
+    {p q : Polynomial R} {x : R} (hdvd : p ∣ q) (hq : q.eval x ≠ 0) : p.eval x ≠ 0 := by
+  intro hp
+  exact hq (Polynomial.eval_eq_zero_of_dvd_of_eval_eq_zero hdvd hp)
+
 /-- The residue at a different linear place is zero for a simple pole.
 
 For f = c • (X - α)⁻¹ and β ≠ α:
 - res_β(f) = 0 (f has no pole at β)
+
+Proof strategy: (X - C β) is a factor of the numerator of g = (X - C β) * f,
+so g.num.eval β = 0. Meanwhile, g.denom | (X - C α) and (X - C α).eval β ≠ 0,
+so g.denom.eval β ≠ 0. Thus g.num.eval β / g.denom.eval β = 0.
 -/
 theorem residueAtLinear_inv_X_sub_ne (α β c : Fq) (hne : α ≠ β) :
     residueAtLinear β (c • (RatFunc.X - RatFunc.C α)⁻¹) = 0 := by
   simp only [residueAtLinear]
-  -- (X - C β) * (c • (X - C α)⁻¹) = c • ((X - C β) * (X - C α)⁻¹)
-  have hXa_ne : (RatFunc.X : RatFunc Fq) - RatFunc.C α ≠ 0 := by
-    intro h
-    have heq : (RatFunc.X : RatFunc Fq) = RatFunc.C α := sub_eq_zero.mp h
-    have hX_num : (RatFunc.X : RatFunc Fq).num = Polynomial.X := RatFunc.num_X
-    have hC_num : (RatFunc.C α : RatFunc Fq).num = Polynomial.C α := RatFunc.num_C α
-    rw [heq] at hX_num
-    rw [hX_num] at hC_num
-    have hdeg := congr_arg Polynomial.natDegree hC_num
-    simp only [Polynomial.natDegree_X, Polynomial.natDegree_C] at hdeg
-    omega
-  -- The key: (X - C β) * (X - C α)⁻¹ evaluated at β gives (β - α) * (X - C α)⁻¹ at β
-  -- But (X - C α) at β = β - α ≠ 0, so the fraction is well-defined
-  -- The product is (X - C β) / (X - C α), and at β this is 0/(β - α) = 0
-  have h : ((RatFunc.X - RatFunc.C β) * (c • (RatFunc.X - RatFunc.C α)⁻¹) : RatFunc Fq) =
-           c • ((RatFunc.X - RatFunc.C β) * (RatFunc.X - RatFunc.C α)⁻¹) := by
-    rw [mul_smul_comm]
-  rw [h]
-  -- c • ((X - β) / (X - α)) has num = C c * (X - β), denom = X - α when α ≠ β (coprime)
-  -- At β: num(β) = C c * 0 = 0, denom(β) = β - α ≠ 0, so quotient is 0
-  -- Need to show the evaluation gives 0
-  -- This requires computing the num and denom of (X - β)/(X - α) * c
-  sorry
+  by_cases hc : c = 0
+  · simp [hc]
+  · set f := (RatFunc.X - RatFunc.C β : RatFunc Fq) with hf_def
+    set h := (c • (RatFunc.X - RatFunc.C α)⁻¹ : RatFunc Fq) with hh_def
+    -- Use num_denom_mul: (f*h).num * (f.denom * h.denom) = f.num * h.num * (f*h).denom
+    have hmul := RatFunc.num_denom_mul f h
+    rw [RatFunc_denom_X_sub_C', one_mul] at hmul
+    have heval := congr_arg (Polynomial.eval β) hmul
+    simp only [Polynomial.eval_mul] at heval
+    -- f.num.eval β = (X - C β).eval β = 0
+    have hf_zero : f.num.eval β = 0 := by
+      simp only [hf_def, RatFunc_num_X_sub_C', Polynomial.eval_sub,
+                 Polynomial.eval_X, Polynomial.eval_C, sub_self]
+    rw [hf_zero, zero_mul, zero_mul] at heval
+    -- (f * h).num.eval β * h.denom.eval β = 0
+    -- h.denom | (X - C α) and (X - C α).eval β = β - α ≠ 0, so h.denom.eval β ≠ 0
+    have hXa_eval_ne : (Polynomial.X - Polynomial.C α).eval β ≠ 0 := by
+      simp [sub_ne_zero.mpr hne.symm]
+    have hdvd : h.denom ∣ (Polynomial.X - Polynomial.C α) := by
+      simp only [hh_def]
+      exact denom_smul_inv_X_sub_dvd α c
+    have hh_denom_ne : h.denom.eval β ≠ 0 := Polynomial.eval_ne_zero_of_dvd' hdvd hXa_eval_ne
+    -- So (f * h).num.eval β = 0
+    have hnum_zero : (f * h).num.eval β = 0 := by
+      have h0 : (f * h).num.eval β * h.denom.eval β = 0 := by rw [heval]
+      exact (mul_eq_zero.mp h0).resolve_right hh_denom_ne
+    simp [hnum_zero]
 
 /-- The sum of all residues is zero (statement only, proof in future cycle).
 

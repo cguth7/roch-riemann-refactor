@@ -8,9 +8,9 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Build**: ✅ COMPILES
 **Phase**: 3 - Serre Duality
-**Cycle**: 168 (ready for next)
+**Cycle**: 169 (ready for next)
 
-### Sorry Count: 15
+### Sorry Count: 13
 
 | File | Count | Notes |
 |------|-------|-------|
@@ -18,7 +18,38 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 | `FqPolynomialInstance.lean` | 4 | concrete Fq[X] instance |
 | `TraceDualityProof.lean` | 1 | abandoned approach |
 | `SerreDuality.lean` | 5 | pairing types defined, proofs pending |
-| `Residue.lean` | 4 | residueAtInfty_smul, residueAt, residueAtLinear_ne, residue_sum |
+| `Residue.lean` | 2 | residueAt (placeholder), residue_sum_eq_zero (placeholder) |
+
+---
+
+## CYCLE 169 - Completed residue sorries
+
+### Achievements
+1. **`residueAtInfty_smul_inv_X_sub` ✅** - res_∞(c/(X-α)) = -c
+   - Key: `EuclideanDomain.div_one` to simplify after `RatFunc.num_div`/`RatFunc.denom_div`
+   - Remainder `(C c) % (X - C α) = C c` via `Polynomial.mod_eq_self_iff` + `degree_C_lt`
+   - Condition `natDegree + 1 = 1` holds, gives `-c/1 = -c`
+
+2. **`residueAtLinear_inv_X_sub_ne` ✅** - res_β(c/(X-α)) = 0 when α ≠ β
+   - Key insight: `h.denom | (X - C α)` and `(X - C α).eval β ≠ 0` implies `h.denom.eval β ≠ 0`
+   - Used `RatFunc.denom_dvd` to show `(X-α)⁻¹.denom | (X-α)` via `1/(X-α)` representation
+   - `RatFunc.num_denom_mul` gives: `(f*h).num * h.denom = f.num * h.num * (f*h).denom`
+   - Since `f.num.eval β = 0` (f = X - C β), product = 0, and h.denom ≠ 0 → num = 0
+
+### Helper Lemmas Added (private)
+- `RatFunc_num_X_sub_C'`, `RatFunc_denom_X_sub_C'` - num/denom of `(X - C β)`
+- `denom_inv_X_sub_C_dvd` - `(X-α)⁻¹.denom | (X-α)` via `RatFunc.denom_dvd`
+- `denom_smul_inv_X_sub_dvd` - `(c • (X-α)⁻¹).denom | (X-α)`
+- `Polynomial.eval_ne_zero_of_dvd'` - if `p | q` and `q.eval x ≠ 0` then `p.eval x ≠ 0`
+
+### Sorry Count Change
+- Before: 15 sorries
+- After: 13 sorries (-2)
+
+### Next Steps (Cycle 170)
+1. **Complete residue theorem wiring** - `residue_sum_simple_pole` now has all dependencies
+2. **Wire SerreDuality.lean** - Use residue infrastructure for pairing
+3. **Consider partial fractions** - For general `residue_sum_eq_zero`
 
 ---
 
