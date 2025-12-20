@@ -6,9 +6,9 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 ## Current State
 
-**Build**: ✅ Full build compiles (2804 jobs)
+**Build**: ✅ Full build compiles (2559 jobs)
 **Phase**: 3 - Serre Duality
-**Cycle**: 179
+**Cycle**: 180
 
 ### Residue.lean Status
 
@@ -32,59 +32,55 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 | `serrePairing_right_nondegen` | ❌ sorry | Placeholder |
 | `finrank_eq_of_perfect_pairing` | ✅ proved | Cycle 178 |
 | `residueSumTotal_polynomial` | ✅ proved | Cycle 177 |
-| `residueSumTotal_two_poles` | ❌ 99% done | Cycle 179 - coercion issue |
+| `residueSumTotal_two_poles` | ✅ proved | Cycle 180 |
 | Other infrastructure | ✅ proved | residueSumFinite, residueSumTotal, etc. |
 
-### Next Steps (Cycle 180)
+### Next Steps (Cycle 181)
 
-1. **FINISH `residueSumTotal_two_poles`** - 99% complete!
-   - The proof structure is done via partial fractions
-   - Just need to align ↑ coercion with algebraMap/RatFunc.X/RatFunc.C
-   - See detailed HANDOFF comments in SerreDuality.lean:540-550
+1. **Extend to n poles** - Use `div_eq_quo_add_sum_rem_div` for general case
+   - Generalize `residueSumTotal_two_poles` to arbitrary finite number of distinct poles
+   - Use Finset induction matching the structure of partial fractions theorem
 
-2. **Extend to n poles** - Use `div_eq_quo_add_sum_rem_div` for general case
+2. **Fill non-degeneracy lemmas** - For serrePairing
 
-3. **Fill non-degeneracy lemmas**
+3. **Wire serrePairing** - Use residue theorem infrastructure
 
 ---
 
-## CYCLE 179 - Partial Fractions Infrastructure (INCOMPLETE - 99%)
+## CYCLE 180 - Completed residueSumTotal_two_poles
+
+### Achievements
+1. **`residueSumTotal_two_poles` ✅** - Residue theorem for two distinct linear poles
+   - Uses partial fractions: `f/((X-α)(X-β)) = q + c₁/(X-α) + c₂/(X-β)`
+   - Aligns coercions: `RatFunc.X - RatFunc.C α = ↑(X - C α)` via `map_sub`
+   - Applies `residueSumTotal_add` to split sum
+   - Uses `residueSumTotal_polynomial` for q (zero residue)
+   - Uses `residueSumTotal_eq_zero_simple` for each simple pole term
+
+### Key Technique
+The coercion alignment was resolved by proving:
+```lean
+have hXα : RatFunc.X - RatFunc.C α =
+           (algebraMap (Polynomial Fq) (RatFunc Fq) (Polynomial.X - Polynomial.C α)) := by
+  simp only [RatFunc.X, ← RatFunc.algebraMap_C, ← map_sub]
+```
+This allows rewriting the goal to match the partial fractions equation exactly.
+
+### Sorry Count Change
+- Before: 7 sorries (2 Residue + 5 SerreDuality)
+- After: 6 sorries (2 Residue + 4 SerreDuality)
+- Net: -1
+
+---
+
+## CYCLE 179 - Partial Fractions Infrastructure
 
 ### Achievements
 1. **Added `import Mathlib.Algebra.Polynomial.PartialFractions`** - Unlocks partial fractions
 2. **Proved `isCoprime_X_sub_of_ne`** - Distinct linear factors are coprime
 3. **Proved `const_div_X_sub_eq_smul`** - c/(X-α) = c • (X-α)⁻¹
 4. **Proved `polynomial_degree_lt_one_eq_C`** - deg(p) < 1 ⟹ p is constant
-5. **Started `residueSumTotal_two_poles`** - Residue theorem for two-pole case
-
-### CRITICAL HANDOFF for `residueSumTotal_two_poles`
-
-The proof is 99% complete at SerreDuality.lean:510-551. We have:
-
-```lean
--- heq from partial fractions:
-heq : ↑f / (↑(X-α) * ↑(X-β)) = ↑q + c₁ • (RatFunc.X - RatFunc.C α)⁻¹ + c₂ • (RatFunc.X - RatFunc.C β)⁻¹
-
--- Goal:
-⊢ residueSumTotal (algebraMap f / ((RatFunc.X - RatFunc.C α) * (RatFunc.X - RatFunc.C β))) = 0
-```
-
-**The issue**: `↑` vs `algebraMap` and `↑(X-α)` vs `RatFunc.X - RatFunc.C α`
-
-**Key facts** (all definitional):
-- `↑p = algebraMap (Polynomial Fq) (RatFunc Fq) p`
-- `RatFunc.X = algebraMap Polynomial.X`
-- `RatFunc.C α = algebraMap (Polynomial.C α)` (via `RatFunc.algebraMap_C`)
-
-**Strategy to finish**:
-1. Use `show` or `change` to rewrite goal to match heq's LHS form
-2. Apply `heq` to get `residueSumTotal (↑q + c₁ • ... + c₂ • ...)`
-3. Use `residueSumTotal_add` to split
-4. Apply `residueSumTotal_polynomial` (for q) and `residueSumTotal_eq_zero_simple` (for c₁, c₂)
-
-### Sorry Count Change
-- Before: 6 sorries (2 Residue + 4 SerreDuality)
-- After: 7 sorries (+1 from residueSumTotal_two_poles, but proof is 99% done)
+5. **Started `residueSumTotal_two_poles`** - Completed in Cycle 180
 
 ---
 

@@ -536,19 +536,22 @@ theorem residueSumTotal_two_poles [Fintype Fq] (f : Polynomial Fq) (α β : Fq) 
   rw [h_c₁_div, h_c₂_div] at heq
   -- heq: ↑f / (↑(X-α) * ↑(X-β)) = ↑q + c₁ • (RatFunc.X - RatFunc.C α)⁻¹ + c₂ • (RatFunc.X - RatFunc.C β)⁻¹
   -- Goal: residueSumTotal (algebraMap f / ((RatFunc.X - RatFunc.C α) * (RatFunc.X - RatFunc.C β))) = 0
-  --
-  -- HANDOFF FOR NEXT CLAUDE:
-  -- The proof is 99% complete. We have:
-  -- 1. heq gives f/((X-α)(X-β)) = q + c₁/(X-α) + c₂/(X-β) via partial fractions
-  -- 2. c₁, c₂ are constants (from polynomial_degree_lt_one_eq_C)
-  -- 3. residueSumTotal_polynomial: residueSumTotal (algebraMap p) = 0
-  -- 4. residueSumTotal_eq_zero_simple: residueSumTotal (c • (X - C α)⁻¹) = 0
-  --
-  -- The remaining issue is coercion alignment:
-  -- - heq uses ↑ (coercion), goal uses RatFunc.X/RatFunc.C and algebraMap
-  -- - These are definitionally equal: ↑p = algebraMap p, RatFunc.X = algebraMap Polynomial.X
-  -- - Need to use rfl or show/change to unify, then apply residueSumTotal_add + above lemmas
-  sorry
+  -- Align goal with heq's LHS: RatFunc.X - RatFunc.C α = ↑(X - C α)
+  have hXα : RatFunc.X - RatFunc.C α =
+             (algebraMap (Polynomial Fq) (RatFunc Fq) (Polynomial.X - Polynomial.C α)) := by
+    simp only [RatFunc.X, ← RatFunc.algebraMap_C, ← map_sub]
+  have hXβ : RatFunc.X - RatFunc.C β =
+             (algebraMap (Polynomial Fq) (RatFunc Fq) (Polynomial.X - Polynomial.C β)) := by
+    simp only [RatFunc.X, ← RatFunc.algebraMap_C, ← map_sub]
+  rw [hXα, hXβ]
+  -- Now goal matches heq's LHS exactly
+  rw [heq]
+  -- Now goal is: residueSumTotal (↑q + c₁ • _ + c₂ • _) = 0
+  rw [residueSumTotal_add, residueSumTotal_add]
+  rw [residueSumTotal_polynomial q]
+  rw [residueSumTotal_eq_zero_simple c₁ α]
+  rw [residueSumTotal_eq_zero_simple c₂ β]
+  ring
 
 end ConcreteRatFuncPairing
 
