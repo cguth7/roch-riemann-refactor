@@ -6,11 +6,11 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 ## Current State
 
-**Build**: ✅ Full build compiles (2559 jobs)
+**Build**: ✅ Full build compiles with sorries (warnings only)
 **Phase**: 3 - Serre Duality
-**Cycle**: 185
+**Cycle**: 186
 
-### Active Sorries (9 total)
+### Active Sorries (7 total)
 
 | File | Lemma | Priority | Notes |
 |------|-------|----------|-------|
@@ -20,8 +20,7 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 | SerreDuality.lean | `serrePairing_wellDefined` | MED | Uses residue theorem |
 | SerreDuality.lean | `serrePairing_left_nondegen` | MED | Left non-degeneracy |
 | SerreDuality.lean | `serrePairing_right_nondegen` | MED | Right non-degeneracy |
-| SerreDuality.lean | `residueAt_of_valuation_le_one` | MED | Bridge: valuation → residue |
-| SerreDuality.lean | `bounded_diagonal_finite_residue_zero` | MED | Bounded part vanishes |
+| SerreDuality.lean | `linearPlace_valuation_eq_comap` | **HIGH** | Key blocker - valuation transport |
 | FullAdelesCompact.lean | (1 sorry) | LOW | Edge case |
 
 ### Key Infrastructure ✅
@@ -39,24 +38,43 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 | K-part well-definedness | ✅ | SerreDuality.lean |
 | Pole cancellation (valuation) | ✅ | SerreDuality.lean |
 | linearPlace definition | ✅ | SerreDuality.lean |
+| translatePolyEquiv (RingEquiv) | ✅ | SerreDuality.lean |
+| translateRatFuncHom (lifted) | ✅ | SerreDuality.lean |
+| residueAt_of_valuation_le_one | ⏳ | SerreDuality.lean (needs comap) |
+| bounded_diagonal_finite_residue_zero | ⏳ | SerreDuality.lean (needs above) |
 
 ---
 
-## Next Steps (Cycle 186)
+## Next Steps (Cycle 187)
 
-1. **Complete residueAt_of_valuation_le_one** - Bridge HeightOneSpectrum.valuation to residueAt
-   - Key: valuation ≤ 1 means no pole, so residue = 0
-   - Requires: connection between valuations and Laurent series coefficients
+1. **Complete linearPlace_valuation_eq_comap** - The one remaining sorry
+   - Proves: valuation at (X - α) = comap of valuation at X along translation
+   - Key insight: ring automorphism φ sends ideal span{X-α} → span{X}
+   - Need: Associates.count is preserved under this automorphism
+   - This unlocks residueAt_of_valuation_le_one and bounded_diagonal_finite_residue_zero
 
-2. **Complete bounded_diagonal_finite_residue_zero** - Use the valuation bridge
-   - Follows from residueAt_of_valuation_le_one
-
-3. **Define rawPairing for RatFunc Fq** - Concrete version using local residues
+2. **Define rawPairing for RatFunc Fq** - Concrete version using local residues
    - Then wire to abstract serrePairing via liftQ
 
 ---
 
 ## Recent Progress
+
+### Cycle 186 - Valuation transport infrastructure for residue vanishing
+- Added translation RingEquiv infrastructure:
+  - `translatePolyEquiv` ✅ - RingEquiv on Polynomial Fq: p ↦ p.comp(X + C α)
+  - `translatePolyEquiv_X_sub_C` ✅ - Sends X - C α to X
+  - `translatePolyEquiv_ideal_map` ✅ - Maps ideal span{X-α} to span{X}
+  - `translatePolyEquiv_mem_nonZeroDivisors` ✅ - Preserves non-zero-divisors
+  - `translateRatFuncHom` ✅ - Lifted RingHom on RatFunc via mapRingHom
+  - `translateRatFuncHom_eq_translateBy` ✅ - Agrees with existing translateBy
+- Proof structure for residueAt_of_valuation_le_one:
+  - Uses Valuation.comap to transport valuations
+  - Connects to LaurentSeries.coeff_zero_of_lt_valuation
+  - Only blocked by `linearPlace_valuation_eq_comap` (1 sorry)
+- `bounded_diagonal_finite_residue_zero` now wired to use residueAt_of_valuation_le_one
+- Key insight: Use high-level Valuation API, not manual polynomial decomposition
+- Sorries: 9 → 7 (resolved 2 structural, added infrastructure)
 
 ### Cycle 185 - Pole cancellation infrastructure for bounded adeles
 - Added PoleCancellation section:

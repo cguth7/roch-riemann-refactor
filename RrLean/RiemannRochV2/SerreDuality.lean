@@ -1069,26 +1069,131 @@ def linearPlace (α : Fq) : HeightOneSpectrum (Polynomial Fq) where
     rw [ne_eq, Ideal.span_singleton_eq_bot]
     exact Polynomial.X_sub_C_ne_zero α
 
-/-- If the product g * f has valuation ≤ 1 at a linear place (X - α),
-then its residue at α is zero.
+/-- The translation RingEquiv on polynomials: p ↦ p.comp(X + C α).
 
-Proof: valuation ≤ 1 means g * f is in the valuation ring O_v at place v = (X - α).
-Elements of O_v have non-negative order, so the -1 coefficient (residue) is zero.
+This is a ring automorphism of Fq[X] that shifts the variable by α.
+Its inverse is p ↦ p.comp(X - C α).
+-/
+def translatePolyEquiv (α : Fq) : Polynomial Fq ≃+* Polynomial Fq where
+  toFun := fun p => p.comp (Polynomial.X + Polynomial.C α)
+  invFun := fun p => p.comp (Polynomial.X - Polynomial.C α)
+  left_inv := fun p => by
+    simp only [Polynomial.comp_assoc, Polynomial.add_comp, Polynomial.sub_comp,
+               Polynomial.X_comp, Polynomial.C_comp, add_sub_cancel, Polynomial.comp_X]
+  right_inv := fun p => by
+    simp only [Polynomial.comp_assoc, Polynomial.sub_comp, Polynomial.add_comp,
+               Polynomial.X_comp, Polynomial.C_comp, sub_add_cancel, Polynomial.comp_X]
+  map_mul' := fun p q => Polynomial.mul_comp p q _
+  map_add' := fun p q => Polynomial.add_comp p q _
 
-Note: This requires the connection between HeightOneSpectrum valuation
-and our residueAt definition. That bridge is provided by the RatFunc → LaurentSeries
-coercion at each place.
+/-- Translation sends X - C α to X. -/
+lemma translatePolyEquiv_X_sub_C (α : Fq) :
+    translatePolyEquiv α (Polynomial.X - Polynomial.C α) = Polynomial.X := by
+  simp [translatePolyEquiv, Polynomial.sub_comp, Polynomial.add_comp]
+
+/-- Translation sends the ideal span{X - C α} to span{X}. -/
+lemma translatePolyEquiv_ideal_map (α : Fq) :
+    Ideal.map (translatePolyEquiv α) (Ideal.span {Polynomial.X - Polynomial.C α}) =
+    Ideal.span {Polynomial.X} := by
+  rw [Ideal.map_span, Set.image_singleton, translatePolyEquiv_X_sub_C]
+
+/-- translatePolyEquiv preserves non-zero-divisors. -/
+lemma translatePolyEquiv_mem_nonZeroDivisors (α : Fq) :
+    nonZeroDivisors (Polynomial Fq) ≤
+    (nonZeroDivisors (Polynomial Fq)).comap (translatePolyEquiv α).toRingHom := by
+  intro p hp
+  simp only [Submonoid.mem_comap, RingEquiv.toRingHom_eq_coe, RingEquiv.coe_toRingHom]
+  -- p is a non-zero-divisor, so p ≠ 0
+  have hp_ne : p ≠ 0 := nonZeroDivisors.ne_zero hp
+  -- translatePolyEquiv α is an isomorphism, so (translatePolyEquiv α p) ≠ 0
+  have h_ne : translatePolyEquiv α p ≠ 0 := by
+    simp only [ne_eq, map_eq_zero_iff (translatePolyEquiv α) (translatePolyEquiv α).injective]
+    exact hp_ne
+  -- Non-zero elements are non-zero-divisors in a domain
+  exact mem_nonZeroDivisors_of_ne_zero h_ne
+
+/-- The lifted translation RingHom on RatFunc. -/
+def translateRatFuncHom (α : Fq) : RatFunc Fq →+* RatFunc Fq :=
+  RatFunc.mapRingHom (translatePolyEquiv α).toRingHom (translatePolyEquiv_mem_nonZeroDivisors α)
+
+/-- translateRatFuncHom agrees with translateBy on all elements.
+
+This shows that the abstract lifting via mapRingHom gives the same result
+as the explicit definition via num/denom composition.
+-/
+lemma translateRatFuncHom_eq_translateBy (α : Fq) (g : RatFunc Fq) :
+    translateRatFuncHom α g = translateBy α g := by
+  rw [translateRatFuncHom, RatFunc.coe_mapRingHom_eq_coe_map]
+  rw [← RatFunc.num_div_denom g]
+  simp only [RatFunc.map_apply_div, RingEquiv.toRingHom_eq_coe, RingEquiv.coe_toRingHom]
+  simp only [translatePolyEquiv, RingEquiv.coe_mk, Equiv.coe_fn_mk]
+  -- Now both sides are: ↑(num.comp(X+α)) / ↑(denom.comp(X+α))
+  -- translateBy is defined as the same thing
+  rw [translateBy, RatFunc.num_div_denom]
+
+/-- The key valuation transport lemma:
+    The valuation at (X - α) equals the comap of the valuation at X along translation.
+
+    This uses the fact that ring automorphisms transport valuations:
+    if φ sends the prime ideal p to q, then v_p = v_q ∘ φ.
+-/
+lemma linearPlace_valuation_eq_comap (α : Fq) :
+    (linearPlace α).valuation (RatFunc Fq) =
+    ((Polynomial.idealX Fq).valuation (RatFunc Fq)).comap (translateRatFuncHom α) := by
+  -- Both valuations are defined via intValuation extended to localization
+  -- The key is that the ideals are related by the automorphism:
+  -- span{X - α} maps to span{X} under translatePolyEquiv α
+  ext g
+  simp only [Valuation.comap_apply]
+  -- Need to show: (linearPlace α).valuation g = (idealX).valuation (translateRatFuncHom α g)
+  -- The valuation is defined via intValuation counting prime factors
+  -- translatePolyEquiv α sends (X - α) to X, so counts are preserved
+  sorry -- Key: valuation transport under automorphism that maps the prime ideal
+
+/-- The valuation at linearPlace α equals idealX valuation after translation.
+
+This is the key bridge: translation intertwines the valuations.
+-/
+theorem linearPlace_valuation_eq_idealX_translated (α : Fq) (g : RatFunc Fq) :
+    (linearPlace α).valuation (RatFunc Fq) g =
+    (Polynomial.idealX Fq).valuation (RatFunc Fq) (translateBy α g) := by
+  rw [linearPlace_valuation_eq_comap, Valuation.comap_apply, translateRatFuncHom_eq_translateBy]
+
+/-- If the valuation at a linear place (X - α) is ≤ 1, then the residue is zero.
+
+Proof strategy:
+1. Valuation ≤ 1 at (X - α) means valuation ≤ 1 at X for the translated function
+2. By valuation_eq_LaurentSeries_valuation, this equals the Laurent series valuation
+3. Valuation ≤ 1 = exp(0) implies all coefficients at degree < 0 are zero
+4. In particular, coeff(-1) = 0, which is the residue
 -/
 theorem residueAt_of_valuation_le_one (α : Fq) (g : RatFunc Fq)
     (hv : (linearPlace α).valuation (RatFunc Fq) g ≤ 1) :
     residueAt α g = 0 := by
-  -- The valuation at (X - α) being ≤ 1 means g has no pole at α
-  -- For rational functions, this means (X - α) doesn't divide the denominator
-  -- to higher multiplicity than the numerator
-  -- Therefore the Laurent series at α has non-negative order
-  -- So the coefficient of (X - α)^{-1} is zero
-  -- This is the residueAt value
-  sorry -- Requires bridge between HeightOneSpectrum.valuation and residueAt
+  -- Step 1: Translate the valuation condition
+  have hv_trans : (Polynomial.idealX Fq).valuation (RatFunc Fq) (translateBy α g) ≤ 1 := by
+    rw [← linearPlace_valuation_eq_idealX_translated]
+    exact hv
+  -- Step 2: Connect to Laurent series valuation
+  -- RatFunc.valuation_eq_LaurentSeries_valuation : (Polynomial.idealX).valuation P = Valued.v (P : LS)
+  have hv_laurent : Valued.v (translateBy α g : LaurentSeries Fq) ≤ 1 := by
+    -- The Laurent series valuation equals the idealX valuation on RatFunc
+    have h := RatFunc.valuation_eq_LaurentSeries_valuation (K := Fq) (translateBy α g)
+    -- h : (Polynomial.idealX Fq).valuation (RatFunc Fq) (translateBy α g) =
+    --     (PowerSeries.idealX Fq).valuation (LaurentSeries Fq) (translateBy α g)
+    -- And Valued.v on LaurentSeries is defined as (PowerSeries.idealX).valuation
+    rw [LaurentSeries.valuation_def, ← h]
+    exact hv_trans
+  -- Step 3: Valuation ≤ 1 = exp(0) means all coefficients at degree < 0 are zero
+  -- Use valuation_le_iff_coeff_lt_eq_zero with D = 0
+  have h_coeff : (translateBy α g : LaurentSeries Fq).coeff (-1) = 0 := by
+    apply LaurentSeries.coeff_zero_of_lt_valuation Fq (D := 0)
+    · simp only [neg_zero, WithZero.exp_zero]
+      exact hv_laurent
+    · norm_num
+  -- Step 4: residueAt = residueAtX ∘ translateBy = coeff(-1) = 0
+  rw [residueAt, residueAtX]
+  exact h_coeff
 
 /-- When canonical = 0 at all finite places, bounded adeles paired with L(K-D)
 give zero finite residue sum.
@@ -1116,9 +1221,11 @@ theorem bounded_diagonal_finite_residue_zero
   simp only [residueSumFinite]
   apply Finset.sum_eq_zero
   intro α _
-  -- Need to show residueAt α (g * f) = 0
-  -- This follows from the valuation bound at place (X - α)
-  sorry -- Requires residueAt_of_valuation_le_one and place construction
+  -- Apply residueAt_of_valuation_le_one with v = linearPlace α
+  apply residueAt_of_valuation_le_one
+  -- Need: (linearPlace α).valuation (RatFunc Fq) (g * f) ≤ 1
+  -- Use bounded_times_LKD_no_pole which gives this bound when canonical = 0 at all finite v
+  exact bounded_times_LKD_no_pole canonical D hK g f hg hf (linearPlace α)
 
 end PoleCancellation
 
