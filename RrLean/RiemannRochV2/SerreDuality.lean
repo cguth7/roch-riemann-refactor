@@ -680,6 +680,149 @@ theorem residueSumTotal_splits [Fintype Fq] (f : RatFunc Fq)
   rw [hf]
   exact residueSumTotal_n_poles_finset p poles
 
+/-! ## Multiplicative Pairing via Residue Sum
+
+The Serre pairing `⟨[a], f⟩ = ∑_v res_v(a_v · f)` for adele class [a] and f ∈ L(K-D)
+requires computing residue sums of products.
+
+For the diagonal embedding of K into adeles, this reduces to:
+  ⟨diag(g), f⟩ = residueSumTotal(g · f)
+
+By the residue theorem, this is 0 for any g, f ∈ K with split denominators.
+This establishes well-definedness on the quotient H¹(D) = Adeles / (K + A_K(D)).
+-/
+
+/-- The residue sum respects scalar multiplication (full version).
+
+This extends residueSumTotal_add to show that residueSumTotal is Fq-linear.
+-/
+theorem residueSumTotal_smul [Fintype Fq] (c : Fq) (f : RatFunc Fq) :
+    residueSumTotal (c • f) = c * residueSumTotal f := by
+  simp only [residueSumTotal]
+  conv_lhs => rw [show residueSumFinite (c • f) = c * residueSumFinite f from residueSumFinite_smul c f]
+  rw [residueAtInfty_smul, mul_add]
+
+/-- The total residue sum as a linear map. -/
+def residueSumTotal_linearMap [Fintype Fq] : RatFunc Fq →ₗ[Fq] Fq where
+  toFun := residueSumTotal
+  map_add' := residueSumTotal_add
+  map_smul' := residueSumTotal_smul
+
+/-- For products that split into distinct linear poles, the residue theorem applies.
+
+If `g * f = p / ∏_{α ∈ poles} (X - α)` for some polynomial p and finite set of poles,
+then `residueSumTotal(g * f) = 0`.
+
+This is the key well-definedness lemma for the Serre pairing on diagonal K.
+-/
+theorem residueSumTotal_mul_splits [Fintype Fq] (g f : RatFunc Fq)
+    (h : ∃ (p : Polynomial Fq) (poles : Finset Fq),
+         g * f = (algebraMap _ (RatFunc Fq) p) / (∏ α ∈ poles, (RatFunc.X - RatFunc.C α))) :
+    residueSumTotal (g * f) = 0 :=
+  residueSumTotal_splits (g * f) h
+
+/-- The pairing on K × K via residue sum of products.
+
+For g, f ∈ RatFunc Fq, define ⟨g, f⟩ := residueSumTotal(g * f).
+
+This pairing is bilinear and vanishes whenever g * f has split denominator
+(which includes all products of rational functions with distinct linear poles).
+-/
+def residuePairing [Fintype Fq] (g f : RatFunc Fq) : Fq :=
+  residueSumTotal (g * f)
+
+/-- The residue pairing is additive in the first argument. -/
+theorem residuePairing_add_left [Fintype Fq] (g₁ g₂ f : RatFunc Fq) :
+    residuePairing (g₁ + g₂) f = residuePairing g₁ f + residuePairing g₂ f := by
+  simp only [residuePairing, add_mul, residueSumTotal_add]
+
+/-- The residue pairing is additive in the second argument. -/
+theorem residuePairing_add_right [Fintype Fq] (g f₁ f₂ : RatFunc Fq) :
+    residuePairing g (f₁ + f₂) = residuePairing g f₁ + residuePairing g f₂ := by
+  simp only [residuePairing, mul_add, residueSumTotal_add]
+
+/-- The residue pairing respects scalar multiplication on the left. -/
+theorem residuePairing_smul_left [Fintype Fq] (c : Fq) (g f : RatFunc Fq) :
+    residuePairing (c • g) f = c * residuePairing g f := by
+  simp only [residuePairing]
+  rw [Algebra.smul_def, RatFunc.algebraMap_eq_C, mul_assoc]
+  conv_lhs => rw [show RatFunc.C c * (g * f) = c • (g * f) by
+    rw [Algebra.smul_def, RatFunc.algebraMap_eq_C]]
+  exact residueSumTotal_smul c (g * f)
+
+/-- The residue pairing respects scalar multiplication on the right. -/
+theorem residuePairing_smul_right [Fintype Fq] (c : Fq) (g f : RatFunc Fq) :
+    residuePairing g (c • f) = c * residuePairing g f := by
+  simp only [residuePairing]
+  rw [Algebra.smul_def, RatFunc.algebraMap_eq_C, ← mul_assoc, mul_comm g (RatFunc.C c), mul_assoc]
+  conv_lhs => rw [show RatFunc.C c * (g * f) = c • (g * f) by
+    rw [Algebra.smul_def, RatFunc.algebraMap_eq_C]]
+  exact residueSumTotal_smul c (g * f)
+
+/-- The residue pairing as a bilinear map RatFunc Fq → RatFunc Fq → Fq.
+
+This captures the multiplication structure needed for the Serre pairing.
+-/
+def residuePairing_bilinear [Fintype Fq] : RatFunc Fq →ₗ[Fq] RatFunc Fq →ₗ[Fq] Fq where
+  toFun := fun g =>
+    { toFun := fun f => residuePairing g f
+      map_add' := fun f₁ f₂ => residuePairing_add_right g f₁ f₂
+      map_smul' := fun c f => residuePairing_smul_right c g f }
+  map_add' := fun g₁ g₂ => by
+    ext f
+    exact residuePairing_add_left g₁ g₂ f
+  map_smul' := fun c g => by
+    ext f
+    exact residuePairing_smul_left c g f
+
+/-- Key property: the residue pairing vanishes for products with split denominators.
+
+This is the residue theorem restated for the pairing.
+-/
+theorem residuePairing_eq_zero_of_splits [Fintype Fq] (g f : RatFunc Fq)
+    (h : ∃ (p : Polynomial Fq) (poles : Finset Fq),
+         g * f = (algebraMap _ (RatFunc Fq) p) / (∏ α ∈ poles, (RatFunc.X - RatFunc.C α))) :
+    residuePairing g f = 0 :=
+  residueSumTotal_mul_splits g f h
+
+/-! ## Diagonal Well-Definedness
+
+For the Serre pairing to be well-defined on H¹(D) = Adeles / (K + A_K(D)),
+we need to show that the pairing vanishes on:
+1. Global elements (diagonal K) - handled by residue theorem
+2. Bounded adeles A_K(D) - requires valuation analysis
+
+This section establishes (1) for the case of split denominators.
+-/
+
+/-- The residue pairing of any element with a polynomial is zero.
+
+Polynomials have no poles, so multiplying by them doesn't introduce new poles.
+The product g * (polynomial p) can only have poles from g.
+If g's poles are linear and finite, the residue theorem applies.
+-/
+theorem residuePairing_polynomial_right [Fintype Fq] (g : RatFunc Fq) (p : Polynomial Fq)
+    (hg : ∃ (q : Polynomial Fq) (poles : Finset Fq),
+          g = (algebraMap _ (RatFunc Fq) q) / (∏ α ∈ poles, (RatFunc.X - RatFunc.C α))) :
+    residuePairing g (algebraMap _ (RatFunc Fq) p) = 0 := by
+  obtain ⟨q, poles, hg_eq⟩ := hg
+  apply residuePairing_eq_zero_of_splits
+  use q * p, poles
+  rw [hg_eq, div_mul_eq_mul_div, map_mul]
+
+/-- The residue pairing of a polynomial with any element is zero.
+
+Similar to the above, but for polynomial on the left.
+-/
+theorem residuePairing_polynomial_left [Fintype Fq] (p : Polynomial Fq) (f : RatFunc Fq)
+    (hf : ∃ (q : Polynomial Fq) (poles : Finset Fq),
+          f = (algebraMap _ (RatFunc Fq) q) / (∏ α ∈ poles, (RatFunc.X - RatFunc.C α))) :
+    residuePairing (algebraMap _ (RatFunc Fq) p) f = 0 := by
+  obtain ⟨q, poles, hf_eq⟩ := hf
+  apply residuePairing_eq_zero_of_splits
+  use p * q, poles
+  rw [hf_eq, mul_div_assoc', map_mul]
+
 end ConcreteRatFuncPairing
 
 end RiemannRochV2

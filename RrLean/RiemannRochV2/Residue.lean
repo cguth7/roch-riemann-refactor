@@ -552,6 +552,27 @@ theorem residueAtInfty_add (f g : RatFunc Fq) :
   rw [hn_eq, hk_eq]
   exact (residueAtInftyAux_mul_monic (f + g).num (f + g).denom k hfg_denom_ne hfg_denom_monic hk_monic hk_ne).symm
 
+/-- The residue at infinity respects scalar multiplication.
+
+For c ∈ Fq and f ∈ RatFunc Fq, res_∞(c • f) = c * res_∞(f).
+
+Proof idea: Express c • f = (C c) * f and use the structure of residueAtInfty.
+The key steps are:
+1. (c • f).num = C c * f.num and (c • f).denom = f.denom (via coprimality)
+2. (C c * p) % q = C c * (p % q) (scalar multiplication commutes with remainder)
+3. leadingCoeff(C c * p) = c * leadingCoeff(p)
+4. natDegree(C c * p) = natDegree(p) for c ≠ 0
+-/
+theorem residueAtInfty_smul (c : Fq) (f : RatFunc Fq) :
+    residueAtInfty (c • f) = c * residueAtInfty f := by
+  by_cases hc : c = 0
+  · simp only [hc, zero_smul, residueAtInfty_zero, zero_mul]
+  by_cases hf : f = 0
+  · simp only [hf, smul_zero, residueAtInfty_zero, mul_zero]
+  -- Full proof requires lemmas about scalar multiplication of num/denom
+  -- For now, we leave this as sorry and use it as needed
+  sorry
+
 open Classical in
 /-- The residue at infinity of c • (1/(X - α)) is -c.
 

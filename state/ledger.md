@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Build**: ✅ Full build compiles (2804 jobs)
 **Phase**: 3 - Serre Duality
-**Cycle**: 181
+**Cycle**: 182
 
 ### Residue.lean Status
 
@@ -17,6 +17,7 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 | `residueAtX_inv_X_sub_ne` | ✅ proved | Cycle 176 |
 | `translateBy_polynomial` | ✅ proved | Cycle 177 |
 | `residueAt_polynomial` | ✅ proved | Cycle 177 |
+| `residueAtInfty_smul` | ❌ sorry | NEW Cycle 182 - scalar mult |
 | `residueAtIrreducible` | ❌ sorry | Placeholder for higher-degree places |
 | `residue_sum_eq_zero` | ❌ sorry | General residue theorem |
 
@@ -35,17 +36,68 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 | `residueSumTotal_two_poles` | ✅ proved | Cycle 180 |
 | `residueSumTotal_n_poles_finset` | ✅ proved | Cycle 181 |
 | `residueSumTotal_splits` | ✅ proved | Cycle 181 |
+| `residueSumTotal_smul` | ✅ proved | Cycle 182 |
+| `residueSumTotal_linearMap` | ✅ proved | Cycle 182 |
+| `residuePairing` | ✅ proved | Cycle 182 - bilinear form |
+| `residuePairing_bilinear` | ✅ proved | Cycle 182 |
+| `residuePairing_eq_zero_of_splits` | ✅ proved | Cycle 182 |
 | Other infrastructure | ✅ proved | residueSumFinite, residueSumTotal, etc. |
 
-### Next Steps (Cycle 182)
+### Next Steps (Cycle 183)
 
-1. **Wire serrePairing** - Define pairing using residue sum infrastructure
-   - For diagonal adele `a = diag(g)` where `g ∈ K`, pairing is `residueSumTotal(g·f)`
-   - Use `residueSumTotal_splits` to show residue theorem applies
+1. **Fill `residueAtInfty_smul`** - Prove scalar multiplication for residue at infinity
+   - Needs: lemma about num/denom of scalar multiplication
+   - Uses: leadingCoeff_C_mul_of_isUnit, natDegree_C_mul_of_isUnit
 
-2. **Fill non-degeneracy lemmas** - For serrePairing
+2. **Wire serrePairing** - Replace sorry with actual construction
+   - Use `residuePairing_bilinear` for diagonal elements
+   - Need to extend to full adele ring
+
+3. **Fill non-degeneracy lemmas** - For serrePairing
    - Left: if ⟨[a], f⟩ = 0 for all f, then [a] = 0
    - Right: if ⟨[a], f⟩ = 0 for all [a], then f = 0
+
+---
+
+## CYCLE 182 - Bilinear pairing infrastructure
+
+### Achievements
+1. **`residueSumTotal_smul` ✅** - Scalar multiplication for total residue sum
+   - `residueSumTotal (c • f) = c * residueSumTotal f`
+   - Uses `residueSumFinite_smul` and `residueAtInfty_smul`
+
+2. **`residueSumTotal_linearMap` ✅** - Total residue sum as linear map
+   - `RatFunc Fq →ₗ[Fq] Fq`
+
+3. **`residuePairing` ✅** - Bilinear pairing via product
+   - `residuePairing g f := residueSumTotal (g * f)`
+   - Proved additive in both arguments
+   - Proved respects scalar multiplication
+
+4. **`residuePairing_bilinear` ✅** - Full bilinear map structure
+   - `RatFunc Fq →ₗ[Fq] RatFunc Fq →ₗ[Fq] Fq`
+
+5. **`residuePairing_eq_zero_of_splits` ✅** - Residue theorem for pairing
+   - If g * f has split denominator, pairing is 0
+
+6. **`residuePairing_polynomial_left/right` ✅** - Polynomial cases
+   - Polynomials don't contribute to pairing
+
+### New Sorry
+- **`residueAtInfty_smul`** - Added as sorry (proof structure documented)
+  - Needs: num/denom structure of scalar multiplication
+  - Key lemmas: leadingCoeff_C_mul_of_isUnit, natDegree_C_mul_of_isUnit
+
+### Sorry Count Change
+- Before: 6 sorries (2 Residue + 4 SerreDuality)
+- After: 7 sorries (3 Residue + 4 SerreDuality)
+- Net: +1 (added residueAtInfty_smul sorry, added 6 new theorems)
+
+### Key Insight
+The bilinear pairing `residuePairing g f = residueSumTotal(g * f)` captures the
+multiplication structure needed for the Serre pairing. By the residue theorem,
+this pairing vanishes whenever the product has a split denominator, which
+establishes well-definedness for diagonal elements of K.
 
 ---
 
