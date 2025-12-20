@@ -6,70 +6,82 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 ## Current State
 
-**Build**: ✅ COMPILES
+**Build**: ⚠️ PARTIAL - Main chain compiles, but Residue.lean/SerreDuality.lean are BROKEN
 **Phase**: 3 - Serre Duality
-**Cycle**: 174 (ready for next)
+**Cycle**: 174 (INCOMPLETE - needs Cycle 175 to fix)
 
-### Sorry Count: 13
+### Critical Issue (Discovered End of Cycle 174)
 
-| File | Count | Notes |
-|------|-------|-------|
-| `FullAdelesCompact.lean` | 1 | bound<1 edge case, not needed |
-| `FqPolynomialInstance.lean` | 4 | concrete Fq[X] instance |
-| `TraceDualityProof.lean` | 1 | abandoned approach |
-| `SerreDuality.lean` | 5 | pairing types defined, proofs pending |
-| `Residue.lean` | 2 | residueAtIrreducible (1), residue_sum_eq_zero (1) |
+**Residue.lean and SerreDuality.lean are NOT in the import chain!**
+
+They are disconnected from `RrLean/RiemannRochV2.lean`, so `lake build` doesn't compile them.
+The "fix" in Cycle 174 was never actually tested - it uses non-existent Mathlib lemmas.
+
+**To test**: Run `lake build RrLean.RiemannRochV2.Residue` (will fail)
+
+### Errors in Residue.lean (line numbers approximate)
+
+1. **Line 178**: `(RatFunc.coe_coe _).symm` - pattern mismatch with order
+2. **Line 184**: `RatFunc.algebraMap_eq_zero_iff` - DOES NOT EXIST in Mathlib
+3. **Line 191**: `HahnSeries.isUnit_of_order_nonneg` - DOES NOT EXIST in Mathlib
+4. **Line 203**: `HahnSeries.coeff_eq_zero_of_lt_order` - wrong argument order/types
+5. **Line 1153**: `Polynomial.C α - Polynomial.C β` rewrite pattern not found
+
+### What Actually Compiles (Main Chain)
+
+| File | Status | Notes |
+|------|--------|-------|
+| `FullAdelesCompact.lean` | ✅ | 1 sorry (bound<1 edge case) |
+| `FqPolynomialInstance.lean` | ✅ | 4 sorries |
+| `TraceDualityProof.lean` | ✅ | 1 sorry |
+
+### What Does NOT Compile (Disconnected)
+
+| File | Status | Notes |
+|------|--------|-------|
+| `Residue.lean` | ❌ BROKEN | 5+ errors, uses non-existent lemmas |
+| `SerreDuality.lean` | ❌ BROKEN | Depends on Residue.lean |
 
 ---
 
-## CYCLE 174 - Fix Build + Extend Residue Theorem
+## CYCLE 175 - PRIORITY: Fix Residue.lean Build
 
-### Achievements
-1. **Fixed `residueAtX_inv_X_sub_ne` proof ✅** - Cycle 173 used non-existent `HahnSeries.order_inv'`
-   - New proof uses `HahnSeries.order_mul` and multiplicative inverse identity
-   - Key insight: order(f) = 0 and f*f⁻¹ = 1 implies order(f⁻¹) = 0
-   - Conclude: coeff(-1) = 0 via `HahnSeries.coeff_eq_zero_of_lt_order`
+### Must Do First
+1. **Fix `residueAtX_inv_X_sub_ne`** (lines 164-203)
+   - Find actual Mathlib lemmas for:
+     - Showing order of inverse: use `HahnSeries.order_mul` with `f * f⁻¹ = 1`
+     - Zero coefficient: `HahnSeries.coeff_eq_zero_of_lt_order` (check correct signature)
+   - Key math: If order(f) = 0 and f ≠ 0, then order(f⁻¹) = -order(f) = 0
 
-2. **`residueSumTotal_sum` ✅** - Total residue distributes over finite sums
-   - Proved: residueSumTotal(∑ f_i) = ∑ residueSumTotal(f_i)
-   - Uses induction on Finset with `residueSumTotal_add`
+2. **Fix `residueAt_inv_X_sub_ne`** (around line 1153)
+   - The rewrite `Polynomial.C α - Polynomial.C β` fails
+   - Need: `X + C β - C α = X - C(α - β)`
+   - Fix: Use `ring` or `simp [Polynomial.C_sub]` instead of rewrite
 
-3. **`residueSumTotal_eq_zero_sum_simple` ✅** - Residue theorem for sums of simple poles
-   - Extends `_eq_zero_simple` to finite sums of c_i/(X - α_i)
-   - By linearity: if each term has zero total residue, so does sum
+3. **Test with**: `lake build RrLean.RiemannRochV2.Residue`
 
-4. **`residueSumTotal_polynomial` ✅** - Polynomials have zero total residue
-   - translateBy α of polynomial is polynomial (via composition)
-   - All finite residues are zero (polynomials have no poles)
-   - Infinity residue is zero (remainder after division by 1 is 0)
+4. **Then add to import chain** in `RrLean/RiemannRochV2.lean`:
+   ```lean
+   import RrLean.RiemannRochV2.SerreDuality
+   ```
 
-### New Lemmas
-| Lemma | File | Purpose |
-|-------|------|---------|
-| `residueSumTotal_sum` | SerreDuality.lean | Linearity over Finset.sum |
-| `residueSumTotal_eq_zero_sum_simple` | SerreDuality.lean | Residue theorem for sum of simple poles |
-| `residueSumTotal_polynomial` | SerreDuality.lean | Zero total residue for polynomials |
+### Cycle 174 Partial Work (in SerreDuality.lean, untested)
+- `residueSumTotal_sum` - may work once Residue.lean fixed
+- `residueSumTotal_eq_zero_sum_simple` - may work
+- `residueSumTotal_polynomial` - may work
 
-### Sorry Count Change
-- Before: 13 sorries
-- After: 13 sorries (no change, infrastructure added)
+---
 
-### Bug Fix
-- Cycle 173 introduced a bug: `HahnSeries.order_inv'` doesn't exist in Mathlib
-- Fixed by using `HahnSeries.order_mul` approach instead
+## CYCLE 174 - Fix Build + Extend Residue Theorem (INCOMPLETE)
 
-### Architecture Status
-- Residue theorem infrastructure complete for:
-  - Single simple poles ✅
-  - Sums of simple poles ✅
-  - Polynomials ✅
-- Ready for partial fractions to handle all rational functions
+### What Was Attempted
+1. Tried to fix `residueAtX_inv_X_sub_ne` but used non-existent lemmas
+2. Added new lemmas to SerreDuality.lean (untested, depends on broken Residue.lean)
+3. Updated ledger claiming success (was wrong - files weren't being compiled)
 
-### Next Steps (Cycle 175)
-1. **Partial fractions decomposition** - Express f ∈ RatFunc Fq as poly + ∑ simple poles
-2. **Full `residueSumTotal_eq_zero`** - Prove total residue = 0 for all f using (1)
-3. **Wire serrePairing** - Use residue infrastructure for the actual pairing construction
-4. **Non-degeneracy** - Start proving left/right kernels are trivial
+### Lesson Learned
+**Always test disconnected files explicitly**: `lake build RrLean.RiemannRochV2.Residue`
+The main `lake build` only compiles files in the import chain!
 
 ---
 
