@@ -653,6 +653,165 @@ theorem residueAtLinear_polynomial (α : Fq) (p : Polynomial Fq) :
   rw [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C]
   ring
 
+/-- Residue at a linear place of zero is zero. -/
+@[simp]
+theorem residueAtLinear_zero (α : Fq) : residueAtLinear α (0 : RatFunc Fq) = 0 := by
+  simp only [residueAtLinear, mul_zero]
+  rw [RatFunc.num_zero, RatFunc.denom_zero]
+  simp
+
+/-- Residue at a linear place respects scalar multiplication.
+
+For c ∈ Fq and f : RatFunc Fq:
+  res_α(c • f) = c • res_α(f)
+-/
+theorem residueAtLinear_smul (α : Fq) (c : Fq) (f : RatFunc Fq) :
+    residueAtLinear α (c • f) = c * residueAtLinear α f := by
+  by_cases hc : c = 0
+  · simp [hc, residueAtLinear_zero]
+  · -- c ≠ 0 case: Use that c • f = (C c / 1) * f = C c * f
+    -- and exploit the linearity structure
+    simp only [residueAtLinear]
+    -- (X - C α) * (c • f) = c • ((X - C α) * f)
+    have hcomm : (RatFunc.X - RatFunc.C α) * (c • f) = c • ((RatFunc.X - RatFunc.C α) * f) := by
+      rw [mul_smul_comm]
+    simp only [hcomm]
+    set g := (RatFunc.X - RatFunc.C α) * f with hg_def
+    -- c • g = (C c) * g
+    have hsmul_eq : c • g = RatFunc.C c * g := by
+      rw [Algebra.smul_def, RatFunc.algebraMap_eq_C]
+    rw [hsmul_eq]
+    have hCc_ne : (RatFunc.C c : RatFunc Fq) ≠ 0 := by
+      intro h
+      have : c = 0 := by
+        have heq : RatFunc.C c = RatFunc.C 0 := by simp only [h, map_zero]
+        exact RatFunc.C_injective heq
+      exact hc this
+    -- Use num_denom_mul relation
+    have hCc_denom : (RatFunc.C c : RatFunc Fq).denom = 1 := RatFunc.denom_C c
+    have hCc_num : (RatFunc.C c : RatFunc Fq).num = Polynomial.C c := RatFunc.num_C c
+    have hmul := RatFunc.num_denom_mul (RatFunc.C c) g
+    rw [hCc_denom, one_mul, hCc_num] at hmul
+    have heval := congr_arg (Polynomial.eval α) hmul
+    simp only [Polynomial.eval_mul, Polynomial.eval_C] at heval
+    -- heval: (C c * g).num.eval α * g.denom.eval α = c * g.num.eval α * (C c * g).denom.eval α
+    by_cases hgd : g.denom.eval α = 0
+    · -- g has a pole at α
+      simp only [hgd, div_zero, mul_zero]
+      rw [hgd, mul_zero] at heval
+      -- Need: (C c * g).num / (C c * g).denom = 0
+      -- From heval: 0 = c * g.num.eval α * (C c * g).denom.eval α
+      -- If (C c * g).denom.eval α ≠ 0 and c ≠ 0, then g.num.eval α = 0
+      -- But g.num and g.denom are coprime, so if denom.eval = 0, num.eval ≠ 0
+      -- This means (C c * g).denom.eval α = 0
+      -- Actually, simpler: just show the division is 0/0 = 0 or num = 0
+      by_cases hcgd : (RatFunc.C c * g).denom.eval α = 0
+      · simp [hcgd]
+      · -- (C c * g).denom ≠ 0 but g.denom = 0
+        -- From heval: 0 = c * g.num.eval α * (C c * g).denom.eval α
+        -- Since c ≠ 0 and (C c * g).denom.eval α ≠ 0, we get g.num.eval α = 0
+        have hgn : g.num.eval α = 0 := by
+          by_contra hgn_ne
+          have h0 : c * g.num.eval α * (RatFunc.C c * g).denom.eval α = 0 := heval.symm
+          simp only [mul_eq_zero, hc, hgn_ne, hcgd, or_self] at h0
+        -- But g.num and g.denom are coprime, so both can't be roots at the same point
+        -- This is a contradiction via polynomial coprimality
+        have hcoprime := RatFunc.isCoprime_num_denom g
+        -- If eval at α is 0 for both, then (X - α) divides both
+        -- But gcd(num, denom) = 1, so (X - α) | 1, contradiction
+        exfalso
+        have hroot_denom : Polynomial.IsRoot g.denom α := by
+          rwa [Polynomial.IsRoot.def]
+        have hroot_num : Polynomial.IsRoot g.num α := by
+          rwa [Polynomial.IsRoot.def]
+        have hdvd_denom := Polynomial.dvd_iff_isRoot.mpr hroot_denom
+        have hdvd_num := Polynomial.dvd_iff_isRoot.mpr hroot_num
+        have hXa_ne : Polynomial.X - Polynomial.C α ≠ 0 := by
+          intro h
+          have := congr_arg Polynomial.natDegree h
+          simp at this
+        have hdeg : (Polynomial.X - Polynomial.C α).natDegree = 1 := Polynomial.natDegree_X_sub_C α
+        have hdvd1 : (Polynomial.X - Polynomial.C α) ∣ 1 := by
+          have h1 := hcoprime.isUnit_of_dvd' hdvd_num hdvd_denom
+          exact h1.dvd
+        have hdeg1 := Polynomial.natDegree_le_of_dvd hdvd1 one_ne_zero
+        rw [hdeg, Polynomial.natDegree_one] at hdeg1
+        omega
+    · -- g.denom.eval α ≠ 0
+      -- Key: (C c * g).denom divides g.denom, so if g.denom.eval α ≠ 0,
+      -- then (C c * g).denom.eval α ≠ 0 as well
+      have hcgd : (RatFunc.C c * g).denom.eval α ≠ 0 := by
+        intro hcgd_zero
+        -- (C c * g).denom divides g.denom (from denom_mul_dvd)
+        have hdvd := RatFunc.denom_mul_dvd (RatFunc.C c) g
+        rw [hCc_denom, one_mul] at hdvd
+        -- If p | q and p.eval α = 0, then q.eval α = 0
+        have heval_zero := Polynomial.eval_eq_zero_of_dvd_of_eval_eq_zero hdvd hcgd_zero
+        exact hgd heval_zero
+      -- Now both denominators are nonzero at α, use the relation
+      -- heval: (C c * g).num.eval α * g.denom.eval α = c * g.num.eval α * (C c * g).denom.eval α
+      -- Goal: (C c * g).num.eval α / (C c * g).denom.eval α = c * (g.num.eval α / g.denom.eval α)
+      have h1 : (RatFunc.C c * g).num.eval α / (RatFunc.C c * g).denom.eval α =
+                ((RatFunc.C c * g).num.eval α * g.denom.eval α) / ((RatFunc.C c * g).denom.eval α * g.denom.eval α) := by
+        field_simp [hgd, hcgd]
+      have h2 : c * (g.num.eval α / g.denom.eval α) =
+                (c * g.num.eval α * (RatFunc.C c * g).denom.eval α) / ((RatFunc.C c * g).denom.eval α * g.denom.eval α) := by
+        field_simp [hgd, hcgd]
+      rw [h1, h2, heval]
+
+/-- Auxiliary lemma: for rational functions with the same denominator after multiplication by (X - α),
+    the residue is additive.
+
+This is the key step for proving residueAtLinear_add. -/
+private lemma residueAtLinear_add_aux (α : Fq) (f g : RatFunc Fq)
+    (hf_denom : ((RatFunc.X - RatFunc.C α) * f).denom.eval α ≠ 0)
+    (hg_denom : ((RatFunc.X - RatFunc.C α) * g).denom.eval α ≠ 0) :
+    residueAtLinear α (f + g) = residueAtLinear α f + residueAtLinear α g := by
+  simp only [residueAtLinear, mul_add]
+  set fX := (RatFunc.X - RatFunc.C α) * f with hfX_def
+  set gX := (RatFunc.X - RatFunc.C α) * g with hgX_def
+  -- The goal is now in terms of fX + gX
+  -- Use RatFunc.num_denom_add for (fX + gX)
+  have hadd := RatFunc.num_denom_add fX gX
+  -- hadd : (fX + gX).num * (fX.denom * gX.denom) = (fX.num * gX.denom + fX.denom * gX.num) * (fX + gX).denom
+  have heval := congr_arg (Polynomial.eval α) hadd
+  simp only [Polynomial.eval_mul, Polynomial.eval_add] at heval
+  -- Goal: (fX + gX).num.eval α / (fX + gX).denom.eval α
+  --     = fX.num.eval α / fX.denom.eval α + gX.num.eval α / gX.denom.eval α
+  have hprod_ne : fX.denom.eval α * gX.denom.eval α ≠ 0 := mul_ne_zero hf_denom hg_denom
+  by_cases hsum_denom : (fX + gX).denom.eval α = 0
+  · -- If (fX + gX).denom.eval α = 0
+    -- From heval: lhs * (fX.denom * gX.denom).eval α = rhs * 0 = 0
+    -- But (fX.denom * gX.denom).eval α ≠ 0, so lhs = 0
+    rw [hsum_denom, mul_zero] at heval
+    have hsum_num : (fX + gX).num.eval α = 0 := by
+      by_contra h
+      have : (fX + gX).num.eval α * (fX.denom.eval α * gX.denom.eval α) = 0 := heval
+      simp only [mul_eq_zero, h, hprod_ne, or_self] at this
+    simp only [hsum_num, hsum_denom, zero_div]
+    -- Need: fX.num.eval α / fX.denom.eval α + gX.num.eval α / gX.denom.eval α = 0
+    -- From heval: 0 = (fX.num * gX.denom + fX.denom * gX.num).eval α * 0 = 0
+    -- This doesn't directly give us the sum = 0...
+    -- Actually, we also need that the gcd doesn't introduce issues
+    -- This case is subtle; let's use field_simp
+    -- Actually, from hadd with denom.eval = 0 and prod_ne ≠ 0, we have num.eval = 0
+    -- And hadd gives: 0 * prod = (fX.num * gX.denom + fX.denom * gX.num).eval α * 0
+    -- So 0 = 0, which is fine but doesn't help.
+    -- We need to show: fn/fd + gn/gd = 0
+    -- From hadd at eval: (fn*gd + fd*gn) * sum_denom = sum_num * (fd * gd)
+    -- With sum_denom.eval = 0 and sum_num.eval = 0: 0 = 0, no info
+    -- But we know sum_denom.eval = 0, and (fn*gd + fd*gn) might not be 0
+    -- Hmm, this case needs more careful analysis
+    -- For now, let's add an assumption that we're in the "nice" case
+    sorry
+  · -- (fX + gX).denom.eval α ≠ 0
+    -- This case needs more careful analysis using heval and the field structure
+    -- The core relation is from heval (reordered):
+    -- (fX + gX).num.eval α * (fX.denom.eval α * gX.denom.eval α) =
+    -- (fX.num.eval α * gX.denom.eval α + gX.num.eval α * fX.denom.eval α) * (fX + gX).denom.eval α
+    -- TODO: Complete this proof in future cycle
+    sorry
+
 /-- Placeholder for residue at an arbitrary finite place.
 
 For a prime p ∈ Fq[X], the residue at (p) is the coefficient of p^{-1}
@@ -695,8 +854,7 @@ theorem residue_sum_simple_pole (α c : Fq) :
 open Classical in
 private lemma RatFunc_num_X_sub_C' (β : Fq) :
     (RatFunc.X - RatFunc.C β : RatFunc Fq).num = Polynomial.X - Polynomial.C β := by
-  simp only [RatFunc.X, ← RatFunc.algebraMap_C, ← map_sub, RatFunc.num_algebraMap,
-             (Polynomial.monic_X_sub_C β).normalize_eq_self]
+  simp only [RatFunc.X, ← RatFunc.algebraMap_C, ← map_sub, RatFunc.num_algebraMap]
 
 open Classical in
 private lemma RatFunc_denom_X_sub_C' (β : Fq) :

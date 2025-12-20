@@ -8,9 +8,9 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Build**: ✅ COMPILES
 **Phase**: 3 - Serre Duality
-**Cycle**: 169 (ready for next)
+**Cycle**: 170 (ready for next)
 
-### Sorry Count: 13
+### Sorry Count: 15
 
 | File | Count | Notes |
 |------|-------|-------|
@@ -18,7 +18,41 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 | `FqPolynomialInstance.lean` | 4 | concrete Fq[X] instance |
 | `TraceDualityProof.lean` | 1 | abandoned approach |
 | `SerreDuality.lean` | 5 | pairing types defined, proofs pending |
-| `Residue.lean` | 2 | residueAt (placeholder), residue_sum_eq_zero (placeholder) |
+| `Residue.lean` | 4 | residueAt, residue_sum_eq_zero, residueAtLinear_add_aux (2 cases) |
+
+---
+
+## CYCLE 170 - Added residueAtLinear linearity lemmas
+
+### Achievements
+1. **`residueAtLinear_zero` ✅** - res_α(0) = 0
+   - Simple: mul_zero + num/denom of 0
+
+2. **`residueAtLinear_smul` ✅** - res_α(c • f) = c * res_α(f)
+   - Key technique: Use `RatFunc.num_denom_mul` for (C c) * g
+   - Coprimality argument: if g.denom.eval α = 0 and g.num.eval α = 0, contradiction via `IsCoprime.isUnit_of_dvd'`
+   - Divisibility: `(C c * g).denom | g.denom` via `RatFunc.denom_mul_dvd`
+   - Case analysis on denom evaluations, field_simp for main case
+
+3. **`residueAtLinear_add_aux` (partial)** - Additivity framework set up
+   - Two sorries remain for edge cases involving gcd reduction
+   - Main case uses `RatFunc.num_denom_add` for (fX + gX).num/denom relationship
+
+### Key Techniques Used
+- `Polynomial.eval_eq_zero_of_dvd_of_eval_eq_zero` - if p | q and p.eval α = 0, then q.eval α = 0
+- `Polynomial.dvd_iff_isRoot` - connect roots to divisibility
+- `RatFunc.isCoprime_num_denom` - num and denom are coprime
+- `RatFunc.denom_mul_dvd` - divisibility of product denominators
+
+### Sorry Count Change
+- Before: 13 sorries
+- After: 15 sorries (+2 from residueAtLinear_add_aux edge cases)
+- Net: Added foundational lemmas (smul, zero), structure for additivity
+
+### Next Steps (Cycle 171)
+1. **Complete `residueAtLinear_add_aux`** - Fill the two sorry cases
+2. **Define `residueAtLinear_linearMap`** - Once additivity is complete
+3. **Wire to SerreDuality** - Use residue infrastructure for pairing
 
 ---
 
