@@ -6,73 +6,113 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 ## Current State
 
-**Build**: ❌ Does not compile (errors in DimensionScratch.lean)
+**Build**: ✅ Compiles (with sorries in DimensionCore + ell_ratfunc_projective_eq_deg_plus_one)
 **Phase**: 3 - Serre Duality → Dimension Formula
-**Cycle**: 235
+**Cycle**: 236
 
 ---
 
-## Cycle 235 Summary
+## ⚠️ STATUS CLARIFICATION (Cycle 236)
 
-**Goal**: Fix DimensionScratch.lean sorries
-**Result**: BLOCKED by architectural issue - circular dependency
+**Important**: Cycle 232 claimed "RIEMANN-ROCH FOR P¹ PROVED!" but this was inaccurate.
 
-### The Problem
+**What was actually true at Cycle 232:**
+- RatFuncFullRR.lean compiled and had the theorem *statement* for `riemann_roch_ratfunc`
+- The theorem depended on `ell_ratfunc_projective_eq_deg_plus_one` (in DimensionScratch.lean)
+- DimensionScratch.lean compiled at the time with sorries in place
 
-Attempted to prove `Module.Finite` for `RRSpace_ratfunc_projective (n·[v])` using `finrank` bounds,
-but `finrank` only behaves well when `Module.Finite` is already in scope. This is circular:
+**What happened in Cycle 233-235:**
+- Attempted to fill those sorries
+- Circular dependency trap was hit: trying to prove `Module.Finite` via `finrank`
+- DimensionScratch.lean had compilation errors (not just sorries)
+
+**What was fixed in Cycle 236:**
+- ✅ Created DimensionCore.lean with proper finiteness proofs via embedding (no circular finrank)
+- ✅ Fixed DimensionScratch.lean to use DimensionCore's instances
+- ✅ Build now succeeds with sorries (not errors)
+- ✅ Created Smoke.lean for build hygiene
+
+**Current status**: Build compiles. Key theorem `ell_ratfunc_projective_single_linear` is proved. Main theorem `ell_ratfunc_projective_eq_deg_plus_one` still has sorry. DimensionCore.lean has sorries for the embedding construction.
+
+---
+
+## Build Hygiene Guardrails (Cycle 236) - IMPLEMENTED
+
+### Problem Identified
+No mechanical guarantee that the RR-for-P¹ critical path is actually being compiled. Lake globs and import graphs can silently drift.
+
+### Implemented Guardrails
+
+**1. Umbrella Import Module** ✅ DONE
+Created `RrLean/RiemannRochV2/SerreDuality/Smoke.lean`:
+- Imports all critical-path modules
+- `#check` verifies key theorems are accessible
+- `#print axioms` shows dependency on `sorryAx`
+- `example` verifies type class instances are registered
+
+**2. No-Sorries Smoke Test**
+```bash
+lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "sorryAx"
+```
+Currently shows `sorryAx` (expected - proofs have sorries). When all proofs are complete, this should return nothing.
+
+**3. Find-and-Build Script** (optional)
+```bash
+find RrLean/RiemannRochV2/SerreDuality -name "*.lean" -exec lake build {} \;
+```
+This catches any files not in the import graph.
+
+---
+
+## Cycle 236 Plan
+
+### Goal: Fix finiteness circularity + add build hygiene
+
+### Math/Lean Fix: Finiteness via Embedding
+
+**(A) Create DimensionCore.lean** (NEW FILE)
+Prove `Module.Finite` for `RRSpace_ratfunc_projective (n·[α])` WITHOUT using finrank:
+```lean
+-- Construct linear injection: f ↦ (X-α)^n · f
+-- Codomain: Polynomial.degreeLT Fq (n+1) (finite-dim)
+-- Conclude: Module.Finite from finite codomain
+instance RRSpace_ratfunc_projective_single_linear_finite :
+    Module.Finite Fq (RRSpace_ratfunc_projective (n • DivisorV2.single (linearPlace α) 1)) := ...
+```
+
+**(B) Fix DimensionScratch.lean**
+- Import DimensionCore
+- Use the established `Module.Finite` instances
+- Prove `ell_ratfunc_projective_single_linear` using gap bound + strict inclusion
+- Complete `ell_ratfunc_projective_eq_deg_plus_one` by induction
+
+### Architecture
 
 ```
-Need Module.Finite → to use Module.finrank_pos_iff → to get positive finrank → to prove Module.Finite
-```
-
-### What Doesn't Work
-
-1. **Using `Module.finrank_pos_iff`** - requires `[Module.Finite]` instance
-2. **Using gap bound for finiteness** - `ell_ratfunc_projective_gap_le` requires `[Module.Finite]` for the larger space
-3. **`linarith`/`omega` on finrank** - doesn't work without proper coercion/instance setup
-4. **`interval_cases` on `Module.finrank`** - finrank isn't computable without finite-dim
-
-### Correct Decomposition (for next session)
-
-**(A) Prove `Module.Finite` WITHOUT using finrank:**
-- Construct explicit linear map `φ : RRSpace(n·[α]) →ₗ[Fq] (Fq[X]_{≤n})`
-  - Send `f ↦ (X-α)^n · f` (clears poles, produces polynomial of degree ≤ n)
-- Prove `Injective φ`
-- Conclude `FiniteDimensional` because codomain is finite-dimensional
-- **No finrank needed at this stage**
-
-**(B) Prove dimension = n+1 AFTER finiteness:**
-- `≥ n+1`: Exhibit n+1 linearly independent elements `{1, (X-α)⁻¹, ..., (X-α)⁻ⁿ}`
-- `≤ n+1`: Use gap bound / injection into polynomials of degree ≤ n
-
-### Files Modified This Cycle
-
-- `DimensionScratch.lean` - Multiple failed attempts, left in broken state
-
-### Recommended Architecture Refactor
-
-```
-RatFuncPairing.lean        (foundational: RRSpace definitions)
+RatFuncPairing.lean        (RRSpace definitions)
     ↓
-DimensionCore.lean         (NEW: Module.Finite proofs, no finrank)
+DimensionCore.lean         (NEW: Module.Finite via embedding - NO finrank)
     ↓
 DimensionScratch.lean      (dimension formulas using finrank)
     ↓
-SerreDuality.lean          (top-level Riemann-Roch)
+RatFuncFullRR.lean         (riemann_roch_ratfunc)
+    ↓
+Smoke.lean                 (NEW: umbrella + #print axioms check)
 ```
 
-Key principle: **Separate finiteness proofs from dimension computation**
+**Key principle**: Separate finiteness proofs from dimension computation
 
 ---
 
-## Dependency Graph (Updated)
+## Dependency Graph (Updated - Cycle 236)
 
 ```
-riemann_roch_ratfunc (NOT PROVED)
-    ├─→ ell_ratfunc_projective_eq_deg_plus_one (sorry)
-    │       ├─→ ell_ratfunc_projective_single_linear (BLOCKED - needs finiteness refactor)
-    │       │       ├─→ RRSpace_single_linear_finite (NEEDED - construct directly)
+riemann_roch_ratfunc (NOT PROVED - depends on sorry)
+    ├─→ ell_ratfunc_projective_eq_deg_plus_one (sorry in DimensionScratch - main blocker)
+    │       ├─→ ell_ratfunc_projective_single_linear ✅ PROVED (Cycle 236)
+    │       │       ├─→ RRSpace_single_linear_finite ✅ INSTANCE (DimensionCore, sorries inside)
+    │       │       │       └─→ partialClearPoles (sorry - embedding construction)
+    │       │       │       └─→ mul_X_sub_pow_is_polynomial (sorry - polynomial form)
     │       │       └─→ ell_ratfunc_projective_gap_le ✅ DONE (Cycle 234)
     │       │               └─→ linearPlace_residue_finrank ✅ DONE (Cycle 234)
     │       ├─→ inv_X_sub_C_pow_mem_projective_general ✅
@@ -80,9 +120,13 @@ riemann_roch_ratfunc (NOT PROVED)
     └─→ ell_canonical_sub_zero ✅ DONE (Cycle 224)
 ```
 
+**Key insight**: `ell_ratfunc_projective_single_linear` is now proved using finiteness instances
+from DimensionCore. The finiteness instances themselves use sorries for the embedding construction,
+but the dimension formula proof is structurally complete.
+
 ---
 
-## Key Anti-Pattern Discovered (Cycle 235)
+## Anti-Pattern: Circular Finrank-Finiteness (Cycle 235)
 
 ### DON'T: Prove finiteness using finrank
 ```lean
@@ -94,45 +138,37 @@ haveI : Module.Finite Fq M := Module.finite_of_finrank_pos hpos
 ### DO: Prove finiteness by embedding into known finite-dim space
 ```lean
 -- Construct linear injection into Fq[X]_{≤n}
-def φ : RRSpace(n·[α]) →ₗ[Fq] Polynomial.degreeLT Fq (n+1) := ...
-have hinj : Function.Injective φ := ...
+def clearPoles : RRSpace(n·[α]) →ₗ[Fq] Polynomial.degreeLT Fq (n+1) := ...
+have hinj : Function.Injective clearPoles := ...
 -- Conclude finiteness from finite codomain
-haveI : Module.Finite Fq RRSpace(n·[α]) := Module.Finite.of_injective φ hinj
+haveI : Module.Finite Fq RRSpace(n·[α]) := Module.Finite.of_injective clearPoles hinj
 ```
 
 ---
 
-## Files Modified This Cycle
-
-- `DimensionScratch.lean` - Left in broken state, needs refactor
-
----
-
-## Build Command
+## Build Commands
 
 ```bash
+# Current failing build
 lake build RrLean.RiemannRochV2.SerreDuality.DimensionScratch 2>&1 | grep -E "(error|sorry)"
+
+# Check if critical path modules are connected (after adding Smoke.lean)
+lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1
+
+# Verify no sorryAx in final theorem (after Smoke.lean exists)
+lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "sorryAx"
 ```
 
 ---
 
-## Next Session Action Items
+## Cycle 235 Summary (SUPERSEDED)
 
-1. **Revert DimensionScratch.lean** to last working state (before this cycle)
-2. **Create DimensionCore.lean** with:
-   - `instance RRSpace_ratfunc_projective_single_linear_finite` via embedding approach
-   - NO finrank, NO ell_ratfunc_projective
-3. **Then in DimensionScratch.lean**:
-   - Import DimensionCore
-   - Prove `ell_ratfunc_projective_single_linear` using existing gap bound + strict inclusion
-   - Prove `ell_ratfunc_projective_eq_deg_plus_one` by induction
+Attempted to prove `Module.Finite` via `finrank` bounds - discovered circular dependency.
+See "Anti-Pattern" section above.
 
----
-
-## Cycle 234 (SUPERSEDED)
+## Cycle 234 Summary (SUPERSEDED)
 
 Proved `linearPlace_residue_finrank` and `ell_ratfunc_projective_gap_le`.
-See Cycle 235 for current blocker.
 
 ---
 

@@ -1,4 +1,5 @@
 import RrLean.RiemannRochV2.SerreDuality.RatFuncFullRR
+import RrLean.RiemannRochV2.SerreDuality.DimensionCore
 import Mathlib.FieldTheory.RatFunc.Degree
 
 /-!
@@ -633,49 +634,46 @@ theorem ell_ratfunc_projective_single_linear (α : Fq) (n : ℕ) :
         (m : ℤ) • DivisorV2.single (linearPlace α) 1 + DivisorV2.single (linearPlace α) 1 := by
       simp only [Nat.cast_succ, add_smul, one_smul]
 
-    -- Establish finiteness for L(m·[v]) from IH
-    have ih_finrank : Module.finrank Fq (RRSpace_ratfunc_projective
-        ((m : ℤ) • DivisorV2.single (linearPlace α) 1)) = m + 1 := ih
+    -- Finiteness instances from DimensionCore (NOT from finrank!)
     haveI hfin_m : Module.Finite Fq
         (RRSpace_ratfunc_projective ((m : ℤ) • DivisorV2.single (linearPlace α) 1)) :=
-      Module.finite_of_finrank_pos (by omega : 0 < m + 1)
+      RRSpace_ratfunc_projective_single_linear_finite Fq α m
+    haveI hfin_succ : Module.Finite Fq
+        (RRSpace_ratfunc_projective (((m + 1 : ℕ) : ℤ) • DivisorV2.single (linearPlace α) 1)) :=
+      RRSpace_ratfunc_projective_single_linear_finite Fq α (m + 1)
 
-    -- Establish finiteness for L((m+1)·[v])
+    -- IH gives finrank for L(m·[v])
+    have ih_finrank : Module.finrank Fq (RRSpace_ratfunc_projective
+        ((m : ℤ) • DivisorV2.single (linearPlace α) 1)) = m + 1 := ih
+
+    -- Element witnessing strict inclusion
     have h_in : (RatFunc.X (K := Fq) - RatFunc.C α)⁻¹ ^ (m + 1) ∈
         RRSpace_ratfunc_projective (((m + 1 : ℕ) : ℤ) • DivisorV2.single (linearPlace α) 1) :=
       inv_X_sub_C_pow_mem_projective Fq α (m + 1)
     have hne_elem : (RatFunc.X (K := Fq) - RatFunc.C α)⁻¹ ^ (m + 1) ≠ 0 :=
       pow_ne_zero (m + 1) (inv_ne_zero (RatFunc_X_sub_C_ne_zero Fq α))
-    haveI hfin_succ : Module.Finite Fq
-        (RRSpace_ratfunc_projective (((m + 1 : ℕ) : ℤ) • DivisorV2.single (linearPlace α) 1)) := by
-      have hmem_pos : 0 < Module.finrank Fq (RRSpace_ratfunc_projective
-          (((m + 1 : ℕ) : ℤ) • DivisorV2.single (linearPlace α) 1)) := by
-        rw [Module.finrank_pos_iff]
-        exact ⟨⟨_, h_in⟩, fun heq => hne_elem (congrArg Subtype.val heq)⟩
-      exact Module.finite_of_finrank_pos hmem_pos
 
-    -- Apply gap bound
+    -- Apply gap bound: ℓ(D + [v]) ≤ ℓ(D) + 1
     have h_le : ell_ratfunc_projective ((m : ℤ) • DivisorV2.single (linearPlace α) 1 +
         DivisorV2.single (linearPlace α) 1) ≤
-        ell_ratfunc_projective ((m : ℤ) • DivisorV2.single (linearPlace α) 1) + 1 := by
-      have := @ell_ratfunc_projective_gap_le Fq _ _ _
-          ((m : ℤ) • DivisorV2.single (linearPlace α) 1) α
-      convert this using 2
-      exact h_eq.symm
+        ell_ratfunc_projective ((m : ℤ) • DivisorV2.single (linearPlace α) 1) + 1 :=
+      ell_ratfunc_projective_gap_le Fq ((m : ℤ) • DivisorV2.single (linearPlace α) 1) α
     rw [ih] at h_le
 
-    -- Strict inclusion gives lower bound
+    -- Strict inclusion: 1/(X-α)^(m+1) ∈ L((m+1)·[v]) \ L(m·[v])
     have h_not_in : (RatFunc.X (K := Fq) - RatFunc.C α)⁻¹ ^ (m + 1) ∉
         RRSpace_ratfunc_projective ((m : ℤ) • DivisorV2.single (linearPlace α) 1) := by
       have := inv_X_sub_C_pow_not_mem_projective_smaller Fq α (m + 1) (Nat.succ_pos m)
       simp only [Nat.cast_succ, add_sub_cancel_right] at this
       exact this
 
+    -- Monotonicity: L(m·[v]) ⊆ L((m+1)·[v])
     have h_mono : RRSpace_ratfunc_projective ((m : ℤ) • DivisorV2.single (linearPlace α) 1) ≤
         RRSpace_ratfunc_projective ((m : ℤ) • DivisorV2.single (linearPlace α) 1 +
             DivisorV2.single (linearPlace α) 1) :=
       RRSpace_ratfunc_projective_mono Fq _ α
 
+    -- Strict subspace: L(m·[v]) ≠ L((m+1)·[v])
     have h_ne : RRSpace_ratfunc_projective ((m : ℤ) • DivisorV2.single (linearPlace α) 1) ≠
         RRSpace_ratfunc_projective ((m : ℤ) • DivisorV2.single (linearPlace α) 1 +
             DivisorV2.single (linearPlace α) 1) := by
@@ -684,25 +682,40 @@ theorem ell_ratfunc_projective_single_linear (α : Fq) (n : ℕ) :
       rw [heq, ← h_eq]
       exact h_in
 
+    -- Finiteness for L(m·[v] + [v]) to use finrank_mono
+    haveI hfin_add : Module.Finite Fq (RRSpace_ratfunc_projective
+        ((m : ℤ) • DivisorV2.single (linearPlace α) 1 + DivisorV2.single (linearPlace α) 1)) := by
+      rw [h_eq.symm]
+      exact hfin_succ
+
+    -- Lower bound from strict inclusion: ℓ((m+1)·[v]) > ℓ(m·[v]) = m+1
     have h_ge : m + 1 < ell_ratfunc_projective ((m : ℤ) • DivisorV2.single (linearPlace α) 1 +
         DivisorV2.single (linearPlace α) 1) := by
       by_contra hlt
       push_neg at hlt
+      -- If finrank ≤ m+1 and L(m·[v]) ⊊ L((m+1)·[v]), get contradiction
       have h_le' : Module.finrank Fq (RRSpace_ratfunc_projective
           ((m : ℤ) • DivisorV2.single (linearPlace α) 1 +
               DivisorV2.single (linearPlace α) 1)) ≤ m + 1 := hlt
+      have h1 : Module.finrank Fq (RRSpace_ratfunc_projective
+          ((m : ℤ) • DivisorV2.single (linearPlace α) 1)) ≤
+          Module.finrank Fq (RRSpace_ratfunc_projective
+          ((m : ℤ) • DivisorV2.single (linearPlace α) 1 +
+              DivisorV2.single (linearPlace α) 1)) :=
+        Submodule.finrank_mono h_mono
       have h_eq_finrank : Module.finrank Fq (RRSpace_ratfunc_projective
           ((m : ℤ) • DivisorV2.single (linearPlace α) 1)) =
           Module.finrank Fq (RRSpace_ratfunc_projective
           ((m : ℤ) • DivisorV2.single (linearPlace α) 1 +
-              DivisorV2.single (linearPlace α) 1)) := by
-        have h1 := Submodule.finrank_mono h_mono
-        omega
+              DivisorV2.single (linearPlace α) 1)) := by omega
       have h_eq_submodule := Submodule.eq_of_le_of_finrank_eq h_mono h_eq_finrank
       exact h_ne h_eq_submodule
 
-    -- Combine: m+1 < ell ≤ m+2, so ell = m+2
-    omega
+    -- Combine: m+1 < ell((m+1)·[v]) ≤ (m+1)+1, so ell = m+2
+    have h_goal : ell_ratfunc_projective (((m + 1 : ℕ) : ℤ) • DivisorV2.single (linearPlace α) 1) = m + 1 + 1 := by
+      rw [h_eq]
+      omega
+    exact h_goal
   /- Original proof (stub for now):
   induction n with
   | zero =>
