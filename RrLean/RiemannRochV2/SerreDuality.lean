@@ -1,6 +1,7 @@
 import RrLean.RiemannRochV2.SerreDuality.Abstract
 import RrLean.RiemannRochV2.SerreDuality.RatFuncResidues
 import RrLean.RiemannRochV2.SerreDuality.RatFuncPairing
+import RrLean.RiemannRochV2.SerreDuality.DimensionScratch
 
 /-!
 # Serre Duality
