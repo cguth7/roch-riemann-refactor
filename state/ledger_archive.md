@@ -5281,3 +5281,81 @@ theorem exists_translate_in_integralFullAdeles : ...
 ### Cycle 166 - residueAtInfty_add completed
 - `residueAtInftyAux_mul_monic` ✅, `residueAtInfty_add` ✅
 
+
+---
+
+## Cycles 178-209 (archived from ledger.md, Cycle 210)
+
+### Cycle 209 - Full Adele H¹(D) Infrastructure 🏗️
+- Created `SerreDuality/AdelicH1Full.lean` - H¹(D) using full adele ring
+- New definitions: ExtendedDivisor, boundedSubset_full, globalSubmodule_full, SpaceModule_full
+- New: serrePairing_diagonal, canonicalExtended, deg_canonical_extended
+- Build: ✅ (2808 jobs)
+
+### Cycle 208 - Projective L(D) Infrastructure Built 🏗️
+- Created `RRSpace_ratfunc_projective` with infinity constraint
+- Definitions: noPoleAtInfinity, ell_ratfunc_projective, finitePrincipalDivisorDegree
+- KEY: L_proj(0) = constants only (X excluded)
+
+### Cycle 207 - Architecture Discovery: L(D) Infinity Gap 🔍
+- Discovered: Current L(D) is "affine" (no infinity constraint)
+- Problem: L(0) = all polynomials (infinite dim) vs ℓ(0) = 1 required
+- Solution: Projective L(D) with degree constraint
+
+### Cycle 206 - NON-DEGENERACY LEMMAS PROVED 🎉
+- serrePairing_left_nondegen ✅ (Subsingleton.elim)
+- serrePairing_right_nondegen ✅ (Subsingleton.elim)
+- Abstract.lean: 0 sorries
+
+### Cycle 205 - H¹(D) = 0 FULLY PROVED 🎉
+- globalPlusBoundedSubmodule_eq_top ✅
+- h1_subsingleton, h1_finrank_zero_of_large_deg ✅
+
+### Cycle 204 - strong_approximation_ratfunc FULLY PROVED 🎉
+- Resolved hk_int sorry via strengthened exists_global_approximant_from_local
+
+### Cycle 203 - strong_approximation_ratfunc structure COMPLETE 🎉
+- Full proof structure with DecidableEq, Filter.eventually_cofinite
+
+### Cycle 202 - exists_global_approximant_from_local PROVED 🎉
+- Two-case proof: n_v ≥ 0 (integrality) vs n_v < 0 (CRT refinement)
+
+### Cycle 201 - Two Key Lemmas PROVED 🎉
+- exists_eq_pow_mul_not_dvd ✅ (multiplicity machinery)
+- exists_principal_part_at_spec ✅ (partial fractions)
+
+### Cycle 200 - Proof Structure for Gluing Lemma 🏗️
+- exists_global_approximant_from_local structure via principal parts + CRT
+
+### Cycle 199 - Generalized Principal Part Infrastructure 🏗️
+- IsPrincipalPartAtSpec, valuation_le_one_at_coprime_place
+
+### Cycle 198 - Helper Lemmas PROVED 🎉
+- denom_not_in_asIdeal_of_integral ✅
+- exists_polyRep_of_integral_mod_pow ✅
+
+### Cycle 197-196 - Two-Step Strong Approximation 🏗️
+- Principal parts + CRT architecture
+- exists_principal_part PROVED ✅
+
+### Cycle 195-192 - Principal Part & CRT Infrastructure 🏗️
+- linearPlaces_pairwise_coprime ✅, crt_linear_places ✅
+- Valuation lemmas for principal parts
+
+### Cycle 191 - serrePairing_ratfunc defined as 0 ✅
+- Justified: genus 0 → H¹ × L(K-D) pairing is trivially 0
+
+### Cycle 190 - finrank_eq_of_perfect_pairing proved ✅
+- Uses Mathlib's IsPerfPair
+
+### Cycle 189 - Split SerreDuality into 3 files 🔧
+- Abstract.lean, RatFuncResidues.lean, RatFuncPairing.lean
+
+### Cycle 188-182 - Raw pairing & residue infrastructure
+- rawDiagonalPairing ✅, residuePairing ✅
+- residueSumTotal_n_poles_finset ✅
+- Valuation transport: linearPlace_valuation_eq_comap ✅
+
+### Cycle 181-178 - Residue theorem & partial fractions
+- residueSumTotal_splits ✅, isCoprime_X_sub_of_ne ✅
+
