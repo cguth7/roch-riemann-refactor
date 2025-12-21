@@ -6,118 +6,80 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 ## Current State
 
-**Build**: ✅ Full build compiles with sorries
+**Build**: ✅ Full build compiles with 1 sorry in Step 3
 **Phase**: 3 - Serre Duality
-**Cycle**: 220 (IN PROGRESS)
+**Cycle**: 221 (IN PROGRESS)
 
-### Active Sorries (5 in RatFuncPairing.lean - needs cleanup!)
+### Active Sorries
 
 | File | Count | Priority | Notes |
 |------|-------|----------|-------|
-| **RatFuncPairing.lean** | 5 | HIGH | Step 3 counting arg has 4 sub-sorries - NEEDS REVERT |
+| **RatFuncPairing.lean** | 2 | HIGH | Step 3 has 1 sorry (hneg_le_num) - almost done! |
 | **ProductFormula.lean** | 1 | DONE* | *Intentionally incorrect lemma - documented |
 | **Residue.lean** | 2 | LOW | Higher-degree places, general residue theorem (deferred) |
 | **FullAdelesCompact.lean** | 1 | LOW | Edge case bound < 1 (not needed) |
 | **TraceDualityProof.lean** | 1 | LOW | Alternative approach (not on critical path) |
 
-**⚠️ WARNING**: Cycle 220 introduced 4 new sorries (lines 2939, 2942, 2952, 2961).
-Next session should either complete these or revert to single sorry at ~2933.
-
 ---
 
-## Cycle 220 Progress (IN PROGRESS)
+## Cycle 221 Progress (IN PROGRESS)
 
 **Goal**: Complete Step 3 counting argument
 
 **Completed this session**:
-1. ✅ Built proof structure from line 2670 to ~2970
-2. ✅ Proved key intermediate facts:
-   - `hv_neg_linear`: v_neg = linearPlace β (using IsLinearPlaceSupport)
-   - `hzero_mult`: num.rootMultiplicity β ≥ |D(linearPlace β)|
-   - `hα_root`: α is a root of denom (from Step 2's v_π = linearPlace α)
-   - `hαβ_ne`: α ≠ β (D(α) > 0 but D(β) < 0)
-   - `hβ_mult_le_deg`: num.rootMultiplicity β ≤ num.natDegree
-   - `hneg_D_le_num`: -D(linearPlace β) ≤ num.natDegree
-3. ✅ Set up final contradiction structure with calc chain
+1. ✅ **PROVED `irreducible_factor_of_denom_is_linear`** (new helper lemma)
+   - Location: RatFuncPairing.lean:2495-2575
+   - For any irreducible factor π of f.denom (with f ∈ L(D)), π is associated to (X - C α)
+   - Generalizes the Step 2 argument to ALL irreducible factors
 
-**Remaining sorries** (lines 2939, 2942, 2952, 2961):
-1. `hdeg_split`: deg(D) = pos_sum - neg_abs_sum (sum decomposition)
-2. `hsum_ineq`: pos_sum < neg_abs_sum (from hdeg_split and deg < 0)
-3. `hpos_ge_denom`: pos_sum ≥ denom.natDegree (HARD - needs denom.Splits)
-4. `hneg_le_num`: neg_abs_sum ≤ num.natDegree (sum over negative places)
+2. ✅ **PROVED `denom_splits_of_LRatFunc`** (new helper lemma)
+   - Location: RatFuncPairing.lean:2577-2596
+   - Uses `irreducible_factor_of_denom_is_linear` + `splits_iff_splits`
+   - Shows f.denom.Splits when f ∈ L(D) with IsLinearPlaceSupport D
 
-**Key blocker**: `hpos_ge_denom` requires proving denom splits over Fq.
-The Step 2 argument shows any ONE irreducible factor is linear, but
-needs generalization to ALL factors to conclude denom.Splits.
+3. ✅ **PROVED `hdeg_split`**: `D.deg = pos_sum - neg_abs_sum`
+   - Location: RatFuncPairing.lean:3046-3067
+   - Sum decomposition using `Finset.sum_filter_add_sum_filter_not`
 
----
+4. ✅ **PROVED `hsum_ineq`**: `pos_sum < neg_abs_sum`
+   - Location: RatFuncPairing.lean:3070
+   - Follows from hdeg_split + hD by omega
 
-## Cycle 219 Progress (COMPLETED)
+5. ✅ **PROVED `hpos_ge_denom`**: `pos_sum ≥ denom.natDegree`
+   - Location: RatFuncPairing.lean:3074-3143
+   - Uses denom_splits + sum over roots with `Multiset.toFinset_sum_count_eq`
+   - Key: linearPlace injective + pole_multiplicity_le_D for each root
 
-**Goal**: Complete Step 3 of `projective_LRatFunc_eq_zero_of_neg_deg`
-
-**Completed**:
-1. ✅ **PROVED `not_isRoot_of_coprime_isRoot`** (helper lemma)
-   - Location: RatFuncPairing.lean:2341-2358
-   - Shows coprime polynomials cannot share a common root
-
-2. ✅ **PROVED `pole_multiplicity_le_D`** (Lemma 1 from plan)
-   - Location: RatFuncPairing.lean:2360-2420
-   - At pole α: `rootMult(α, denom) ≤ D(linearPlace α)`
-   - Uses bridge lemma + coprimality argument
-
-3. ✅ **PROVED `zero_multiplicity_ge_neg_D`** (Lemma 3 from plan)
-   - Location: RatFuncPairing.lean:2422-2481
-   - At D < 0 place β: `rootMult(β, num) ≥ |D(linearPlace β)|`
-   - Key insight: if β were a root of denom, D would be positive (contradicts D < 0)
-
-**Remaining** (sorry at line ~2700):
-- Need to derive final contradiction using the helper lemmas
-- Strategy: Sum inequalities show num.natDegree > denom.natDegree, contradicting noPoleAtInfinity
+**Remaining sorry** (line ~3194):
+- **`hneg_le_num`**: `neg_abs_sum ≤ num.natDegree`
 
 ---
 
-## Next Steps (Cycle 221)
+## Next Steps (Cycle 222)
 
-### OPTION A: Complete the 4 remaining sorries
+### Complete `hneg_le_num`
 
-Current proof structure at RatFuncPairing.lean:2925-2971 has 4 sorries:
+The proof structure is set up (lines 3147-3194). Key facts already proved:
+- `hneg_lin`: Every v in neg_places equals linearPlace β for some β
+- `hbound_per_v`: For each such v, `-D v ≤ rootMult(β, num)`
+- `hneg_is_num_root`: Each β is a root of num
 
-1. **hdeg_split** (line 2939): `D.deg = pos_sum - neg_abs_sum`
-   - Straightforward sum decomposition over Finsupp
-   - Use `Finset.sum_filter_add_sum_filter_not`
+**Strategy documented in code**:
+```
+Σ_{v} (-D v) ≤ Σ_{v} rootMult(β_v, num)
+             = Σ_{β ∈ image} rootMult(β, num)  [β_v distinct by linearPlace injective]
+             = Σ_{β ∈ image} num.roots.count(β)  [count_roots]
+             ≤ num.roots.card  [sum over subset ≤ total]
+             ≤ num.natDegree  [card_roots']
+```
 
-2. **hsum_ineq** (line 2942): `pos_sum < neg_abs_sum`
-   - Follows from hdeg_split and `hD : D.deg < 0`
-   - Should be `omega` after hdeg_split
+**Key insight**: The image of neg_places under linearPlace⁻¹ is a subset of num.roots.toFinset.
+Need to use Finset.sum over this image and bound by Multiset.card.
 
-3. **hpos_ge_denom** (line 2952): `pos_sum ≥ denom.natDegree`
-   - **HARD**: Requires proving denom.Splits over Fq
-   - Step 2 shows ONE irreducible factor is linear
-   - Need to generalize: ∀ π, Irreducible π → π ∣ denom → ∃ α, π = X - C α
-   - Then use `Polynomial.splits_iff_card_roots`
-
-4. **hneg_le_num** (line 2961): `neg_abs_sum ≤ num.natDegree`
-   - Sum `zero_multiplicity_ge_neg_D` over all negative places
-   - Use that different places give different roots (linearPlace injective)
-   - Then sum of rootMultiplicities ≤ natDegree
-
-### OPTION B: Revert and try simpler approach
-
-Revert to single sorry (pre-Cycle 220 state) and try:
-1. Extract `irreducible_factor_is_linear` as ≤15 line helper lemma
-2. Use to prove `denom.Splits` directly
-3. Then sum argument is cleaner
-
-### Key Mathlib lemmas for sum approach:
-- `Polynomial.splits_iff_card_roots`: p.Splits ↔ p.roots.card = p.natDegree
-- `Polynomial.count_roots`: p.roots.count a = rootMultiplicity a p
-- `Finset.sum_le_sum`: monotone function gives sum inequality
-- `Multiset.count_le_card`: count of element ≤ total card
-
-### CRITICAL: Frontier Freeze Rule
-Current state has 5 sorries (was 1). Either complete all 4 new ones
-or revert to single sorry. Do NOT add more sorries!
+**Suggested approach**:
+1. Use `Finset.sum_image` to rewrite sum over neg_places as sum over image
+2. Show image ⊆ num.roots.toFinset (each β_v is a root of num)
+3. Use `Finset.sum_le_sum_of_subset_of_nonneg` or sum bound for count
 
 ---
 
@@ -136,50 +98,43 @@ RatFuncPairing.lean: projective_LRatFunc_eq_zero_of_neg_deg
     ├─→ not_isRoot_of_coprime_isRoot ✅ DONE (Cycle 219)
     ├─→ pole_multiplicity_le_D ✅ DONE (Cycle 219)
     ├─→ zero_multiplicity_ge_neg_D ✅ DONE (Cycle 219)
-    └─→ non-constant Step 3 (final contradiction) ← NEXT (Cycle 220)
+    ├─→ irreducible_factor_of_denom_is_linear ✅ DONE (Cycle 221)
+    ├─→ denom_splits_of_LRatFunc ✅ DONE (Cycle 221)
+    ├─→ hdeg_split ✅ DONE (Cycle 221)
+    ├─→ hsum_ineq ✅ DONE (Cycle 221)
+    ├─→ hpos_ge_denom ✅ DONE (Cycle 221)
+    └─→ hneg_le_num ← NEXT (1 sorry remaining!)
         └─→ L_proj(D) = {0} when deg(D) < 0
             └─→ Serre duality RHS verified
 ```
 
 ---
 
-## Cycle 218 Progress (COMPLETED)
+## Cycle 220 Progress (COMPLETED)
 
-**Goal**: Prove the bridge lemma connecting valuation to rootMultiplicity
+**Goal**: Complete Step 3 counting argument
 
 **Completed**:
-1. ✅ **PROVED `intValuation_linearPlace_eq_exp_neg_rootMultiplicity`**
-   - Location: RatFuncPairing.lean:2283
-   - Key insight: Use `Ideal.count_associates_eq` with `exists_eq_pow_rootMultiplicity_mul_and_not_dvd`
-   - This bridges valuation theory to polynomial algebra
-
-**Lesson learned**: After proving the bridge lemma, attempted a 159-line "counting argument" inline that got stuck on type errors. Reverted to clean sorry with documented plan. Don't overreach after a win.
+1. ✅ Built proof structure from line 2670 to ~2970
+2. ✅ Proved key intermediate facts:
+   - `hv_neg_linear`: v_neg = linearPlace β (using IsLinearPlaceSupport)
+   - `hzero_mult`: num.rootMultiplicity β ≥ |D(linearPlace β)|
+   - `hα_root`: α is a root of denom (from Step 2's v_π = linearPlace α)
+   - `hαβ_ne`: α ≠ β (D(α) > 0 but D(β) < 0)
+   - `hβ_mult_le_deg`: num.rootMultiplicity β ≤ num.natDegree
+   - `hneg_D_le_num`: -D(linearPlace β) ≤ num.natDegree
+3. ✅ Set up final contradiction structure with calc chain
 
 ---
 
-## Cycle 217 Progress
+## Cycle 219 Progress (COMPLETED)
+
+**Goal**: Complete Step 3 of `projective_LRatFunc_eq_zero_of_neg_deg`
 
 **Completed**:
-1. ✅ **Proved Step 2 completely**: Irreducible factors of denom give poles at linear places
-   - For any irreducible factor π | denom, constructed place v_π with asIdeal = span{π}
-   - Proved v_π.intValuation(denom) < 1 (π ∈ v_π.asIdeal)
-   - Proved v_π.intValuation(num) = 1 (coprimality: π ∤ num)
-   - Therefore valuation(f) = val(num)/val(denom) > 1 (f has pole at v_π)
-   - From L(D) membership: valuation(f) ≤ exp(D(v_π)), so exp(D(v_π)) > 1
-   - Therefore D(v_π) > 0, so v_π ∈ D.support
-   - By IsLinearPlaceSupport: v_π is a linear place
-   - Conclusion: all irreducible factors of denom are linear (X - α)
-
----
-
-## Cycle 216 Progress
-
-**Completed**:
-1. ✅ **Added `IsLinearPlaceSupport D` assumption** to `projective_LRatFunc_eq_zero_of_neg_deg` and downstream theorems
-2. ✅ **Proved Step 1 completely**: For non-constant f with noPoleAtInfinity, denom has positive degree
-
-**Key insight on IsLinearPlaceSupport**:
-The theorem as originally stated (without IsLinearPlaceSupport) is actually FALSE for general divisors.
+1. ✅ **PROVED `not_isRoot_of_coprime_isRoot`** (helper lemma)
+2. ✅ **PROVED `pole_multiplicity_le_D`** (Lemma 1 from plan)
+3. ✅ **PROVED `zero_multiplicity_ge_neg_D`** (Lemma 3 from plan)
 
 ---
 

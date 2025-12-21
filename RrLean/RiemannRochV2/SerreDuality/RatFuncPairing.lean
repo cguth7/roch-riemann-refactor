@@ -2480,6 +2480,121 @@ lemma zero_multiplicity_ge_neg_D (f : RatFunc Fq) (D : DivisorV2 (Polynomial Fq)
   simp only [v] at hmult_bound
   linarith
 
+/-- Every irreducible factor of the denominator of f ∈ L(D) is linear, when D is
+supported on linear places. This is the key to the counting argument in Step 3.
+
+**Proof sketch**: Let π be an irreducible factor of f.denom.
+1. π generates a height-one prime v_π with asIdeal = span{π}
+2. v_π.intValuation(denom) < 1 since π | denom
+3. v_π.intValuation(num) = 1 since π ∤ num (by coprimality)
+4. So v_π.valuation(f) > 1 (f has a pole at v_π)
+5. From L(D) bound: exp(D(v_π)) ≥ valuation(f) > 1, so D(v_π) ≥ 1
+6. By IsLinearPlaceSupport: v_π is a linear place
+7. So v_π.asIdeal = span{X - C α} for some α
+8. Since span{π} = span{X - C α}, they are associates -/
+lemma irreducible_factor_of_denom_is_linear (f : RatFunc Fq) (D : DivisorV2 (Polynomial Fq))
+    (hf_val : ∀ v : HeightOneSpectrum (Polynomial Fq), v.valuation (RatFunc Fq) f ≤ WithZero.exp (D v))
+    (hf_ne : f ≠ 0) (hDlin : IsLinearPlaceSupport D)
+    (π : Polynomial Fq) (hπ_irr : Irreducible π) (hπ_dvd : π ∣ f.denom) :
+    ∃ α : Fq, Associated π (Polynomial.X - Polynomial.C α) := by
+  -- Setup: construct the place v_π corresponding to π
+  have hdenom_ne : f.denom ≠ 0 := f.denom_ne_zero
+  have hπ_ne : π ≠ 0 := hπ_irr.ne_zero
+  let v_π : HeightOneSpectrum (Polynomial Fq) :=
+    ⟨Ideal.span {π}, Ideal.span_singleton_prime hπ_ne |>.mpr hπ_irr.prime,
+     by rw [ne_eq, Ideal.span_singleton_eq_bot]; exact hπ_ne⟩
+
+  -- At v_π, denom has valuation < 1 (since π | denom means denom ∈ v_π.asIdeal)
+  have hdenom_in_v : f.denom ∈ v_π.asIdeal := by
+    simp only [v_π, Ideal.mem_span_singleton]; exact hπ_dvd
+  have hdenom_val_lt : v_π.intValuation f.denom < 1 :=
+    (intValuation_lt_one_iff_mem v_π f.denom).mpr hdenom_in_v
+
+  -- Coprimality: since num and denom are coprime, π ∤ num
+  have hcop : IsCoprime f.num f.denom := f.isCoprime_num_denom
+  have hπ_not_dvd_num : ¬(π ∣ f.num) := by
+    intro hπ_dvd_num
+    have hdvd_one : π ∣ (1 : Polynomial Fq) := by
+      obtain ⟨a, b, hab⟩ := hcop
+      calc π ∣ a * f.num + b * f.denom := dvd_add (dvd_mul_of_dvd_right hπ_dvd_num a)
+                                                   (dvd_mul_of_dvd_right hπ_dvd b)
+         _ = 1 := hab
+    exact Irreducible.not_isUnit hπ_irr (isUnit_of_dvd_one hdvd_one)
+
+  -- So num ∉ v_π.asIdeal, hence num has valuation 1 at v_π
+  have hnum_not_in_v : f.num ∉ v_π.asIdeal := by
+    simp only [v_π, Ideal.mem_span_singleton]; exact hπ_not_dvd_num
+  have hnum_val_one : v_π.intValuation f.num = 1 := intValuation_eq_one_iff.mpr hnum_not_in_v
+
+  -- valuation(f) = valuation(num)/valuation(denom) > 1
+  have hf_val_gt_one : v_π.valuation (RatFunc Fq) f > 1 := by
+    rw [← RatFunc.num_div_denom f]
+    have hnum_ne : f.num ≠ 0 := by
+      intro heq
+      have hf_eq_zero : f = 0 := by rw [← RatFunc.num_div_denom f, heq, map_zero, zero_div]
+      exact hf_ne hf_eq_zero
+    have hdenom_alg_ne : algebraMap (Polynomial Fq) (RatFunc Fq) f.denom ≠ 0 :=
+      RatFunc.algebraMap_ne_zero hdenom_ne
+    rw [Valuation.map_div, v_π.valuation_of_algebraMap, v_π.valuation_of_algebraMap,
+        hnum_val_one, one_div]
+    have hdenom_mem : f.denom ∈ nonZeroDivisors (Polynomial Fq) :=
+      mem_nonZeroDivisors_of_ne_zero hdenom_ne
+    have hval_ne : v_π.intValuation f.denom ≠ 0 := v_π.intValuation_ne_zero' ⟨f.denom, hdenom_mem⟩
+    have hcoe_val_lt : (v_π.intValuation f.denom : WithZero (Multiplicative ℤ)) < 1 := hdenom_val_lt
+    exact one_lt_inv_iff₀.mpr ⟨zero_lt_iff.mpr (by exact_mod_cast hval_ne), hcoe_val_lt⟩
+
+  -- From L(D) bound: exp(D(v_π)) ≥ valuation(f) > 1, so D(v_π) ≥ 1
+  have hD_pos : D v_π > 0 := by
+    have hf_bound := hf_val v_π
+    have hexp_gt_one : WithZero.exp (D v_π) > 1 := lt_of_lt_of_le hf_val_gt_one hf_bound
+    rw [← WithZero.exp_zero] at hexp_gt_one
+    exact WithZero.exp_lt_exp.mp hexp_gt_one
+
+  -- D v_π > 0 means v_π ∈ D.support
+  have hv_in_supp : v_π ∈ D.support := by rw [Finsupp.mem_support_iff]; omega
+
+  -- By IsLinearPlaceSupport, v_π must be a linear place
+  have hv_linear := hDlin v_π hv_in_supp
+  obtain ⟨α, hv_eq⟩ := hv_linear
+
+  -- v_π.asIdeal = span{π} and linearPlace α has asIdeal = span{X - α}
+  -- Since v_π = linearPlace α, these ideals are equal
+  have hspan_eq : Ideal.span {π} = Ideal.span {Polynomial.X - Polynomial.C α} := by
+    have h1 : v_π.asIdeal = Ideal.span {π} := rfl
+    have h2 : (linearPlace α).asIdeal = Ideal.span {Polynomial.X - Polynomial.C α} := rfl
+    rw [← h1, ← h2, hv_eq]
+
+  -- span{π} = span{X - C α} implies they are associates
+  -- In a PID, span{a} = span{b} ⟺ a and b are associates
+  have hassoc : Associated π (Polynomial.X - Polynomial.C α) := by
+    rw [Ideal.span_singleton_eq_span_singleton] at hspan_eq
+    exact hspan_eq
+
+  exact ⟨α, hassoc⟩
+
+/-- The denominator of f ∈ L(D) splits over Fq when D is supported on linear places and f is
+non-constant with positive degree denominator.
+
+This follows from `irreducible_factor_of_denom_is_linear`: every irreducible factor is linear,
+so the polynomial is a product of linear factors, which means it splits. -/
+lemma denom_splits_of_LRatFunc (f : RatFunc Fq) (D : DivisorV2 (Polynomial Fq))
+    (hf_val : ∀ v : HeightOneSpectrum (Polynomial Fq), v.valuation (RatFunc Fq) f ≤ WithZero.exp (D v))
+    (hf_ne : f ≠ 0) (hDlin : IsLinearPlaceSupport D) :
+    f.denom.Splits := by
+  -- denom splits if all irreducible factors have degree 1
+  -- In a field, p.Splits ↔ every irreducible factor of p is linear (degree 1)
+  have hdenom_ne : f.denom ≠ 0 := f.denom_ne_zero
+  -- Use the characterization: splits iff f = 0 ∨ every irreducible factor has degree 1
+  rw [Polynomial.splits_iff_splits]
+  right
+  intro q hq_irr hq_dvd
+  -- q is an irreducible divisor of f.denom, so by our lemma it's associated to X - C α
+  obtain ⟨α, hassoc⟩ := irreducible_factor_of_denom_is_linear f D hf_val hf_ne hDlin q hq_irr hq_dvd
+  -- Associated polynomials have the same degree
+  have hdeg_eq : q.degree = (Polynomial.X - Polynomial.C α).degree :=
+    Polynomial.degree_eq_degree_of_associated hassoc
+  rw [hdeg_eq, Polynomial.degree_X_sub_C]
+
 /-- For a nonzero f in projective L(D) with deg(D) < 0, we get a contradiction.
 
 **Mathematical argument**:
@@ -2933,32 +3048,152 @@ theorem projective_LRatFunc_eq_zero_of_neg_deg (D : DivisorV2 (Polynomial Fq)) (
     simp only [Finsupp.sum]
     -- Split the sum over support into positive and negative parts
     have hsplit := D.support.sum_filter_add_sum_filter_not (fun v => 0 < D v) D
-    -- For v with D(v) < 0: D(v) = -(−D(v))
-    -- For v with D(v) = 0: not in support (contradiction)
-    -- For v with D(v) > 0: contributes positively
-    sorry -- Technical sum splitting
+    -- D.support.sum D = pos_part_sum + non_pos_part_sum
+    -- The non-positive part equals the negative part since D(v) = 0 implies v ∉ support
+    have heq_neg : D.support.filter (fun v => ¬(0 < D v)) = D.support.filter (fun v => D v < 0) := by
+      ext v
+      simp only [Finset.mem_filter, Finsupp.mem_support_iff, not_lt]
+      constructor
+      · intro ⟨hv_ne, hle⟩
+        exact ⟨hv_ne, by omega⟩
+      · intro ⟨hv_ne, hlt⟩
+        exact ⟨hv_ne, le_of_lt hlt⟩
+    rw [heq_neg] at hsplit
+    -- Now sum over negative part: Σ D(v) = Σ (- (-D(v))) = - neg_abs_sum
+    have hneg_sum : (D.support.filter (fun v => D v < 0)).sum D =
+        -(D.support.filter (fun v => D v < 0)).sum (fun v => -D v) := by
+      simp only [Finset.sum_neg_distrib, neg_neg]
+    rw [hneg_sum] at hsplit
+    linarith
 
   -- From hdeg_split and hD : D.deg < 0, we get pos_sum < neg_abs_sum
-  have hsum_ineq : pos_sum < neg_abs_sum := by sorry -- From hdeg_split and hD
+  have hsum_ineq : pos_sum < neg_abs_sum := by omega
 
   -- Key bound (1): pos_sum ≥ denom.natDegree
   -- This requires showing denom splits and summing pole_multiplicity_le_D
   have hpos_ge_denom : pos_sum ≥ (f.denom.natDegree : ℤ) := by
-    -- Each root γ of denom corresponds to a place linearPlace γ with D > 0
-    -- (by the Step 2 argument, which works for any irreducible factor)
-    -- D(linearPlace γ) ≥ rootMult(γ, denom)
-    -- When denom splits: Σ rootMult = natDegree
-    -- So pos_sum ≥ Σ D(linearPlace γ) ≥ Σ rootMult = natDegree
-    sorry -- Requires showing denom splits
+    -- Step A: denom splits
+    have hdenom_splits := denom_splits_of_LRatFunc f D hf_val hf_ne hDlin
+    -- Step B: natDegree = roots.card
+    have hdenom_card := hdenom_splits.natDegree_eq_card_roots
+    -- Step C: For each root γ of denom, D(linearPlace γ) ≥ rootMult(γ, denom) > 0
+    -- First, show that every root is actually a root
+    have hroot_bound : ∀ γ ∈ f.denom.roots, D (linearPlace γ) ≥ f.denom.rootMultiplicity γ := by
+      intro γ hγ_root
+      have hγ_isRoot : f.denom.IsRoot γ := (Polynomial.mem_roots hdenom_ne).mp hγ_root
+      have hbound := pole_multiplicity_le_D f D hf_val hf_ne γ hγ_isRoot
+      exact hbound
+    -- Step D: For each root γ, D(linearPlace γ) > 0 (so linearPlace γ ∈ positive support)
+    have hroot_pos : ∀ γ ∈ f.denom.roots, 0 < D (linearPlace γ) := by
+      intro γ hγ_root
+      have hγ_isRoot : f.denom.IsRoot γ := (Polynomial.mem_roots hdenom_ne).mp hγ_root
+      have hmult_pos : 0 < f.denom.rootMultiplicity γ := (Polynomial.rootMultiplicity_pos hdenom_ne).mpr hγ_isRoot
+      have hbound := hroot_bound γ hγ_root
+      omega
+    -- Step E: Sum over positive support includes sum over linearPlace.(roots.toFinset)
+    -- We use: Σ_pos D(v) ≥ Σ_{γ ∈ roots.toFinset} D(linearPlace γ) ≥ Σ rootMult = natDegree
+    have hsum_roots : (f.denom.roots.toFinset.sum fun γ => D (linearPlace γ)) ≥ f.denom.natDegree := by
+      -- Each root contributes at least its multiplicity
+      calc (f.denom.roots.toFinset.sum fun γ => D (linearPlace γ))
+          ≥ f.denom.roots.toFinset.sum (fun γ => (f.denom.rootMultiplicity γ : ℤ)) := by
+            apply Finset.sum_le_sum
+            intro γ hγ
+            exact hroot_bound γ (Multiset.mem_toFinset.mp hγ)
+        _ = (f.denom.roots.toFinset.sum fun γ => (f.denom.roots.count γ : ℤ)) := by
+            congr 1; ext γ; rw [Polynomial.count_roots]
+        _ = (f.denom.roots.card : ℤ) := by
+            have h := Multiset.toFinset_sum_count_eq f.denom.roots
+            simp only [← Nat.cast_sum, h]
+        _ = f.denom.natDegree := by rw [hdenom_card]
+    -- Step F: Sum over positive support ≥ sum over roots (linearPlace is injective)
+    have hinj : Function.Injective (fun γ : Fq => linearPlace γ) := by
+      intro α β heq
+      -- If linearPlace α = linearPlace β, then their asIdeal are equal
+      have hasIdeal_eq : (linearPlace α).asIdeal = (linearPlace β).asIdeal := congrArg (·.asIdeal) heq
+      -- span{X - C α} = span{X - C β}, so X - C α and X - C β are associates
+      simp only [linearPlace, Ideal.span_singleton_eq_span_singleton] at hasIdeal_eq
+      -- For monic polynomials, associated implies equal
+      have hmonic_α : (Polynomial.X - Polynomial.C α).Monic := Polynomial.monic_X_sub_C α
+      have hmonic_β : (Polynomial.X - Polynomial.C β).Monic := Polynomial.monic_X_sub_C β
+      have heq_poly := Polynomial.eq_of_monic_of_associated hmonic_α hmonic_β hasIdeal_eq
+      -- X - C α = X - C β implies α = β
+      simp only [sub_right_inj, Polynomial.C_inj] at heq_poly
+      exact heq_poly
+    -- The image of roots.toFinset under linearPlace is contained in the positive support
+    have himage_subset : (f.denom.roots.toFinset.image linearPlace) ⊆
+        D.support.filter (fun v => 0 < D v) := by
+      intro v hv
+      simp only [Finset.mem_image] at hv
+      obtain ⟨γ, hγ_mem, hγ_eq⟩ := hv
+      rw [Finset.mem_filter, Finsupp.mem_support_iff]
+      constructor
+      · have hpos := hroot_pos γ (Multiset.mem_toFinset.mp hγ_mem)
+        rw [← hγ_eq]; omega
+      · rw [← hγ_eq]; exact hroot_pos γ (Multiset.mem_toFinset.mp hγ_mem)
+    -- Now use that sum over superset ≥ sum over subset
+    calc pos_sum = (D.support.filter (fun v => 0 < D v)).sum D := rfl
+      _ ≥ (f.denom.roots.toFinset.image linearPlace).sum D := by
+          apply Finset.sum_le_sum_of_subset_of_nonneg himage_subset
+          intro v hv_in_pos _
+          -- For v in positive support, D(v) > 0 ≥ 0
+          simp only [Finset.mem_filter, Finsupp.mem_support_iff] at hv_in_pos
+          linarith [hv_in_pos.2]
+      _ = (f.denom.roots.toFinset.sum fun γ => D (linearPlace γ)) := by
+          rw [Finset.sum_image]; intro γ₁ _ γ₂ _ heq; exact hinj heq
+      _ ≥ f.denom.natDegree := hsum_roots
 
   -- Key bound (2): neg_abs_sum ≤ num.natDegree
   -- Sum of |D(v)| over negative places ≤ sum of root multiplicities ≤ num.natDegree
   have hneg_le_num : neg_abs_sum ≤ (f.num.natDegree : ℤ) := by
-    -- Each v with D(v) < 0 is a linear place (by IsLinearPlaceSupport)
-    -- At linearPlace β: |D| ≤ rootMult(β, num) (by zero_multiplicity_ge_neg_D)
-    -- Different v give different β (linearPlace injective)
-    -- Σ |D| ≤ Σ rootMult ≤ num.natDegree
-    sorry -- Sum over negative places
+    -- Each v with D(v) < 0 is in D.support, so by IsLinearPlaceSupport, v = linearPlace β
+    -- For each such β: |D(v)| ≤ rootMult(β, num) by zero_multiplicity_ge_neg_D
+    -- The sum of rootMultiplicities ≤ num.natDegree (via roots.card)
+    let neg_places := D.support.filter (fun v => D v < 0)
+    -- For each v in neg_places, get the corresponding β
+    have hneg_lin : ∀ v ∈ neg_places, ∃ β : Fq, v = linearPlace β := by
+      intro v hv
+      simp only [neg_places, Finset.mem_filter] at hv
+      exact hDlin v hv.1
+    -- Create function from neg_places to Fq
+    -- Use that linearPlace is injective to show bound
+    -- For each v in neg_places: -D(v) ≤ rootMult(β_v, num)
+    have hbound_per_v : ∀ v ∈ neg_places, ∃ β : Fq, v = linearPlace β ∧
+        -D v ≤ (f.num.rootMultiplicity β : ℤ) := by
+      intro v hv
+      obtain ⟨β, hv_eq⟩ := hneg_lin v hv
+      refine ⟨β, hv_eq, ?_⟩
+      simp only [neg_places, Finset.mem_filter] at hv
+      have hD_neg : D (linearPlace β) < 0 := by rw [← hv_eq]; exact hv.2
+      have hzero := zero_multiplicity_ge_neg_D f D hf_val hf_ne β hD_neg
+      -- hzero : (rootMult β : ℤ) ≥ -D(linearPlace β)
+      -- Goal: -D v ≤ (rootMult β : ℤ)
+      rw [hv_eq]; linarith
+    -- Build bijection: neg_places → image under linearPlace⁻¹
+    -- Actually, use that the sum is bounded by summing over all possible roots
+    -- For each v = linearPlace β in neg_places: -D(v) ≤ rootMult(β, num)
+    -- β is a root of num (since rootMult ≥ 1 when D < 0)
+    have hneg_is_num_root : ∀ v ∈ neg_places, ∀ β : Fq, v = linearPlace β →
+        f.num.IsRoot β := by
+      intro v hv β hv_eq
+      simp only [neg_places, Finset.mem_filter] at hv
+      have hD_neg : D (linearPlace β) < 0 := by rw [← hv_eq]; exact hv.2
+      have hzero := zero_multiplicity_ge_neg_D f D hf_val hf_ne β hD_neg
+      have hmult_pos : f.num.rootMultiplicity β ≥ 1 := by
+        have h : (f.num.rootMultiplicity β : ℤ) ≥ 1 := by linarith
+        omega
+      exact (Polynomial.rootMultiplicity_pos hnum_ne).mp (by omega : f.num.rootMultiplicity β > 0)
+    -- Strategy: Sum over neg_places maps injectively to roots of num
+    -- Since linearPlace is injective and each β_v is a root of num:
+    -- Σ_{v} (-D v) ≤ Σ_{v} rootMult(β_v, num)
+    --              = Σ_{β ∈ image} rootMult(β, num)  [β_v distinct by injectivity]
+    --              = Σ_{β ∈ image} num.roots.count(β)  [count_roots]
+    --              ≤ num.roots.card  [sum over subset ≤ total]
+    --              ≤ num.natDegree  [card_roots']
+    --
+    -- Key lemmas needed:
+    -- - `Finset.sum_le_card_nsmul_of_le` or similar for injective sum bound
+    -- - The image of neg_places under (linearPlace⁻¹) is a subset of num.roots.toFinset
+    sorry
 
   -- Combine: denom.natDegree ≤ pos_sum < neg_abs_sum ≤ num.natDegree
   have hcontra : (f.denom.natDegree : ℤ) < f.num.natDegree := by
