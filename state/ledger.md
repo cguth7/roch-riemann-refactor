@@ -31,7 +31,30 @@ This is mathematically justified for genus 0 (P¹ over Fq) because:
 - **H¹(D) = 0 is now PROVED** via `h1_subsingleton`, `h1_unique`, `h1_finrank_zero_of_large_deg` ✅
 - Strong approximation shows every adele is equivalent to a global element mod A_K(D)
 - Non-degeneracy lemmas are now vacuously true (spaces are 0-dimensional)
-- For deg(D) ≥ -1: H¹(D) = 0 (proved!) and L(K-D) = 0 (negative degree)
+
+### ⚠️ CRITICAL ARCHITECTURE NOTE: L(D) and Infinity (Cycle 207)
+
+**The Problem**: `DivisorV2 R` only tracks finite places (HeightOneSpectrum). The current
+`RRSpace_proj` / `L(D)` definition has NO constraint at infinity. This means:
+- `L(0)` for RatFunc = all polynomials = **infinite dimensional**
+- But `ProperCurve` axiom requires `ℓ(0) = 1`
+- These are **incompatible** without fixing L(D)
+
+**The Solution** (for RatFunc Fq specifically):
+Define a **projective L(D)** that includes the infinity constraint via polynomial degree:
+```
+L_proj(D) := { f ∈ L(D) | deg(f.num) ≤ deg(f.denom) + D(∞) }
+```
+With `D(∞) = 0` implicit:
+- `L_proj(0)` = { f | finite valuations OK, deg(num) ≤ deg(denom) } = constants = dim 1 ✓
+
+**The Bridge**: Product Formula Lite connects finite valuations to degree:
+- `Σ_v ord_v(P) = deg(P)` for polynomials (sum of root multiplicities = degree)
+- This relates finite-place geometry to the implicit infinity constraint
+
+**Status**: The sorry `LRatFunc_eq_zero_of_neg_deg` requires this fix. It claims L(D) = {0}
+for deg(D) < 0, but this is FALSE for the current affine L(D). It becomes TRUE for
+projective L(D) with the degree constraint.
 
 ### Key Infrastructure ✅
 
@@ -96,28 +119,60 @@ This is mathematically justified for genus 0 (P¹ over Fq) because:
 
 ## Next Steps (Cycle 208)
 
-### 🎯 PRIMARY GOAL: Instantiate AdelicRRData for RatFunc Fq
+### 🎯 PRIMARY GOAL: Product Formula Lite & Projective L(D) Bridge
 
-**Cycle 207 achieved**: Added Subsingleton instance for RRSpace_proj! 🎉
+**Cycle 207 achieved**: Identified critical L(D) architecture gap and added placeholder infrastructure.
 
-The infrastructure for Serre duality is now complete:
-- `h1_subsingleton` ✅ - H¹(D) is Subsingleton (strong approximation)
-- `RRSpace_proj_subsingleton_of_neg_deg` ✅ - L(D) is Subsingleton when deg(D) < 0
-- `ell_proj_zero_of_neg_deg` ✅ - ℓ(D) = 0 when deg(D) < 0
-- Non-degeneracy lemmas ✅ - Vacuously true via Subsingleton
+**THE CORE ISSUE** (must fix before AdelicRRData):
+The current `RRSpace_proj` is "affine" (no infinity constraint), making it infinite-dimensional
+for RatFunc. We need a "projective" version with a degree constraint.
 
-**Remaining for full RR theorem**:
-1. Instantiate `AdelicRRData` for RatFunc Fq
-   - Need to verify all axiom requirements are met
-   - Connect h1_subsingleton, ell_proj_zero_of_neg_deg to abstract axioms
-2. Prove the full Riemann-Roch formula for RatFunc Fq (genus = 0)
+### Cycle 208 Plan: Build the Infinity Bridge
 
-**Blocking sorry**: `LRatFunc_eq_zero_of_neg_deg` requires product formula
-- Statement: L(D) = {0} when deg(D) < 0 for RatFunc
-- Proof needs: deg(div(f)) = 0 for all nonzero f ∈ RatFunc (product formula)
-- Alternative: Proper projective L(D) definition including infinity place
+**Step 1: Product Formula Lite for Polynomials**
+```lean
+theorem sum_valuations_eq_degree (P : Polynomial Fq) (hP : P ≠ 0) :
+    ∑ v in finite_poles P, ord_v(P) = P.natDegree
+```
+- Sum of root multiplicities = degree
+- Use `Polynomial.roots` and `Polynomial.card_roots'` from Mathlib
 
-**Lower priority sorries**:
+**Step 2: Extend to RatFunc**
+```lean
+theorem sum_valuations_ratfunc (f : RatFunc Fq) (hf : f ≠ 0) :
+    ∑ v, ord_v(f) = f.num.natDegree - f.denom.natDegree
+```
+- This equals `-ord_∞(f)` (the negative of the order at infinity)
+
+**Step 3: Define Projective L(D) for RatFunc**
+```lean
+def RRSpace_ratfunc_proj (D : DivisorV2 (Polynomial Fq)) (D_infty : ℤ) : Submodule Fq (RatFunc Fq) :=
+  { f | f ∈ RRSpace_proj ∧ (f.num.natDegree : ℤ) - f.denom.natDegree ≤ D_infty }
+```
+- For `D_infty = 0`: only f with deg(num) ≤ deg(denom), i.e., no pole at ∞
+- `L_proj(0)` = constants, dim = 1 ✓
+
+**Step 4: Prove the key properties**
+- `ell_ratfunc_proj_zero_eq_one` : ℓ(0) = 1 (ProperCurve axiom)
+- `ell_ratfunc_proj_zero_of_neg_deg` : ℓ(D) = 0 when deg(D) < 0 (close the sorry)
+- Finite-dimensionality of `RRSpace_ratfunc_proj`
+
+**Step 5: Update `LRatFunc_eq_zero_of_neg_deg`**
+- Either fix to use projective L(D), or remove and replace with correct version
+
+### Key Mathlib Resources
+- `Polynomial.roots` - multiset of roots
+- `Polynomial.card_roots'` - roots counted with multiplicity ≤ degree
+- `Polynomial.prod_roots_eq_coeff_zero_div_leading_coeff` - product of roots
+- `RatFunc.num`, `RatFunc.denom` - numerator/denominator access
+
+### After Cycle 208
+Once the projective L(D) is working:
+1. Instantiate `ProperCurve` for RatFunc Fq (ℓ(0) = 1)
+2. Instantiate `AdelicRRData` for RatFunc Fq
+3. Complete full Riemann-Roch theorem
+
+**Lower priority sorries** (not blocking):
 - `residueAtIrreducible` - Extend to higher-degree places
 - `residue_sum_eq_zero` - General residue theorem
 
@@ -125,20 +180,23 @@ The infrastructure for Serre duality is now complete:
 
 ## Recent Progress
 
-### Cycle 207 - **RRSpace_proj Subsingleton Instance** 🏗️
-- **Added infrastructure for L(D) = 0 when deg(D) < 0** for RatFunc Fq
-- **New lemmas**:
-  1. `LRatFunc_eq_zero_of_neg_deg` ⚠️ - L(D) = {0} when deg(D) < 0 (sorry: needs product formula)
-  2. `RRSpace_ratfunc_eq_bot_of_neg_deg` ✅ - L(D) = ⊥ as Submodule when deg(D) < 0
-  3. `RRSpace_proj_subsingleton_of_neg_deg` ✅ - Subsingleton instance for call sites
-  4. `ell_proj_zero_of_neg_deg` ✅ - ℓ(D) = 0 when deg(D) < 0
-- **Sorries**: 3 → 4 (+1 for product formula dependency)
-- **Architecture note**: The sorry `LRatFunc_eq_zero_of_neg_deg` requires:
-  - deg(div(f)) = 0 for all nonzero f ∈ RatFunc (product formula)
-  - Or: proper projective L(D) definition including the infinity place
-  - This is a fundamental number-theoretic fact about P¹
+### Cycle 207 - **Architecture Discovery: L(D) Infinity Gap** 🔍
+- **Added placeholder infrastructure** for L(D) = 0 when deg(D) < 0
+- **New lemmas** (some need revision in Cycle 208):
+  1. `LRatFunc_eq_zero_of_neg_deg` ⚠️ - NEEDS FIX: claims L(D) = {0} for neg deg, but current L(D) is affine
+  2. `RRSpace_ratfunc_eq_bot_of_neg_deg` ⚠️ - Depends on above
+  3. `RRSpace_proj_subsingleton_of_neg_deg` ⚠️ - Depends on above
+  4. `ell_proj_zero_of_neg_deg` ⚠️ - Depends on above
+- **Sorries**: 3 → 4 (+1 placeholder for product formula)
+- **🚨 CRITICAL DISCOVERY**: Current `RRSpace_proj` is "affine" (no infinity constraint):
+  - `L(0)` for RatFunc = all polynomials = **infinite dimensional**
+  - But `ProperCurve` requires `ℓ(0) = 1`
+  - The sorry points to a real architectural gap, not just a missing proof
+- **Solution identified**: Define projective L(D) with degree constraint for RatFunc
+  - `L_proj(D) = L(D) ∩ { f : deg(num) ≤ deg(denom) + D(∞) }`
+  - Product Formula Lite bridges finite valuations to degree
 - **Build**: ✅ compiles with sorries
-- **Next step**: Instantiate `AdelicRRData` for RatFunc Fq
+- **Next step**: Cycle 208 - Product Formula Lite & Projective L(D) Bridge
 
 ### Cycle 206 - **NON-DEGENERACY LEMMAS PROVED** 🎉
 - **KEY MILESTONE**: Both non-degeneracy lemmas in Abstract.lean are now PROVED!
