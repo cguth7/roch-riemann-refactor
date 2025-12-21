@@ -8,14 +8,13 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Build**: ✅ Full build compiles with sorries (warnings only)
 **Phase**: 3 - Serre Duality
-**Cycle**: 203
+**Cycle**: 204
 
-### Active Sorries (7 total)
+### Active Sorries (6 total)
 
 | File | Lemma | Priority | Notes |
 |------|-------|----------|-------|
-| RatFuncPairing.lean | `strong_approximation_ratfunc` (hk_int) | **HIGH** | 1 sorry: k integral outside S - needs construction details |
-| RatFuncPairing.lean | `h1_vanishing_ratfunc` | **HIGH** | Follows from strong_approximation |
+| RatFuncPairing.lean | `h1_vanishing_ratfunc` | **HIGH** | Follows from strong_approximation (now unblocked!) |
 | RatFuncPairing.lean | `h1_finrank_zero_of_large_deg` | **HIGH** | Follows from h1_vanishing |
 | Abstract.lean | `serrePairing_left_nondegen` | MED | Vacuously true once h1=0 is proved |
 | Abstract.lean | `serrePairing_right_nondegen` | MED | Vacuously true once h1=0 is proved |
@@ -82,38 +81,32 @@ This is mathematically justified for genus 0 (P¹ over Fq) because:
 | denom_not_in_asIdeal_of_integral | ✅ | SerreDuality/RatFuncPairing.lean |
 | exists_polyRep_of_integral_mod_pow | ✅ | SerreDuality/RatFuncPairing.lean |
 | exists_global_approximant_from_local | ✅ | SerreDuality/RatFuncPairing.lean |
-| strong_approximation_ratfunc | ⚠️ | SerreDuality/RatFuncPairing.lean |
+| strong_approximation_ratfunc | ✅ | SerreDuality/RatFuncPairing.lean |
 | h1_vanishing_ratfunc | ⚠️ | SerreDuality/RatFuncPairing.lean |
 
 ---
 
-## Next Steps (Cycle 204)
+## Next Steps (Cycle 205)
 
-### 🎯 PRIMARY GOAL: Complete `hk_int` sorry in `strong_approximation_ratfunc`
+### 🎯 PRIMARY GOAL: Prove `h1_vanishing_ratfunc`
 
-**Cycle 203 achieved major progress**: The main structure of `strong_approximation_ratfunc` is complete!
+**Cycle 204 achieved key milestone**: `strong_approximation_ratfunc` is now FULLY PROVED! 🎉
 
-**Remaining sorry** (line 1709): Prove that k is integral at places v ∉ S.
+The `hk_int` sorry is resolved by strengthening `exists_global_approximant_from_local` to return
+integrality at places outside S as a second conjunct.
 
-The k comes from `exists_global_approximant_from_local` which constructs `k = k_pole + algebraMap p` where:
-- `k_pole = Σ_{w ∈ S} pp_w` (sum of principal parts at places in S)
-- `p` is a polynomial from CRT
+**Now unlocked**: `h1_vanishing_ratfunc` and `h1_finrank_zero_of_large_deg`
 
-**To prove `hk_int : v.valuation (RatFunc Fq) k ≤ 1` for v ∉ S:**
-1. Each `pp_w` has poles only at w, so `val_v(pp_w) ≤ 1` for v ≠ w
-2. By ultrametric: `val_v(k_pole) ≤ 1` since all summands are integral at v
-3. `p` is polynomial, so `val_v(algebraMap p) ≤ 1` by `polynomial_valuation_le_one`
-4. By ultrametric: `val_v(k) ≤ 1`
-
-**Approach**: May need to expose the construction of k from `exists_global_approximant_from_local` or add a stronger lemma that directly states k is integral at all places outside S.
-
-### Once hk_int is proved:
-
-**h1_vanishing** and **h1_finrank_zero_of_large_deg** follow directly:
+**Proof strategy for h1_vanishing**:
 - Every [a] ∈ H¹(D) has a representative a ∈ FiniteAdeleRing
 - Strong approximation: ∃ k ∈ K with a - diag(k) ∈ A_K(D)
 - Hence [a] = [diag(k)] = 0 (since diag(k) ∈ globalSubmodule)
 - Therefore H¹(D) = 0
+
+**Technical approach**: Need to show that the quotient SpaceModule is trivial (= PUnit).
+Use `Submodule.Quotient.eq_zero_iff` or similar to show every element is zero.
+
+### Once h1_vanishing is proved:
 
 **Non-degeneracy becomes vacuous**:
 - `serrePairing_left_nondegen`: H¹(D) = 0, so no nonzero elements to test
@@ -122,6 +115,24 @@ The k comes from `exists_global_approximant_from_local` which constructs `k = k_
 ---
 
 ## Recent Progress
+
+### Cycle 204 - **`strong_approximation_ratfunc` FULLY PROVED** 🎉
+- **KEY MILESTONE**: The `hk_int` sorry is now RESOLVED!
+- **Solution**: Strengthened `exists_global_approximant_from_local` to return both:
+  1. Approximation property: `val_v(y_v - k) ≤ exp(n_v)` for v ∈ S
+  2. **NEW**: Integrality property: `val_w(k) ≤ 1` for all w ∉ S
+- **Proof of integrality at w ∉ S**:
+  - k = k_pole + algebraMap p (sum of principal parts + polynomial)
+  - Each pp_v has poles only at v, so is integral at w ≠ v
+  - By ultrametric: val_w(k_pole) ≤ 1
+  - Polynomial is integral at all finite places by `polynomial_integral_outside'`
+  - By ultrametric: val_w(k) ≤ 1
+- **Added** `polynomial_integral_outside'` helper lemma (moved before `exists_global_approximant_from_local`)
+- **`strong_approximation_ratfunc`** now uses `hk_integral v hv_notin_S` directly
+- **Sorries reduced**: 7 → 6 (−1)
+- **RatFuncPairing.lean**: 3 → 2 sorries (only h1_vanishing and h1_finrank remain)
+- **Build**: ✅ compiles with sorries
+- **Next step**: Prove `h1_vanishing_ratfunc` using strong approximation
 
 ### Cycle 203 - **`strong_approximation_ratfunc` structure COMPLETE** 🎉
 - **MAJOR PROGRESS**: Implemented the full proof structure for `strong_approximation_ratfunc`!
