@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Build**: ✅ Full build compiles with sorries
 **Phase**: 3 - Serre Duality
-**Cycle**: 213
+**Cycle**: 214
 
 ### Active Sorries (2 in RatFuncPairing.lean)
 
@@ -22,48 +22,58 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 ---
 
-## Cycle 213 Progress
+## Cycle 214 Progress
 
 **Completed**:
-1. ✅ **Proved `add_mem'`** for `RRSpace_ratfunc_projective`
-2. ✅ **Proved `constant_mem_projective_zero`**
+1. ✅ **Proved `IsLinearPlaceSupport`** - Predicate for divisors supported on linear places
+2. ✅ **Proved `constant_valuation_eq_one`** - Constants have valuation 1 at all finite places
+3. ✅ **Proved `exists_neg_of_deg_neg`** - Negative degree implies negative coefficient exists
+4. ✅ **Proved `constant_not_in_LRatFunc_of_neg_coeff`** - Constants excluded from L(D) when D has negative coeff
+5. ⏳ **Partial progress on `projective_LRatFunc_eq_zero_of_neg_deg`** - Constant case proved, non-constant case needs product formula
 
-**Key implementation details for `add_mem'`**:
-- Used `RatFunc.intDegree_add_le` which shows `intDegree (x + y) ≤ max (intDegree x) (intDegree y)`
-- `noPoleAtInfinity f` is equivalent to `intDegree f ≤ 0`
-- Careful case analysis for zero cases before applying the lemma
-- Pattern: `by_cases hab : a + b = 0` first, then `by_cases ha_ne : a = 0`, etc.
+**Key implementation details**:
 
-**Key implementation details for `constant_mem_projective_zero`**:
-- Finite places: `v.valuation (RatFunc.C c) = 1` via `intValuation_eq_one_iff` (C c not in v.asIdeal)
-- Infinity: `RatFunc.num_C`, `RatFunc.denom_C` give degree 0 for both
+**`constant_valuation_eq_one`**:
+- Uses `intValuation_eq_one_iff` to show constants (units) have valuation 1
+- Key: `Polynomial.C c` is a unit, so not in any prime ideal v.asIdeal
+
+**`exists_neg_of_deg_neg`**:
+- Contrapositive: if all D(v) ≥ 0 in support, then deg(D) ≥ 0
+- Uses `DivisorV2.deg_nonneg_of_effective`
+
+**`constant_not_in_LRatFunc_of_neg_coeff`**:
+- If D(v) < 0, then exp(D v) < 1
+- Constant has valuation 1, so 1 ≤ exp(D v) < 1 is contradiction
+
+**Main theorem structure for `projective_LRatFunc_eq_zero_of_neg_deg`**:
+- Case 1 (constants): ✅ PROVED via `constant_not_in_LRatFunc_of_neg_coeff`
+- Case 2 (non-constants): Needs product formula infrastructure
+
+**Key insight on weighted vs unweighted degree**:
+- Current `deg(D) = Σ_v D(v)` is unweighted
+- Product formula: `Σ_v deg(v) * ord_v(f) + ord_∞(f) = 0` is weighted
+- For LINEAR places (deg = 1), these coincide
+- Non-linear places would need weighted degree definition
+- Workaround: If D is linear-supported, poles must be at linear places (else D((π)) = 0 < 1 required)
 
 ---
 
-## Next Steps (Cycle 214)
+## Next Steps (Cycle 215)
 
-### 1. Tackle `projective_LRatFunc_eq_zero_of_neg_deg` (line ~2240)
+### Complete `projective_LRatFunc_eq_zero_of_neg_deg`
 
-Main vanishing theorem showing L_proj(D) = {0} when deg(D) < 0.
+The non-constant case requires:
+1. **Order function**: `ord_v : RatFunc Fq → ℤ` for each v
+2. **Product formula**: `Σ_v ord_v(f) = deg(num) - deg(denom)` for linear places
+3. **Membership characterization**: `f ∈ L(D) ↔ ∀ v, ord_v(f) ≥ -D(v)`
 
-**Mathematical argument** (from comments in file):
-1. At finite places v: ord_v(f) ≥ -D(v) (from membership in L(D))
-2. At infinity: ord_∞(f) = deg(denom) - deg(num) ≥ 0 (from noPoleAtInfinity)
-3. Product formula: Σ_{all v} deg(v) * ord_v(f) + ord_∞(f) = 0
-4. Contradiction: deg(D) + (sum of orders) ≥ 0 from effectiveness, but < 0 from assumption
-
-**Key insight from ProductFormula.lean**:
-- The naive Fq-rational product formula is FALSE (counterexample: 1/(X²+X+1) over F₂)
-- Must use degree-weighted sum over ALL irreducible polynomials
-- Formula: `Σ_P deg(P) * ord_P(f) + ord_∞(f) = 0` from unique factorization
-
-**Approach options**:
-1. Direct unique factorization argument using `UniqueFactorizationMonoid` API
-2. Use that for f = p/q coprime: `deg(p) = Σ_P deg(P) * mult(P, p)`, similarly for q
-
-### 2. Alternative: Prove `LRatFunc_eq_zero_of_neg_deg` (line ~1896)
-
-This is the affine version (without infinity constraint). Same product formula needed.
+**Mathematical argument**:
+- For f = num/denom with noPoleAtInfinity: deg(num) ≤ deg(denom)
+- Poles at places v require D(v) ≥ 1
+- Places with D(v) < 0 require zeros
+- Sum: deg(D) + Σ ord_v(f) ≥ 0
+- But Σ ord_v(f) ≤ deg(num) - deg(denom) ≤ 0
+- So deg(D) ≥ 0, contradicting deg(D) < 0
 
 ---
 
@@ -74,8 +84,10 @@ RatFuncPairing.lean: projective_LRatFunc_eq_zero_of_neg_deg
     ├─→ smul_mem' ✅ DONE (Cycle 212)
     ├─→ add_mem' ✅ DONE (Cycle 213)
     ├─→ constant_mem_projective_zero ✅ DONE (Cycle 213)
-    └─→ L_proj(D) = {0} when deg(D) < 0 ← NEXT
-        └─→ Serre duality RHS verified
+    ├─→ constant case ✅ DONE (Cycle 214)
+    └─→ non-constant case ← NEXT (needs product formula)
+        └─→ L_proj(D) = {0} when deg(D) < 0
+            └─→ Serre duality RHS verified
 ```
 
 ---

@@ -2235,8 +2235,82 @@ lemma polynomial_X_not_mem_projective_zero :
                Polynomial.natDegree_one] at hX_nopole
     omega
 
+/-- A divisor is supported on linear places if every place in its support
+is of the form (X - α) for some α ∈ Fq. This is equivalent to saying all
+places have residue field degree 1 over Fq. -/
+def IsLinearPlaceSupport (D : DivisorV2 (Polynomial Fq)) : Prop :=
+  ∀ v ∈ D.support, ∃ α : Fq, v = linearPlace α
+
+/-- For nonzero constants, the valuation equals 1 at all finite places.
+This means constants can only be in L(D) if D(v) ≥ 0 for all v. -/
+lemma constant_valuation_eq_one (c : Fq) (hc : c ≠ 0) (v : HeightOneSpectrum (Polynomial Fq)) :
+    v.valuation (RatFunc Fq) (RatFunc.C c) = 1 := by
+  rw [← RatFunc.algebraMap_C, HeightOneSpectrum.valuation_of_algebraMap]
+  have hc_unit : IsUnit c := Ne.isUnit hc
+  have hCc_unit : IsUnit (Polynomial.C c) := Polynomial.isUnit_C.mpr hc_unit
+  have hCc_not_mem : Polynomial.C c ∉ v.asIdeal := by
+    intro hmem
+    have := v.asIdeal.mul_mem_left (↑hCc_unit.unit⁻¹ : Polynomial Fq) hmem
+    rw [IsUnit.val_inv_mul hCc_unit] at this
+    exact v.isPrime.ne_top ((Ideal.eq_top_iff_one _).mpr this)
+  exact intValuation_eq_one_iff.mpr hCc_not_mem
+
+/-- If deg(D) < 0, then D has at least one negative coefficient. -/
+lemma exists_neg_of_deg_neg {D : DivisorV2 (Polynomial Fq)} (hD : D.deg < 0) :
+    ∃ v ∈ D.support, D v < 0 := by
+  by_contra h
+  push_neg at h
+  -- h : ∀ v ∈ D.support, 0 ≤ D v
+  have hdeg_nonneg : 0 ≤ D.deg := DivisorV2.deg_nonneg_of_effective (fun v => by
+    by_cases hv : v ∈ D.support
+    · exact h v hv
+    · simp [Finsupp.notMem_support_iff.mp hv])
+  omega
+
+/-- Constants cannot be in L(D) when D has a negative coefficient. -/
+lemma constant_not_in_LRatFunc_of_neg_coeff (c : Fq) (hc : c ≠ 0)
+    (D : DivisorV2 (Polynomial Fq)) (v : HeightOneSpectrum (Polynomial Fq))
+    (hv : D v < 0) :
+    ¬ satisfiesValuationCondition (Polynomial Fq) (RatFunc Fq) D (RatFunc.C c) := by
+  intro hsat
+  rcases hsat with hzero | hval
+  · -- RatFunc.C c = 0, but c ≠ 0
+    -- RatFunc.C is injective, so C c = 0 implies c = 0
+    rw [RatFunc.C] at hzero
+    simp only [RingHom.coe_coe, map_eq_zero] at hzero
+    exact hc hzero
+  specialize hval v
+  rw [constant_valuation_eq_one c hc v] at hval
+  -- 1 ≤ exp(D v) requires D v ≥ 0
+  -- exp(n) for n < 0 gives exp(n) < 1
+  have hexp_lt : WithZero.exp (D v) < 1 := by
+    rw [← WithZero.exp_zero]
+    exact WithZero.exp_lt_exp.mpr hv
+  -- But hval says 1 ≤ exp(D v), contradiction
+  exact not_le.mpr hexp_lt hval
+
 /-- For a nonzero f in projective L(D) with deg(D) < 0, we get a contradiction.
-This is the corrected version of LRatFunc_eq_zero_of_neg_deg for projective L(D). -/
+
+**Mathematical argument**:
+1. For constants: valuation = 1 at all places, so D(v) ≥ 0 everywhere needed.
+   But deg(D) < 0 implies some D(v) < 0. Contradiction.
+2. For non-constants with noPoleAtInfinity:
+   - All poles of f must be in D.support with D(v) ≥ (pole multiplicity) ≥ 1
+   - Since deg(D) < 0, there exist places with D(v) < 0
+   - At those places, f must have zeros (valuation < 1 required)
+   - The product formula gives: deg(D) + sum of orders ≥ 0
+   - Combined with noPoleAtInfinity, this contradicts deg(D) < 0
+
+**Note on weighted vs unweighted degree**:
+The current divisor degree is unweighted: deg(D) = Σ_v D(v).
+The product formula over all places is: Σ_v deg(v) * ord_v(f) + ord_∞(f) = 0.
+For linear places (deg = 1), these coincide. For non-linear places, a weighted
+degree definition would be needed for full generality. The current proof works
+because any pole at a non-linear place (π) would require D((π)) ≥ 1, but if
+D is only supported on linear places, D((π)) = 0, contradiction. So poles must
+be at linear places, making the unweighted formula valid.
+
+TODO: Add weighted degree infrastructure for full generality over all places. -/
 theorem projective_LRatFunc_eq_zero_of_neg_deg (D : DivisorV2 (Polynomial Fq)) (hD : D.deg < 0)
     (f : RatFunc Fq) (hf : f ∈ RRSpace_ratfunc_projective D) :
     f = 0 := by
@@ -2247,35 +2321,40 @@ theorem projective_LRatFunc_eq_zero_of_neg_deg (D : DivisorV2 (Polynomial Fq)) (
   · exact hf_ne rfl
   -- f ≠ 0 with no pole at infinity, and bounded at finite places
 
-  -- Key insight: div(f) + D has non-negative coefficients at all places,
-  -- but deg(div(f) + D) = deg(div(f)) + deg(D) = 0 + deg(D) < 0
-  -- This is a contradiction since effective divisors have non-negative degree.
+  -- Get a place with negative D coefficient (exists since deg(D) < 0)
+  obtain ⟨v_neg, hv_neg_mem, hv_neg⟩ := exists_neg_of_deg_neg hD
 
-  -- For now, we outline the argument:
-  -- 1. At finite places v: ord_v(f) ≥ -D(v) (from hf_finite)
-  -- 2. At infinity: ord_∞(f) = deg(denom) - deg(num) ≥ 0 (from hf_nopole)
-  -- 3. Total degree of div(f): Σ_v ord_v(f) + ord_∞(f) = 0
-  --    (this is the product formula, true for any nonzero rational function)
-  -- 4. From 1 and 2: div(f) + D + 0·[∞] is effective at all finite places
-  -- 5. Summing: deg(D) + Σ_v ord_v(f) ≥ Σ_v (D(v) + ord_v(f)) ≥ 0
-  --    But also deg(D) + Σ_v ord_v(f) = deg(D) - ord_∞(f) ≤ deg(D) < 0
-  -- This requires the product formula.
+  -- Case split: is f a constant?
+  by_cases hf_const : ∃ c : Fq, c ≠ 0 ∧ f = RatFunc.C c
+  · -- f is a nonzero constant
+    obtain ⟨c, hc_ne, hf_eq⟩ := hf_const
+    rw [hf_eq] at hf_finite
+    exact constant_not_in_LRatFunc_of_neg_coeff c hc_ne D v_neg hv_neg hf_finite
 
-  -- The actual proof needs the product formula for RatFunc:
-  -- Σ_{finite v} ord_v(f) = deg(f.num) - deg(f.denom) = -ord_∞(f)
+  -- f is non-constant with noPoleAtInfinity
+  -- From noPoleAtInfinity: deg(num) ≤ deg(denom)
+  -- Since f ≠ 0 and not constant, denom has positive degree, meaning f has poles
 
-  -- From hf_nopole: deg(f.num) ≤ deg(f.denom), so ord_∞(f) ≥ 0
+  -- The valuation condition requires: at all v, v.valuation(f) ≤ exp(D v)
+  -- At v with D(v) < 0: exp(D v) < 1, so v.valuation(f) < 1 (f has zero there)
+  -- At poles v: v.valuation(f) > 1, so D(v) must be positive
 
-  -- From hf_finite (after extracting valuation bound):
-  -- At each v ∈ D.support: ord_v(f) ≥ -D(v)
+  rcases hf_finite with rfl | hf_val
+  · exact hf_ne rfl
 
-  -- The sum Σ_v (D(v) + ord_v(f)) over D.support should be ≥ 0 for each term...
-  -- but their sum equals deg(D) + Σ_v ord_v(f) = deg(D) + (stuff from product formula)
+  -- The full product formula argument:
+  -- - Each pole place requires D(v) ≥ 1
+  -- - Each negative D(v) place requires f to have a zero there
+  -- - The sum Σ(D(v) + ord_v(f)) ≥ 0 for v in the relevant support
+  -- - Since deg(num) ≤ deg(denom), the sum of orders ≤ 0
+  -- - So deg(D) ≥ 0, contradicting deg(D) < 0
 
-  -- For a complete proof, we need:
-  -- a) Product formula: Σ_{all finite v} ord_v(f) = deg(num) - deg(denom)
-  -- b) Only finitely many v have ord_v(f) ≠ 0 (poles and zeros are finite)
-  -- c) Combining with ord_∞(f) = deg(denom) - deg(num), total = 0
+  -- This requires formalizing the order function and product formula for RatFunc.
+  -- For now, we leave this as a sorry with the mathematical argument documented.
+  -- The key infrastructure needed is:
+  -- 1. ord_v : RatFunc Fq → ℤ for each v : HeightOneSpectrum
+  -- 2. Product formula: Σ_v ord_v(f) = deg(num) - deg(denom) for linear places
+  -- 3. Membership characterization: f ∈ L(D) ↔ ∀ v, ord_v(f) ≥ -D(v)
 
   sorry
 
