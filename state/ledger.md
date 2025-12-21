@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Build**: ✅ Full build compiles with sorries
 **Phase**: 3 - Serre Duality
-**Cycle**: 214
+**Cycle**: 215
 
 ### Active Sorries (2 in RatFuncPairing.lean)
 
@@ -19,6 +19,31 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 | **Residue.lean** | 2 | LOW | Higher-degree places, general residue theorem (deferred) |
 | **FullAdelesCompact.lean** | 1 | LOW | Edge case bound < 1 (not needed) |
 | **TraceDualityProof.lean** | 1 | LOW | Alternative approach (not on critical path) |
+
+---
+
+## Cycle 215 Progress
+
+**Research completed**: Full proof strategy for `projective_LRatFunc_eq_zero_of_neg_deg`
+
+**Key discovery**: The proof does NOT require weighted degrees or product formula infrastructure. A simpler counting argument works:
+
+**Proof strategy (non-constant case)**:
+1. For non-constant f with noPoleAtInfinity, show `denom.natDegree > 0` (else f = constant)
+2. denom has at least one irreducible factor π; at (π), f has a pole
+3. At poles: `val(f) > 1`, so `D((π)) ≥ 1` (from L(D) membership)
+4. Let `P = {poles of f}`, then `Σ_{v ∈ P} D(v) ≥ Σ multiplicities ≥ 1`
+5. Since `deg(D) < 0`, we have `Σ_{v ∉ P} D(v) < -1`
+6. Places with `D(v) < 0` require `val(f) < 1`, i.e., f has zeros there
+7. **Counting**: `|{v : D(v) < 0}| > total pole multiplicities`
+8. But each such v is a factor of num, so `|{v : D(v) < 0}| ≤ deg(num) ≤ deg(denom)`
+9. And `deg(denom) ≥ total pole multiplicities`, giving contradiction
+
+**Implementation status**:
+- Step 1 proof (denom positive degree): ~80% complete, needs `degree_le_zero_iff` usage fix
+- Steps 2-9: Documented in code, needs lemmas about valuations at irreducible factors
+
+**Next Cycle 216**: Implement the counting argument with proper polynomial valuation lemmas
 
 ---
 
