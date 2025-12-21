@@ -815,9 +815,45 @@ this would contradict coprimality.
 lemma denom_not_in_asIdeal_of_integral (v : HeightOneSpectrum (Polynomial Fq))
     (r : RatFunc Fq) (hr : v.valuation (RatFunc Fq) r ≤ 1) :
     r.denom ∉ v.asIdeal := by
-  -- Proof uses valuation arithmetic on reduced fractions
-  -- If denom ∈ v.asIdeal, val(r) = val(num)/val(denom) > 1 (since num is coprime to denom)
-  sorry
+  -- r = num/denom with IsCoprime num denom
+  let d := r.denom
+  let n := r.num
+  have hd_ne : d ≠ 0 := RatFunc.denom_ne_zero r
+  have hcop : IsCoprime n d := RatFunc.isCoprime_num_denom r
+  have hr_eq : algebraMap (Polynomial Fq) (RatFunc Fq) n / algebraMap (Polynomial Fq) (RatFunc Fq) d = r :=
+    RatFunc.num_div_denom r
+  -- Suppose denom ∈ v.asIdeal for contradiction
+  intro hd_in_v
+  -- Then val(denom) < 1
+  have hval_d : v.intValuation d < 1 := (intValuation_lt_one_iff_mem v d).mpr hd_in_v
+  -- By coprimality, num ∉ v.asIdeal
+  have hn_not_in_v : n ∉ v.asIdeal := by
+    intro hn_in_v
+    -- If both n and d are in v.asIdeal, then 1 = a*n + b*d would be in v.asIdeal
+    obtain ⟨a, b, hab⟩ := hcop
+    -- v.asIdeal is closed under linear combinations
+    have h1_in : (1 : Polynomial Fq) ∈ v.asIdeal := by
+      rw [← hab]
+      exact v.asIdeal.add_mem (v.asIdeal.mul_mem_left a hn_in_v)
+        (v.asIdeal.mul_mem_left b hd_in_v)
+    -- But 1 ∉ v.asIdeal (since v.asIdeal is a proper ideal)
+    exact v.asIdeal.ne_top_iff_one.mp v.isPrime.ne_top h1_in
+  -- So val(num) = 1
+  have hval_n : v.intValuation n = 1 := intValuation_eq_one_iff.mpr hn_not_in_v
+  -- Now compute val(r) = val(num)/val(denom)
+  have hval_r : v.valuation (RatFunc Fq) r = v.intValuation n / v.intValuation d := by
+    rw [← hr_eq, map_div₀]
+    congr 1
+    · exact v.valuation_of_algebraMap n
+    · exact v.valuation_of_algebraMap d
+  -- val(r) = 1 / val(d) > 1 since val(d) < 1
+  rw [hval_r, hval_n, one_div] at hr
+  -- hr : (v.intValuation d)⁻¹ ≤ 1, but val(d) < 1 means inv > 1
+  have hd_mem : d ∈ nonZeroDivisors (Polynomial Fq) := mem_nonZeroDivisors_of_ne_zero hd_ne
+  have hval_d_ne : v.intValuation d ≠ 0 := v.intValuation_ne_zero' ⟨d, hd_mem⟩
+  have hval_d_pos : 0 < v.intValuation d := zero_lt_iff.mpr hval_d_ne
+  have hcontra : 1 < (v.intValuation d)⁻¹ := one_lt_inv_iff₀.mpr ⟨hval_d_pos, hval_d⟩
+  exact not_lt.mpr hr hcontra
 
 /-- If r is integral at v, there exists a polynomial a such that r - a has
 valuation ≤ exp(-m) at v.
@@ -851,20 +887,60 @@ lemma exists_polyRep_of_integral_mod_pow (v : HeightOneSpectrum (Polynomial Fq))
       intro hmem
       have : v.asIdeal ^ m ≤ v.asIdeal := Ideal.pow_le_self hm
       exact hdenom_not_mem (this hmem)
-    -- In R / v.asIdeal^m, an element is a unit iff it's not in the image of v.asIdeal
-    -- More precisely: x is a unit in R/I iff x ∉ radical(I) for I primary
-    -- Since v.asIdeal^m has radical v.asIdeal, and denom ∉ v.asIdeal...
-    -- Actually, we use: in local ring R_v, denom is a unit, so it's a unit in any quotient
-    -- For R = Polynomial Fq which is a PID, we can use coprimality
-    -- denom ∉ v.asIdeal means gcd(denom, gen(v.asIdeal)) = 1
-    -- So there exist a, b with a*denom + b*gen^m = 1
-    -- In Polynomial Fq (a PID), denom ∉ v.asIdeal means denom is coprime to the generator
-    -- Since v.asIdeal^m ⊆ v.asIdeal, denom ∉ v.asIdeal^m as well (shown above)
-    -- An element is a unit in R/I iff it's not in the maximal ideal containing I
-    -- For R = Polynomial Fq, v.asIdeal is maximal (height one in a PID)
-    -- So the radical of v.asIdeal^m is v.asIdeal, and denom ∉ v.asIdeal means unit in quotient
-    -- Use: Ideal.Quotient.isUnit_mk_iff or similar
-    sorry -- Technical: unit in quotient from coprimality
+    -- In Polynomial Fq (a PID), v.asIdeal = span{p} for some irreducible p
+    have hprinc := IsPrincipalIdealRing.principal v.asIdeal
+    let p := hprinc.generator
+    have hp_span : v.asIdeal = Ideal.span {p} := hprinc.span_singleton_generator.symm
+    -- p ≠ 0 since v ≠ ⊥
+    have hp_ne : p ≠ 0 := by
+      intro hp0
+      have : v.asIdeal = ⊥ := by rw [hp_span, hp0, Ideal.span_singleton_eq_bot]
+      exact v.ne_bot this
+    -- p is irreducible (since v.asIdeal is prime and principal)
+    have hp_prime : Prime p := (Ideal.span_singleton_prime hp_ne).mp (hp_span ▸ v.isPrime)
+    have hp_irr : Irreducible p := hp_prime.irreducible
+    -- denom ∉ v.asIdeal means p ∤ denom
+    have hp_not_dvd : ¬(p ∣ r.denom) := by
+      intro hdvd
+      rw [hp_span, Ideal.mem_span_singleton] at hdenom_not_mem
+      exact hdenom_not_mem hdvd
+    -- p irreducible and p ∤ denom ⟹ IsCoprime p denom
+    have hcop : IsCoprime p r.denom := hp_irr.coprime_iff_not_dvd.mpr hp_not_dvd
+    -- IsCoprime p denom ⟹ IsCoprime (p^m) denom
+    have hcop_pow : IsCoprime (p ^ m) r.denom := hcop.pow_left
+    -- From IsCoprime (p^m) denom, get Bezout coefficients a, b with a*(p^m) + b*denom = 1
+    obtain ⟨a, b, hab⟩ := hcop_pow
+    -- hab : a * p^m + b * r.denom = 1
+    -- So 1 - b * r.denom = a * p^m, meaning b * r.denom ≡ 1 mod p^m
+    -- In quotient: mk(b) * mk(denom) = mk(1) = 1
+    -- From hab: a * p^m + b * r.denom = 1, so b * r.denom ≡ 1 mod p^m
+    -- Show 1 - b * r.denom ∈ v.asIdeal^m = span{p^m}
+    have hmem : (1 : Polynomial Fq) - b * r.denom ∈ v.asIdeal ^ m := by
+      rw [hp_span, Ideal.span_singleton_pow, Ideal.mem_span_singleton]
+      refine ⟨a, ?_⟩
+      -- Goal: 1 - b * r.denom = p^m * a
+      -- From hab: a * p^m + b * r.denom = 1, rearrange: 1 - b * r.denom = a * p^m = p^m * a
+      calc 1 - b * r.denom = a * p ^ m + b * r.denom - b * r.denom := by rw [hab]
+        _ = a * p ^ m := by ring
+        _ = p ^ m * a := by ring
+    -- Also 1 - b * r.denom ∈ v.asIdeal^m implies b * r.denom - 1 ∈ v.asIdeal^m
+    have hmem' : b * r.denom - 1 ∈ v.asIdeal ^ m := by
+      have : b * r.denom - 1 = -(1 - b * r.denom) := by ring
+      rw [this]
+      exact (v.asIdeal ^ m).neg_mem hmem
+    -- Now mk(b * r.denom) = mk(1), so mk(r.denom) is a unit
+    have heq : Ideal.Quotient.mk (v.asIdeal ^ m) (b * r.denom) =
+        Ideal.Quotient.mk (v.asIdeal ^ m) 1 := by
+      rw [Ideal.Quotient.eq]
+      -- Goal: b * r.denom - 1 ∈ v.asIdeal^m
+      exact hmem'
+    -- mk(r.denom) * mk(b) = 1
+    have hunit : Ideal.Quotient.mk (v.asIdeal ^ m) r.denom *
+        Ideal.Quotient.mk (v.asIdeal ^ m) b = 1 := by
+      rw [← map_mul]
+      convert heq using 2
+      ring
+    exact IsUnit.of_mul_eq_one _ hunit
   -- Step 3: Find a ≡ num * denom⁻¹ mod v.asIdeal^m
   obtain ⟨denom_unit, hdenom_unit_eq⟩ := hdenom_unit
   -- denom_unit is a unit in the quotient ring with ↑denom_unit = mk(denom)
@@ -906,14 +982,23 @@ lemma exists_polyRep_of_integral_mod_pow (v : HeightOneSpectrum (Polynomial Fq))
       have hval_le := (v.intValuation_le_pow_iff_mem (r.num - a * r.denom) m).mpr hdiff_mem
       exact_mod_cast hval_le
   -- Key step: r - a = (num - a*denom) / denom
-  -- This is a straightforward algebraic identity, but needs careful handling in RatFunc
+  -- This is a straightforward algebraic identity
   have heq : v.valuation (RatFunc Fq) (r - algebraMap _ (RatFunc Fq) a) =
       v.valuation (RatFunc Fq) (algebraMap _ (RatFunc Fq) (r.num - a * r.denom)) /
       v.valuation (RatFunc Fq) (algebraMap _ _ r.denom) := by
-    -- r = num/denom, so r - a = (num - a*denom)/denom
-    have hr_eq := RatFunc.num_div_denom r
-    -- This is algebraically trivial but syntactically fiddly
-    sorry -- Algebraic manipulation: r - a = (num - a*denom) / denom
+    -- First show: r - a = (num - a*denom)/denom as RatFunc elements
+    have hdenom_ne_zero : (algebraMap (Polynomial Fq) (RatFunc Fq) r.denom) ≠ 0 :=
+      RatFunc.algebraMap_ne_zero r.denom_ne_zero
+    have hratfunc_eq : r - algebraMap _ (RatFunc Fq) a =
+        algebraMap _ (RatFunc Fq) (r.num - a * r.denom) /
+        algebraMap _ (RatFunc Fq) r.denom := by
+      -- Use r = num / denom and algebra
+      have hr_eq := RatFunc.num_div_denom r
+      conv_lhs => rw [← hr_eq]
+      rw [map_sub, map_mul, sub_div]
+      congr 1
+      field_simp [hdenom_ne_zero]
+    rw [hratfunc_eq, Valuation.map_div]
   rw [heq, hval_denom, div_one]
   exact hval_diff
 
