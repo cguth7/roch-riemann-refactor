@@ -195,34 +195,34 @@ lemma riemann_inequality_affine [BaseDim R K] {D : DivisorV2 R} (hD : D.Effectiv
 - Weak approximation
 - Cycles 76-155
 
-### Phase 3: Serre Duality ✅ COMPLETE (Cycle 232)
+### Phase 3: Serre Duality - IN PROGRESS (Cycle 233)
 
-**🎉 RIEMANN-ROCH FOR P¹ IS PROVED! 🎉**
+**Status**: Build path fixed, 3 sorries remaining in DimensionScratch.lean
 
-```lean
-theorem riemann_roch_ratfunc (D : DivisorV2 (Polynomial Fq))
-    (hD : D.Effective) (hDlin : IsLinearPlaceSupport D) :
-    (ell_ratfunc_projective D : ℤ) - ell_ratfunc_projective (canonical_ratfunc Fq - D) =
-    D.deg + 1 - (genus_ratfunc : ℕ)
-```
+**CORRECTION (Cycle 233)**: Previous claims of completion were incorrect.
+Files in SerreDuality folder were never on build path. When added:
+- Mathlib API drift caused syntax errors (fixed)
+- 6 sorries discovered (3 fixed, 3 remaining)
 
-**Major Milestones Achieved:**
+**What's Actually Proved:**
 - ✅ Residue infrastructure (X-adic, infinity, linear places)
 - ✅ Residue theorem for split denominators
 - ✅ `strong_approximation_ratfunc` - PROVED (Cycle 204)
 - ✅ `h1_subsingleton` - H¹(D) = 0 for finite adeles (Cycle 205)
-- ✅ Non-degeneracy lemmas (vacuously true via Subsingleton) (Cycle 206)
-- ✅ Abstract Serre duality theorem structure
 - ✅ Projective L(D) with infinity constraint (Cycle 208)
-- ✅ `IsLinearPlaceSupport` assumption added (Cycle 216)
 - ✅ `projective_LRatFunc_eq_zero_of_neg_deg` - PROVED (Cycle 222)
-- ✅ `ell_ratfunc_projective_eq_deg_plus_one` - PROVED (Cycle 231)
-- ✅ **`riemann_roch_ratfunc`** - PROVED (Cycle 232)
+- ✅ `ell_canonical_sub_zero` - PROVED (Cycle 224)
+- ✅ `linearPlace_residue_equiv` - PROVED (Cycle 233)
 
-**Key Components:**
-- ℓ(D) = deg(D) + 1 for effective D with linear support
-- ℓ(K-D) = 0 when deg(D) ≥ -1 (since deg(K) = -2 for P¹)
-- Combined: ℓ(D) - ℓ(K-D) = deg(D) + 1 ✓
+**What's Still Needed:**
+- 🔲 `linearPlace_residue_finrank` - BLOCKED (typeclass issue)
+- 🔲 `ell_ratfunc_projective_gap_le` - gap bound (sorry)
+- 🔲 `ell_ratfunc_projective_single_linear` - ℓ(n·[v]) = n+1 (sorry)
+- 🔲 `ell_ratfunc_projective_eq_deg_plus_one` - MAIN THEOREM (sorry)
+- 🔲 `riemann_roch_ratfunc` - depends on above
+
+**Key Blocker**: `linearPlace_residue_finrank` needs to show `finrank Fq κ(v) = 1`.
+The ring equivalence `κ(v) ≃+* Fq` is proved, but converting to Fq-linear equiv fails.
 
 ---
 

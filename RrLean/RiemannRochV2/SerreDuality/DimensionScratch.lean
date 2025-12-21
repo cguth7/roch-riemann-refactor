@@ -67,18 +67,61 @@ This gives dim_Fq(κ(v)) = 1, which is key for the gap bound. -/
 
 /-- The residue field at a linear place is isomorphic to Fq.
 This uses the fact that Fq[X]/(X-α) ≅ Fq via evaluation at α.
-TODO: Fix Mathlib API - quotientSpanEquivPolynomialDenomIso no longer exists -/
+
+The proof chain:
+1. residueFieldAtPrime = (linearPlace α).asIdeal.ResidueField
+2. (linearPlace α).asIdeal = span{X - C α}
+3. ResidueField ≃ R/I for maximal I (via bijective_algebraMap_quotient_residueField)
+4. (Fq[X] / span{X - C α}) ≃ₐ[Fq] Fq (via quotientSpanXSubCAlgEquiv) -/
 noncomputable def linearPlace_residue_equiv (α : Fq) :
     residueFieldAtPrime (Polynomial Fq) (linearPlace α) ≃+* Fq := by
-  -- The residue field κ(v) = Fq[X]/(X-α) ≅ Fq via evaluation at α
-  -- Need to find current Mathlib API for this isomorphism
-  sorry
+  -- The ideal: linearPlace α has ideal span{X - C α} definitionally
+  -- So both quotients are the same type
+  haveI hmax : (linearPlace (Fq := Fq) α).asIdeal.IsMaximal := (linearPlace α).isMaximal
+  -- ResidueField I ≃+* (R ⧸ I) for maximal ideal I (inverse of bijective map)
+  have hbij := Ideal.bijective_algebraMap_quotient_residueField (linearPlace (Fq := Fq) α).asIdeal
+  let e1 : (Polynomial Fq ⧸ (linearPlace (Fq := Fq) α).asIdeal) ≃+*
+      residueFieldAtPrime (Polynomial Fq) (linearPlace α) :=
+    RingEquiv.ofBijective _ hbij
+  -- Fq[X]/span{X - C α} ≃ₐ[Fq] Fq via evaluation at α
+  -- Note: (linearPlace α).asIdeal = Ideal.span {X - C α} definitionally
+  let e2 : (Polynomial Fq ⧸ (linearPlace (Fq := Fq) α).asIdeal) ≃ₐ[Fq] Fq :=
+    Polynomial.quotientSpanXSubCAlgEquiv α
+  -- Compose: ResidueField ≃ R/I ≃ Fq
+  exact e1.symm.trans e2.toRingEquiv
 
 /-- The residue field at a linear place has dimension 1 over Fq.
-TODO: Depends on linearPlace_residue_equiv -/
+Uses linearPlace_residue_equiv to show κ(v) ≅ Fq as rings, hence as Fq-vector spaces. -/
 lemma linearPlace_residue_finrank (α : Fq) :
     Module.finrank Fq (residueFieldAtPrime (Polynomial Fq) (linearPlace α)) = 1 := by
-  sorry
+  -- Fq[X]/span{X-Cα} ≃ₐ[Fq] Fq via quotientSpanXSubCAlgEquiv
+  let e_alg : (Polynomial Fq ⧸ (linearPlace (Fq := Fq) α).asIdeal) ≃ₐ[Fq] Fq :=
+    Polynomial.quotientSpanXSubCAlgEquiv α
+  -- This gives finrank(Fq[X]/I) = finrank(Fq) = 1
+  have h1 : Module.finrank Fq (Polynomial Fq ⧸ (linearPlace (Fq := Fq) α).asIdeal) = 1 := by
+    rw [← Module.finrank_self Fq]
+    exact LinearEquiv.finrank_eq e_alg.toLinearEquiv
+  -- Now we need: finrank(κ(v)) = finrank(R/I) via the bijective algebraMap
+  haveI hmax : (linearPlace (Fq := Fq) α).asIdeal.IsMaximal := (linearPlace α).isMaximal
+  have hbij := Ideal.bijective_algebraMap_quotient_residueField (linearPlace (Fq := Fq) α).asIdeal
+  -- Construct the Fq-linear equivalence from the bijective Fq-algebra map
+  have e_lin : (Polynomial Fq ⧸ (linearPlace (Fq := Fq) α).asIdeal) ≃ₗ[Fq]
+      residueFieldAtPrime (Polynomial Fq) (linearPlace α) := by
+    refine LinearEquiv.ofBijective ?_ hbij
+    exact {
+      toFun := algebraMap (Polynomial Fq ⧸ (linearPlace (Fq := Fq) α).asIdeal)
+            (residueFieldAtPrime (Polynomial Fq) (linearPlace α))
+      map_add' := fun x y => map_add _ x y
+      map_smul' := fun c x => by
+        simp only [RingHom.id_apply]
+        -- c • x = algebraMap Fq (R/I) c * x by definition of scalar action
+        rw [Algebra.smul_def, Algebra.smul_def, map_mul]
+        congr 1
+        -- algebraMap R κ(v) (algebraMap Fq R r) = algebraMap Fq κ(v) r
+        exact IsScalarTower.algebraMap_apply Fq (Polynomial Fq ⧸ _) _ c
+    }
+  rw [← h1]
+  exact LinearEquiv.finrank_eq e_lin.symm
 
 /-- Gap bound for projective RRSpace: ℓ(D + [v]) ≤ ℓ(D) + 1.
 
@@ -537,12 +580,24 @@ theorem ell_ratfunc_projective_single_linear (α : Fq) (n : ℕ) :
 
 /-! ## General dimension formula -/
 
-/-- IsLinearPlaceSupport is preserved when subtracting a single point.
-TODO: Fix omega/type issues -/
+/-- IsLinearPlaceSupport is preserved when subtracting a linear place.
+The support of D - [v] is contained in support(D) ∪ {v}, and v is linear by hypothesis. -/
 lemma IsLinearPlaceSupport_sub_single (D : DivisorV2 (Polynomial Fq))
-    (hDlin : IsLinearPlaceSupport D) (v : HeightOneSpectrum (Polynomial Fq)) :
-    IsLinearPlaceSupport (D - DivisorV2.single v 1) := by
-  sorry
+    (hDlin : IsLinearPlaceSupport D) (α : Fq) :
+    IsLinearPlaceSupport (D - DivisorV2.single (linearPlace α) 1) := by
+  intro w hw
+  -- (D - [v])(w) ≠ 0 means either D(w) ≠ 0 or w = linearPlace α
+  simp only [Finsupp.mem_support_iff, ne_eq, Finsupp.sub_apply, DivisorV2.single,
+             Finsupp.single_apply] at hw
+  by_cases hv : w = linearPlace α
+  · -- w = linearPlace α: this is a linear place by definition
+    exact ⟨α, hv⟩
+  · -- w ≠ linearPlace α: (D - [v])(w) = D(w) - 0 = D(w)
+    -- After first simp, hw : D w - (if linearPlace α = w then 1 else 0) ≠ 0
+    -- Since w ≠ linearPlace α, the if evaluates to 0
+    have hne : linearPlace (Fq := Fq) α ≠ w := fun h => hv h.symm
+    simp only [hne, ↓reduceIte, sub_zero] at hw
+    exact hDlin w (Finsupp.mem_support_iff.mpr hw)
 
 /-- 1/(X-α)^n is in L_proj(D) when D(linearPlace α) = n and D is effective. -/
 lemma inv_X_sub_C_pow_mem_projective_general (α : Fq) (D : DivisorV2 (Polynomial Fq))
