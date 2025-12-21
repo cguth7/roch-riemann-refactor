@@ -28,35 +28,16 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Completed**:
 1. ✅ **Established zero structure**: At places with D(v) < 0, f has zeros
-   - `hv_neg_linear`: v_neg = linearPlace β for some β ∈ Fq (from IsLinearPlaceSupport)
-   - `hexp_lt_one`: exp(D v_neg) < 1 (since D v_neg < 0)
-   - `hf_val_lt_one`: v_neg.valuation f < 1 (f has zero at v_neg)
+   - `hv_neg_linear`: v_neg = linearPlace β
+   - `hf_val_lt_one`: v_neg.valuation f < 1
 
-2. ✅ **Documented complete proof strategy**: The counting argument is now fully outlined
-   - At poles: D(v) ≥ pole_multiplicity → Σ_{D>0} D(v) ≥ deg(denom)
-   - At zeros: zero_multiplicity ≥ |D(v)| → Σ_{D<0} |D(v)| ≤ deg(num)
-   - From deg(D) < 0: Σ|D<0| > Σ D>0 ≥ deg(denom)
-   - Combined with deg(num) ≤ deg(denom): contradiction
+2. ✅ **Trimmed verbose proof**: Reduced ~400 lines of commentary to ~30 essential lines
 
-3. ✅ **Added ProductFormula infrastructure usage**:
-   - `h_denom_roots`: sum_rootMultiplicity_le_natDegree for denom
-   - `h_num_roots`: sum_rootMultiplicity_le_natDegree for num
-   - `hnum_ne`: num ≠ 0 (else f = 0)
+3. ✅ **Added bridge lemma stub**: `intValuation_linearPlace_eq_exp_neg_rootMultiplicity`
+   - This is the KEY BLOCKER connecting valuation to polynomial rootMultiplicity
+   - Located at RatFuncPairing.lean:2283
 
-**Remaining for `projective_LRatFunc_eq_zero_of_neg_deg`**:
-The formal counting requires two sum lemmas:
-
-1. **Pole sum bound** (Σ_{D>0} D ≥ deg(denom)):
-   - For each root α of denom: D(linearPlace α) ≥ rootMultiplicity α
-   - Sum over all roots: Σ D ≥ Σ mult = deg(denom)
-   - Requires: showing all roots are in D.support with D > 0
-
-2. **Zero sum bound** (Σ_{D<0} |D| ≤ deg(num)):
-   - For each v with D(v) < 0: rootMultiplicity(β, num) ≥ |D(v)|
-   - Sum: Σ |D| ≤ Σ mult ≤ deg(num)
-   - Requires: linking valuation bound to root multiplicity
-
-**Key insight**: The argument generalizes from the single v_π we proved in Step 2 to ALL irreducible factors. Each factor π of denom gives a place with D(v_π) ≥ multiplicity.
+**Identified blocker**: The proof requires relating `intValuation` at linear places to `Polynomial.rootMultiplicity`. This is a clean, isolated lemma that must be proved first.
 
 ---
 
@@ -159,30 +140,42 @@ For divisors supported only on linear places, the unweighted degree equals the w
 
 ## Next Steps (Cycle 219)
 
-### Complete `projective_LRatFunc_eq_zero_of_neg_deg` - Step 3 (counting argument)
+### SINGLE FOCUS: Prove `intValuation_linearPlace_eq_exp_neg_rootMultiplicity`
 
-Steps 1-2 are complete. The remaining formal proof requires two key lemmas:
+**Location**: `RatFuncPairing.lean:2283`
 
-**Option A: Direct sum lemmas** (more infrastructure but cleaner proof)
-1. Add `D_ge_rootMult_at_pole`: For each root α of denom, D(linearPlace α) ≥ rootMultiplicity α denom
-   - Use: v.valuation f = exp(pole_order) ≤ exp(D v), so pole_order ≤ D v
-   - Key: pole_order = rootMultiplicity (for linear places)
+**Statement**:
+```lean
+lemma intValuation_linearPlace_eq_exp_neg_rootMultiplicity (α : Fq) (p : Polynomial Fq) (hp : p ≠ 0) :
+    (linearPlace α).intValuation p = WithZero.exp (-(p.rootMultiplicity α : ℤ))
+```
 
-2. Add `sum_neg_le_num_degree`: Σ_{D(v)<0} |D(v)| ≤ num.natDegree
-   - At each such v: num has root with mult ≥ |D(v)|
-   - Sum over distinct roots ≤ total root count ≤ natDegree
+**Why this is the blocker**: This lemma bridges valuation theory to polynomial algebra. Once proved:
+1. Pole bound becomes: D(linearPlace α) ≥ rootMultiplicity α denom (direct from valuation ≤ exp(D))
+2. Zero bound becomes: rootMultiplicity β num ≥ |D(linearPlace β)| (same reasoning)
+3. Sum over roots gives the contradiction chain
 
-3. Derive contradiction from inequalities chain
+**Proof approach**:
+```
+1. linearPlace α has asIdeal = span{X - α}
+2. intValuation_if_neg gives: intValuation p = exp(-count) where
+   count = (Associates.mk (span{X-α})).count (Associates.mk (span{p})).factors
+3. For principal ideals in Polynomial Fq (a UFD):
+   count of (X - α) in factorization of p = rootMultiplicity α p
+4. Use UniqueFactorizationMonoid.count_normalizedFactors or similar
+```
 
-**Option B: Induction on denom.natDegree** (less infrastructure)
-- Base case: denom.natDegree = 1, single pole, directly check constraints
-- Inductive step: factor out one (X - α), apply IH
+**Key existing infrastructure**:
+- `HeightOneSpectrum.intValuation_if_neg` (in Infrastructure.lean or RRDefinitions.lean)
+- `Polynomial.rootMultiplicity` (Mathlib)
+- `UniqueFactorizationMonoid` structure on Polynomial Fq
 
-**Option C: Alternative approach via product formula**
-- Use sum of ord_v over all places = 0
-- Combine with D bounds to get contradiction
+**DO NOT**:
+- Add more proof outlines or comments
+- Work on downstream lemmas until this one compiles
+- Expand the frontier
 
-**Recommendation**: Option A is cleanest mathematically. Option B may be faster to implement.
+**Success criterion**: `sorry` → `Qed` for this single lemma
 
 ---
 

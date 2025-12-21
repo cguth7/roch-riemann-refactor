@@ -2255,6 +2255,38 @@ lemma constant_valuation_eq_one (c : Fq) (hc : c ≠ 0) (v : HeightOneSpectrum (
     exact v.isPrime.ne_top ((Ideal.eq_top_iff_one _).mpr this)
   exact intValuation_eq_one_iff.mpr hCc_not_mem
 
+/-! ### Bridge Lemma: Valuation ↔ Root Multiplicity
+
+This is the KEY BLOCKER for completing `projective_LRatFunc_eq_zero_of_neg_deg`.
+
+The lemma connects the valuation at a linear place to polynomial root multiplicity:
+- At linearPlace α, the intValuation of p equals exp(-rootMultiplicity α p)
+- This lets us translate valuation bounds into multiplicity bounds
+
+Once proved, the counting argument becomes:
+1. At each root α of denom: D(linearPlace α) ≥ rootMultiplicity α denom
+2. Sum over roots: Σ D ≥ Σ mult = denom.natDegree
+3. Similarly for zeros and num.natDegree
+4. Derive contradiction with noPoleAtInfinity
+-/
+
+/-- The valuation at a linear place equals exp(-rootMultiplicity).
+
+This is the bridge between valuation theory and polynomial algebra.
+For p ≠ 0: (linearPlace α).intValuation p = exp(-(p.rootMultiplicity α))
+
+Proof sketch:
+- linearPlace α has asIdeal = span{X - α}
+- intValuation counts powers of the generator in the factorization
+- For (X - α), this is exactly rootMultiplicity α p
+-/
+lemma intValuation_linearPlace_eq_exp_neg_rootMultiplicity (α : Fq) (p : Polynomial Fq)
+    (hp : p ≠ 0) :
+    (linearPlace α).intValuation p = WithZero.exp (-(p.rootMultiplicity α : ℤ)) := by
+  -- Use intValuation_if_neg with the count of (X - α) in factorization
+  -- The count equals rootMultiplicity for monic irreducibles
+  sorry
+
 /-- If deg(D) < 0, then D has at least one negative coefficient. -/
 lemma exists_neg_of_deg_neg {D : DivisorV2 (Polynomial Fq)} (hD : D.deg < 0) :
     ∃ v ∈ D.support, D v < 0 := by
@@ -2476,431 +2508,39 @@ theorem projective_LRatFunc_eq_zero_of_neg_deg (D : DivisorV2 (Polynomial Fq)) (
   -- This is the key: every irreducible factor of denom is linear.
   -- We've shown: at each pole v_π of f, we have D(v_π) > 0 and v_π is a linear place
 
-  -- Step 3: Counting argument via multiplicity sum
-  -- Summary of established facts:
-  -- 1. hD_pos : D v_π > 0  (divisor is positive at some pole)
-  -- 2. hv_linear : v_π is a linear place (by IsLinearPlaceSupport + D(v_π) > 0)
-  -- 3. hdenom_pos : f.denom.natDegree > 0 (denom has positive degree)
-  -- 4. hf_nopole : f.num.natDegree ≤ f.denom.natDegree (no pole at infinity)
-  -- 5. hD : D.deg < 0 (degree of divisor is negative)
-
-  -- The counting argument:
-  -- Key insight: The argument for v_π works for ANY irreducible factor of denom.
-  -- So every irreducible factor of denom is linear.
-  -- This means: for any α that is a root of denom, the place v_α = linearPlace α
-  -- satisfies D(v_α) ≥ (multiplicity of α in denom).
+  -- Step 3: Counting argument - derive contradiction from sum inequalities
   --
-  -- The core contradiction:
-  -- - At places with D(v) < 0, f must have zeros (from valuation bound < 1)
-  -- - The zero multiplicity at v is at least |D(v)| (from valuation bound)
-  -- - Sum of |D(v)| for D(v) < 0 ≤ num.natDegree (roots count ≤ degree)
-  -- - Sum of D(v) for D(v) > 0 ≥ denom.natDegree (pole multiplicities)
-  -- - From deg(D) < 0: Σ|D(v)<0| > ΣD(v)>0 ≥ denom.natDegree
-  -- - So num.natDegree ≥ Σ|D(v)<0| > denom.natDegree
-  -- - But noPoleAtInfinity gives num.natDegree ≤ denom.natDegree. Contradiction!
+  -- ESTABLISHED FACTS at this point:
+  -- • hD_pos : D v_π > 0 (from Step 2)
+  -- • hv_linear : v_π = linearPlace α for some α (IsLinearPlaceSupport)
+  -- • hdenom_pos : f.denom.natDegree > 0
+  -- • hf_nopole : f.num.natDegree ≤ f.denom.natDegree
+  -- • hD : D.deg < 0
+  -- • All irreducible factors of denom are linear (X - α) (from Step 2 argument)
+  --
+  -- PROOF STRATEGY (not yet formalized):
+  -- (A) Σ_{D(v)>0} D(v) ≥ denom.natDegree  [pole bound]
+  -- (B) Σ_{D(v)<0} |D(v)| ≤ num.natDegree  [zero bound]
+  -- (C) From deg(D) < 0: Σ_{D<0}|D| > Σ_{D>0}D
+  -- Combining: num.natDegree ≥ Σ|D<0| > Σ D>0 ≥ denom.natDegree
+  -- Contradicts hf_nopole!
+  --
+  -- BLOCKER: Need bridge lemma connecting valuation to rootMultiplicity.
+  -- See `intValuation_eq_exp_neg_rootMultiplicity` stub below.
 
-  -- We now formalize a key piece: at places with D(v) < 0, num has zeros
-  -- This requires tracking that the sum of these zero orders > denom.natDegree
-
-  -- The v_neg place we got from exists_neg_of_deg_neg is in D.support
+  -- Proven: v_neg is a linear place where f has a zero
   have hv_neg_linear := hDlin v_neg hv_neg_mem
   obtain ⟨β, hv_neg_eq⟩ := hv_neg_linear
-
-  -- At v_neg, f has valuation ≤ exp(D v_neg) < 1 (since D v_neg < 0)
   have hexp_lt_one : WithZero.exp (D v_neg) < 1 := by
-    rw [← WithZero.exp_zero]
-    exact WithZero.exp_lt_exp.mpr hv_neg
-
-  -- f has a zero at v_neg (valuation < 1 means zero)
-  have hf_val_at_vneg := hf_val v_neg
+    rw [← WithZero.exp_zero]; exact WithZero.exp_lt_exp.mpr hv_neg
   have hf_val_lt_one : v_neg.valuation (RatFunc Fq) f < 1 :=
-    lt_of_le_of_lt hf_val_at_vneg hexp_lt_one
+    lt_of_le_of_lt (hf_val v_neg) hexp_lt_one
 
-  -- The zero of f at v_neg means num has (X - β) as a factor
-  -- (since v_neg = linearPlace β and f = num/denom with coprime num, denom)
-
-  -- Now we use the key degree inequality from the counting argument.
-  -- We'll prove this by showing that the multiset inequality leads to contradiction.
-
-  -- Key claim: every irreducible factor of denom gives a pole place with D > 0.
-  -- We've already proved this for one specific π - the argument is general.
-
-  -- For the full counting argument, we would need to:
-  -- 1. Show Σ_{poles} D(v) ≥ denom.natDegree
-  -- 2. Show Σ_{D<0} |D(v)| ≤ num.natDegree
-  -- 3. Combine with deg(D) < 0 to get contradiction
-
-  -- A simpler approach using the structure we have:
-  -- We use that at EVERY pole, D(v) ≥ pole_multiplicity
-
-  -- From the valuation bound at v_π: exp(pole_order) ≤ exp(D v_π)
-  -- We showed hf_val_gt_one : v_π.valuation f > 1, i.e., f has pole at v_π
-  -- And hf_bound : v_π.valuation f ≤ exp(D v_π)
-  -- So exp(D v_π) > 1, giving D v_π > 0
-
-  -- For the full proof: the sum of all pole orders equals denom.natDegree
-  -- (since denom has only linear factors), and D(v) ≥ pole_order at each pole.
-
-  -- Instead of tracking precise sums, we use a structural argument:
-  -- Let n = denom.natDegree (> 0 by hdenom_pos)
-  -- Let m = num.natDegree (≤ n by hf_nopole)
-  -- The divisor D has negative degree, so "more" of its weight is negative.
-
-  -- Contradiction via degree of D:
-  -- At each of the n poles of f (linear places from denom factors):
-  --   D(v) ≥ 1, contributing at least n to the positive sum
-  -- At each place with D(v) < 0 (linear places by IsLinearPlaceSupport):
-  --   f has a zero, and these zeros are roots of num
-  --   The zero multiplicity ≥ |D(v)|, so these contribute to num.natDegree
-  --
-  -- From deg(D) < 0: the negative contribution exceeds the positive
-  -- So: (sum of zeros counted) > (sum of poles counted) ≥ n
-  -- But: (sum of zeros counted) ≤ m ≤ n
-  -- Contradiction!
-
-  -- The formal proof uses that for a polynomial with only linear factors,
-  -- the sum of root multiplicities equals the degree.
-
-  -- Apply the generalized argument: show every pole contributes and get sum bound
-
-  -- For now, we give a more direct proof using Finset operations on D.support
-  -- Step 3a: Partition D.support into positive and negative parts
-  let S_pos := D.support.filter (fun v => 0 < D v)
-  let S_neg := D.support.filter (fun v => D v < 0)
-
-  -- D.deg = Σ_{S_pos} D(v) + Σ_{S_neg} D(v)
-  -- Since S_neg has D(v) < 0, we write: deg(D) = Σ_{S_pos} D(v) - Σ_{S_neg} |D(v)|
-  -- From deg(D) < 0: Σ_{S_neg} |D(v)| > Σ_{S_pos} D(v)
-
-  -- Step 3b: Lower bound on positive sum
-  -- Every irreducible factor of denom gives a pole v with D(v) ≥ mult
-  -- Since denom.natDegree = Σ multiplicities, we get Σ_{S_pos} D(v) ≥ denom.natDegree
-
-  -- This is the key inequality. We prove it by showing each pole contributes.
-  -- The proof generalizes what we showed for v_π.
-
-  -- For this, we need to track ALL irreducible factors of denom
-  -- and show each one contributes D(v) ≥ multiplicity.
-
-  -- Since denom only has linear factors (proved above), denom splits over Fq.
-  -- For a monic polynomial that splits: natDegree = roots.card (with multiplicity)
-
-  -- To complete this proof formally, we would need infrastructure for:
-  -- 1. Splitting of denom over Fq
-  -- 2. Sum over all roots with multiplicities
-  -- 3. Comparison with D coefficients
-
-  -- Alternative simpler approach: Use strong induction or finiteness argument
-
-  -- For the current proof, we use omega/linarith on the degree inequality
-  -- after establishing the key bounds.
-
-  -- The contradiction comes from:
-  -- (i) All poles of f are at places in S_pos (we proved D(v_π) > 0)
-  -- (ii) The number of poles (counting multiplicity) = denom.natDegree
-  -- (iii) At each pole v, D(v) ≥ multiplicity of that pole
-  -- (iv) So Σ_{poles} D(v) ≥ denom.natDegree
-  -- (v) At each v ∈ S_neg, f has a zero of order ≥ |D(v)|
-  -- (vi) These zeros contribute to num's roots: Σ_{S_neg} |D(v)| ≤ num.natDegree
-  -- (vii) From deg(D) < 0: Σ_{S_neg} |D(v)| > Σ_{S_pos} D(v) ≥ denom.natDegree
-  -- (viii) So num.natDegree > denom.natDegree, contradicting hf_nopole
-
-  -- Key step: the pole sum bound uses that denom has only linear factors.
-  -- We've shown this implicitly: for any irreducible π | denom, π is linear.
-
-  -- For the formal proof, we use that the degree of the principal divisor of
-  -- denom equals denom.natDegree, and each pole place v has D(v) ≥ ord_v(denom).
-
-  -- Applying the bound: since D.deg < 0 and we have bounds on both sums,
-  -- we get a contradiction with noPoleAtInfinity.
-
-  -- Formalize using the roots of denom:
-  -- Since every irreducible factor of denom is linear, denom is a product of (X - α)^m factors.
-  -- The sum of the m's equals denom.natDegree.
-  -- At each root α, the pole order is the multiplicity, and D(linearPlace α) ≥ this multiplicity.
-
-  -- We use Polynomial.roots for the set of roots (with multiplicity).
-  have hdenom_ne' : f.denom ≠ 0 := f.denom_ne_zero
-
-  -- The key inequalities we need:
-  -- A. Σ_{D(v)>0} D(v) ≥ denom.natDegree
-  -- B. Σ_{D(v)<0} |D(v)| ≤ num.natDegree
-  -- C. deg(D) = Σ_{D(v)>0} D(v) - Σ_{D(v)<0} |D(v)| < 0
-  -- From A, B, C: num.natDegree ≥ Σ_{D<0}|D| > Σ_{D>0}D ≥ denom.natDegree
-  -- Contradiction with num.natDegree ≤ denom.natDegree
-
-  -- For inequality A, we use that every root of denom contributes to the positive sum.
-  -- For inequality B, we use that every v with D(v) < 0 contributes a zero to num.
-
-  -- The proof is by finite case analysis on the structure of denom and num.
-
-  -- Since we've shown all poles are at linear places with D > 0, and the
-  -- argument is uniform over all poles, we conclude the sum bound holds.
-
-  -- Rather than formalizing the full sum calculation, we derive the contradiction
-  -- from a simpler observation about degrees:
-
-  -- Claim: num.natDegree ≥ |D v_neg|
-  -- Proof: At v_neg (a linear place with D(v_neg) < 0), f has a zero.
-  --        The zero multiplicity of f at v_neg equals the root multiplicity of
-  --        (X - β) in num (since denom is coprime to num, no cancellation).
-  --        From the valuation bound: zero_mult ≥ |D(v_neg)|.
-  --        So num has a root of multiplicity ≥ |D(v_neg)|, hence num.natDegree ≥ |D(v_neg)|.
-
-  -- Similarly, for each place with D(v) < 0, we get a contribution to num's degree.
-  -- The sum of these contributions is at most num.natDegree.
-  -- And this sum is Σ_{D<0} |D(v)|.
-
-  -- Now use deg(D) < 0: Σ_{D<0} |D(v)| > Σ_{D>0} D(v).
-  -- And Σ_{D>0} D(v) ≥ 1 (since D(v_π) ≥ 1).
-
-  -- Wait, we need to be more careful. We have D(v_π) > 0, so D(v_π) ≥ 1.
-  -- So Σ_{D>0} D(v) ≥ 1.
-  -- From deg(D) < 0: Σ_{D<0} |D(v)| > Σ_{D>0} D(v) ≥ 1.
-  -- So Σ_{D<0} |D(v)| ≥ 2.
-
-  -- But this doesn't directly give us denom.natDegree bound.
-
-  -- Let's try a different approach using the actual bound D(v) ≥ pole_multiplicity.
-
-  -- At v_π, the pole order is the multiplicity of π in denom.
-  -- Since π is associate to (X - some α), this is the multiplicity of α in denom.
-  -- From the valuation bound: D(v_π) ≥ this multiplicity.
-
-  -- For the full argument, we need to sum over ALL roots of denom.
-  -- Each root α gives a place v_α = linearPlace α with D(v_α) ≥ mult(α, denom).
-  -- Summing: Σ_α D(v_α) ≥ Σ_α mult(α, denom) = denom.natDegree.
-
-  -- This requires showing that all roots of denom are in D.support (with D > 0).
-  -- We've shown this for any given root - now we need the sum.
-
-  -- For now, we give a proof assuming the key sum inequality.
-  -- The inequality Σ_{D>0} D(v) ≥ denom.natDegree follows from:
-  -- - For each root α of denom: D(linearPlace α) ≥ mult(α, denom)
-  -- - {linearPlace α : α is root of denom} are distinct places (linearPlace injective)
-  -- - Sum over these places: Σ D(v) ≥ Σ mult = denom.natDegree
-
-  -- We establish this bound via a counting argument on roots.
-  -- Since denom has only linear factors, it splits completely over Fq.
-
-  -- Use the fact that denom.roots.card = denom.natDegree when denom splits
-  -- (for monic polynomials, this is Polynomial.card_roots_eq_natDegree_of_splits)
-
-  -- The formal proof tracks root multiplicities via Polynomial.rootMultiplicity.
-
-  -- For the contradiction, we proceed as follows:
-  -- 1. Count that Σ_{D>0} D(v) ≥ denom.natDegree (from pole analysis)
-  -- 2. Count that Σ_{D<0} |D(v)| ≤ num.natDegree (from zero analysis)
-  -- 3. From deg(D) < 0: Σ_{D<0} > Σ_{D>0}
-  -- 4. Combining: num.natDegree ≥ Σ_{D<0} > Σ_{D>0} ≥ denom.natDegree
-  -- 5. But hf_nopole says num.natDegree ≤ denom.natDegree. Contradiction!
-
-  -- To make this formal, we need to establish bounds 1 and 2.
-  -- Bound 2 is easier: at each v with D(v) < 0:
-  --   v is linear (IsLinearPlaceSupport)
-  --   v.valuation f ≤ exp(D v) < 1 means f has a zero at v
-  --   The zero contributes to num (coprimality with denom)
-  --   Zero multiplicity ≥ |D(v)| (valuation bound)
-  --   These are distinct roots of num (distinct places give distinct roots)
-  --   Sum of multiplicities ≤ num.natDegree
-
-  -- Bound 1 is similar: at each pole place v of f:
-  --   v is linear (we showed all poles are at linear places from denom's factors)
-  --   D(v) ≥ pole multiplicity (valuation bound)
-  --   Sum of pole multiplicities = denom.natDegree (for split polynomial)
-
-  -- For the formal proof, we use that the sets
-  --   {v : v is a pole of f} and {linearPlace α : α is root of denom}
-  -- are equal (for coprime f = num/denom with monic denom splitting over Fq).
-
-  -- Given the complexity of the full formal proof, we use the key structural
-  -- insight and apply omega/linarith to complete.
-
-  -- The core argument: we have strict inequalities that are incompatible.
-
-  -- We've established:
-  -- (a) D v_π > 0 for some pole v_π (from Step 2)
-  -- (b) D v_neg < 0 for some v_neg (from exists_neg_of_deg_neg)
-  -- (c) deg(D) < 0 (hypothesis)
-  -- (d) All v in D.support are linear (IsLinearPlaceSupport)
-  -- (e) At poles: D(v) ≥ pole_multiplicity; at zeros: zero_mult ≥ |D(v)|
-  -- (f) denom.natDegree > 0 (hdenom_pos)
-  -- (g) num.natDegree ≤ denom.natDegree (hf_nopole)
-
-  -- From (c): the negative coefficients of D dominate the positive ones.
-  -- From (e): the negative coefficients are bounded by num.natDegree (zeros contribute)
-  -- From (e): the positive coefficients bound denom.natDegree from below (poles contribute)
-  -- Combined: num.natDegree ≥ (neg sum) > (pos sum) ≥ denom.natDegree
-  -- This contradicts (g).
-
-  -- For the final step, we formalize the sum inequalities.
-  -- The positive sum is over all v with D(v) > 0.
-  -- The poles of f are exactly the roots of denom (after identifying places with roots).
-
-  -- We use that for split monic polynomials:
-  --   Polynomial.roots.card = natDegree (counting with multiplicity via Multiset)
-  --   Polynomial.card_roots_eq_natDegree_of_splits
-
-  -- The key lemma from ProductFormula.lean:
-  --   sum_rootMultiplicity_le_natDegree : Σ mult ≤ natDegree
-
-  -- Applying this to both num and denom:
-  -- - For denom (splits completely): Σ mult = natDegree
-  -- - For num: Σ mult ≤ natDegree
-
-  -- The contradiction follows from the chain of inequalities.
-
-  -- Direct application:
-  have h_denom_roots := ProductFormula.sum_rootMultiplicity_le_natDegree f.denom hdenom_ne'
-  have hnum_ne : f.num ≠ 0 := by
-    intro hnum_eq
-    have : f = 0 := by rw [← RatFunc.num_div_denom f, hnum_eq, map_zero, zero_div]
-    exact hf_ne this
-  have h_num_roots := ProductFormula.sum_rootMultiplicity_le_natDegree f.num hnum_ne
-
-  -- The key step: connect D's coefficients to these root counts.
-  -- At each root α of denom with multiplicity m:
-  --   linearPlace α is a pole of f with pole order m
-  --   D(linearPlace α) ≥ m (from valuation bound)
-  -- At each root β of num that's also in a D(v) < 0 place:
-  --   linearPlace β has D < 0
-  --   The root multiplicity ≥ |D(linearPlace β)|
-
-  -- For the final contradiction, we use that these constraints are incompatible
-  -- with deg(D) < 0 and noPoleAtInfinity.
-
-  -- Simplification: Since we've established the key structural facts,
-  -- we can derive the contradiction from the degree inequalities.
-
-  -- The sum of D(v) over places with D(v) > 0 includes all poles.
-  -- At the pole v_π, we have D(v_π) ≥ 1.
-  -- More generally, summing over all poles gives ≥ denom.natDegree.
-
-  -- The sum of |D(v)| over places with D(v) < 0 is bounded by num's root count.
-  -- This is ≤ num.natDegree.
-
-  -- From deg(D) < 0: neg_sum > pos_sum.
-  -- Combined: num.natDegree ≥ neg_sum > pos_sum ≥ denom.natDegree.
-  -- This gives num.natDegree > denom.natDegree.
-  -- But hf_nopole gives num.natDegree ≤ denom.natDegree.
-  -- Contradiction!
-
-  -- For the formal proof, we package these as:
-  -- 1. pos_sum ≥ denom.natDegree (to be proved from pole structure)
-  -- 2. neg_sum ≤ num.natDegree (to be proved from zero structure)
-  -- 3. neg_sum > pos_sum (from deg D < 0)
-  -- 4. Derive num.natDegree > denom.natDegree (combining 1-3)
-  -- 5. Contradiction with hf_nopole
-
-  -- Since fully formalizing 1 and 2 requires additional infrastructure about
-  -- sums over polynomial roots, we provide the contradiction via a streamlined
-  -- argument that captures the essential structure.
-
-  -- Streamlined argument:
-  -- We have at least one pole (v_π) and at least one zero place (v_neg).
-  -- The degree inequality deg(D) < 0 means the structure is "unbalanced".
-  -- For a rational function with noPoleAtInfinity, zeros ≤ poles (in degree sense).
-  -- The IsLinearPlaceSupport constraint makes this precise.
-
-  -- Final contradiction step:
-  -- Using the bounds on D and the structure of f:
-  have h_num_deg := hf_nopole  -- num.natDegree ≤ denom.natDegree
-
-  -- The key observation: v_neg contributes to zeros but v_π contributes to poles.
-  -- And the negative part of D dominates (from deg D < 0).
-
-  -- For the formal contradiction, we show that the constraints cannot all hold.
-  -- This uses omega on the integer inequalities after establishing bounds.
-
-  -- The complete formal proof requires:
-  -- (1) Σ_{roots α of denom} D(linearPlace α) ≥ Σ mult(α) = denom.natDegree
-  -- (2) Σ_{v : D(v) < 0} |D(v)| ≤ Σ_{roots β of num at these v} mult(β) ≤ num.natDegree
-  -- (3) From deg(D) < 0 and (1), (2): num.natDegree > denom.natDegree
-  -- (4) Contradiction with hf_nopole
-
-  -- For (1): Each root α of denom gives a pole at linearPlace α.
-  --          At this pole, D(linearPlace α) ≥ mult(α, denom) (from exp(mult) ≤ exp(D)).
-  --          The places are distinct (linearPlace is injective).
-  --          Sum: Σ D ≥ Σ mult = denom.natDegree.
-
-  -- For (2): Each v with D(v) < 0 is linear (IsLinearPlaceSupport), say v = linearPlace β.
-  --          At v, f has a zero, so β is a root of num with mult ≥ |D(v)|.
-  --          The places are distinct (hence distinct roots).
-  --          Sum: Σ |D| ≤ Σ mult ≤ num.natDegree.
-
-  -- The core issue is formalizing the sums. For now, we observe that:
-  -- - The proof of D(v_π) > 0 can be repeated for any irreducible factor of denom
-  -- - This gives D(v_α) ≥ 1 for every root α of denom
-  -- - Since denom.natDegree = number of roots (with mult), we get Σ D(v) ≥ denom.natDegree
-  -- - Similarly for zeros and num
-
-  -- Conclude by deriving the contradiction:
-  -- We use that the positive sum of D coefficients is at least 1 (from D(v_π) > 0)
-  -- and the negative sum dominates (from deg(D) < 0).
-
-  -- This gives a direct contradiction when combined with the degree bounds.
-
-  -- Actually, let me give a cleaner proof by contradiction.
-  -- We'll show that the existence of f ≠ 0 in projective L(D) with deg D < 0
-  -- leads to num.natDegree > denom.natDegree, contradicting noPoleAtInfinity.
-
-  -- Step: Show num.natDegree ≥ 1 (num has at least one root)
-  -- Proof: v_neg has D < 0, so f has a zero at v_neg = linearPlace β.
-  --        This means (X - β) | num, so num.natDegree ≥ 1.
-
-  -- Step: If denom.natDegree = num.natDegree, show contradiction with deg D < 0.
-  -- If denom.natDegree > num.natDegree, this contradicts our sum bounds.
-
-  -- Actually, the cleanest argument uses:
-  -- Σ_{D<0} |D| > Σ_{D>0} D ≥ denom.natDegree (from poles)
-  -- Σ_{D<0} |D| ≤ num.natDegree (from zeros)
-  -- So num.natDegree > denom.natDegree.
-
-  -- Let's formalize this chain. The key is bounds (1) and (2) above.
-
-  -- For (1), we use that f has poles exactly at roots of denom:
-  -- Claim: Σ_{poles v} D(v) ≥ denom.natDegree
-  -- This requires showing D(v) ≥ mult at each pole and the places are disjoint.
-
-  -- For (2), we use that zeros at D < 0 places contribute to num:
-  -- Claim: Σ_{D<0} |D(v)| ≤ num.natDegree
-  -- This requires showing each such place gives a root of num with mult ≥ |D|.
-
-  -- We defer the full formal proof of these claims to future work.
-  -- For now, we complete the proof using the structural contradiction.
-
-  -- The key insight: D v_π ≥ 1 (since D v_π > 0 and D is ℤ-valued)
+  -- Proven: D(v_π) ≥ 1
   have hD_vπ_ge_one : D v_π ≥ 1 := by omega
 
-  -- From deg(D) < 0 and D v_π ≥ 1:
-  -- There must be places with D < 0 whose absolute values sum to > D v_π
-  -- These places contribute zeros to num
-
-  -- The crux: we need Σ_{D<0} |D| > Σ_{D>0} D ≥ denom.natDegree
-
-  -- For denom.natDegree = 1: denom = X - α for some α, single pole, D(pole) ≥ 1
-  -- Need Σ_{D<0} |D| > 1, so at least 2 zeros (or one with mult ≥ 2)
-  -- But num.natDegree ≤ denom.natDegree = 1, so num has at most 1 root
-  -- So Σ zeros mult ≤ 1, but we need Σ_{D<0} |D| > 1 and Σ_{D<0} |D| ≤ Σ zero mult
-  -- Contradiction!
-
-  -- For denom.natDegree = n > 1: similar analysis, the bounds don't work.
-
-  -- We formalize the contradiction using omega on the degree inequalities.
-
-  -- Final step: derive num.natDegree > denom.natDegree from the constraints.
-  -- This is done by showing the sum inequalities are incompatible.
-
-  -- Rather than tracking sums explicitly, we use that the constraints on f
-  -- (no pole at infinity, bounded by D, non-constant, deg D < 0) are incompatible.
-
-  -- The proof is complete once we establish the sum bounds.
-  -- For the current implementation, we defer to future infrastructure.
-
-  -- Placeholder for the formal counting argument:
-  -- The key bounds are established via root multiplicity tracking.
-  -- We've shown the structure; the formal sum calculations remain.
-
+  -- TODO: Prove (A) and (B) using intValuation_eq_exp_neg_rootMultiplicity
+  -- Then derive contradiction via omega/linarith
   sorry
 
 /-- The projective RRSpace is trivial when deg(D) < 0 and D is supported on linear places. -/
