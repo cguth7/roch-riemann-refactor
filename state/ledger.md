@@ -6,54 +6,63 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 ## Current State
 
-**Build**: ✅ Compiles (with sorries)
+**Build**: ❌ Does not compile (errors in DimensionScratch.lean)
 **Phase**: 3 - Serre Duality → Dimension Formula
-**Cycle**: 234
+**Cycle**: 235
 
 ---
 
-## Cycle 234 Progress
+## Cycle 235 Summary
 
-**Goal**: Fix DimensionScratch.lean sorries to complete Riemann-Roch
+**Goal**: Fix DimensionScratch.lean sorries
+**Result**: BLOCKED by architectural issue - circular dependency
 
-### Sorries Fixed This Cycle
+### The Problem
 
-1. ✅ **`linearPlace_residue_finrank`** (lines 95-121)
-   - `Module.finrank Fq (residueFieldAtPrime (Polynomial Fq) (linearPlace α)) = 1`
-   - **Solution**: Used `AlgEquiv.ofRingEquiv` to upgrade `RingEquiv.ofBijective` to AlgEquiv
-   - Key insight: `rfl` works for algebra map compatibility because definitions align
+Attempted to prove `Module.Finite` for `RRSpace_ratfunc_projective (n·[v])` using `finrank` bounds,
+but `finrank` only behaves well when `Module.Finite` is already in scope. This is circular:
 
-2. ✅ **`ell_ratfunc_projective_gap_le`** (lines 135-281)
-   - Gap bound: `ℓ(D + [v]) ≤ ℓ(D) + 1` for linear places
-   - **Added hypothesis**: `[Module.Finite Fq (RRSpace_ratfunc_projective (D + ...))]`
-   - Proof constructs Fq-linear eval map ψ, shows ker(ψ) = L(D), uses quotient bound
+```
+Need Module.Finite → to use Module.finrank_pos_iff → to get positive finrank → to prove Module.Finite
+```
 
-### Sorries Remaining (2)
+### What Doesn't Work
 
-| Lemma | Line | Status | Notes |
-|-------|------|--------|-------|
-| `ell_ratfunc_projective_single_linear` | ~624 | **IN PROGRESS** | Finiteness/type issues |
-| `ell_ratfunc_projective_eq_deg_plus_one` | ~876 | sorry | MAIN THEOREM |
+1. **Using `Module.finrank_pos_iff`** - requires `[Module.Finite]` instance
+2. **Using gap bound for finiteness** - `ell_ratfunc_projective_gap_le` requires `[Module.Finite]` for the larger space
+3. **`linarith`/`omega` on finrank** - doesn't work without proper coercion/instance setup
+4. **`interval_cases` on `Module.finrank`** - finrank isn't computable without finite-dim
 
-### Current Blocker: `ell_ratfunc_projective_single_linear`
+### Correct Decomposition (for next session)
 
-**Goal**: Prove `ℓ(n·[linearPlace α]) = n + 1`
+**(A) Prove `Module.Finite` WITHOUT using finrank:**
+- Construct explicit linear map `φ : RRSpace(n·[α]) →ₗ[Fq] (Fq[X]_{≤n})`
+  - Send `f ↦ (X-α)^n · f` (clears poles, produces polynomial of degree ≤ n)
+- Prove `Injective φ`
+- Conclude `FiniteDimensional` because codomain is finite-dimensional
+- **No finrank needed at this stage**
 
-**Proof structure** (induction on n):
-- Base: `ℓ(0) = 1` ✅ (uses `ell_ratfunc_projective_zero_eq_one`)
-- Step: Uses gap bound + strict inclusion to show `ℓ((m+1)·[v]) = m+2`
+**(B) Prove dimension = n+1 AFTER finiteness:**
+- `≥ n+1`: Exhibit n+1 linearly independent elements `{1, (X-α)⁻¹, ..., (X-α)⁻ⁿ}`
+- `≤ n+1`: Use gap bound / injection into polynomials of degree ≤ n
 
-**Current errors** (~8 type mismatches):
-1. `Module.finite_of_finrank_pos` argument type mismatch at line 641
-2. `Module.finrank_pos_iff` instance synthesis failure at line 653
-3. Gap bound `convert` type mismatch at line 664
-4. `Submodule.finrank_mono` instance issues at lines 699, 701
-5. Final `omega` can't close at line 705
+### Files Modified This Cycle
 
-**Suggested fixes for next session**:
-1. Explicitly provide `Module.Finite` instances where needed
-2. Use `show` to clarify goal types before `omega`
-3. May need helper lemma for finiteness of L(n·[v]) spaces
+- `DimensionScratch.lean` - Multiple failed attempts, left in broken state
+
+### Recommended Architecture Refactor
+
+```
+RatFuncPairing.lean        (foundational: RRSpace definitions)
+    ↓
+DimensionCore.lean         (NEW: Module.Finite proofs, no finrank)
+    ↓
+DimensionScratch.lean      (dimension formulas using finrank)
+    ↓
+SerreDuality.lean          (top-level Riemann-Roch)
+```
+
+Key principle: **Separate finiteness proofs from dimension computation**
 
 ---
 
@@ -62,7 +71,8 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 ```
 riemann_roch_ratfunc (NOT PROVED)
     ├─→ ell_ratfunc_projective_eq_deg_plus_one (sorry)
-    │       ├─→ ell_ratfunc_projective_single_linear (IN PROGRESS)
+    │       ├─→ ell_ratfunc_projective_single_linear (BLOCKED - needs finiteness refactor)
+    │       │       ├─→ RRSpace_single_linear_finite (NEEDED - construct directly)
     │       │       └─→ ell_ratfunc_projective_gap_le ✅ DONE (Cycle 234)
     │       │               └─→ linearPlace_residue_finrank ✅ DONE (Cycle 234)
     │       ├─→ inv_X_sub_C_pow_mem_projective_general ✅
@@ -72,28 +82,29 @@ riemann_roch_ratfunc (NOT PROVED)
 
 ---
 
-## Key Techniques Used This Cycle
+## Key Anti-Pattern Discovered (Cycle 235)
 
-### AlgEquiv.ofRingEquiv pattern
+### DON'T: Prove finiteness using finrank
 ```lean
--- Convert bijective algebraMap to AlgEquiv
-let e_ring := RingEquiv.ofBijective _ hbij
-have hcomm : ∀ c, e_ring (algebraMap Fq _ c) = algebraMap Fq _ c := fun c => rfl
-let e_alg := AlgEquiv.ofRingEquiv hcomm
+-- THIS IS CIRCULAR - DON'T DO THIS
+have hpos : 0 < Module.finrank Fq M := ...  -- needs Module.Finite!
+haveI : Module.Finite Fq M := Module.finite_of_finrank_pos hpos
 ```
 
-### Finiteness from finrank
+### DO: Prove finiteness by embedding into known finite-dim space
 ```lean
--- Establish Module.Finite from positive finrank
-have hpos : 0 < Module.finrank Fq M := ...
-haveI : Module.Finite Fq M := Module.finite_of_finrank_pos hpos
+-- Construct linear injection into Fq[X]_{≤n}
+def φ : RRSpace(n·[α]) →ₗ[Fq] Polynomial.degreeLT Fq (n+1) := ...
+have hinj : Function.Injective φ := ...
+-- Conclude finiteness from finite codomain
+haveI : Module.Finite Fq RRSpace(n·[α]) := Module.Finite.of_injective φ hinj
 ```
 
 ---
 
 ## Files Modified This Cycle
 
-- `DimensionScratch.lean` - Main work on dimension formulas
+- `DimensionScratch.lean` - Left in broken state, needs refactor
 
 ---
 
@@ -105,9 +116,23 @@ lake build RrLean.RiemannRochV2.SerreDuality.DimensionScratch 2>&1 | grep -E "(e
 
 ---
 
-## Cycle 233 (SUPERSEDED)
+## Next Session Action Items
 
-Fixed build path issues. See Cycle 234 for actual sorry resolution progress.
+1. **Revert DimensionScratch.lean** to last working state (before this cycle)
+2. **Create DimensionCore.lean** with:
+   - `instance RRSpace_ratfunc_projective_single_linear_finite` via embedding approach
+   - NO finrank, NO ell_ratfunc_projective
+3. **Then in DimensionScratch.lean**:
+   - Import DimensionCore
+   - Prove `ell_ratfunc_projective_single_linear` using existing gap bound + strict inclusion
+   - Prove `ell_ratfunc_projective_eq_deg_plus_one` by induction
+
+---
+
+## Cycle 234 (SUPERSEDED)
+
+Proved `linearPlace_residue_finrank` and `ell_ratfunc_projective_gap_le`.
+See Cycle 235 for current blocker.
 
 ---
 
