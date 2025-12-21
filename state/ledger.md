@@ -8,13 +8,14 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Build**: ✅ Full build compiles with sorries (warnings only)
 **Phase**: 3 - Serre Duality
-**Cycle**: 198
+**Cycle**: 199
 
-### Active Sorries (8 total)
+### Active Sorries (9 total)
 
 | File | Lemma | Priority | Notes |
 |------|-------|----------|-------|
-| RatFuncPairing.lean | `exists_global_approximant_from_local` | **CRITICAL** | Key gluing lemma - two-step approach ready |
+| RatFuncPairing.lean | `exists_principal_part_at_spec` | HIGH | General principal parts (needs Associates.count) |
+| RatFuncPairing.lean | `exists_global_approximant_from_local` | **CRITICAL** | Key gluing lemma - uses exists_principal_part_at_spec |
 | RatFuncPairing.lean | `strong_approximation_ratfunc` | HIGH | Uses exists_global_approximant_from_local |
 | Abstract.lean | `serrePairing_left_nondegen` | MED | Vacuously true once h1=0 is proved |
 | Abstract.lean | `serrePairing_right_nondegen` | MED | Vacuously true once h1=0 is proved |
@@ -128,6 +129,23 @@ This is mathematically justified for genus 0 (P¹ over Fq) because:
 ---
 
 ## Recent Progress
+
+### Cycle 199 - **Generalized Principal Part Infrastructure** 🏗️
+- **Added general HeightOneSpectrum support** for principal parts:
+  - `IsPrincipalPartAtSpec` ✅ - Predicate for any HeightOneSpectrum (not just linear)
+  - `valuation_le_one_at_coprime_place` ✅ - If p generates v.asIdeal, then p^n/num is integral at w ≠ v
+  - `sum_principal_parts_valuation_le_one_spec` ✅ - Ultrametric for sum over general places
+  - `exists_principal_part_at_spec` ⚠️ - General principal part extraction (sorry, needs Associates.count)
+- **Proof technique for `valuation_le_one_at_coprime_place`**:
+  - Uses maximality of prime ideals in Dedekind domain
+  - If p ∈ w.asIdeal for v ≠ w, then v.asIdeal ⊆ w.asIdeal
+  - By `Ideal.IsMaximal.eq_of_le`, this forces v = w, contradiction
+- **Structure for `exists_global_approximant_from_local`**:
+  - Empty case: handled (vacuously true)
+  - Non-empty case: sorry pending wiring of principal parts + CRT
+  - Two-step approach outlined in comments
+- **Sorries**: 8 → 9 (+1 for exists_principal_part_at_spec)
+- **Next step**: Complete `exists_principal_part_at_spec` using Associates.count machinery
 
 ### Cycle 198 - **Helper Lemmas for Strong Approximation PROVED** 🎉
 - **KEY MILESTONE**: Both helper lemmas for `exists_polyRep_of_integral_mod_pow` now complete!

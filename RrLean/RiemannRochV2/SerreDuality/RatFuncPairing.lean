@@ -780,6 +780,97 @@ lemma sum_principal_parts_valuation_le_one
   -- By ultrametric inequality: val(∑ aᵢ) ≤ max_i(val(aᵢ)) ≤ 1
   apply Valuation.map_sum_le _ (fun s _ => hle s)
 
+/-! ### General Principal Part Extraction for Any HeightOneSpectrum
+
+For any HeightOneSpectrum v, we can extract principal parts of rational functions.
+This generalizes the linear place case to arbitrary monic irreducibles.
+-/
+
+/-- General principal part extraction predicate for any place v.
+    `IsPrincipalPartAtSpec v p y r` means y = p + r, where p has poles only at v,
+    and r has no pole at v. -/
+def IsPrincipalPartAtSpec (v : HeightOneSpectrum (Polynomial Fq)) (p y r : RatFunc Fq) : Prop :=
+  y = p + r ∧
+  (∀ w : HeightOneSpectrum (Polynomial Fq), w ≠ v → w.valuation (RatFunc Fq) p ≤ 1) ∧
+  v.valuation (RatFunc Fq) r ≤ 1
+
+/-- A rational function with denominator p^n has valuation ≤ 1 at all places where p is a unit.
+
+This uses the fact that in a PID, if p generates v.asIdeal and w ≠ v, then p ∉ w.asIdeal,
+so p is a unit at w.
+-/
+lemma valuation_le_one_at_coprime_place (v w : HeightOneSpectrum (Polynomial Fq))
+    (hne : w ≠ v) (p : Polynomial Fq) (hp_gen : v.asIdeal = Ideal.span {p})
+    (num : Polynomial Fq) (n : ℕ) :
+    w.valuation (RatFunc Fq)
+      (algebraMap (Polynomial Fq) (RatFunc Fq) num /
+       algebraMap (Polynomial Fq) (RatFunc Fq) (p ^ n)) ≤ 1 := by
+  by_cases hn : n = 0
+  · simp only [hn, pow_zero, map_one, div_one]
+    exact polynomial_valuation_le_one w num
+  · have hnum_val := polynomial_valuation_le_one w num
+    -- Need to show p^n is a unit at w (valuation = 1)
+    -- p ∈ v.asIdeal but p ∉ w.asIdeal (since w ≠ v and both are height one)
+    have hp_not_mem_w : p ∉ w.asIdeal := by
+      intro hmem
+      -- If p ∈ w.asIdeal, then v.asIdeal ⊆ w.asIdeal (since v.asIdeal = span{p})
+      have hsub : v.asIdeal ≤ w.asIdeal := by
+        rw [hp_gen, Ideal.span_le, Set.singleton_subset_iff]
+        exact hmem
+      -- In a Dedekind domain, both ideals are maximal, so containment implies equality
+      -- This uses the fact that maximal ideals are pairwise incomparable
+      have hv_max : v.asIdeal.IsMaximal := v.isPrime.isMaximal v.ne_bot
+      have hw_max : w.asIdeal.IsMaximal := w.isPrime.isMaximal w.ne_bot
+      -- Since v.asIdeal ≤ w.asIdeal and v.asIdeal is maximal (hence proper),
+      -- and w.asIdeal is also maximal, we must have v.asIdeal = w.asIdeal
+      have heq : v.asIdeal = w.asIdeal := hv_max.eq_of_le hw_max.ne_top hsub
+      exact hne (HeightOneSpectrum.ext heq.symm)
+    have hp_val_one : w.intValuation p = 1 := intValuation_eq_one_iff.mpr hp_not_mem_w
+    have hpn_val : w.valuation (RatFunc Fq) (algebraMap _ (RatFunc Fq) (p ^ n)) = 1 := by
+      simp only [map_pow, w.valuation_of_algebraMap, hp_val_one, one_pow, WithZero.coe_one]
+    rw [Valuation.map_div, hpn_val, div_one]
+    exact hnum_val
+
+/-- Principal parts exist for any rational function at any place.
+
+For y ∈ RatFunc Fq and v : HeightOneSpectrum, there exist p and r such that:
+- y = p + r
+- p has poles only at v
+- r has no pole at v
+
+The proof uses partial fractions: write y = num/denom, extract the v-part of denom,
+and decompose into principal part + regular part.
+-/
+lemma exists_principal_part_at_spec (v : HeightOneSpectrum (Polynomial Fq)) (y : RatFunc Fq) :
+    ∃ p r : RatFunc Fq, IsPrincipalPartAtSpec v p y r := by
+  -- For the trivial case y = 0, both p and r can be 0
+  by_cases hy : y = 0
+  · use 0, 0
+    constructor
+    · simp [hy]
+    constructor
+    · intro w _; simp
+    · simp
+  -- The proof for general places uses partial fractions with monic generators.
+  -- The technical details involve Associates.count for factoring the denominator.
+  -- For now, we sorry this and focus on the main gluing lemma.
+  sorry
+
+/-- The sum of principal parts at distinct places has valuation ≤ 1 at any other place (general version). -/
+lemma sum_principal_parts_valuation_le_one_spec
+    (S : Finset (HeightOneSpectrum (Polynomial Fq))) (p : S → RatFunc Fq)
+    (hp : ∀ s : S, ∀ w : HeightOneSpectrum (Polynomial Fq), w ≠ s.val →
+          w.valuation (RatFunc Fq) (p s) ≤ 1)
+    (w : HeightOneSpectrum (Polynomial Fq)) (hw : w ∉ S) :
+    w.valuation (RatFunc Fq) (∑ s : S, p s) ≤ 1 := by
+  have hle : ∀ s : S, w.valuation (RatFunc Fq) (p s) ≤ 1 := by
+    intro s
+    apply hp s w
+    intro heq
+    rw [heq] at hw
+    exact hw s.property
+  apply Valuation.map_sum_le _ (fun s _ => hle s)
+
 /-- Key lemma: subtracting principal parts removes poles.
 
 If p is the principal part of y at α, then y - p has no pole at α.
@@ -1022,20 +1113,19 @@ lemma exists_global_approximant_from_local
     ∃ k : RatFunc Fq, ∀ v : S,
       (v : HeightOneSpectrum (Polynomial Fq)).valuation (RatFunc Fq) (y v - k) ≤
         WithZero.exp (n v) := by
-  -- For a single place, y itself works
+  -- Empty case: any k works (vacuously true)
   by_cases hS : S.Nonempty
-  · -- Non-empty case: use partial fractions structure
-    -- The key insight is that K = RatFunc Fq has trivial class group (genus 0),
-    -- so any divisor of degree 0 is principal, which gives strong approximation.
-    -- For now, we take the sum of local approximants and use that they don't interfere.
-    -- TODO: Formalize the non-interference property via partial fractions
-    sorry
-  · -- Empty case: any k works (vacuously true)
-    simp only [Finset.not_nonempty_iff_eq_empty] at hS
+  swap
+  · simp only [Finset.not_nonempty_iff_eq_empty] at hS
     subst hS
     use 0
     intro ⟨v, hv⟩
-    exact (Finset.not_mem_empty v hv).elim
+    exact (Finset.notMem_empty v hv).elim
+  -- Non-empty case: Two-step approach via principal parts and CRT
+  -- Step A: Use exists_principal_part_at_spec to extract principal parts at each v
+  -- Step B: Sum principal parts to achieve integrality, then use CRT for n_v < 0
+  -- Infrastructure is in place; wiring the proof requires careful Finset manipulation
+  sorry
 
 /-- At places not in a finite set, a polynomial has non-negative valuation.
 Polynomials are integral at all finite places. -/
