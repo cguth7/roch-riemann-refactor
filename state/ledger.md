@@ -119,22 +119,21 @@ For divisors supported only on linear places, the unweighted degree equals the w
 
 ---
 
-## Next Steps (Cycle 215)
+## Next Steps (Cycle 218)
 
-### Complete `projective_LRatFunc_eq_zero_of_neg_deg`
+### Complete `projective_LRatFunc_eq_zero_of_neg_deg` - Step 3 (counting argument)
 
-The non-constant case requires:
-1. **Order function**: `ord_v : RatFunc Fq → ℤ` for each v
-2. **Product formula**: `Σ_v ord_v(f) = deg(num) - deg(denom)` for linear places
-3. **Membership characterization**: `f ∈ L(D) ↔ ∀ v, ord_v(f) ≥ -D(v)`
+Step 2 is complete (all irreducible factors of denom are linear). The remaining counting argument requires:
 
-**Mathematical argument**:
-- For f = num/denom with noPoleAtInfinity: deg(num) ≤ deg(denom)
-- Poles at places v require D(v) ≥ 1
-- Places with D(v) < 0 require zeros
-- Sum: deg(D) + Σ ord_v(f) ≥ 0
-- But Σ ord_v(f) ≤ deg(num) - deg(denom) ≤ 0
-- So deg(D) ≥ 0, contradicting deg(D) < 0
+1. **Multiplicity tracking**: For polynomials over Fq with only linear factors, sum of multiplicities = degree
+2. **Pole inequality**: At each pole v of f, D(v) ≥ pole multiplicity → Σ_{D(v)>0} D(v) ≥ deg(denom)
+3. **Zero inequality**: At each v with D(v) < 0, num has zero → Σ_{D(v)<0} |D(v)| ≤ deg(num)
+4. **Contradiction**: deg(D) < 0 gives Σ|D(v)<0| > Σ D(v)>0 ≥ deg(denom) ≥ deg(num) ≥ Σ|D(v)<0|
+
+**Infrastructure needed**:
+- Finsupp.sum for divisor positive/negative parts
+- Multiplicity counting for polynomial roots
+- Or: alternative approach via existing infrastructure
 
 ---
 
@@ -148,7 +147,8 @@ RatFuncPairing.lean: projective_LRatFunc_eq_zero_of_neg_deg
     ├─→ constant case ✅ DONE (Cycle 214)
     ├─→ IsLinearPlaceSupport assumption ✅ ADDED (Cycle 216)
     ├─→ non-constant Step 1 (denom positive degree) ✅ DONE (Cycle 216)
-    └─→ non-constant Steps 2-5 (counting argument) ← NEXT
+    ├─→ non-constant Step 2 (poles at linear places) ✅ DONE (Cycle 217)
+    └─→ non-constant Step 3 (counting argument) ← NEXT
         └─→ L_proj(D) = {0} when deg(D) < 0
             └─→ Serre duality RHS verified
 ```
