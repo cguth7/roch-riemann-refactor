@@ -6,15 +6,15 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 ## Current State
 
-**Build**: ✅ Full build compiles - Step 3 COMPLETE!
+**Build**: ✅ Full build compiles - ProperCurve axioms PROVED for P¹!
 **Phase**: 3 - Serre Duality → FullRRData Instance
-**Cycle**: 224 (IN PROGRESS)
+**Cycle**: 225 (COMPLETED)
 
 ### Active Sorries
 
 | File | Count | Priority | Notes |
 |------|-------|----------|-------|
-| **RatFuncFullRR.lean** | 2 | HIGH | L_proj(0) = constants, ℓ(0) = 1 |
+| **RatFuncFullRR.lean** | 0 | ✅ DONE | L_proj(0) = constants PROVED, ℓ(0) = 1 PROVED |
 | **RatFuncPairing.lean** | 1 | LOW | Early incomplete attempt (line 1956), not on critical path |
 | **ProductFormula.lean** | 1 | DONE* | *Intentionally incorrect lemma - documented |
 | **Residue.lean** | 2 | LOW | Higher-degree places, general residue theorem (deferred) |
@@ -23,9 +23,41 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 ---
 
-## Cycle 224 Progress (IN PROGRESS)
+## Cycle 225 Progress (COMPLETED) 🎉
 
-**Goal**: Begin FullRRData instantiation for RatFunc Fq
+**Goal**: Complete RatFuncFullRR.lean sorries - ACHIEVED!
+
+### Proved Theorems
+
+1. ✅ **`projective_L0_eq_constants`**: L_proj(0) = image of Fq under algebraMap
+   - Proof strategy: If f ∈ L_proj(0) has denom with positive degree,
+     there's an irreducible factor π giving a pole at v_π,
+     but hval says valuation ≤ 1, contradiction
+   - So denom has degree 0, meaning denom = 1 (monic), and num has degree 0 (from noPoleAtInfinity)
+   - Therefore f = constant
+
+2. ✅ **`ell_ratfunc_projective_zero_eq_one`**: finrank(L_proj(0)) = 1
+   - Uses `projective_L0_eq_constants` to rewrite L_proj(0) as image of Fq
+   - Shows Algebra.linearMap is injective (via RatFunc.C_injective)
+   - Applies LinearEquiv.ofInjective to get finrank = finrank Fq Fq = 1
+
+### Significance
+
+These complete the "ProperCurve" axioms for P¹:
+- L_proj(0) = constants (no global meromorphic functions without poles)
+- ℓ(0) = 1 (dimension of constants is 1)
+
+Combined with `ell_ratfunc_projective_zero_of_neg_deg` (Cycle 222), we now have:
+- ℓ(D) = 0 when deg(D) < 0 (for linear place support)
+- ℓ(0) = 1
+
+**RatFuncFullRR.lean is now sorry-free!**
+
+---
+
+## Cycle 224 Progress (COMPLETED)
+
+**Goal**: Begin FullRRData instantiation for RatFunc Fq - ACHIEVED
 
 ### Created: RatFuncFullRR.lean
 
@@ -45,13 +77,6 @@ New file `RrLean/RiemannRochV2/SerreDuality/RatFuncFullRR.lean` with:
 
 6. ✅ **`ell_canonical_sub_zero`**: ℓ(K - D) = 0 when deg(D) ≥ -1
    - Uses proved `ell_ratfunc_projective_zero_of_neg_deg`
-
-### Remaining Sorries (2)
-
-| Lemma | Description | Strategy |
-|-------|-------------|----------|
-| `projective_L0_eq_constants` | L_proj(0) = Fq (constants) | f with no poles ⟹ f constant |
-| `ell_ratfunc_projective_zero_eq_one` | finrank(L_proj(0)) = 1 | Use isomorphism L_proj(0) ≅ Fq |
 
 ### Key Insight
 
@@ -103,64 +128,18 @@ Analysis documented above led to Cycle 224 implementation.
 
 ---
 
-## Cycle 223 Progress (IN PROGRESS)
+## Next Steps (Cycle 226+)
 
-**Goal**: Verify Serre duality integration and identify path to FullRRData
+To complete FullRRData instance for RatFunc Fq:
 
-**Analysis completed**:
+1. **Prove dimension formula**: `ℓ(D) = deg(D) + 1` for `deg(D) ≥ 0` with linear support
+   - Strategy: Construct explicit basis `{1, 1/(X-α₁), ..., 1/(X-αₖ)^nₖ}`
 
-### 1. ✅ Integration Architecture Verified
-
-The proved theorem connects as follows:
-```
-ell_ratfunc_projective_zero_of_neg_deg (D.deg < 0, IsLinearPlaceSupport D)
-    └─→ This IS the `ell_zero_of_neg_deg` axiom for FullRRData
-    └─→ For K-D where K=-2[∞]: deg(K-D) = -2 - deg(D)
-        └─→ When deg(D) ≥ -1: deg(K-D) < 0, so ℓ(K-D) = 0
-```
-
-### 2. ✅ IsLinearPlaceSupport Analysis
-
-**Finding**: The assumption is mathematically appropriate for genus 0 / P¹:
-- Linear places = (X - α) for α ∈ Fq = "rational points"
-- Standard RR on P¹ is stated for rational divisors
-- If D has linear support, then K - D also has linear support (K = -2[∞])
-- The limitation is the **unweighted degree** definition
-
-**For full generality** (non-linear places):
-- Would need weighted degree: deg(D) = Σ_v [k(v):k] · D(v)
-- Deferred to future work (not needed for genus 0 case)
-
-### 3. ✅ Remaining Work Identified
-
-**To instantiate FullRRData for RatFunc Fq (genus 0)**:
-
-| Axiom | Status | Notes |
-|-------|--------|-------|
-| `ell_zero_of_neg_deg` | ✅ DONE | `ell_ratfunc_projective_zero_of_neg_deg` |
-| `deg_canonical` | ❓ Need | Define K = -2[∞], show deg = -2 |
-| `serre_duality_eq` | ❓ Need | ℓ(D) - ℓ(K-D) = deg(D) + 1 |
-
-**For `serre_duality_eq`**, need:
-1. ℓ(D) = deg(D) + 1 when deg(D) ≥ 0 (with linear support)
-2. Construct explicit basis: {1, 1/(X-α₁), ..., 1/(X-αₙ)^k, ...}
-
----
-
-## Next Steps (Cycle 223+)
-
-### Option A: Complete FullRRData Instance (RECOMMENDED)
-1. **Define canonical divisor** for RatFunc: K = -2·linearPlace(0) or similar
-2. **Prove ℓ(D) = deg(D) + 1** for deg(D) ≥ 0 with linear support
-3. **Instantiate FullRRData** for Fq, Polynomial Fq, RatFunc Fq
-
-### Option B: P¹ Consistency Check Only
-- Already have `P1Instance.lean` proving axiom consistency
-- No need for concrete instantiation if goal is just to validate axioms
-
-### Option C: Clean Up (Low Priority)
-- Remove RatFuncPairing.lean:1956 old incomplete attempt
-- Address AdelicH1Full.lean sorries (needed only for full adeles approach)
+2. **Instantiate FullRRData** combining:
+   - `ell_ratfunc_projective_zero_of_neg_deg` (ℓ(D) = 0 when deg < 0)
+   - `ell_ratfunc_projective_zero_eq_one` (ℓ(0) = 1)
+   - `ell_canonical_sub_zero` (ℓ(K-D) = 0 when deg(D) ≥ -1)
+   - Dimension formula (TODO)
 
 ---
 
@@ -191,34 +170,6 @@ RatFuncPairing.lean: projective_LRatFunc_eq_zero_of_neg_deg ✅ DONE!
 
 ---
 
-## Cycle 220 Progress (COMPLETED)
-
-**Goal**: Complete Step 3 counting argument
-
-**Completed**:
-1. ✅ Built proof structure from line 2670 to ~2970
-2. ✅ Proved key intermediate facts:
-   - `hv_neg_linear`: v_neg = linearPlace β (using IsLinearPlaceSupport)
-   - `hzero_mult`: num.rootMultiplicity β ≥ |D(linearPlace β)|
-   - `hα_root`: α is a root of denom (from Step 2's v_π = linearPlace α)
-   - `hαβ_ne`: α ≠ β (D(α) > 0 but D(β) < 0)
-   - `hβ_mult_le_deg`: num.rootMultiplicity β ≤ num.natDegree
-   - `hneg_D_le_num`: -D(linearPlace β) ≤ num.natDegree
-3. ✅ Set up final contradiction structure with calc chain
-
----
-
-## Cycle 219 Progress (COMPLETED)
-
-**Goal**: Complete Step 3 of `projective_LRatFunc_eq_zero_of_neg_deg`
-
-**Completed**:
-1. ✅ **PROVED `not_isRoot_of_coprime_isRoot`** (helper lemma)
-2. ✅ **PROVED `pole_multiplicity_le_D`** (Lemma 1 from plan)
-3. ✅ **PROVED `zero_multiplicity_ge_neg_D`** (Lemma 3 from plan)
-
----
-
 ## Quick Commands
 
 ```bash
@@ -235,4 +186,4 @@ grep -rn "sorry" RrLean/RiemannRochV2/*.lean RrLean/RiemannRochV2/SerreDuality/*
 ---
 
 *For strategy, see `playbook.md`*
-*For historical cycles 1-211, see `ledger_archive.md`*
+*For historical cycles 1-221, see `ledger_archive.md`*
