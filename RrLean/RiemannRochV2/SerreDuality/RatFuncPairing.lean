@@ -1,5 +1,6 @@
 import RrLean.RiemannRochV2.SerreDuality.RatFuncResidues
 import RrLean.RiemannRochV2.AdelicH1v2
+import RrLean.RiemannRochV2.FullAdelesCompact
 import Mathlib.RingTheory.Ideal.Quotient.Operations
 import Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 
@@ -420,7 +421,68 @@ def DivisorV2.finiteSupport (D : DivisorV2 (Polynomial Fq)) :
     Finset (HeightOneSpectrum (Polynomial Fq)) :=
   D.support
 
-/-- The places where a finite adele is non-integral.
+/-- For any target valuation bound n, there exists k ∈ K such that val(a_v - k) ≤ exp(n).
+
+This is a strengthening of exists_local_approximant that allows achieving any
+target valuation, not just integrality. It follows from the density of K in
+the completion together with the structure of valued fields.
+-/
+lemma exists_local_approximant_with_bound (v : HeightOneSpectrum (Polynomial Fq))
+    (a_v : v.adicCompletion (RatFunc Fq)) (n : ℤ) :
+    ∃ y : RatFunc Fq, Valued.v (a_v - y) ≤ WithZero.exp n := by
+  -- Step 1: The closed ball {x : Valued.v x ≤ exp(n)} is open in valued rings
+  have h_exp_ne : (WithZero.exp n : WithZero (Multiplicative ℤ)) ≠ 0 := WithZero.exp_ne_zero
+  have hopen : IsOpen {x : v.adicCompletion (RatFunc Fq) | Valued.v (a_v - x) ≤ WithZero.exp n} := by
+    have h_ball_open : IsOpen {x : v.adicCompletion (RatFunc Fq) | Valued.v x ≤ WithZero.exp n} := by
+      apply Valued.isOpen_closedBall
+      exact h_exp_ne
+    have h_eq : {x : v.adicCompletion (RatFunc Fq) | Valued.v (a_v - x) ≤ WithZero.exp n} =
+        (fun y => a_v - y) ⁻¹' {y | Valued.v y ≤ WithZero.exp n} := by
+      ext x; simp only [Set.mem_preimage, Set.mem_setOf_eq]
+    rw [h_eq]
+    exact h_ball_open.preimage (by continuity)
+  -- Step 2: This set is non-empty (contains a_v)
+  have hne : a_v ∈ {x : v.adicCompletion (RatFunc Fq) | Valued.v (a_v - x) ≤ WithZero.exp n} := by
+    simp only [Set.mem_setOf_eq, sub_self, map_zero]
+    exact zero_le'
+  -- Step 3: K is dense in K_v
+  have hdense : DenseRange (algebraMap (RatFunc Fq) (v.adicCompletion (RatFunc Fq))) := by
+    let W := WithVal (v.valuation (RatFunc Fq))
+    have hdense_withval : DenseRange ((↑) : W → UniformSpace.Completion W) :=
+      UniformSpace.Completion.denseRange_coe
+    have hsurj : Function.Surjective (algebraMap (RatFunc Fq) W) := fun w => ⟨w, rfl⟩
+    exact hdense_withval.comp hsurj.denseRange (UniformSpace.Completion.continuous_coe W)
+  -- Step 4: By density, K intersects the open non-empty set
+  obtain ⟨y, hy⟩ := hdense.exists_mem_open hopen ⟨a_v, hne⟩
+  exact ⟨y, hy⟩
+
+/-- At places where a is integral and D(v) = 0, any polynomial k keeps a - diag(k) integral. -/
+lemma polynomial_preserves_integrality_at_integral_place
+    (a : FiniteAdeleRing (Polynomial Fq) (RatFunc Fq))
+    (v : HeightOneSpectrum (Polynomial Fq))
+    (ha_int : a v ∈ v.adicCompletionIntegers (RatFunc Fq))
+    (p : Polynomial Fq) :
+    Valued.v ((a - diagonalK (Polynomial Fq) (RatFunc Fq)
+      (algebraMap (Polynomial Fq) (RatFunc Fq) p)) v) ≤ 1 := by
+  -- a v is integral and diag(p) v is integral (polynomials are integral at all finite places)
+  have hp_int : (diagonalK (Polynomial Fq) (RatFunc Fq)
+      (algebraMap (Polynomial Fq) (RatFunc Fq) p)) v ∈
+      v.adicCompletionIntegers (RatFunc Fq) := by
+    -- diagonalK maps algebraMap p to the diagonal embedding
+    -- At component v, this is just algebraMap (Polynomial Fq) (RatFunc Fq) p
+    -- which is in the integers by Mathlib's coe_algebraMap_mem
+    exact v.coe_algebraMap_mem (Polynomial Fq) (RatFunc Fq) p
+  -- Difference of two integral elements is integral
+  have hsub : (a - diagonalK (Polynomial Fq) (RatFunc Fq)
+      (algebraMap (Polynomial Fq) (RatFunc Fq) p)) v =
+      a v - (diagonalK (Polynomial Fq) (RatFunc Fq)
+        (algebraMap (Polynomial Fq) (RatFunc Fq) p)) v := rfl
+  rw [hsub]
+  -- Integral elements form a subring, closed under subtraction
+  have h := v.adicCompletionIntegers (RatFunc Fq) |>.sub_mem ha_int hp_int
+  exact h
+
+/-- The set of places where a finite adele is non-integral.
 For a ∈ FiniteAdeleRing, this is the finite set of places v where v(a_v) > 1. -/
 def nonIntegralPlaces (a : FiniteAdeleRing (Polynomial Fq) (RatFunc Fq)) :
     Finset (HeightOneSpectrum (Polynomial Fq)) :=
@@ -464,18 +526,43 @@ lemma crt_linear_places {n : ℕ} (places : Fin n → HeightOneSpectrum (Polynom
 For a ∈ FiniteAdeleRing and D a divisor, there exists k ∈ K such that
 a - diag(k) ∈ A_K(D).
 
-**Proof sketch** (for Fq[X]):
-1. A finite adele is integral at cofinitely many places
-2. At the finitely many non-integral places, use CRT to find a polynomial
-   matching the required valuations
-3. The polynomial (as element of K = RatFunc Fq) gives the global approximation
+**Proof strategy** (for Fq[X]):
+1. A finite adele is integral at cofinitely many places (by restricted product structure)
+2. At the finitely many "bad" places S, use `exists_local_approximant_with_bound` to get
+   local approximants y_v ∈ K with val(a_v - y_v) ≤ exp(D(v))
+3. Use partial fractions: each y_v can be decomposed as polynomial + principal part at v
+4. The sum of principal parts gives k, which has the right approximation at each v ∈ S
+5. At v ∉ S: a_v is already D-bounded, and k (sum of principal parts at places in S)
+   is integral at v (poles are only in S)
+
+**Technical gap**: Need formalization of partial fractions for RatFunc Fq to show
+that local approximants can be glued without interference.
 -/
 theorem strong_approximation_ratfunc
     (a : FiniteAdeleRing (Polynomial Fq) (RatFunc Fq))
     (D : DivisorV2 (Polynomial Fq)) :
     ∃ k : RatFunc Fq, a - diagonalK (Polynomial Fq) (RatFunc Fq) k ∈
       boundedSubmodule Fq (Polynomial Fq) (RatFunc Fq) D := by
-  sorry -- Proof requires detailed analysis of FiniteAdeleRing structure
+  -- Step 1: Extract the finite set of "bad" places using the restricted product property
+  -- a.2 : ∀ᶠ v in cofinite, a v ∈ v.adicCompletionIntegers (RatFunc Fq)
+  -- D.support is finite by definition of Finsupp
+
+  -- Step 2: For each bad place v, get y_v from exists_local_approximant_with_bound
+  -- such that Valued.v (a_v - y_v) ≤ exp(D(v))
+
+  -- Step 3: Combine the local approximants - this is the technical core
+  -- For RatFunc Fq, we can use partial fractions: decompose each y_v into
+  -- a polynomial plus principal part at v. The principal parts at distinct
+  -- places don't interfere (poles at v don't affect valuation at w ≠ v).
+
+  -- For now, we use a simpler approach for the case k = 0:
+  -- Check if a is already D-bounded everywhere
+  by_cases h : ∀ v, AdelicH1v2.satisfiesBoundAt (Polynomial Fq) (RatFunc Fq) a v D
+  · -- a is already in A_K(D), so k = 0 works
+    exact ⟨0, by simp only [map_zero, sub_zero]; exact h⟩
+  · -- Some places exceed the bound - need non-trivial approximation
+    -- This requires the full partial fractions machinery
+    sorry
 
 /-- Consequence: H¹(D) = 0 when the divisor is large enough.
 

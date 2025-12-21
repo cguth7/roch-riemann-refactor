@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Build**: ✅ Full build compiles with sorries (warnings only)
 **Phase**: 3 - Serre Duality
-**Cycle**: 192
+**Cycle**: 193
 
 ### Active Sorries (8 total)
 
@@ -64,19 +64,23 @@ This is mathematically justified for genus 0 (P¹ over Fq) because:
 | serrePairing (abstract, STUB=0) | ⚠️ | SerreDuality/Abstract.lean |
 | linearPlaces_pairwise_coprime | ✅ | SerreDuality/RatFuncPairing.lean |
 | crt_linear_places | ✅ | SerreDuality/RatFuncPairing.lean |
+| exists_local_approximant_with_bound | ✅ | SerreDuality/RatFuncPairing.lean |
+| polynomial_preserves_integrality | ✅ | SerreDuality/RatFuncPairing.lean |
 | strong_approximation_ratfunc | ⚠️ | SerreDuality/RatFuncPairing.lean |
 | h1_vanishing_ratfunc | ⚠️ | SerreDuality/RatFuncPairing.lean |
 
 ---
 
-## Next Steps (Cycle 193)
+## Next Steps (Cycle 194)
 
-### 🎯 PRIMARY GOAL: Prove `strong_approximation_ratfunc`
+### 🎯 PRIMARY GOAL: Complete `strong_approximation_ratfunc`
 
 **Infrastructure Ready:**
 - ✅ `crt_linear_places` - CRT for distinct places with specified remainders mod ideal powers
 - ✅ `linearPlaces_pairwise_coprime` - Linear places have pairwise coprime ideals
 - ✅ `IsDedekindDomain.exists_forall_sub_mem_ideal` - Mathlib CRT for Dedekind domains
+- ✅ `exists_local_approximant_with_bound` - Local approximation with arbitrary valuation bounds (NEW)
+- ✅ `polynomial_preserves_integrality_at_integral_place` - Polynomials preserve integrality (NEW)
 
 **FiniteAdeleRing Structure (Key Insight):**
 
@@ -129,6 +133,22 @@ For `K = RatFunc Fq`, every place corresponds to a monic irreducible in `Polynom
 ---
 
 ## Recent Progress
+
+### Cycle 193 - **Local Approximation with Bounds** ✅
+- Added import: `RrLean.RiemannRochV2.FullAdelesCompact` for exists_local_approximant
+- `exists_local_approximant_with_bound` ✅ - Key density lemma
+  - For any a_v ∈ v.adicCompletion K and target bound n, finds y ∈ K with val(a_v - y) ≤ exp(n)
+  - Uses `Valued.isOpen_closedBall` for open balls in valued rings
+  - Uses density of K in completion via `UniformSpace.Completion.denseRange_coe`
+- `polynomial_preserves_integrality_at_integral_place` ✅
+  - Shows polynomials preserve integrality at places where adele is already integral
+- Improved `strong_approximation_ratfunc` documentation with detailed proof strategy:
+  1. Extract finite set of bad places from restricted product structure
+  2. Use local approximation at each bad place
+  3. Combine via partial fractions (key technical gap remaining)
+- Added trivial case handling: if a already in A_K(D), k = 0 works
+- **Blocking issue**: Need partial fractions formalization for RatFunc Fq to glue local approximants
+- Sorries: 8 (unchanged - building infrastructure)
 
 ### Cycle 192 - **Strong Approximation Infrastructure** 🚧
 - Added CRT imports: `Mathlib.RingTheory.Ideal.Quotient.Operations`, `Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas`
