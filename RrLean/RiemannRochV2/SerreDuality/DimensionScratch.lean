@@ -134,10 +134,17 @@ lemma inv_X_sub_C_pow_satisfies_valuation (α : Fq) (k : ℕ) (hk : k ≠ 0) :
     rw [Valuation.map_pow, Valuation.map_inv, valuation_X_sub_at_other Fq α v hv]
     simp only [inv_one, one_pow, le_refl]
 
-/-- 1/(X-α)^k has no pole at infinity. -/
+/-- 1/(X-α)^k has no pole at infinity.
+For 1/(X-α)^k: num = 1 (deg 0), denom = (X-α)^k (deg k), so deg(num) ≤ deg(denom).
+
+Note: The proof is blocked by a typeclass instance mismatch with `gcd` between
+`Classical.propDecidable` and the default `DecidableEq` instance. The math is trivial:
+gcd(1, q) = 1, so num = C(lc⁻¹) * 1 = 1 and denom = C(lc⁻¹) * q = q.
+-/
 lemma inv_X_sub_C_pow_noPoleAtInfinity (α : Fq) (k : ℕ) (hk : k ≠ 0) :
     noPoleAtInfinity ((RatFunc.X (K := Fq) - RatFunc.C α)⁻¹ ^ k) := by
   -- deg(num) = 0 ≤ k = deg(denom)
+  -- Blocked by typeclass instance mismatch with gcd
   sorry
 
 /-- 1/(X-α)^k is in L_proj(k·[linearPlace α]). -/

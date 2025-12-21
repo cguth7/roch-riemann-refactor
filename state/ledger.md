@@ -24,47 +24,47 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 ---
 
-## Cycle 227 Progress (IN PROGRESS)
+## Cycle 228 Progress (IN PROGRESS)
 
-**Goal**: Continue dimension formula - prove valuation lemmas for 1/(X-α)^k
+**Goal**: Continue dimension formula - fix remaining sorries in DimensionScratch.lean
 
 ### Progress This Cycle
 
-Added helper lemmas in `DimensionScratch.lean`:
+1. ✅ **`valuation_X_sub_at_other`**: NOW COMPILES - v(X-α) = 1 at places v ≠ linearPlace α
+   - Uses `HeightOneSpectrum.ext` with maximal ideal argument
 
-1. ✅ **`valuation_X_sub_at_self`**: v(X-α) = exp(-1) at linearPlace α
-   - Uses `intValuation_linearPlace_eq_exp_neg_rootMultiplicity`
-   - Uses `Polynomial.rootMultiplicity_X_sub_C` (rootMult = 1)
+2. ✅ **`inv_X_sub_C_pow_satisfies_valuation`**: NOW COMPILES - valuation condition for 1/(X-α)^k
 
-2. ✅ **`valuation_inv_X_sub_pow_at_self`**: v((X-α)⁻¹^k) = exp(k) at linearPlace α
-   - Uses `WithZero.exp_inv_eq_neg_int` and `WithZero.exp_nsmul`
+3. 🔲 **`inv_X_sub_C_pow_noPoleAtInfinity`**: BLOCKED by typeclass mismatch
+   - Math is trivial: deg(num)=0 ≤ k=deg(denom)
+   - Issue: `gcd` elaborates with different `DecidableEq` instances
+   - `RatFunc.num_div`/`denom_div` produce expressions with `gcd` that don't match
+   - Tried: `classical`, `simp only [hgcd, ...]`, calc proofs - all fail
+   - Workaround needed: either find instance-independent lemmas or avoid `num_div`/`denom_div`
 
-3. 🔲 **`valuation_X_sub_at_other`**: v(X-α) = 1 at places v ≠ linearPlace α (BLOCKING)
-   - Strategy: If (X-α) ∈ v.asIdeal, then v = linearPlace α by maximality
-   - Issue: `HeightOneSpectrum.ext` argument not quite right
-   - **FIX**: Use `hmax.eq_of_le` correctly with swapped argument order
+4. 🔲 **`inv_X_sub_C_pow_not_mem_projective_smaller`**: Needs `WithZero.exp` strict monotonicity
 
-4. 🔲 **`inv_X_sub_C_pow_satisfies_valuation`**: Depends on (3)
+5. 🔲 **`ell_ratfunc_projective_gap_le`**: Needs evaluation map kernel argument
 
-### Key Technical Issues Found
+6. 🔲 **`ell_ratfunc_projective_single_linear`**: Depends on (3), (4), (5)
 
-1. **`Polynomial.rootMultiplicity_X_sub_C`** exists and gives rootMult = 1
-2. **`WithZero.exp_nsmul`**: exp(n • a) = (exp a)^n - KEY for power lemmas
-3. **`WithZero.exp_inv_eq_neg_int`**: (exp b)⁻¹ = exp(-b) - already in Infrastructure.lean
-4. **`HeightOneSpectrum.ext`**: Need to show v.asIdeal = (linearPlace α).asIdeal
+7. 🔲 **`ell_ratfunc_projective_eq_deg_plus_one`**: Depends on (6)
 
-### Blocking Issue in `valuation_X_sub_at_other`
+### Technical Lesson: Typeclass Instance Mismatch
 
-The proof structure is:
-```lean
-have hmax : v.asIdeal.IsMaximal := HeightOneSpectrum.isMaximal v
-have hle : Ideal.span {X - C α} ≤ v.asIdeal := ...  -- from hmem
-have heq' : v.asIdeal = Ideal.span {X - C α} :=
-  (hmax.eq_of_le ... hle).symm  -- need .symm!
-exact HeightOneSpectrum.ext _ _ (by simp [linearPlace, heq'])
-```
+The `gcd` function on polynomials uses `DecidableEq` instances. When `RatFunc.num_div` is applied,
+it can elaborate `gcd` with a different instance than what appears in the goal after simplification.
+This causes `simp only [gcd_one_left, ...]` to make no progress even though the math is identical.
 
-The `.symm` is needed because `eq_of_le` returns `Ideal.span ≤ v.asIdeal → v.asIdeal = Ideal.span`.
+Potential fixes (not yet tried):
+- Use `attribute [instance] Classical.decEq` at file top
+- Avoid `num_div`/`denom_div` entirely - prove degree bounds via valuation
+- Use `convert` with explicit instance unification
+
+### Note on DimensionScratch.lean
+
+This is a scratch file for developing dimension formula proofs. It is NOT imported by the main build.
+Current state: compiles with sorries, documents blocking issues for future work.
 
 ---
 
@@ -202,52 +202,30 @@ Analysis documented above led to Cycle 224 implementation.
 
 ---
 
-## Next Steps (Cycle 228+)
+## Next Steps (Cycle 229+)
 
-### IMMEDIATE: Fix `valuation_X_sub_at_other` in DimensionScratch.lean
+### Priority 1: Fix `inv_X_sub_C_pow_noPoleAtInfinity` typeclass issue
 
-The blocking error is in the `HeightOneSpectrum.ext` call. Fix:
-```lean
--- Current (broken):
-exact HeightOneSpectrum.ext _ _ (by simp [linearPlace, heq'])
+Options to try:
+1. Add `attribute [instance] Classical.decEq` at file top
+2. Prove degree bound via valuation instead of `RatFunc.num_div`/`denom_div`
+3. Use `convert` with explicit instance arguments
 
--- Should be:
-ext1
-simp only [linearPlace, heq']
-```
+### Priority 2: Complete remaining DimensionScratch lemmas
 
-Or use the structure-based approach:
-```lean
-have : v = linearPlace α := by
-  apply HeightOneSpectrum.ext
-  simp only [linearPlace, heq']
-exact this
-```
+1. **`inv_X_sub_C_pow_not_mem_projective_smaller`** - Exclusion lemma
+   - Use `WithZero.exp_lt_exp` or similar for exp(k) > exp(k-1)
 
-### Then continue with:
+2. **`ell_ratfunc_projective_gap_le`** - Gap bound
+   - Adapt from Projective.lean using evaluation map
 
-1. **`inv_X_sub_C_pow_satisfies_valuation`** - Valuation of 1/(X-α)^k
-   - At linearPlace α: val = exp(k) ✅ (valuation_inv_X_sub_pow_at_self works)
-   - At other places: val = 1 ≤ 1 (needs valuation_X_sub_at_other)
-
-2. **`inv_X_sub_C_pow_noPoleAtInfinity`** - deg(num) ≤ deg(denom)
-   - For 1/(X-α)^k: num = 1 (deg 0), denom = (X-α)^k (deg k)
-   - Need to compute num/denom of RatFunc.mk
-
-3. **`ell_ratfunc_projective_gap_le`** - Gap bound for projective case
-   - Adapt `gap_le_one_proj_of_rational` from Projective.lean
-   - Use evaluation map with kernel = L(D)
-
-4. **`inv_X_sub_C_pow_not_mem_projective_smaller`** - Exclusion lemma
-   - val at linearPlace α is exp(k) > exp(k-1)
-
-5. **`ell_ratfunc_projective_single_linear`** - ℓ(n·[v]) = n+1
+3. **`ell_ratfunc_projective_single_linear`** - ℓ(n·[v]) = n+1
    - Induction using gap = 1 exactly
 
-6. **`ell_ratfunc_projective_eq_deg_plus_one`** - General formula
-   - Reduce to single-point case or use induction on support
+4. **`ell_ratfunc_projective_eq_deg_plus_one`** - General formula
+   - Induction on deg(D)
 
-7. **Instantiate FullRRData** combining all pieces
+### Priority 3: Instantiate FullRRData combining all pieces
 
 ---
 
