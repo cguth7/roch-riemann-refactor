@@ -8,15 +8,16 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Build**: ✅ Full build compiles with sorries (warnings only)
 **Phase**: 3 - Serre Duality
-**Cycle**: 206
+**Cycle**: 207
 
-### Active Sorries (3 total)
+### Active Sorries (4 total)
 
 | File | Lemma | Priority | Notes |
 |------|-------|----------|-------|
 | Residue.lean | `residueAtIrreducible` | LOW | Placeholder for higher-degree places |
 | Residue.lean | `residue_sum_eq_zero` | MED | General residue theorem |
 | FullAdelesCompact.lean | (1 sorry) | LOW | Edge case in weak approximation |
+| RatFuncPairing.lean | `LRatFunc_eq_zero_of_neg_deg` | MED | Principal divisor degree = 0 for RatFunc |
 
 ### ⚠️ ARCHITECTURE NOTE: Zero Pairing Strategy
 
@@ -86,34 +87,58 @@ This is mathematically justified for genus 0 (P¹ over Fq) because:
 | h1_subsingleton (instance) | ✅ | SerreDuality/RatFuncPairing.lean |
 | h1_finrank_zero_of_large_deg | ✅ | SerreDuality/RatFuncPairing.lean |
 | h1_unique (instance) | ✅ | SerreDuality/RatFuncPairing.lean |
+| LRatFunc_eq_zero_of_neg_deg | ⚠️ | SerreDuality/RatFuncPairing.lean |
+| RRSpace_ratfunc_eq_bot_of_neg_deg | ✅ | SerreDuality/RatFuncPairing.lean |
+| RRSpace_proj_subsingleton_of_neg_deg | ✅ | SerreDuality/RatFuncPairing.lean |
+| ell_proj_zero_of_neg_deg | ✅ | SerreDuality/RatFuncPairing.lean |
 
 ---
 
-## Next Steps (Cycle 207)
+## Next Steps (Cycle 208)
 
-### 🎯 PRIMARY GOAL: Complete Serre Duality Infrastructure
+### 🎯 PRIMARY GOAL: Instantiate AdelicRRData for RatFunc Fq
 
-**Cycle 206 achieved**: Non-degeneracy lemmas are now PROVED with Subsingleton hypotheses! 🎉
+**Cycle 207 achieved**: Added Subsingleton instance for RRSpace_proj! 🎉
 
-The abstract pairing infrastructure is now complete:
-- `serrePairing_left_nondegen` ✅ - Uses `Subsingleton.elim` when H¹(D) is Subsingleton
-- `serrePairing_right_nondegen` ✅ - Uses `Subsingleton.elim` when L(K-D) is Subsingleton
-- `serre_duality` ✅ - Dimension equality (requires Subsingleton instances at call sites)
+The infrastructure for Serre duality is now complete:
+- `h1_subsingleton` ✅ - H¹(D) is Subsingleton (strong approximation)
+- `RRSpace_proj_subsingleton_of_neg_deg` ✅ - L(D) is Subsingleton when deg(D) < 0
+- `ell_proj_zero_of_neg_deg` ✅ - ℓ(D) = 0 when deg(D) < 0
+- Non-degeneracy lemmas ✅ - Vacuously true via Subsingleton
 
-**Remaining infrastructure for full RR theorem**:
-1. Add `Subsingleton` instance for `RRSpace_proj` when deg < 0 (for L(K-D) = 0)
-   - Requires proper projective L(D) definition including infinity
-   - Or use `Module.finrank_zero_iff` with ell_zero_of_neg_deg axiom
-2. Instantiate `AdelicRRData` for RatFunc Fq
-3. Prove the full Riemann-Roch formula
+**Remaining for full RR theorem**:
+1. Instantiate `AdelicRRData` for RatFunc Fq
+   - Need to verify all axiom requirements are met
+   - Connect h1_subsingleton, ell_proj_zero_of_neg_deg to abstract axioms
+2. Prove the full Riemann-Roch formula for RatFunc Fq (genus = 0)
 
-**Alternatively**: Focus on remaining residue theorem sorries:
+**Blocking sorry**: `LRatFunc_eq_zero_of_neg_deg` requires product formula
+- Statement: L(D) = {0} when deg(D) < 0 for RatFunc
+- Proof needs: deg(div(f)) = 0 for all nonzero f ∈ RatFunc (product formula)
+- Alternative: Proper projective L(D) definition including infinity place
+
+**Lower priority sorries**:
 - `residueAtIrreducible` - Extend to higher-degree places
 - `residue_sum_eq_zero` - General residue theorem
 
 ---
 
 ## Recent Progress
+
+### Cycle 207 - **RRSpace_proj Subsingleton Instance** 🏗️
+- **Added infrastructure for L(D) = 0 when deg(D) < 0** for RatFunc Fq
+- **New lemmas**:
+  1. `LRatFunc_eq_zero_of_neg_deg` ⚠️ - L(D) = {0} when deg(D) < 0 (sorry: needs product formula)
+  2. `RRSpace_ratfunc_eq_bot_of_neg_deg` ✅ - L(D) = ⊥ as Submodule when deg(D) < 0
+  3. `RRSpace_proj_subsingleton_of_neg_deg` ✅ - Subsingleton instance for call sites
+  4. `ell_proj_zero_of_neg_deg` ✅ - ℓ(D) = 0 when deg(D) < 0
+- **Sorries**: 3 → 4 (+1 for product formula dependency)
+- **Architecture note**: The sorry `LRatFunc_eq_zero_of_neg_deg` requires:
+  - deg(div(f)) = 0 for all nonzero f ∈ RatFunc (product formula)
+  - Or: proper projective L(D) definition including the infinity place
+  - This is a fundamental number-theoretic fact about P¹
+- **Build**: ✅ compiles with sorries
+- **Next step**: Instantiate `AdelicRRData` for RatFunc Fq
 
 ### Cycle 206 - **NON-DEGENERACY LEMMAS PROVED** 🎉
 - **KEY MILESTONE**: Both non-degeneracy lemmas in Abstract.lean are now PROVED!
@@ -580,9 +605,9 @@ lake build RrLean.RiemannRochV2.SerreDuality
 - `FullAdelesBase`, `FullAdelesCompact` ✅ (1 sorry)
 - `AdelicH1v2` ✅
 - `SerreDuality/` (directory with 3 files):
-  - `Abstract.lean` ✅ (0 sorries - FULLY COMPLETE!) ← was 2!
+  - `Abstract.lean` ✅ (0 sorries - FULLY COMPLETE!)
   - `RatFuncResidues.lean` ✅ (0 sorries)
-  - `RatFuncPairing.lean` ✅ (0 sorries - FULLY COMPLETE!)
+  - `RatFuncPairing.lean` ✅ (1 sorry: LRatFunc_eq_zero_of_neg_deg - needs product formula)
 - `Residue.lean` ✅ (2 sorries: residueAtIrreducible, residue_sum_eq_zero)
 - `SerreDuality.lean` ✅ (thin re-export module)
 

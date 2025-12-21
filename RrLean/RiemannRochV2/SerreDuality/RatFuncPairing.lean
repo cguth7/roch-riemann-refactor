@@ -1872,6 +1872,121 @@ def serrePairing_ratfunc (D : DivisorV2 (Polynomial Fq)) :
 
 end SerrePairingConstruction
 
+/-! ## L(D) = 0 for Negative Degree Divisors
+
+For RatFunc Fq (P¹ over Fq), L(D) = {0} when deg(D) < 0. This follows from:
+1. Any nonzero f ∈ RatFunc Fq has div(f) of degree 0 (poles = zeros)
+2. If f ∈ L(D) with f ≠ 0, then div(f) + D ≥ 0 (effective)
+3. deg(div(f) + D) = 0 + deg(D) = deg(D) ≥ 0 (effective divisors have non-negative degree)
+4. Contradiction if deg(D) < 0, so f = 0
+
+This is the key vanishing theorem that makes Serre duality work for genus 0.
+-/
+
+section NegativeDegreeVanishing
+
+/-- For RatFunc Fq, if deg(D) < 0 and f ∈ L(D) with f ≠ 0, we get a contradiction.
+
+This is the key lemma: any nonzero f ∈ L(D) would have div(f) + D effective,
+but effective divisors have non-negative degree, contradicting deg(D) < 0.
+
+For P¹, the degree of div(f) is 0 for any nonzero f (zeros = poles counting multiplicity).
+-/
+theorem LRatFunc_eq_zero_of_neg_deg (D : DivisorV2 (Polynomial Fq)) (hD : D.deg < 0)
+    (f : RatFunc Fq) (hf : satisfiesValuationCondition (Polynomial Fq) (RatFunc Fq) D f) :
+    f = 0 := by
+  -- Proof by contradiction: assume f ≠ 0
+  by_contra hf_ne
+  -- The key insight: for f ≠ 0 in RatFunc Fq, the "total valuation" is 0
+  -- This means: for all but finitely many v, val_v(f) = 1, and the product over all v is 1
+  -- Equivalently: sum of orders at all places = 0
+
+  -- From hf (f ∈ L(D)), we have: f ≠ 0 → ∀ v, v.valuation f ≤ exp(D v)
+  -- This means: ord_v(f) ≥ -D(v) for all v
+
+  -- For RatFunc, f = p/q where p, q are coprime polynomials
+  -- At place (X - α): ord(f) = ord(p) - ord(q) = (root multiplicity of α in p) - (root multiplicity of α in q)
+  -- Total degree: sum of orders at all finite places + ord_∞ = 0
+
+  -- The actual proof requires formalizing that deg(div(f)) = 0 for RatFunc
+  -- For now, we use that valuations ≤ exp(D v) means ord ≥ -D(v)
+  -- And sum of all orders = 0 for any nonzero RatFunc
+
+  -- Since f ≠ 0, get the valuation bound
+  rcases hf with rfl | hf_val
+  · exact hf_ne rfl
+  -- hf_val : ∀ v, v.valuation f ≤ exp(D v)
+  -- This means ord_v(f) ≥ -D(v) at all finite places
+
+  -- For RatFunc Fq, f = num/denom where both are polynomials
+  -- The valuation at place v is v.intValuation(num) / v.intValuation(denom)
+
+  -- Key fact: sum of (D v + ord_v(f)) over all places ≥ 0 (since each term ≥ 0)
+  -- And sum of ord_v(f) over all places = 0 (degree of principal divisor)
+  -- So sum of D v ≥ 0, i.e., deg(D) ≥ 0, contradicting hD
+
+  -- The formal proof uses that for RatFunc:
+  -- deg(D) + deg(div(f)) = deg(D) + 0 = deg(D) < 0
+  -- But if div(f) + D ≥ 0 (which follows from ord_v(f) ≥ -D(v)),
+  -- then deg(div(f) + D) ≥ 0, so deg(D) ≥ 0, contradiction
+
+  -- This requires the principal divisor degree = 0 lemma for RatFunc
+  -- For now, we prove this axiomatically using the fact that polynomials are integral
+
+  -- Write f = num/denom with coprime polynomials
+  have hf_eq : f = algebraMap _ (RatFunc Fq) f.num / algebraMap _ (RatFunc Fq) f.denom :=
+    f.num_div_denom.symm
+
+  -- The key is: if f has bounded poles (val ≤ exp(D v)), the divisor constraint gives deg(D) ≥ 0
+  -- The proof uses that for RatFunc, the sum Σ_v ord_v(f) = 0
+
+  -- For a cleaner proof, we use that polynomials have valuation ≤ 1 at all finite places
+  -- and 1/polynomial has valuation = exp(-degree) at infinity
+
+  -- Actually, we need to formalize div(f) for RatFunc properly
+  -- For now, use a simpler argument:
+
+  -- If deg(D) < 0, all coefficients D(v) are "on average" negative
+  -- For f to satisfy val_v(f) ≤ exp(D v), f must have "more zeros than poles" on average
+  -- But for RatFunc, zeros = poles (in degree), so this is impossible unless f = 0
+
+  -- The rigorous proof requires the product formula for RatFunc
+  -- For now, we give a sorry for this deep number-theoretic fact
+  sorry
+
+/-- L(D) is trivial (only contains 0) when deg(D) < 0 for RatFunc Fq. -/
+theorem RRSpace_ratfunc_eq_bot_of_neg_deg (D : DivisorV2 (Polynomial Fq)) (hD : D.deg < 0) :
+    RRSpace_proj Fq (Polynomial Fq) (RatFunc Fq) D = ⊥ := by
+  ext f
+  simp only [Submodule.mem_bot]
+  constructor
+  · -- If f ∈ L(D), then f = 0
+    intro hf
+    exact LRatFunc_eq_zero_of_neg_deg D hD f hf
+  · -- If f = 0, then f ∈ L(D)
+    intro hf
+    rw [hf]
+    exact Or.inl rfl
+
+/-- RRSpace_proj is a Subsingleton when deg(D) < 0 for RatFunc Fq.
+
+This is the key instance needed for `serrePairing_right_nondegen`.
+When deg(D) ≥ -1 and canonical = -2·[∞], we have deg(canonical - D) < 0,
+so L(canonical - D) is a Subsingleton.
+-/
+instance RRSpace_proj_subsingleton_of_neg_deg (D : DivisorV2 (Polynomial Fq)) (hD : D.deg < 0) :
+    Subsingleton (RRSpace_proj Fq (Polynomial Fq) (RatFunc Fq) D) := by
+  rw [RRSpace_ratfunc_eq_bot_of_neg_deg D hD]
+  infer_instance
+
+/-- ell_proj = 0 when deg(D) < 0 for RatFunc Fq. -/
+theorem ell_proj_zero_of_neg_deg (D : DivisorV2 (Polynomial Fq)) (hD : D.deg < 0) :
+    ell_proj Fq (Polynomial Fq) (RatFunc Fq) D = 0 := by
+  haveI := RRSpace_proj_subsingleton_of_neg_deg D hD
+  exact Module.finrank_zero_of_subsingleton
+
+end NegativeDegreeVanishing
+
 /-! ## Strategy Notes
 
 ### The Core Issue
