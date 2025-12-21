@@ -2277,7 +2277,7 @@ lemma constant_not_in_LRatFunc_of_neg_coeff (c : Fq) (hc : c ≠ 0)
   · -- RatFunc.C c = 0, but c ≠ 0
     -- RatFunc.C is injective, so C c = 0 implies c = 0
     rw [RatFunc.C] at hzero
-    simp only [RingHom.coe_coe, map_eq_zero] at hzero
+    simp only [map_eq_zero] at hzero
     exact hc hzero
   specialize hval v
   rw [constant_valuation_eq_one c hc v] at hval
@@ -2312,6 +2312,7 @@ be at linear places, making the unweighted formula valid.
 
 TODO: Add weighted degree infrastructure for full generality over all places. -/
 theorem projective_LRatFunc_eq_zero_of_neg_deg (D : DivisorV2 (Polynomial Fq)) (hD : D.deg < 0)
+    (hDlin : IsLinearPlaceSupport D)
     (f : RatFunc Fq) (hf : f ∈ RRSpace_ratfunc_projective D) :
     f = 0 := by
   by_contra hf_ne
@@ -2335,45 +2336,97 @@ theorem projective_LRatFunc_eq_zero_of_neg_deg (D : DivisorV2 (Polynomial Fq)) (
   -- From noPoleAtInfinity: deg(num) ≤ deg(denom)
   -- Since f ≠ 0 and not constant, denom has positive degree, meaning f has poles
 
-  -- The valuation condition requires: at all v, v.valuation(f) ≤ exp(D v)
-  -- At v with D(v) < 0: exp(D v) < 1, so v.valuation(f) < 1 (f has zero there)
-  -- At poles v: v.valuation(f) > 1, so D(v) must be positive
-
   rcases hf_finite with rfl | hf_val
   · exact hf_ne rfl
 
-  -- The full product formula argument:
-  -- - Each pole place requires D(v) ≥ 1
-  -- - Each negative D(v) place requires f to have a zero there
-  -- - The sum Σ(D(v) + ord_v(f)) ≥ 0 for v in the relevant support
-  -- - Since deg(num) ≤ deg(denom), the sum of orders ≤ 0
-  -- - So deg(D) ≥ 0, contradicting deg(D) < 0
+  -- Step 1: Show denom has positive degree (f is non-constant)
+  -- If denom has degree 0, it's a unit, so f = num/unit is a polynomial.
+  -- For noPoleAtInfinity: deg(num) ≤ deg(denom) = 0, so num is constant.
+  -- Then f would be a constant, contradicting hf_const.
+  have hdenom_pos : 0 < f.denom.natDegree := by
+    by_contra h
+    push_neg at h
+    have hdenom_deg_zero : f.denom.natDegree = 0 := Nat.eq_zero_of_le_zero h
+    -- denom has degree 0 means it's a constant
+    have hdenom_const : ∃ c : Fq, c ≠ 0 ∧ f.denom = Polynomial.C c := by
+      have hmonic : f.denom.Monic := f.monic_denom
+      have hdenom_ne : f.denom ≠ 0 := f.denom_ne_zero
+      rw [Polynomial.natDegree_eq_zero] at hdenom_deg_zero
+      obtain ⟨c, hc⟩ := hdenom_deg_zero
+      refine ⟨c, ?_, hc.symm⟩
+      intro hc_zero
+      rw [hc_zero, Polynomial.C_0] at hc
+      exact hdenom_ne hc.symm
+    obtain ⟨c, hc_ne, hdenom_eq⟩ := hdenom_const
+    -- From noPoleAtInfinity: deg(num) ≤ deg(denom) = 0
+    have hnum_deg_zero : f.num.natDegree = 0 := by
+      have h1 : f.num.natDegree ≤ f.denom.natDegree := hf_nopole
+      rw [hdenom_deg_zero] at h1
+      exact Nat.eq_zero_of_le_zero h1
+    -- num has degree 0, so it's a constant
+    rw [Polynomial.natDegree_eq_zero] at hnum_deg_zero
+    obtain ⟨n, hnum_eq⟩ := hnum_deg_zero
+    -- f = C n / C c = C (n / c), a constant
+    have hf_is_const : f = RatFunc.C (n / c) := by
+      rw [← RatFunc.num_div_denom f, ← hnum_eq, hdenom_eq]
+      simp only [RatFunc.algebraMap_C, RatFunc.C]
+      have hc_ne' : (algebraMap Fq (RatFunc Fq)) c ≠ 0 := by
+        intro h
+        rw [map_eq_zero] at h
+        exact hc_ne h
+      field_simp [hc_ne']
+      rw [← map_mul, mul_div_cancel₀ n hc_ne]
+    -- This contradicts hf_const (f is not a constant)
+    by_cases hn : n = 0
+    · -- If n = 0, then f = 0, contradicting hf_ne
+      rw [hn, zero_div] at hf_is_const
+      rw [hf_is_const] at hf_ne
+      simp only [map_zero, not_true_eq_false] at hf_ne
+    · -- If n ≠ 0, then f = C (n/c) is a nonzero constant
+      have hnc_ne : n / c ≠ 0 := div_ne_zero hn hc_ne
+      exact hf_const ⟨n / c, hnc_ne, hf_is_const⟩
 
-  -- This requires formalizing the order function and product formula for RatFunc.
-  -- For now, we leave this as a sorry with the mathematical argument documented.
-  -- The key infrastructure needed is:
-  -- 1. ord_v : RatFunc Fq → ℤ for each v : HeightOneSpectrum
-  -- 2. Product formula: Σ_v ord_v(f) = deg(num) - deg(denom) for linear places
-  -- 3. Membership characterization: f ∈ L(D) ↔ ∀ v, ord_v(f) ≥ -D(v)
+  -- Step 2: denom has an irreducible factor, giving f a pole
+  -- At that pole v, valuation(f) > 1, so D(v) > 0 (from L(D) condition)
+  -- Since D is linear-supported and D(v) > 0 means v ∈ supp(D), v is linear
+  -- This means all irreducible factors of denom are linear (X - α)
+
+  -- Step 3: Counting argument
+  -- - At each pole α: D(α) ≥ mult_α(denom) (from valuation condition)
+  -- - Σ_{poles} D(α) ≥ deg(denom) (since denom only has linear factors)
+  -- - At each v with D(v) < 0: num has factor at v with mult_v(num) ≥ |D(v)|
+  -- - Σ_{D(v)<0} mult_v(num) ≥ Σ_{D(v)<0} |D(v)| > Σ_{D(v)>0} D(v) ≥ deg(denom)
+  -- - But Σ_{D(v)<0} mult_v(num) ≤ deg(num) ≤ deg(denom) (noPoleAtInfinity)
+  -- - Contradiction: deg(denom) > deg(denom)
+
+  -- For now, we document the remaining steps and leave a sorry.
+  -- The key remaining infrastructure needed:
+  -- 1. Irreducible factors of polynomials give poles
+  -- 2. At poles, valuation > 1 implies D(v) ≥ 1
+  -- 3. Linear-support + D(v) > 0 implies v is linear
+  -- 4. Sum of multiplicities at linear factors = degree (for split poly)
+  -- 5. Sum of multiplicities at zeros bounded by deg(num)
 
   sorry
 
-/-- The projective RRSpace is trivial when deg(D) < 0. -/
-theorem RRSpace_ratfunc_projective_eq_bot_of_neg_deg (D : DivisorV2 (Polynomial Fq)) (hD : D.deg < 0) :
+/-- The projective RRSpace is trivial when deg(D) < 0 and D is supported on linear places. -/
+theorem RRSpace_ratfunc_projective_eq_bot_of_neg_deg (D : DivisorV2 (Polynomial Fq)) (hD : D.deg < 0)
+    (hDlin : IsLinearPlaceSupport D) :
     RRSpace_ratfunc_projective D = ⊥ := by
   ext f
   simp only [Submodule.mem_bot]
   constructor
-  · exact projective_LRatFunc_eq_zero_of_neg_deg D hD f
+  · exact projective_LRatFunc_eq_zero_of_neg_deg D hD hDlin f
   · intro hf
     rw [hf]
     exact ⟨Or.inl rfl, Or.inl rfl⟩
 
-/-- The projective ell(D) = 0 when deg(D) < 0. -/
-theorem ell_ratfunc_projective_zero_of_neg_deg (D : DivisorV2 (Polynomial Fq)) (hD : D.deg < 0) :
+/-- The projective ell(D) = 0 when deg(D) < 0 and D is supported on linear places. -/
+theorem ell_ratfunc_projective_zero_of_neg_deg (D : DivisorV2 (Polynomial Fq)) (hD : D.deg < 0)
+    (hDlin : IsLinearPlaceSupport D) :
     ell_ratfunc_projective D = 0 := by
   unfold ell_ratfunc_projective
-  rw [RRSpace_ratfunc_projective_eq_bot_of_neg_deg D hD]
+  rw [RRSpace_ratfunc_projective_eq_bot_of_neg_deg D hD hDlin]
   exact finrank_bot Fq (RatFunc Fq)
 
 end ProjectiveLSpace

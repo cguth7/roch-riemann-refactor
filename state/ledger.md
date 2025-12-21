@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Build**: ✅ Full build compiles with sorries
 **Phase**: 3 - Serre Duality
-**Cycle**: 215
+**Cycle**: 216
 
 ### Active Sorries (2 in RatFuncPairing.lean)
 
@@ -19,6 +19,33 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 | **Residue.lean** | 2 | LOW | Higher-degree places, general residue theorem (deferred) |
 | **FullAdelesCompact.lean** | 1 | LOW | Edge case bound < 1 (not needed) |
 | **TraceDualityProof.lean** | 1 | LOW | Alternative approach (not on critical path) |
+
+---
+
+## Cycle 216 Progress
+
+**Completed**:
+1. ✅ **Added `IsLinearPlaceSupport D` assumption** to `projective_LRatFunc_eq_zero_of_neg_deg` and downstream theorems
+2. ✅ **Proved Step 1 completely**: For non-constant f with noPoleAtInfinity, denom has positive degree
+   - If denom.natDegree = 0, then denom is a constant (C c)
+   - From noPoleAtInfinity: deg(num) ≤ deg(denom) = 0, so num is also constant (C n)
+   - Then f = C n / C c = C (n/c), a constant - contradiction
+
+**Key insight on IsLinearPlaceSupport**:
+The theorem as originally stated (without IsLinearPlaceSupport) is actually FALSE for general divisors. Counterexample:
+- D = [(X), -2] + [(π), 1] where π is irreducible of degree 2
+- deg(D) = -1 < 0
+- But f = X²/π satisfies L(D) with noPoleAtInfinity (both have degree 2)
+
+For divisors supported only on linear places, the unweighted degree equals the weighted degree, making the theorem true.
+
+**Remaining for `projective_LRatFunc_eq_zero_of_neg_deg`**:
+The counting argument steps are documented in code. Still needs:
+1. Irreducible factors of polynomials give poles
+2. At poles, valuation > 1 implies D(v) ≥ 1
+3. Linear-support + D(v) > 0 implies v is linear
+4. Sum of multiplicities at linear factors = degree (for split poly)
+5. Sum of multiplicities at zeros bounded by deg(num)
 
 ---
 
@@ -38,12 +65,6 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 7. **Counting**: `|{v : D(v) < 0}| > total pole multiplicities`
 8. But each such v is a factor of num, so `|{v : D(v) < 0}| ≤ deg(num) ≤ deg(denom)`
 9. And `deg(denom) ≥ total pole multiplicities`, giving contradiction
-
-**Implementation status**:
-- Step 1 proof (denom positive degree): ~80% complete, needs `degree_le_zero_iff` usage fix
-- Steps 2-9: Documented in code, needs lemmas about valuations at irreducible factors
-
-**Next Cycle 216**: Implement the counting argument with proper polynomial valuation lemmas
 
 ---
 
@@ -110,7 +131,9 @@ RatFuncPairing.lean: projective_LRatFunc_eq_zero_of_neg_deg
     ├─→ add_mem' ✅ DONE (Cycle 213)
     ├─→ constant_mem_projective_zero ✅ DONE (Cycle 213)
     ├─→ constant case ✅ DONE (Cycle 214)
-    └─→ non-constant case ← NEXT (needs product formula)
+    ├─→ IsLinearPlaceSupport assumption ✅ ADDED (Cycle 216)
+    ├─→ non-constant Step 1 (denom positive degree) ✅ DONE (Cycle 216)
+    └─→ non-constant Steps 2-5 (counting argument) ← NEXT
         └─→ L_proj(D) = {0} when deg(D) < 0
             └─→ Serre duality RHS verified
 ```
