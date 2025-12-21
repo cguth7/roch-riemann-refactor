@@ -1,6 +1,7 @@
 import RrLean.RiemannRochV2.SerreDuality.RatFuncResidues
 import RrLean.RiemannRochV2.AdelicH1v2
 import RrLean.RiemannRochV2.FullAdelesCompact
+import RrLean.RiemannRochV2.ProductFormula
 import Mathlib.RingTheory.Ideal.Quotient.Operations
 import Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 
@@ -2032,83 +2033,6 @@ To define a linear map on H¹(D) = FiniteAdeleRing / (K + A_K(D)):
    Need: ∑_v res_v(f) = 0 for all f ∈ K with finite support.
 -/
 
-/-! ## Product Formula Lite
-
-For RatFunc Fq, the sum of orders at all places equals 0 (principal divisors have degree 0).
-This is the key fact needed for the L(D) = {0} when deg(D) < 0 result.
-
-### Mathematical Background
-
-For f = p/q ∈ RatFunc Fq (coprime polynomials):
-- At finite place v = (π): ord_v(f) = mult(π, p) - mult(π, q)
-- At infinity: ord_∞(f) = deg(q) - deg(p)
-- Sum: Σ_v ord_v(f) + ord_∞(f) = (deg(p) - deg(q)) + (deg(q) - deg(p)) = 0
-
-The key lemma is: for nonzero polynomial P, Σ_v mult(v, P) = deg(P).
-This is the "product formula lite" - the sum of all root multiplicities equals the degree.
--/
-
-section ProductFormulaLite
-
-/-- For a nonzero polynomial over a field, the sum of root multiplicities (counted over
-all roots in the algebraic closure, but which for finite fields means all roots in Fq)
-equals the number of roots (with multiplicity).
-
-Note: `Polynomial.card_roots'` gives `(p.roots).card ≤ p.natDegree`.
-For a polynomial that splits completely (all roots in the base field), this is an equality.
--/
-lemma sum_rootMultiplicity_le_natDegree [DecidableEq Fq] (p : Polynomial Fq) (hp : p ≠ 0) :
-    (p.roots.toFinset.sum fun α => p.rootMultiplicity α) ≤ p.natDegree := by
-  -- Uses Polynomial.card_roots' and Multiset.count_roots
-  sorry
-
-/-- The sum of orders at finite places for a polynomial equals its degree
-(for roots in Fq). More precisely, if we only sum over places corresponding
-to linear factors (X - α) for α ∈ Fq, we get the count of Fq-roots. -/
-lemma polynomial_order_sum_eq_roots [DecidableEq Fq] (p : Polynomial Fq) (hp : p ≠ 0) :
-    (p.roots.toFinset.sum fun α => p.rootMultiplicity α) =
-    p.roots.card := by
-  -- Uses Multiset.toFinset_sum_count_eq and Multiset.count_roots
-  sorry
-
-/-- For coprime polynomials p and q, the "finite principal divisor degree" is
-the difference of their root counts over Fq. -/
-def finitePrincipalDivisorDegree (f : RatFunc Fq) : ℤ :=
-  (f.num.roots.card : ℤ) - (f.denom.roots.card : ℤ)
-
-/-- The order at infinity for a rational function. -/
-def orderAtInfinity (f : RatFunc Fq) : ℤ :=
-  (f.denom.natDegree : ℤ) - (f.num.natDegree : ℤ)
-
-/-- Key lemma: For nonzero f, the sum of finite orders plus infinity order is 0,
-when restricted to the Fq-rational places.
-
-Note: This is only exact when the polynomial splits completely over Fq.
-For general polynomials, we have an inequality relating to splitting field degree.
--/
-lemma principalDivisorDegree_add_infinity_eq_zero (f : RatFunc Fq) (hf : f ≠ 0) :
-    finitePrincipalDivisorDegree f + orderAtInfinity f ≤ 0 := by
-  unfold finitePrincipalDivisorDegree orderAtInfinity
-  -- We use that roots.card ≤ natDegree
-  have hnum := Polynomial.card_roots' f.num
-  have hdenom := Polynomial.card_roots' f.denom
-  -- (num.roots.card - denom.roots.card) + (denom.deg - num.deg) ≤ 0
-  -- ↔ num.roots.card + denom.deg ≤ denom.roots.card + num.deg
-  -- ↔ num.roots.card - num.deg ≤ denom.roots.card - denom.deg
-  -- Since roots.card ≤ deg for both, this needs more care
-  -- Actually we need: roots.card ≤ deg for num, and denom.roots.card ≤ denom.deg
-  -- So: num.roots.card - denom.roots.card ≤ num.deg - 0 = num.deg
-  -- and: denom.deg - num.deg could be positive or negative
-  -- The inequality is: (num.roots - denom.roots) + (denom.deg - num.deg) ≤ 0
-  -- = num.roots - num.deg + denom.deg - denom.roots ≤ 0
-  -- = (num.roots - num.deg) - (denom.roots - denom.deg) ≤ 0
-  -- Since roots ≤ deg for both, num.roots - num.deg ≤ 0 and denom.roots - denom.deg ≤ 0
-  -- So we need (nonpositive) - (nonpositive) ≤ 0, which is not always true!
-  -- This lemma statement is wrong - we need the exact product formula instead
-  sorry
-
-end ProductFormulaLite
-
 /-! ## Projective L(D) for RatFunc
 
 The "affine" L(D) only checks finite places, making L(0) = all polynomials (infinite-dim).
@@ -2120,6 +2044,8 @@ For D with D_∞ = 0 (no pole allowed at infinity):
 -/
 
 section ProjectiveLSpace
+
+open Classical
 
 /-- A rational function has "no pole at infinity" if deg(num) ≤ deg(denom).
 Equivalently, orderAtInfinity f ≥ 0. -/
@@ -2145,12 +2071,74 @@ def RRSpace_ratfunc_projective (D : DivisorV2 (Polynomial Fq)) : Submodule Fq (R
   zero_mem' := ⟨Or.inl rfl, Or.inl rfl⟩
   smul_mem' := by
     intro c f hf
-    -- Scalar multiplication c • f for c : Fq, f : RatFunc Fq
-    -- Preserves both conditions:
-    -- 1. Finite valuation bound (c is a unit in K, so valuation preserved)
-    -- 2. Degree bound at infinity (deg(c*num) = deg(num), deg(denom) unchanged)
-    -- Full proof follows pattern from Residue.lean:residueAtInfty_smul
-    sorry
+    by_cases hc : c = 0
+    · -- c = 0: 0 • f = 0, trivially in the space
+      simp only [hc, zero_smul]
+      exact ⟨Or.inl rfl, Or.inl rfl⟩
+    -- c ≠ 0: use that c is a unit
+    have hc_unit : IsUnit c := Ne.isUnit hc
+    have hCc_unit : IsUnit (Polynomial.C c) := Polynomial.isUnit_C.mpr hc_unit
+    have hc_reg : IsSMulRegular Fq c := hc_unit.isSMulRegular Fq
+    constructor
+    · -- Finite valuation condition: v(c • f) = v(f) since v(C c) = 1
+      -- c • f = RatFunc.C c * f, and RatFunc.C c is a unit at all finite places
+      rcases hf.1 with rfl | hf_val
+      · simp only [smul_zero]; exact Or.inl rfl
+      right
+      intro v
+      -- Key: v.valuation (c • f) = v.valuation f because C c is a unit
+      have hsmul_eq : (c • f : RatFunc Fq) = RatFunc.C c * f := by
+        rw [Algebra.smul_def, RatFunc.algebraMap_eq_C]
+      rw [hsmul_eq]
+      -- v.valuation (RatFunc.C c * f) = v.valuation (RatFunc.C c) * v.valuation f
+      rw [map_mul]
+      -- v.valuation (RatFunc.C c) = 1 since C c is a unit in the integers
+      have hval_Cc : v.valuation (RatFunc Fq) (RatFunc.C c) = 1 := by
+        rw [← RatFunc.algebraMap_C]
+        rw [HeightOneSpectrum.valuation_of_algebraMap]
+        -- v.intValuation (C c) = 1 since C c is a unit (doesn't belong to v.asIdeal)
+        have hCc_not_mem : Polynomial.C c ∉ v.asIdeal := by
+          intro hmem
+          -- If unit is in prime ideal, then 1 ∈ ideal, contradiction
+          have := v.asIdeal.mul_mem_left (↑hCc_unit.unit⁻¹ : Polynomial Fq) hmem
+          rw [IsUnit.val_inv_mul hCc_unit] at this
+          exact v.isPrime.ne_top ((Ideal.eq_top_iff_one _).mpr this)
+        exact_mod_cast intValuation_eq_one_iff.mpr hCc_not_mem
+      rw [hval_Cc, one_mul]
+      exact hf_val v
+    · -- Infinity condition: noPoleAtInfinity preserved
+      rcases hf.2 with rfl | hf_nopole
+      · exact Or.inl (smul_zero c)
+      right
+      -- Use pattern from Residue.lean:residueAtInfty_smul
+      -- (c • f).num = C c * f.num and (c • f).denom = f.denom
+      have hsmul_eq : (c • f : RatFunc Fq) =
+          algebraMap (Polynomial Fq) (RatFunc Fq) (Polynomial.C c * f.num) /
+          algebraMap (Polynomial Fq) (RatFunc Fq) f.denom := by
+        conv_lhs => rw [Algebra.smul_def c f, RatFunc.algebraMap_eq_C, ← RatFunc.num_div_denom f]
+        rw [← RatFunc.algebraMap_C c, mul_div_assoc', ← map_mul]
+      have hgcd : gcd (Polynomial.C c * f.num) f.denom = 1 := by
+        have hcoprime := RatFunc.isCoprime_num_denom f
+        have h : IsCoprime (Polynomial.C c * f.num) f.denom :=
+          (isCoprime_mul_unit_left_left hCc_unit f.num f.denom).mpr hcoprime
+        rw [← normalize_gcd]
+        exact normalize_eq_one.mpr (h.isUnit_of_dvd' (gcd_dvd_left _ _) (gcd_dvd_right _ _))
+      have hdenom_ne : f.denom ≠ 0 := RatFunc.denom_ne_zero f
+      have hmonic : (f.denom).Monic := RatFunc.monic_denom f
+      have hnum_smul : (c • f).num = Polynomial.C c * f.num := by
+        rw [hsmul_eq, RatFunc.num_div, hgcd]
+        simp only [EuclideanDomain.div_one, hmonic, Polynomial.Monic.leadingCoeff, inv_one,
+                   Polynomial.C_1, one_mul]
+      have hdenom_smul : (c • f).denom = f.denom := by
+        rw [hsmul_eq, RatFunc.denom_div _ hdenom_ne, hgcd]
+        simp only [EuclideanDomain.div_one, hmonic, Polynomial.Monic.leadingCoeff, inv_one,
+                   Polynomial.C_1, one_mul]
+      -- noPoleAtInfinity means num.natDegree ≤ denom.natDegree
+      unfold noPoleAtInfinity at hf_nopole ⊢
+      rw [hnum_smul, hdenom_smul]
+      -- natDegree(C c * p) = natDegree(p) for c ≠ 0
+      rw [← Polynomial.smul_eq_C_mul, Polynomial.natDegree_smul_of_smul_regular _ hc_reg]
+      exact hf_nopole
 
 /-- The projective ell(D) for RatFunc Fq. -/
 noncomputable def ell_ratfunc_projective (D : DivisorV2 (Polynomial Fq)) : ℕ :=
