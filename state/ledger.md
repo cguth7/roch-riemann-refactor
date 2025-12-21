@@ -6,30 +6,44 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 ## Current State
 
-**Build**: ✅ Full build compiles with sorries (2762 jobs)
+**Build**: ✅ Full build compiles with sorries (2138 jobs)
 **Phase**: 3 - Serre Duality
 **Cycle**: 210
 
-### Active Sorries (15 total)
+### Active Sorries (12 total)
 
 | File | Count | Priority | Notes |
 |------|-------|----------|-------|
-| **ProductFormula.lean** | 3 | HIGH | Product formula - blocks L(D) vanishing |
 | **RatFuncPairing.lean** | 7 | HIGH | Projective L(D) infrastructure |
+| **ProductFormula.lean** | 1 | DONE* | *Intentionally incorrect lemma - see below |
 | **Residue.lean** | 2 | LOW | Higher-degree places, general residue theorem (deferred) |
 | **FullAdelesCompact.lean** | 1 | LOW | Edge case bound < 1 (not needed) |
 | **TraceDualityProof.lean** | 1 | LOW | Alternative approach (not on critical path) |
 
+### Cycle 210 Progress
+
+**ProductFormula.lean**: 2 sorries ✅ PROVED, 1 marked INCORRECT
+- ✅ `sum_rootMultiplicity_eq_card_roots` - proved via `Multiset.toFinset_sum_count_eq`
+- ✅ `sum_rootMultiplicity_le_natDegree` - proved via above + `card_roots'`
+- ⚠️ `principal_divisor_degree_eq_zero` - **FALSE as stated** (see docstring)
+  - Counterexample: f = 1/(X²+X+1) over F₂ gives 0 + 2 = 2 ≠ 0
+  - Fq-rational product formula only works when polynomials split completely
+  - The proof of `projective_LRatFunc_eq_zero_of_neg_deg` doesn't need this lemma
+
 ### Critical Path
 
 ```
-ProductFormula.lean (3 sorries - Mathlib one-liners)
-    └─→ RatFuncPairing.lean: projective_LRatFunc_eq_zero_of_neg_deg
-        └─→ L_proj(D) = {0} when deg(D) < 0
-            └─→ Serre duality RHS verified
+RatFuncPairing.lean: projective_LRatFunc_eq_zero_of_neg_deg
+    ├─→ Needs: degree-weighted product formula (UFD, not root counting)
+    ├─→ Needs: smul_mem' and add_mem' for RRSpace_ratfunc_projective
+    └─→ L_proj(D) = {0} when deg(D) < 0
+        └─→ Serre duality RHS verified
 ```
 
-**Estimated effort**: 5-10 cycles to clear critical path.
+**Key Insight (Cycle 210)**: The proof doesn't need Fq-rational product formula.
+It uses: `Σ_P deg(P) * mult(P, f) = deg(f)` from unique factorization.
+
+**Estimated effort**: 5-8 cycles to clear critical path.
 
 ---
 
@@ -59,26 +73,37 @@ L_proj(D) := { f ∈ L(D) | deg(f.num) ≤ deg(f.denom) + D(∞) }
 
 ---
 
-## Next Steps (Cycle 210+)
+## Next Steps (Cycle 211+)
 
-### Immediate: Fill Product Formula (3 sorries)
+### Immediate: RatFuncPairing Submodule Proofs
 
-All are near-trivial Mathlib lookups:
-1. `sum_rootMultiplicity_eq_card_roots` - Use `Polynomial.card_roots`
-2. `sum_rootMultiplicity_le_natDegree` - Use `Polynomial.card_roots_le_degree`
-3. `principal_divisor_degree_le_zero` - Careful inequality analysis
+1. `smul_mem'` for RRSpace_ratfunc_projective
+   - Need: scalar mult preserves valuation bounds and degree bounds
+   - Key lemma: for c : Fq×, `(c • f).num.natDegree = f.num.natDegree`
 
-### Then: RatFuncPairing Submodule Proofs (5 sorries)
+2. `add_mem'` for RRSpace_ratfunc_projective
+   - Need: addition preserves noPoleAtInfinity
+   - Key: degree of sum ≤ max of degrees
 
-- `add_mem'`, `smul_mem'` for RRSpace_ratfunc_projective
-- `constant_mem_projective_zero`
-- `projective_LRatFunc_eq_zero_of_neg_deg` (main vanishing)
+3. `constant_mem_projective_zero`
+   - Need: `algebraMap Fq (RatFunc Fq) c` has valuation 1 everywhere
+   - Key: `RatFunc.algebraMap_eq_C` + `num_C`, `denom_C`
+
+4. `projective_LRatFunc_eq_zero_of_neg_deg` (main vanishing)
+   - Need: degree-weighted product formula argument
+   - Key: Σ_P deg(P) * ord_P(f) = deg(num) - deg(denom) from UFD
+
+### RatFuncPairing Cleanup (Optional)
+
+- Lines 2063, 2072, 2108: Duplicate lemmas from ProductFormula.lean
+- Consider importing ProductFormula.lean and reusing proved lemmas
 
 ### Lower Priority (not blocking)
 
 - `residueAtIrreducible` - Higher-degree places (deferred)
 - `residue_sum_eq_zero` - General residue theorem (deferred)
 - `TraceDualityProof` - Alternative approach, skip
+- `FullAdelesCompact` edge case - not needed for main theorem
 
 ---
 
@@ -108,7 +133,7 @@ grep -rn "sorry$" RrLean/RiemannRochV2/*.lean RrLean/RiemannRochV2/SerreDuality/
 - `FqPolynomialInstance.lean` ✅ - AllIntegersCompact instance
 
 ### Active (has sorries)
-- `ProductFormula.lean` ⚠️ (3) - Product formula
+- `ProductFormula.lean` ⚠️ (1) - Intentionally incorrect lemma (documented)
 - `RatFuncPairing.lean` ⚠️ (7) - Projective L(D)
 - `Residue.lean` ⚠️ (2) - Deferred infrastructure
 

@@ -10,8 +10,16 @@ the sum of orders at all places equals zero for any nonzero rational function.
 ## Main Results
 
 * `sum_rootMultiplicity_eq_card_roots` - Sum of root multiplicities = roots.card
-* `polynomial_degree_eq_sum_valuations` - For split polynomials, degree = sum of orders
-* `principal_divisor_degree_zero` - For f ≠ 0, sum of all orders (finite + ∞) = 0
+* `sum_rootMultiplicity_le_natDegree` - Root multiplicity sum ≤ natDegree
+* `polynomial_principal_divisor` - For polynomials, roots.card ≤ natDegree
+
+## Important Note
+
+The "naive" product formula over Fq-rational points is FALSE in general!
+See `principal_divisor_degree_eq_zero_INCORRECT_DO_NOT_USE` for counterexample.
+
+The correct product formula uses degree-weighted sums over ALL irreducible polynomials,
+which follows from unique factorization rather than root counting.
 
 ## Mathematical Background
 
@@ -26,8 +34,9 @@ The key insight is that for a polynomial P over Fq:
 
 ## Usage
 
-This module is used by `RatFuncPairing.lean` to prove:
-- `projective_LRatFunc_eq_zero_of_neg_deg` : L_proj(D) = {0} when deg(D) < 0
+The root multiplicity lemmas are useful for local analysis.
+The actual proof of `projective_LRatFunc_eq_zero_of_neg_deg` in `RatFuncPairing.lean`
+uses unique factorization directly rather than root counting.
 
 ## File Organization Note
 
@@ -52,14 +61,15 @@ This uses that `Multiset.count α p.roots = p.rootMultiplicity α` for α a root
 Key Mathlib lemma: `Polynomial.count_roots` -/
 theorem sum_rootMultiplicity_eq_card_roots (p : Polynomial Fq) (hp : p ≠ 0) :
     (p.roots.toFinset.sum fun α => p.rootMultiplicity α) = p.roots.card := by
-  -- Use Multiset.toFinset_sum_count_eq and Polynomial.count_roots
-  sorry
+  -- Use that rootMultiplicity = count in roots multiset
+  simp only [← count_roots p]
+  exact Multiset.toFinset_sum_count_eq p.roots
 
 /-- The sum of root multiplicities is at most the degree. -/
 theorem sum_rootMultiplicity_le_natDegree (p : Polynomial Fq) (hp : p ≠ 0) :
     (p.roots.toFinset.sum fun α => p.rootMultiplicity α) ≤ p.natDegree := by
-  -- Uses sum_rootMultiplicity_eq_card_roots and Polynomial.card_roots'
-  sorry
+  rw [sum_rootMultiplicity_eq_card_roots p hp]
+  exact Polynomial.card_roots' p
 
 /-! ## Order at Infinity -/
 
@@ -81,24 +91,28 @@ For f = p/q, this is (number of zeros) - (number of poles) counting Fq-points on
 def finitePrincipalDivisorDegree (f : RatFunc Fq) : ℤ :=
   (f.num.roots.card : ℤ) - (f.denom.roots.card : ℤ)
 
-/-- Key theorem: For a nonzero rational function, the total degree of its
-principal divisor is zero. That is: (finite orders) + (order at ∞) = 0.
+/-- **INCORRECT LEMMA - DO NOT USE**
 
-More precisely: (num.roots.card - denom.roots.card) + (denom.deg - num.deg) ≤ 0
+The statement `finitePrincipalDivisorDegree f + orderAtInfinity f ≤ 0` is FALSE in general.
 
-Note: This is only an inequality because roots.card ≤ natDegree (equality when splits).
-For the full product formula over algebraic closure, we'd have equality. -/
-theorem principal_divisor_degree_le_zero (f : RatFunc Fq) (hf : f ≠ 0) :
-    finitePrincipalDivisorDegree f + orderAtInfinity f ≤ 0 := by
-  unfold finitePrincipalDivisorDegree orderAtInfinity
-  -- num.roots.card ≤ num.natDegree and denom.roots.card ≤ denom.natDegree
-  have hnum := Polynomial.card_roots' f.num
-  have hdenom := Polynomial.card_roots' f.denom
-  -- Goal: (num.roots - denom.roots) + (denom.deg - num.deg) ≤ 0
-  -- = num.roots - num.deg + denom.deg - denom.roots ≤ 0
-  -- = (num.roots - num.deg) - (denom.roots - denom.deg) ≤ 0
-  -- Since roots ≤ deg for both: (nonpositive) - (nonpositive) could be positive!
-  -- Actually this needs more careful analysis...
+Counterexample: f = 1/(X² + X + 1) over F₂
+- num = 1: roots.card = 0, natDegree = 0
+- denom = X² + X + 1: roots.card = 0 (no roots in F₂), natDegree = 2
+- finitePrincipalDivisorDegree = 0 - 0 = 0
+- orderAtInfinity = 2 - 0 = 2
+- Total = 0 + 2 = 2 > 0 ✗
+
+The Fq-rational product formula only equals 0 when polynomials split completely.
+
+For the actual proof of `projective_LRatFunc_eq_zero_of_neg_deg`, we don't need this lemma.
+Instead, we use the degree-weighted product formula over ALL irreducible polynomials:
+  `Σ_P deg(P) * ord_P(f) + ord_∞(f) = 0`
+which follows directly from unique factorization in Fq[X]. -/
+theorem principal_divisor_degree_eq_zero_INCORRECT_DO_NOT_USE
+    (f : RatFunc Fq) (hf : f ≠ 0) :
+    finitePrincipalDivisorDegree f + orderAtInfinity f = 0 := by
+  -- This theorem is FALSE - see docstring
+  -- Keeping as documentation of the pitfall
   sorry
 
 /-- For polynomials (no denominator), the principal divisor has non-negative degree
