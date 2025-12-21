@@ -1591,8 +1591,149 @@ theorem strong_approximation_ratfunc
   · -- a is already in A_K(D), so k = 0 works
     exact ⟨0, by simp only [map_zero, sub_zero]; exact h⟩
   · -- Some places exceed the bound - need non-trivial approximation
-    -- This requires the full partial fractions machinery
-    sorry
+    -- Provide DecidableEq for Finset operations
+    haveI : DecidableEq (HeightOneSpectrum (Polynomial Fq)) := Classical.decEq _
+
+    -- Step 1: Define the finite set of "bad" places
+    -- S = D.support ∪ (places where a is non-integral)
+    -- a.2 gives: ∀ᶠ v in cofinite, a v ∈ v.adicCompletionIntegers K
+    -- Extract the finite set where 'a' is bad (not integral)
+    have h_finite : {v | ¬ a v ∈ v.adicCompletionIntegers (RatFunc Fq)}.Finite :=
+      Filter.eventually_cofinite.mp a.2
+
+    let nonIntPlaces : Finset (HeightOneSpectrum (Polynomial Fq)) :=
+      h_finite.toFinset
+    let S : Finset (HeightOneSpectrum (Polynomial Fq)) :=
+      D.support ∪ nonIntPlaces
+
+    -- Step 2: For each v ∈ S, get local approximant y_v with val(a_v - y_v) ≤ exp(D(v))
+    have h_local : ∀ v : S, ∃ y : RatFunc Fq, Valued.v (a ↑v - y) ≤ WithZero.exp (D ↑v) := by
+      intro ⟨v, _hv⟩
+      exact exists_local_approximant_with_bound v (a v) (D v)
+
+    -- Use choice to extract the approximants
+    choose y_local hy_local using h_local
+
+    -- Step 3: Apply the gluing lemma exists_global_approximant_from_local
+    -- Get k ∈ K with val_v(y_v - k) ≤ exp(D(v)) for all v ∈ S
+    obtain ⟨k, hk_approx⟩ := exists_global_approximant_from_local S y_local (fun v => D v.val)
+
+    -- Step 4: Verify the bound at all places
+    use k
+    intro v
+
+    -- Case split: is v in S?
+    by_cases hv : v ∈ S
+    · -- v ∈ S: use ultrametric with local approximation
+      let v' : S := ⟨v, hv⟩
+
+      -- diagonalK k at v is just k embedded in completion
+      have hdiag : (diagonalK (Polynomial Fq) (RatFunc Fq) k) v =
+          (k : v.adicCompletion (RatFunc Fq)) := rfl
+
+      -- y_local v' - k in K maps to completion preserving valuation
+      have hval_yk : Valued.v ((y_local v' - k : RatFunc Fq) : v.adicCompletion (RatFunc Fq)) =
+          v.valuation (RatFunc Fq) (y_local v' - k) :=
+        valuedAdicCompletion_eq_valuation' v (y_local v' - k)
+
+      -- Rewrite y - k in completion
+      have hyk_coe : (y_local v' : v.adicCompletion (RatFunc Fq)) -
+          (k : v.adicCompletion (RatFunc Fq)) =
+          ((y_local v' - k : RatFunc Fq) : v.adicCompletion (RatFunc Fq)) :=
+        ((algebraMap (RatFunc Fq) (v.adicCompletion (RatFunc Fq))).map_sub (y_local v') k).symm
+
+      -- a_v - diag(k)_v = (a_v - y_v) + (y_v - k)
+      have hsplit : (a - diagonalK (Polynomial Fq) (RatFunc Fq) k) v =
+          (a v - (y_local v' : v.adicCompletion (RatFunc Fq))) +
+          ((y_local v' : v.adicCompletion (RatFunc Fq)) -
+           (k : v.adicCompletion (RatFunc Fq))) := by
+        show a v - (diagonalK (Polynomial Fq) (RatFunc Fq) k) v =
+          (a v - (y_local v' : v.adicCompletion (RatFunc Fq))) +
+          ((y_local v' : v.adicCompletion (RatFunc Fq)) -
+           (k : v.adicCompletion (RatFunc Fq)))
+        rw [hdiag]
+        ring
+
+      simp only [satisfiesBoundAt, valuationAt, hsplit]
+
+      -- Apply ultrametric
+      calc Valued.v ((a v - (y_local v' : v.adicCompletion (RatFunc Fq))) +
+              ((y_local v' : v.adicCompletion (RatFunc Fq)) -
+               (k : v.adicCompletion (RatFunc Fq))))
+          ≤ max (Valued.v (a v - (y_local v' : v.adicCompletion (RatFunc Fq))))
+                (Valued.v ((y_local v' : v.adicCompletion (RatFunc Fq)) -
+                 (k : v.adicCompletion (RatFunc Fq)))) :=
+            Valuation.map_add_le_max' _ _ _
+        _ ≤ max (WithZero.exp (D v)) (v.valuation (RatFunc Fq) (y_local v' - k)) := by
+            apply max_le_max
+            · exact hy_local v'
+            · rw [hyk_coe, hval_yk]
+        _ ≤ max (WithZero.exp (D v)) (WithZero.exp (D v)) := by
+            apply max_le_max le_rfl
+            exact hk_approx v'
+        _ = WithZero.exp (D v) := max_self _
+
+    · -- v ∉ S: a_v is already D-bounded and k is integral at v
+      simp only [S, Finset.mem_union, not_or] at hv
+      obtain ⟨hv_supp, hv_int⟩ := hv
+
+      -- D(v) = 0 since v ∉ D.support
+      have hDv : D v = 0 := Finsupp.not_mem_support_iff.mp hv_supp
+
+      -- a_v is integral since v ∉ nonIntPlaces
+      have ha_int : a v ∈ v.adicCompletionIntegers (RatFunc Fq) := by
+        by_contra h_not_int
+        -- If it wasn't integral, it would be in nonIntPlaces
+        have h_in_bad : v ∈ nonIntPlaces :=
+          (Set.Finite.mem_toFinset h_finite).mpr h_not_int
+        -- But we know v ∉ nonIntPlaces
+        exact hv_int h_in_bad
+
+      -- k is integral at all places (property of exists_global_approximant_from_local)
+      -- The k = k_pole + p where k_pole is sum of principal parts and p is polynomial
+      -- k_pole has poles only in S, so integral at v ∉ S
+      -- p is polynomial, integral everywhere
+      -- We need to verify this property holds for the k we got
+
+      -- For now, we use that k comes from sum of principal parts at S places
+      -- plus a polynomial. Both are integral at v ∉ S.
+      -- This follows from sum_principal_parts_valuation_le_one_spec and polynomial_valuation_le_one
+
+      have hk_int : v.valuation (RatFunc Fq) k ≤ 1 := by
+        -- The k from exists_global_approximant_from_local is k_pole + algebraMap p
+        -- where k_pole = sum of principal parts at places in S
+        -- Each principal part at w ∈ S is integral at v ≠ w
+        -- The sum is integral at v (by ultrametric since v ∉ S)
+        -- And p is polynomial, so integral at all finite places
+        -- Therefore k is integral at v
+        sorry -- This requires exposing the construction details of k
+
+      -- diagonalK k at v is k embedded in completion
+      have hdiag_val : Valued.v ((diagonalK (Polynomial Fq) (RatFunc Fq) k) v) ≤ 1 := by
+        have heq : (diagonalK (Polynomial Fq) (RatFunc Fq) k) v =
+            (k : v.adicCompletion (RatFunc Fq)) := rfl
+        rw [heq, valuedAdicCompletion_eq_valuation']
+        exact hk_int
+
+      -- a_v - k is integral (difference of two integral elements)
+      simp only [satisfiesBoundAt, valuationAt]
+      have hsub_int : Valued.v ((a - diagonalK (Polynomial Fq) (RatFunc Fq) k) v) ≤ 1 := by
+        have heq : (a - diagonalK (Polynomial Fq) (RatFunc Fq) k) v =
+            a v - (diagonalK (Polynomial Fq) (RatFunc Fq) k) v := rfl
+        rw [heq]
+        -- Integral elements form a subring
+        have hk_mem : (diagonalK (Polynomial Fq) (RatFunc Fq) k) v ∈
+            v.adicCompletionIntegers (RatFunc Fq) := by
+          have heq' : (diagonalK (Polynomial Fq) (RatFunc Fq) k) v =
+              (k : v.adicCompletion (RatFunc Fq)) := rfl
+          rw [heq', mem_adicCompletionIntegers, valuedAdicCompletion_eq_valuation']
+          exact hk_int
+        exact (v.adicCompletionIntegers (RatFunc Fq)).sub_mem ha_int hk_mem
+
+      -- D(v) = 0 means exp(D(v)) = 1
+      rw [hDv]
+      simp only [WithZero.exp_zero]
+      exact hsub_int
 
 /-- Consequence: H¹(D) = 0 when the divisor is large enough.
 

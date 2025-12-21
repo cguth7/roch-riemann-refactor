@@ -8,13 +8,15 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Build**: ✅ Full build compiles with sorries (warnings only)
 **Phase**: 3 - Serre Duality
-**Cycle**: 202
+**Cycle**: 203
 
 ### Active Sorries (7 total)
 
 | File | Lemma | Priority | Notes |
 |------|-------|----------|-------|
-| RatFuncPairing.lean | `strong_approximation_ratfunc` | **CRITICAL** | Key to H¹ vanishing - uses exists_global_approximant_from_local ✅ |
+| RatFuncPairing.lean | `strong_approximation_ratfunc` (hk_int) | **HIGH** | 1 sorry: k integral outside S - needs construction details |
+| RatFuncPairing.lean | `h1_vanishing_ratfunc` | **HIGH** | Follows from strong_approximation |
+| RatFuncPairing.lean | `h1_finrank_zero_of_large_deg` | **HIGH** | Follows from h1_vanishing |
 | Abstract.lean | `serrePairing_left_nondegen` | MED | Vacuously true once h1=0 is proved |
 | Abstract.lean | `serrePairing_right_nondegen` | MED | Vacuously true once h1=0 is proved |
 | Residue.lean | `residueAtIrreducible` | LOW | Placeholder for higher-degree places |
@@ -85,28 +87,29 @@ This is mathematically justified for genus 0 (P¹ over Fq) because:
 
 ---
 
-## Next Steps (Cycle 203)
+## Next Steps (Cycle 204)
 
-### 🎯 PRIMARY GOAL: Complete `strong_approximation_ratfunc`
+### 🎯 PRIMARY GOAL: Complete `hk_int` sorry in `strong_approximation_ratfunc`
 
-**`exists_global_approximant_from_local` is now PROVED (Cycle 202)!**
+**Cycle 203 achieved major progress**: The main structure of `strong_approximation_ratfunc` is complete!
 
-The key gluing lemma is complete. The remaining work is to wire it into the strong approximation theorem.
+**Remaining sorry** (line 1709): Prove that k is integral at places v ∉ S.
 
-**Proof strategy for `strong_approximation_ratfunc`:**
+The k comes from `exists_global_approximant_from_local` which constructs `k = k_pole + algebraMap p` where:
+- `k_pole = Σ_{w ∈ S} pp_w` (sum of principal parts at places in S)
+- `p` is a polynomial from CRT
 
-Given a ∈ FiniteAdeleRing and D ∈ DivisorV2:
+**To prove `hk_int : v.valuation (RatFunc Fq) k ≤ 1` for v ∉ S:**
+1. Each `pp_w` has poles only at w, so `val_v(pp_w) ≤ 1` for v ≠ w
+2. By ultrametric: `val_v(k_pole) ≤ 1` since all summands are integral at v
+3. `p` is polynomial, so `val_v(algebraMap p) ≤ 1` by `polynomial_valuation_le_one`
+4. By ultrametric: `val_v(k) ≤ 1`
 
-1. **Extract bad places**: Use restricted product structure to find finite set S where a_v violates the D-bound
-2. **Get local approximants**: For each v ∈ S, use density of K in v.adicCompletion to find y_v ∈ K with val(a_v - y_v) ≤ exp(D(v))
-3. **Apply `exists_global_approximant_from_local`**: Find k ∈ K matching all y_v at places in S
-4. **Verify at all places**:
-   - At v ∈ S: val(a_v - k) ≤ max(val(a_v - y_v), val(y_v - k)) ≤ exp(D(v))
-   - At v ∉ S: a_v is already D-bounded, and k (from global approximant) is integral
+**Approach**: May need to expose the construction of k from `exists_global_approximant_from_local` or add a stronger lemma that directly states k is integral at all places outside S.
 
-### Once strong_approximation is proved:
+### Once hk_int is proved:
 
-**h1_vanishing**: For deg(D) ≥ -1:
+**h1_vanishing** and **h1_finrank_zero_of_large_deg** follow directly:
 - Every [a] ∈ H¹(D) has a representative a ∈ FiniteAdeleRing
 - Strong approximation: ∃ k ∈ K with a - diag(k) ∈ A_K(D)
 - Hence [a] = [diag(k)] = 0 (since diag(k) ∈ globalSubmodule)
@@ -119,6 +122,25 @@ Given a ∈ FiniteAdeleRing and D ∈ DivisorV2:
 ---
 
 ## Recent Progress
+
+### Cycle 203 - **`strong_approximation_ratfunc` structure COMPLETE** 🎉
+- **MAJOR PROGRESS**: Implemented the full proof structure for `strong_approximation_ratfunc`!
+- **Key technical fixes**:
+  - Added `haveI : DecidableEq (HeightOneSpectrum (Polynomial Fq)) := Classical.decEq _` for Finset operations
+  - Used `Filter.eventually_cofinite.mp a.2` to extract finite set of non-integral places
+  - Correct pattern: `h_finite.toFinset` for converting `Set.Finite` to `Finset`
+- **Proof structure now complete**:
+  1. ✅ Define bad places S = D.support ∪ nonIntPlaces
+  2. ✅ Get local approximants y_v for each v ∈ S via `exists_local_approximant_with_bound`
+  3. ✅ Apply `exists_global_approximant_from_local` to get k ∈ K
+  4. ✅ Verify bound at v ∈ S via ultrametric
+  5. ⚠️ Verify k integral at v ∉ S (1 sorry: `hk_int`)
+- **Remaining sorry**: `hk_int` at line 1709 - needs to show k is integral outside S
+  - Requires exposing the construction of k from `exists_global_approximant_from_local`
+  - Alternative: add stronger lemma stating k is integral at all places
+- **Sorries**: 7 → 7 (sorries redistributed, strong_approx now mostly complete)
+- **Build**: ✅ compiles with sorries
+- **Next step**: Prove `hk_int` by showing k = k_pole + p is integral at places outside S
 
 ### Cycle 202 - **KEY MILESTONE: `exists_global_approximant_from_local` PROVED** 🎉
 - **PROVED `exists_global_approximant_from_local`** ✅ - The key gluing lemma!
