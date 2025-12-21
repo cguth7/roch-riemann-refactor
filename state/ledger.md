@@ -64,34 +64,44 @@ This is mathematically justified for genus 0 (P¹ over Fq) because:
 
 ## Next Steps (Cycle 192)
 
-### Path Forward: Dimensional Triviality for Genus 0
+### 🎯 PRIMARY GOAL: Prove Strong Approximation for Fq[X]
 
-Both `serrePairing` (abstract) and `serrePairing_ratfunc` (concrete) are now defined as 0.
-Non-degeneracy of the 0 pairing requires proving both spaces are 0-dimensional.
+**This is the key lemma that unlocks everything.**
 
-For genus 0 (P¹ over Fq) with canonical = 0 at finite places:
-- L(K-D) = L(-D) has dimension 0 when deg(-D) < 0, i.e., deg(D) > 0
-- H¹(D) = 0 when deg(D) > 2g-2 = -2, i.e., deg(D) ≥ -1 (requires strong approximation)
+```lean
+theorem strong_approximation (a : FiniteAdeleRing (Polynomial Fq) (RatFunc Fq))
+    (D : DivisorV2 (Polynomial Fq)) :
+    ∃ k : RatFunc Fq, a - diagonalK _ _ k ∈ boundedSubmodule Fq _ _ D
+```
 
-**Option A: Prove h1_vanishing for RatFunc Fq**
-- Show that for deg(D) ≥ -1, K + A_K(D) = FiniteAdeleRing
-- This uses strong approximation: every adele can be approximated by K modulo bounded
-- Would resolve left non-degeneracy for the trivial cases
+**Why this is tractable for Fq[X]:**
+- Fq[X] is a PID, so this reduces to Chinese Remainder Theorem
+- Given finitely many places v₁,...,vₙ with target values, find polynomial approximating them
+- CRT for coprime monic polynomials handles the finite places
+- Degree argument handles "almost all places integral" automatically
 
-**Option B: Prove L(K-D) = 0 for large deg(D)**
-- Use existing `ell_proj_zero_of_neg_deg` infrastructure
-- Show that for canonical = 0, L(-D) = 0 when D effective
-- Would resolve right non-degeneracy for effective D
+**What it unlocks:**
 
-**Option C: Non-trivial pairing for deg(D) = -2**
-- When both H¹(D) and L(K-D) are 1-dimensional, need actual pairing
-- This requires residue on completions or weak approximation lift
-- Defer to later cycle
+1. **h1_vanishing** ✅
+   - For large D, K + A_K(D) = FiniteAdeleRing
+   - Hence H¹(D) = FiniteAdeleRing / (K + A_K(D)) = 0
 
-### For Later: Full Non-degeneracy
-1. Extend `residueAt` to `adicCompletion` elements
-2. Define pairing via residue sum on all places
-3. Prove non-degeneracy using trace duality / duality of completions
+2. **Pairing construction** ✅
+   - For [a] ∈ H¹(D), strong approx gives k ∈ K with a ≡ diag(k) mod A_K(D)
+   - Define ⟨[a], f⟩ := -residueAtInfty(k · f)
+   - Well-defined: different k choices differ by bounded, which pairs to 0
+
+3. **Non-degeneracy** ✅
+   - Left: if -residueAtInfty(k·f) = 0 for all f, then k ∈ A_K(D), so [a] = 0
+   - Right: if -residueAtInfty(k·f) = 0 for all [a], then f = 0 by residue non-degeneracy
+
+### Implementation Plan
+
+1. **Prove CRT for Polynomial Fq** (may exist in Mathlib)
+2. **Prove finite approximation**: given values at v₁,...,vₙ, find polynomial
+3. **Prove strong_approximation**: extend to FiniteAdeleRing
+4. **Define non-zero pairing** using K representatives
+5. **Prove non-degeneracy** from pairing properties
 
 ---
 
