@@ -195,7 +195,7 @@ lemma riemann_inequality_affine [BaseDim R K] {D : DivisorV2 R} (hD : D.Effectiv
 - Weak approximation
 - Cycles 76-155
 
-### Phase 3: Serre Duality (Current - Cycle 184)
+### Phase 3: Serre Duality (Current - Cycle 192)
 
 **Completed:**
 - Residue at X (X-adic) via HahnSeries.coeff(-1) ✅
@@ -206,11 +206,88 @@ lemma riemann_inequality_affine [BaseDim R K] {D : DivisorV2 R} (hD : D.Effectiv
 - Perfect pairing → equal dimensions ✅
 - Diagonal embedding infrastructure (RatFunc Fq) ✅
 - K-part of well-definedness (globalSubmodule → 0) ✅
+- CRT for linear places (`crt_linear_places`) ✅
+- Pairwise coprimality of linear place ideals ✅
 
-**In Progress:**
-- Wire serrePairing abstract definition using liftQ
-- Fill non-degeneracy proofs
-- Instantiate AdelicRRData
+**In Progress - Strong Approximation:**
+- Statement added: `strong_approximation_ratfunc` (sorry)
+- Key lemma: For any finite adele a, exists k ∈ K with a - diag(k) ∈ A_K(D)
+- Proof strategy: Use CRT to construct polynomial matching adele at bad places
+- Technical gap: connecting adicCompletion to ideal quotients
+
+**Blocked On:**
+- `strong_approximation_ratfunc` → unlocks `h1_vanishing_ratfunc`
+- `h1_vanishing_ratfunc` → makes non-degeneracy vacuous
+- Non-degeneracy → completes Serre duality for genus 0
+
+---
+
+## Strong Approximation Details (Cycle 192)
+
+### FiniteAdeleRing Structure
+
+```lean
+-- Mathlib definition (restricted product):
+def FiniteAdeleRing : Type _ :=
+  Πʳ v : HeightOneSpectrum R, [v.adicCompletion K, v.adicCompletionIntegers K]
+
+-- Key: Πʳ means restricted product with cofinite filter
+-- Elements are integral at almost all places
+```
+
+**Accessing elements:**
+- `a v` - component at place v (via DFunLike)
+- `a.1` - underlying function `v → v.adicCompletion K`
+- `a.2` - proof: `∀ᶠ v in cofinite, a v ∈ v.adicCompletionIntegers K`
+
+**Key Mathlib files:**
+- `Mathlib/RingTheory/DedekindDomain/FiniteAdeleRing.lean` - main definition
+- `Mathlib/Topology/Algebra/RestrictedProduct/Basic.lean` - RestrictedProduct
+
+### CRT Infrastructure (Proved)
+
+```lean
+-- Pairwise coprimality of linear place ideals
+lemma linearPlaces_pairwise_coprime {ι : Type*} (α : ι → Fq) (hinj : Function.Injective α) :
+    Pairwise fun i j => IsCoprime (linearPlace (α i)).asIdeal (linearPlace (α j)).asIdeal
+
+-- CRT for distinct places with specified remainders
+lemma crt_linear_places {n : ℕ} (places : Fin n → HeightOneSpectrum (Polynomial Fq))
+    (hinj : Function.Injective places)
+    (exponents : Fin n → ℕ)
+    (targets : Fin n → Polynomial Fq) :
+    ∃ p : Polynomial Fq, ∀ i,
+      p - targets i ∈ (places i).asIdeal ^ (exponents i)
+```
+
+### Proof Strategy for `strong_approximation_ratfunc`
+
+Given `a : FiniteAdeleRing (Polynomial Fq) (RatFunc Fq)` and `D : DivisorV2`:
+
+1. **Find bad places S**: Use `a.2` (eventually integral) to get finite set where either:
+   - `a_v` is non-integral, OR
+   - `Valued.v (a_v) > WithZero.exp (D v)`
+
+2. **For each v ∈ S**: Extract a polynomial approximation of `a_v`:
+   - `v.adicCompletion K` is completion of K at v
+   - For RatFunc Fq, this is Laurent series in local parameter
+   - Truncating at valuation level gives polynomial approximation
+
+3. **Apply CRT**: Use `crt_linear_places` to find `p : Polynomial Fq` matching targets
+
+4. **Verify**: Show `∀ v, Valued.v ((a - diag p)_v) ≤ WithZero.exp (D v)`
+
+### Technical Gap
+
+The missing piece is the connection:
+```
+v.adicCompletion K ←→ R / v.asIdeal^n (for large n)
+```
+
+Possible approaches:
+- Use `ValuationSubring` and `Valuation.map` properties
+- For RatFunc Fq specifically: use Laurent series structure directly
+- Look for `IsDedekindDomain.quotientEquivPiSpanPowQuot` or similar
 
 ---
 
@@ -218,6 +295,8 @@ lemma riemann_inequality_affine [BaseDim R K] {D : DivisorV2 R} (hD : D.Effectiv
 
 - Mathlib: `RingTheory.DedekindDomain.Different` (trace dual, different ideal)
 - Mathlib: `RingTheory.DedekindDomain.FiniteAdeleRing` (adeles)
+- Mathlib: `RingTheory.DedekindDomain.Ideal.Lemmas` (CRT: `exists_forall_sub_mem_ideal`)
+- Mathlib: `RingTheory.Ideal.Quotient.Operations` (general CRT)
 - Mathlib: `RingTheory.Length` (Module.length for exact sequences)
 - Mathlib: `Algebra.Trace` (trace form)
 - Stacks Project: Tag 0BXE (Serre duality for curves)

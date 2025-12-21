@@ -8,16 +8,19 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Build**: ✅ Full build compiles with sorries (warnings only)
 **Phase**: 3 - Serre Duality
-**Cycle**: 191
+**Cycle**: 192
 
-### Active Sorries (5 total)
+### Active Sorries (8 total)
 
 | File | Lemma | Priority | Notes |
 |------|-------|----------|-------|
+| RatFuncPairing.lean | `strong_approximation_ratfunc` | HIGH | Key: CRT-based approximation |
+| RatFuncPairing.lean | `h1_vanishing_ratfunc` | HIGH | Follows from strong_approximation |
+| RatFuncPairing.lean | `h1_finrank_zero_of_large_deg` | HIGH | Finrank version of h1_vanishing |
+| Abstract.lean | `serrePairing_left_nondegen` | MED | Vacuously true once h1=0 is proved |
+| Abstract.lean | `serrePairing_right_nondegen` | MED | Vacuously true once h1=0 is proved |
 | Residue.lean | `residueAtIrreducible` | LOW | Placeholder for higher-degree places |
 | Residue.lean | `residue_sum_eq_zero` | MED | General residue theorem |
-| Abstract.lean | `serrePairing_left_nondegen` | HIGH | Left non-degeneracy (requires dim = 0 arg) |
-| Abstract.lean | `serrePairing_right_nondegen` | HIGH | Right non-degeneracy (requires dim = 0 arg) |
 | FullAdelesCompact.lean | (1 sorry) | LOW | Edge case in weak approximation |
 
 ### ⚠️ ARCHITECTURE NOTE: Zero Pairing Strategy
@@ -59,53 +62,87 @@ This is mathematically justified for genus 0 (P¹ over Fq) because:
 | rawDiagonalPairing_finite_zero_of_bounded | ✅ | SerreDuality/RatFuncPairing.lean |
 | serrePairing_ratfunc (concrete, =0) | ✅ | SerreDuality/RatFuncPairing.lean |
 | serrePairing (abstract, STUB=0) | ⚠️ | SerreDuality/Abstract.lean |
+| linearPlaces_pairwise_coprime | ✅ | SerreDuality/RatFuncPairing.lean |
+| crt_linear_places | ✅ | SerreDuality/RatFuncPairing.lean |
+| strong_approximation_ratfunc | ⚠️ | SerreDuality/RatFuncPairing.lean |
+| h1_vanishing_ratfunc | ⚠️ | SerreDuality/RatFuncPairing.lean |
 
 ---
 
-## Next Steps (Cycle 192)
+## Next Steps (Cycle 193)
 
-### 🎯 PRIMARY GOAL: Prove Strong Approximation for Fq[X]
+### 🎯 PRIMARY GOAL: Prove `strong_approximation_ratfunc`
 
-**This is the key lemma that unlocks everything.**
+**Infrastructure Ready:**
+- ✅ `crt_linear_places` - CRT for distinct places with specified remainders mod ideal powers
+- ✅ `linearPlaces_pairwise_coprime` - Linear places have pairwise coprime ideals
+- ✅ `IsDedekindDomain.exists_forall_sub_mem_ideal` - Mathlib CRT for Dedekind domains
+
+**FiniteAdeleRing Structure (Key Insight):**
 
 ```lean
-theorem strong_approximation (a : FiniteAdeleRing (Polynomial Fq) (RatFunc Fq))
-    (D : DivisorV2 (Polynomial Fq)) :
-    ∃ k : RatFunc Fq, a - diagonalK _ _ k ∈ boundedSubmodule Fq _ _ D
+-- Definition (restricted product):
+def FiniteAdeleRing : Type _ :=
+  Πʳ v : HeightOneSpectrum R, [v.adicCompletion K, v.adicCompletionIntegers K]
+
+-- An element a : FiniteAdeleRing R K has:
+-- • a.1 : (v : HeightOneSpectrum R) → v.adicCompletion K  (the function)
+-- • a.2 : ∀ᶠ v in cofinite, a v ∈ v.adicCompletionIntegers K  (proof of finite non-integrality)
+
+-- Access component: a v  (via DFunLike coercion)
+-- Diagonal embedding: diagonalK R K : K →+* FiniteAdeleRing R K
 ```
 
-**Why this is tractable for Fq[X]:**
-- Fq[X] is a PID, so this reduces to Chinese Remainder Theorem
-- Given finitely many places v₁,...,vₙ with target values, find polynomial approximating them
-- CRT for coprime monic polynomials handles the finite places
-- Degree argument handles "almost all places integral" automatically
+**Proof Strategy for `strong_approximation_ratfunc`:**
 
-**What it unlocks:**
+1. **Extract bad places**: Given `a : FiniteAdeleRing`, use `a.2` to get the finite set S of places where `a` is non-integral or exceeds the divisor bound D.
 
-1. **h1_vanishing** ✅
-   - For large D, K + A_K(D) = FiniteAdeleRing
-   - Hence H¹(D) = FiniteAdeleRing / (K + A_K(D)) = 0
+2. **Truncation in completions**: For each v ∈ S, the element `a v ∈ v.adicCompletion K` can be approximated by elements of K. The key is that `v.adicCompletion K` is the completion of K at v, so K is dense.
 
-2. **Pairing construction** ✅
-   - For [a] ∈ H¹(D), strong approx gives k ∈ K with a ≡ diag(k) mod A_K(D)
-   - Define ⟨[a], f⟩ := -residueAtInfty(k · f)
-   - Well-defined: different k choices differ by bounded, which pairs to 0
+3. **Apply CRT**: Use `crt_linear_places` to find `p : Polynomial Fq` such that for each bad place v:
+   - `p ≡ (approximation of a_v)` mod `v.asIdeal ^ n` for suitable n
 
-3. **Non-degeneracy** ✅
-   - Left: if -residueAtInfty(k·f) = 0 for all f, then k ∈ A_K(D), so [a] = 0
-   - Right: if -residueAtInfty(k·f) = 0 for all [a], then f = 0 by residue non-degeneracy
+4. **Verify boundedness**: Show that `(a - diag(p))_v` has valuation ≤ exp(D(v)) for all v:
+   - For v ∈ S: by construction of p
+   - For v ∉ S: `a_v` was already bounded, and `diag(p)_v` is integral
 
-### Implementation Plan
+**Technical Gap:**
+The connection between `v.adicCompletion K` and quotients `R / v.asIdeal^n` is not explicit in Mathlib. May need:
+- `ValuationSubring` properties
+- Direct construction using Laurent series structure for Polynomial Fq
 
-1. **Prove CRT for Polynomial Fq** (may exist in Mathlib)
-2. **Prove finite approximation**: given values at v₁,...,vₙ, find polynomial
-3. **Prove strong_approximation**: extend to FiniteAdeleRing
-4. **Define non-zero pairing** using K representatives
-5. **Prove non-degeneracy** from pairing properties
+**Alternative Approach (Simpler for RatFunc Fq):**
+For `K = RatFunc Fq`, every place corresponds to a monic irreducible in `Polynomial Fq`. The completion `v.adicCompletion K` is a field of Laurent series. Elements with bounded valuation can be approximated by polynomials. This is essentially the partial fractions decomposition.
+
+### Once strong_approximation is proved:
+
+**h1_vanishing**: For deg(D) ≥ -1:
+- Every [a] ∈ H¹(D) has a representative a ∈ FiniteAdeleRing
+- Strong approximation: ∃ k ∈ K with a - diag(k) ∈ A_K(D)
+- Hence [a] = [diag(k)] = 0 (since diag(k) ∈ globalSubmodule)
+- Therefore H¹(D) = 0
+
+**Non-degeneracy becomes vacuous**:
+- `serrePairing_left_nondegen`: H¹(D) = 0, so no nonzero elements to test
+- `serrePairing_right_nondegen`: For deg(D) ≥ -1, deg(K-D) = -2 - deg(D) ≤ -3, so L(K-D) = 0
 
 ---
 
 ## Recent Progress
+
+### Cycle 192 - **Strong Approximation Infrastructure** 🚧
+- Added CRT imports: `Mathlib.RingTheory.Ideal.Quotient.Operations`, `Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas`
+- `linearPlaces_pairwise_coprime` ✅ - Linear places (X - α) have pairwise coprime ideals
+  - Uses `Ideal.isCoprime_span_singleton_iff` and `Polynomial.isCoprime_X_sub_C_of_isUnit_sub`
+- `crt_linear_places` ✅ - CRT for distinct linear places with specified remainders
+  - Applies `IsDedekindDomain.exists_forall_sub_mem_ideal` from Mathlib
+  - Key: finds polynomial p with p - targets i ∈ (places i).asIdeal ^ exponents i
+- `strong_approximation_ratfunc` (sorry) - Main theorem statement added
+  - States: for any finite adele and divisor, exists k ∈ K with a - diag(k) ∈ A_K(D)
+  - **Proof needed**: Wire CRT to FiniteAdeleRing structure
+- `h1_vanishing_ratfunc` (sorry) - H¹(D) = 0 for deg(D) ≥ -1
+- `h1_finrank_zero_of_large_deg` (sorry) - Finrank version
+- Sorries: 5 → 8 (added 3 intermediate strong approximation lemmas)
 
 ### Cycle 191 - **serrePairing_ratfunc defined as 0** ✅
 - Filled the `serrePairing_ratfunc` sorry with a 0 definition

@@ -1,5 +1,7 @@
 import RrLean.RiemannRochV2.SerreDuality.RatFuncResidues
 import RrLean.RiemannRochV2.AdelicH1v2
+import Mathlib.RingTheory.Ideal.Quotient.Operations
+import Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 
 /-!
 # RatFunc Fq Serre Pairing Construction
@@ -395,6 +397,103 @@ theorem rawDiagonalPairing_finite_zero_of_bounded
   bounded_diagonal_finite_residue_zero canonical D hK g f hg hf
 
 end RawPairing
+
+/-! ## Strong Approximation for Fq[X]
+
+The strong approximation theorem states that for any finite adele a and divisor D,
+there exists k ∈ K such that a - diag(k) ∈ A_K(D).
+
+This is tractable for Fq[X] because:
+1. Fq[X] is a PID, so places correspond to monic irreducibles
+2. FiniteAdeleRing elements are integral at almost all places
+3. CRT allows constructing polynomials with specified residues
+
+The key consequence is h1_vanishing: for large enough deg(D), we have H¹(D) = 0.
+-/
+
+section StrongApproximation
+
+variable {Fq : Type*} [Field Fq] [Fintype Fq]
+
+/-- The support of a divisor: places where D(v) ≠ 0. -/
+def DivisorV2.finiteSupport (D : DivisorV2 (Polynomial Fq)) :
+    Finset (HeightOneSpectrum (Polynomial Fq)) :=
+  D.support
+
+/-- The places where a finite adele is non-integral.
+For a ∈ FiniteAdeleRing, this is the finite set of places v where v(a_v) > 1. -/
+def nonIntegralPlaces (a : FiniteAdeleRing (Polynomial Fq) (RatFunc Fq)) :
+    Finset (HeightOneSpectrum (Polynomial Fq)) :=
+  -- FiniteAdeleRing elements are integral at almost all places by definition
+  -- This is captured by the restricted product structure
+  a.2.toFinset
+
+/-- For linear places (X - α), the ideals are pairwise coprime. -/
+lemma linearPlaces_pairwise_coprime {ι : Type*} (α : ι → Fq) (hinj : Function.Injective α) :
+    Pairwise fun i j => IsCoprime (linearPlace (α i)).asIdeal (linearPlace (α j)).asIdeal := by
+  intro i j hij
+  simp only [linearPlace]
+  rw [Ideal.isCoprime_span_singleton_iff]
+  apply Polynomial.isCoprime_X_sub_C_of_isUnit_sub
+  -- In a field, nonzero elements are units
+  exact (sub_ne_zero.mpr (hinj.ne hij)).isUnit
+
+/-- The key CRT lemma: given distinct linear places and target values,
+there exists a polynomial with specified remainders.
+
+This follows from Mathlib's `IsDedekindDomain.exists_forall_sub_mem_ideal`.
+-/
+lemma crt_linear_places {n : ℕ} (places : Fin n → HeightOneSpectrum (Polynomial Fq))
+    (hinj : Function.Injective places)
+    (exponents : Fin n → ℕ)
+    (targets : Fin n → Polynomial Fq) :
+    ∃ p : Polynomial Fq, ∀ i,
+      p - targets i ∈ (places i).asIdeal ^ (exponents i) := by
+  -- Use Dedekind domain CRT
+  have hprime : ∀ i ∈ Finset.univ, Prime (places i).asIdeal := fun i _ => (places i).prime
+  have hcoprime : ∀ᵉ (i ∈ Finset.univ) (j ∈ Finset.univ), i ≠ j →
+      (places i).asIdeal ≠ (places j).asIdeal := by
+    intro i _ j _ hij hcontra
+    exact hij (hinj (HeightOneSpectrum.ext hcontra))
+  obtain ⟨y, hy⟩ := IsDedekindDomain.exists_forall_sub_mem_ideal
+    (fun i => (places i).asIdeal) exponents hprime hcoprime (fun ⟨i, _⟩ => targets i)
+  exact ⟨y, fun i => hy i (Finset.mem_univ i)⟩
+
+/-- Strong approximation for genus 0: any finite adele can be approximated by a global element.
+
+For a ∈ FiniteAdeleRing and D a divisor, there exists k ∈ K such that
+a - diag(k) ∈ A_K(D).
+
+**Proof sketch** (for Fq[X]):
+1. A finite adele is integral at cofinitely many places
+2. At the finitely many non-integral places, use CRT to find a polynomial
+   matching the required valuations
+3. The polynomial (as element of K = RatFunc Fq) gives the global approximation
+-/
+theorem strong_approximation_ratfunc
+    (a : FiniteAdeleRing (Polynomial Fq) (RatFunc Fq))
+    (D : DivisorV2 (Polynomial Fq)) :
+    ∃ k : RatFunc Fq, a - diagonalK (Polynomial Fq) (RatFunc Fq) k ∈
+      boundedSubmodule Fq (Polynomial Fq) (RatFunc Fq) D := by
+  sorry -- Proof requires detailed analysis of FiniteAdeleRing structure
+
+/-- Consequence: H¹(D) = 0 when the divisor is large enough.
+
+For genus 0 curves (P¹ over Fq), this holds for deg(D) ≥ -1.
+More generally, h¹(D) = 0 when deg(D) > 2g - 2.
+-/
+theorem h1_vanishing_ratfunc (D : DivisorV2 (Polynomial Fq))
+    (hD : D.deg ≥ -1) :
+    AdelicH1v2.SpaceModule Fq (Polynomial Fq) (RatFunc Fq) D = PUnit := by
+  sorry -- Follows from strong_approximation: every adele ≡ some k mod A_K(D)
+
+/-- h¹(D) = 0 as a finrank statement. -/
+theorem h1_finrank_zero_of_large_deg (D : DivisorV2 (Polynomial Fq))
+    (hD : D.deg ≥ -1) :
+    AdelicH1v2.h1_finrank Fq (Polynomial Fq) (RatFunc Fq) D = 0 := by
+  sorry -- Follows from h1_vanishing_ratfunc
+
+end StrongApproximation
 
 /-! ## Serre Pairing Construction
 
