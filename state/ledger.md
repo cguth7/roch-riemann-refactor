@@ -8,9 +8,9 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Build**: ✅ Full build compiles with sorries (warnings only)
 **Phase**: 3 - Serre Duality
-**Cycle**: 187
+**Cycle**: 188
 
-### Active Sorries (6 total)
+### Active Sorries (7 total)
 
 | File | Lemma | Priority | Notes |
 |------|-------|----------|-------|
@@ -20,6 +20,7 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 | SerreDuality.lean | `serrePairing_wellDefined` | MED | Uses residue theorem |
 | SerreDuality.lean | `serrePairing_left_nondegen` | MED | Left non-degeneracy |
 | SerreDuality.lean | `serrePairing_right_nondegen` | MED | Right non-degeneracy |
+| SerreDuality.lean | `serrePairing_ratfunc` | HIGH | Concrete pairing for RatFunc Fq |
 | FullAdelesCompact.lean | (1 sorry) | LOW | Edge case |
 
 ### Key Infrastructure ✅
@@ -42,23 +43,49 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 | intValuation_translatePolyEquiv | ✅ | SerreDuality.lean |
 | linearPlace_valuation_eq_comap | ✅ | SerreDuality.lean |
 | residueAt_of_valuation_le_one | ✅ | SerreDuality.lean |
-| bounded_diagonal_finite_residue_zero | ⏳ | SerreDuality.lean (needs verification) |
+| bounded_diagonal_finite_residue_zero | ✅ | SerreDuality.lean |
+| rawDiagonalPairing | ✅ | SerreDuality.lean |
+| rawDiagonalPairing_bilinear | ✅ | SerreDuality.lean |
+| rawDiagonalPairing_eq_zero_of_splits | ✅ | SerreDuality.lean |
+| rawDiagonalPairing_finite_zero_of_bounded | ✅ | SerreDuality.lean |
 
 ---
 
-## Next Steps (Cycle 188)
+## Next Steps (Cycle 189)
 
-1. **Verify bounded_diagonal_finite_residue_zero** - Should now follow from residueAt_of_valuation_le_one
-   - Uses the chain: valuation ≤ 1 → residue = 0 → finite sum = 0
+1. **Handle FiniteAdele vs FullAdele issue** - The current H¹(D) uses FiniteAdeleRing (no infinity),
+   but residue theorem needs all places. Either:
+   - Switch to FullAdeleRing-based H¹, or
+   - Handle infinity component separately in pairing
 
-2. **Define rawPairing for RatFunc Fq** - Concrete version using local residues
-   - Then wire to abstract serrePairing via liftQ
+2. **Complete serrePairing_ratfunc construction** - Use liftQ with:
+   - rawDiagonalPairing for diagonal K elements
+   - Show it vanishes on globalPlusBoundedSubmodule
 
-3. **Complete serrePairing well-definedness** - Uses the above infrastructure
+3. **Prove non-degeneracy** - The hard part of Serre duality
 
 ---
 
 ## Recent Progress
+
+### Cycle 188 - **Raw pairing infrastructure for RatFunc Fq**
+- `bounded_diagonal_finite_residue_zero` ✅ - Now fully proved (was pending verification)
+  - Uses chain: bounded × L(K-D) → valuation ≤ 1 → residue = 0 → sum = 0
+  - Key lemmas: `bounded_times_LKD_no_pole` + `residueAt_of_valuation_le_one`
+- Added RawPairing section with diagonal pairing infrastructure:
+  - `rawDiagonalPairing` ✅ - residueSumTotal(g * f) for g, f ∈ K
+  - `rawDiagonalPairing_add_left/right` ✅ - Additivity in both arguments
+  - `rawDiagonalPairing_smul_left/right` ✅ - Scalar linearity
+  - `rawDiagonalPairing_bilinear` ✅ - Full bilinear map structure
+  - `rawDiagonalPairing_eq_zero_of_splits` ✅ - Residue theorem for pairing
+  - `rawDiagonalPairing_finite_zero_of_bounded` ✅ - Pole cancellation for bounded
+- Added `serrePairing_ratfunc` (sorry) - Concrete pairing for RatFunc Fq
+- Identified key architectural issue: FiniteAdeleRing vs FullAdeleRing
+  - Current H¹(D) uses FiniteAdeleRing (no infinity component)
+  - Residue theorem needs ALL places including infinity
+  - Pairing vanishing on diagonal K requires full residue sum = 0
+- Documented strategy in SerrePairingConstruction section comments
+- Sorries: 6 → 7 (added serrePairing_ratfunc placeholder)
 
 ### Cycle 187 - **Valuation transport proof complete** 🎉
 - **KEY MILESTONE**: `linearPlace_valuation_eq_comap` ✅ - The main blocker is SOLVED!

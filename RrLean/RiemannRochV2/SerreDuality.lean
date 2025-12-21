@@ -1314,6 +1314,173 @@ theorem bounded_diagonal_finite_residue_zero
 
 end PoleCancellation
 
+/-! ## Raw Pairing Construction for RatFunc Fq
+
+For the concrete case K = RatFunc Fq, we define the raw pairing using residues.
+The pairing is defined on FiniteAdeleRing × L(K-D) and factors through the quotient H¹(D).
+
+### Construction Strategy
+
+The challenge is that FiniteAdeleRing elements can differ at each place, while
+residuePairing only works on K (diagonal elements). We use the following approach:
+
+1. For any a ∈ FiniteAdeleRing, we can find k ∈ K such that a - diag(k) has
+   "good" properties (integral at almost all places).
+
+2. Define rawPairing(a, f) = -residueAtInfty(k * f) where k is any element of K
+   such that a - diag(k) ∈ A_K(D) for some D with canonical = 0 at finite places.
+
+3. For genus 0 (canonical = 0 at finite places), the bounded part contributes 0
+   to the finite residue sum, so the pairing only depends on the infinity residue.
+
+This approach sidesteps the need for local residues on completions.
+-/
+
+section RawPairing
+
+variable {Fq : Type*} [Field Fq] [Fintype Fq]
+
+open RiemannRochV2.Residue AdelicH1v2
+
+/-- The raw pairing for diagonal elements via residue sum.
+
+For g ∈ K embedded diagonally and f ∈ L(K-D), the pairing is residueSumTotal(g * f).
+This equals 0 for products with split denominators (residue theorem).
+
+This is the foundation for the Serre pairing construction.
+-/
+def rawDiagonalPairing (g f : RatFunc Fq) : Fq :=
+  residueSumTotal (g * f)
+
+/-- The raw diagonal pairing is linear in the first argument. -/
+lemma rawDiagonalPairing_add_left (g₁ g₂ f : RatFunc Fq) :
+    rawDiagonalPairing (g₁ + g₂) f = rawDiagonalPairing g₁ f + rawDiagonalPairing g₂ f := by
+  simp only [rawDiagonalPairing, add_mul, residueSumTotal_add]
+
+/-- The raw diagonal pairing is linear in the second argument. -/
+lemma rawDiagonalPairing_add_right (g f₁ f₂ : RatFunc Fq) :
+    rawDiagonalPairing g (f₁ + f₂) = rawDiagonalPairing g f₁ + rawDiagonalPairing g f₂ := by
+  simp only [rawDiagonalPairing, mul_add, residueSumTotal_add]
+
+/-- The raw diagonal pairing respects scalar multiplication on the left. -/
+lemma rawDiagonalPairing_smul_left (c : Fq) (g f : RatFunc Fq) :
+    rawDiagonalPairing (c • g) f = c * rawDiagonalPairing g f := by
+  simp only [rawDiagonalPairing]
+  rw [Algebra.smul_def, RatFunc.algebraMap_eq_C, mul_assoc]
+  conv_lhs => rw [show RatFunc.C c * (g * f) = c • (g * f) by
+    rw [Algebra.smul_def, RatFunc.algebraMap_eq_C]]
+  exact residueSumTotal_smul c (g * f)
+
+/-- The raw diagonal pairing respects scalar multiplication on the right. -/
+lemma rawDiagonalPairing_smul_right (c : Fq) (g f : RatFunc Fq) :
+    rawDiagonalPairing g (c • f) = c * rawDiagonalPairing g f := by
+  simp only [rawDiagonalPairing]
+  rw [Algebra.smul_def, RatFunc.algebraMap_eq_C, ← mul_assoc, mul_comm g (RatFunc.C c), mul_assoc]
+  conv_lhs => rw [show RatFunc.C c * (g * f) = c • (g * f) by
+    rw [Algebra.smul_def, RatFunc.algebraMap_eq_C]]
+  exact residueSumTotal_smul c (g * f)
+
+/-- The raw diagonal pairing as a bilinear map. -/
+def rawDiagonalPairing_bilinear : RatFunc Fq →ₗ[Fq] RatFunc Fq →ₗ[Fq] Fq where
+  toFun := fun g =>
+    { toFun := fun f => rawDiagonalPairing g f
+      map_add' := fun f₁ f₂ => rawDiagonalPairing_add_right g f₁ f₂
+      map_smul' := fun c f => rawDiagonalPairing_smul_right c g f }
+  map_add' := fun g₁ g₂ => by
+    ext f
+    exact rawDiagonalPairing_add_left g₁ g₂ f
+  map_smul' := fun c g => by
+    ext f
+    exact rawDiagonalPairing_smul_left c g f
+
+/-- Key lemma: the raw diagonal pairing vanishes for products with split denominators.
+
+This is the residue theorem for the pairing.
+-/
+theorem rawDiagonalPairing_eq_zero_of_splits (g f : RatFunc Fq)
+    (h : ∃ (p : Polynomial Fq) (poles : Finset Fq),
+         g * f = (algebraMap _ (RatFunc Fq) p) / (∏ α ∈ poles, (RatFunc.X - RatFunc.C α))) :
+    rawDiagonalPairing g f = 0 :=
+  residueSumTotal_splits (g * f) h
+
+/-- The finite residue sum vanishes for bounded × L(K-D) when canonical = 0 at finite places.
+
+This is the pole cancellation result for the bounded part.
+-/
+theorem rawDiagonalPairing_finite_zero_of_bounded
+    (canonical : DivisorV2 (Polynomial Fq))
+    (D : DivisorV2 (Polynomial Fq))
+    (hK : canonicalZeroAtFinite canonical)
+    (g f : RatFunc Fq)
+    (hg : ∀ v : HeightOneSpectrum (Polynomial Fq),
+          v.valuation (RatFunc Fq) g ≤ WithZero.exp (D v))
+    (hf : ∀ v : HeightOneSpectrum (Polynomial Fq),
+          v.valuation (RatFunc Fq) f ≤ WithZero.exp ((canonical - D) v)) :
+    residueSumFinite (g * f) = 0 :=
+  bounded_diagonal_finite_residue_zero canonical D hK g f hg hf
+
+end RawPairing
+
+/-! ## Serre Pairing for RatFunc Fq
+
+For the concrete case K = RatFunc Fq with canonical = 0 at all finite places,
+we can now wire the serrePairing using the raw diagonal pairing.
+
+The construction uses the fact that for genus 0:
+1. The finite residue sum vanishes for bounded × L(K-D) by pole cancellation
+2. Combined with the residue theorem, the total pairing vanishes on K + A_K(D)
+
+### Full Adele vs Finite Adele Issue
+
+There's a subtlety: the current H¹(D) uses FiniteAdeleRing (no infinity component),
+but the residue theorem requires summing over ALL places including infinity.
+
+For the finite-adele-based H¹, the pairing should be:
+  ⟨[a], f⟩ = -residueAtInfty(k * f)
+where k ∈ K is any representative such that a - diag(k) ∈ A_K(D).
+
+This works because:
+- residueSumTotal(k * f) = residueSumFinite(k * f) + residueAtInfty(k * f) = 0 (residue theorem)
+- So residueAtInfty(k * f) = -residueSumFinite(k * f)
+- And for a - diag(k) ∈ A_K(D), the finite part contributes 0 by pole cancellation
+
+The pairing is well-defined because:
+- Different representatives k, k' with a - diag(k), a - diag(k') ∈ A_K(D)
+  satisfy diag(k - k') ∈ A_K(D), i.e., k - k' is "bounded"
+- For bounded k - k' with f ∈ L(K-D), residueAtInfty((k-k') * f) = ... (needs analysis)
+
+For now, we leave the full construction with sorry, as it requires more careful
+analysis of the infinity residue for bounded elements.
+-/
+
+section SerrePairingConstruction
+
+variable {Fq : Type*} [Field Fq] [Fintype Fq]
+variable (canonical : DivisorV2 (Polynomial Fq))
+
+open RiemannRochV2.Residue AdelicH1v2
+
+/-- The abstract serrePairing for RatFunc Fq.
+
+Construction (to be completed):
+1. For [a] ∈ H¹(D), find representative a ∈ FiniteAdeleRing
+2. Find k ∈ K such that a and diag(k) are "close" (differ by bounded element)
+3. Define ⟨[a], f⟩ = -residueAtInfty(k * f)
+4. Show this is independent of choices and bilinear
+
+Currently sorry'd pending full construction.
+-/
+def serrePairing_ratfunc (D : DivisorV2 (Polynomial Fq)) :
+    SpaceModule Fq (Polynomial Fq) (RatFunc Fq) D →ₗ[Fq]
+    RRSpace_proj Fq (Polynomial Fq) (RatFunc Fq) (canonical - D) →ₗ[Fq] Fq := by
+  -- The construction requires:
+  -- 1. A way to extract a representative k ∈ K from any class [a] ∈ H¹(D)
+  -- 2. Showing the pairing is well-defined
+  -- This is left as sorry for now
+  sorry
+
+end SerrePairingConstruction
+
 /-! ## Strategy for Completing serrePairing
 
 The serrePairing construction requires defining a bilinear map:
