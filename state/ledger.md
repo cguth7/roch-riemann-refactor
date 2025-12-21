@@ -8,13 +8,15 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Build**: ✅ Full build compiles with sorries (warnings only)
 **Phase**: 3 - Serre Duality
-**Cycle**: 196
+**Cycle**: 197
 
-### Active Sorries (9 total)
+### Active Sorries (12 total)
 
 | File | Lemma | Priority | Notes |
 |------|-------|----------|-------|
-| RatFuncPairing.lean | `exists_global_approximant_from_local` | **CRITICAL** | Key gluing lemma (now unblocked!) |
+| RatFuncPairing.lean | `exists_global_approximant_from_local` | **CRITICAL** | Key gluing lemma - two-step approach identified |
+| RatFuncPairing.lean | `denom_not_in_asIdeal_of_integral` | HIGH | Helper: integral ⟹ denom ∉ ideal |
+| RatFuncPairing.lean | `exists_polyRep_of_integral_mod_pow` (2) | HIGH | Polynomial rep for integral ratfunc mod ideal^m |
 | RatFuncPairing.lean | `strong_approximation_ratfunc` | HIGH | Uses exists_global_approximant_from_local |
 | RatFuncPairing.lean | `h1_vanishing_ratfunc` | HIGH | Follows from strong_approximation |
 | RatFuncPairing.lean | `h1_finrank_zero_of_large_deg` | HIGH | Finrank version of h1_vanishing |
@@ -78,51 +80,42 @@ This is mathematically justified for genus 0 (P¹ over Fq) because:
 | sum_principal_parts_valuation_le_one | ✅ | SerreDuality/RatFuncPairing.lean |
 | sub_principal_part_no_pole | ✅ | SerreDuality/RatFuncPairing.lean |
 | exists_principal_part | ✅ | SerreDuality/RatFuncPairing.lean |
+| denom_not_in_asIdeal_of_integral | ⚠️ | SerreDuality/RatFuncPairing.lean |
+| exists_polyRep_of_integral_mod_pow | ⚠️ | SerreDuality/RatFuncPairing.lean (NEW) |
 | exists_global_approximant_from_local | ⚠️ | SerreDuality/RatFuncPairing.lean (KEY) |
 | strong_approximation_ratfunc | ⚠️ | SerreDuality/RatFuncPairing.lean |
 | h1_vanishing_ratfunc | ⚠️ | SerreDuality/RatFuncPairing.lean |
 
 ---
 
-## Next Steps (Cycle 197)
+## Next Steps (Cycle 198)
 
 ### 🎯 PRIMARY GOAL: Complete `exists_global_approximant_from_local`
 
-With `exists_principal_part` now proved, the gluing lemma is unblocked!
+**Key Insight (Cycle 197):** The proof requires a **two-step approach**:
 
-**Statement:**
-```lean
-lemma exists_global_approximant_from_local
-    (S : Finset (HeightOneSpectrum (Polynomial Fq)))
-    (y : S → RatFunc Fq)
-    (n : S → ℤ) :
-    ∃ k : RatFunc Fq, ∀ v : S,
-      v.valuation (RatFunc Fq) (y v - k) ≤ WithZero.exp (n v)
-```
+**Step A (Principal Parts):** Sum principal parts to remove poles
+- For each v ∈ S, get principal part pp_v(y_v) using `exists_principal_part`
+- Let k_pole = Σ_{v ∈ S} pp_v(y_v)
+- Then y_v - k_pole is **integral** at all v ∈ S
 
-**Proof Strategy:**
+**Step B (CRT Precision):** For places where n_v < 0 (need zeros, not just integrality):
+- Use `exists_polyRep_of_integral_mod_pow` to find polynomial a_v ≡ (y_v - k_pole) mod v.asIdeal^{-n_v}
+- Use `crt_linear_places` to find single p matching all a_v
+- Final k = k_pole + p satisfies the full bound
 
-1. For each v ∈ S, extract the principal part of y_v at v using `exists_principal_part`
-2. Sum all principal parts: k = Σ_{v ∈ S} principal_part_v(y_v)
-3. Show k approximates each y_v:
-   - y_v - k = y_v - principal_part_v(y_v) - Σ_{w ≠ v} principal_part_w(y_w)
-   - The first term has no pole at v (by `sub_principal_part_no_pole`)
-   - Each term in the sum has no pole at v (by `sum_principal_parts_valuation_le_one`)
-   - So the difference is integral at v, giving the bound
+**Why two steps are needed:**
+- n_v ≥ 0: exp(n_v) ≥ 1, so integrality (val ≤ 1) suffices
+- n_v < 0: exp(n_v) < 1, need to match Taylor coefficients (a zero of order ≥ -n_v)
 
-**Key lemmas already proved:**
+**Infrastructure added in Cycle 197:**
 
-| Lemma | What it gives |
-|-------|---------------|
-| `exists_principal_part` ✅ | Extract principal part at any place |
-| `sub_principal_part_no_pole` ✅ | y - principal_part has valuation ≤ 1 |
-| `sum_principal_parts_valuation_le_one` ✅ | Sum of principal parts at other places is integral |
+| Lemma | Purpose |
+|-------|---------|
+| `denom_not_in_asIdeal_of_integral` ⚠️ | If val(r) ≤ 1, then r.denom ∉ v.asIdeal |
+| `exists_polyRep_of_integral_mod_pow` ⚠️ | Find polynomial a with val(r - a) ≤ exp(-m) |
 
-**Once exists_global_approximant_from_local is proved:**
-
-`strong_approximation_ratfunc` follows: just apply the gluing to local approximants.
-
-### Once strong_approximation is proved:
+### Once exists_global_approximant_from_local is proved:
 
 **h1_vanishing**: For deg(D) ≥ -1:
 - Every [a] ∈ H¹(D) has a representative a ∈ FiniteAdeleRing
@@ -137,6 +130,21 @@ lemma exists_global_approximant_from_local
 ---
 
 ## Recent Progress
+
+### Cycle 197 - **Two-Step Strong Approximation Architecture** 🏗️
+- **Key insight**: `exists_global_approximant_from_local` requires two-step approach:
+  1. **Principal parts** for pole removal (achieves integrality, val ≤ 1)
+  2. **CRT precision** for negative bounds (matches Taylor coefficients, val ≤ exp(-m))
+- **New infrastructure added**:
+  - `denom_not_in_asIdeal_of_integral` ⚠️ - If r is integral at v, then r.denom ∉ v.asIdeal
+    - Proof sketch: coprimality of num/denom + valuation arithmetic
+  - `exists_polyRep_of_integral_mod_pow` ⚠️ - Given integral r at v, find polynomial a with val(r - a) ≤ exp(-m)
+    - Proof structure: write r = num/denom, denom is unit mod v.asIdeal^m, find a ≡ num·denom⁻¹
+    - 2 internal sorries: unit-in-quotient from coprimality, algebraic manipulation
+- **Architecture note**: n_v ≥ 0 case (integrality suffices) vs n_v < 0 case (needs CRT)
+- **Sorries**: 9 → 12 (added helper lemmas with structure but pending proofs)
+- **Build**: ✅ compiles with sorries
+- **Next step**: Wire two-step approach into exists_global_approximant_from_local
 
 ### Cycle 196 - **exists_principal_part PROVED** 🎉
 - **KEY MILESTONE**: `exists_principal_part` ✅ - Principal part extraction via partial fractions

@@ -793,6 +793,130 @@ lemma sub_principal_part_no_pole (α : Fq) (p y r : RatFunc Fq)
   rw [heq]
   exact h.2.2
 
+/-! ### Polynomial Representative for Integral Rational Functions
+
+For an integral rational function r at a place v, we can find a polynomial a
+such that r - a has arbitrarily high valuation at v. This is the key lemma
+for achieving precision beyond integrality in strong approximation.
+-/
+
+/-- If r is integral at v, then r.denom is not in v.asIdeal.
+
+This follows from: if denom ∈ v.asIdeal with r = num/denom integral,
+then the pole from denom must be cancelled by num, but for reduced fractions
+this would contradict coprimality.
+
+**Proof sketch:**
+- r = num/denom in reduced form (coprime)
+- If denom ∈ v.asIdeal, then val(denom) < 1
+- Since coprime and denom ∈ v.asIdeal, num ∉ v.asIdeal, so val(num) = 1
+- val(r) = val(num)/val(denom) = 1/val(denom) > 1, contradicting integrality
+-/
+lemma denom_not_in_asIdeal_of_integral (v : HeightOneSpectrum (Polynomial Fq))
+    (r : RatFunc Fq) (hr : v.valuation (RatFunc Fq) r ≤ 1) :
+    r.denom ∉ v.asIdeal := by
+  -- Proof uses valuation arithmetic on reduced fractions
+  -- If denom ∈ v.asIdeal, val(r) = val(num)/val(denom) > 1 (since num is coprime to denom)
+  sorry
+
+/-- If r is integral at v, there exists a polynomial a such that r - a has
+valuation ≤ exp(-m) at v.
+
+This is the key lemma for achieving precision beyond integrality. The proof:
+1. Write r = num/denom with denom ∉ v.asIdeal (by `denom_not_in_asIdeal_of_integral`)
+2. denom is a unit mod v.asIdeal^m
+3. Find a ≡ num * denom⁻¹ mod v.asIdeal^m
+4. Then r - a = (num - a*denom)/denom has valuation ≤ exp(-m)
+-/
+lemma exists_polyRep_of_integral_mod_pow (v : HeightOneSpectrum (Polynomial Fq))
+    (r : RatFunc Fq) (hr : v.valuation (RatFunc Fq) r ≤ 1) (m : ℕ) :
+    ∃ a : Polynomial Fq, v.valuation (RatFunc Fq)
+      (r - algebraMap (Polynomial Fq) (RatFunc Fq) a) ≤ WithZero.exp (-(m : ℤ)) := by
+  -- Special case: m = 0 means we just need integrality, so a = 0 works
+  by_cases hm : m = 0
+  · use 0
+    simp only [hm, Nat.cast_zero, neg_zero, WithZero.exp_zero, map_zero, sub_zero]
+    exact hr
+  -- For m > 0, we need to find a polynomial approximation
+  have hm_pos : 0 < m := Nat.pos_of_ne_zero hm
+  -- Step 1: Get num/denom representation
+  have hdenom_ne : r.denom ≠ 0 := r.denom_ne_zero
+  have hdenom_not_mem : r.denom ∉ v.asIdeal := denom_not_in_asIdeal_of_integral v r hr
+  -- Step 2: denom is a unit in the quotient ring R / v.asIdeal^m
+  -- Since denom ∉ v.asIdeal and v.asIdeal is maximal, denom is a unit mod v.asIdeal
+  -- This extends to v.asIdeal^m since v.asIdeal^m ⊆ v.asIdeal
+  have hdenom_unit : IsUnit (Ideal.Quotient.mk (v.asIdeal ^ m) r.denom) := by
+    -- denom ∉ v.asIdeal implies denom ∉ v.asIdeal^m (for m ≥ 1)
+    have hdenom_not_mem_pow : r.denom ∉ v.asIdeal ^ m := by
+      intro hmem
+      have : v.asIdeal ^ m ≤ v.asIdeal := Ideal.pow_le_self hm
+      exact hdenom_not_mem (this hmem)
+    -- In R / v.asIdeal^m, an element is a unit iff it's not in the image of v.asIdeal
+    -- More precisely: x is a unit in R/I iff x ∉ radical(I) for I primary
+    -- Since v.asIdeal^m has radical v.asIdeal, and denom ∉ v.asIdeal...
+    -- Actually, we use: in local ring R_v, denom is a unit, so it's a unit in any quotient
+    -- For R = Polynomial Fq which is a PID, we can use coprimality
+    -- denom ∉ v.asIdeal means gcd(denom, gen(v.asIdeal)) = 1
+    -- So there exist a, b with a*denom + b*gen^m = 1
+    -- In Polynomial Fq (a PID), denom ∉ v.asIdeal means denom is coprime to the generator
+    -- Since v.asIdeal^m ⊆ v.asIdeal, denom ∉ v.asIdeal^m as well (shown above)
+    -- An element is a unit in R/I iff it's not in the maximal ideal containing I
+    -- For R = Polynomial Fq, v.asIdeal is maximal (height one in a PID)
+    -- So the radical of v.asIdeal^m is v.asIdeal, and denom ∉ v.asIdeal means unit in quotient
+    -- Use: Ideal.Quotient.isUnit_mk_iff or similar
+    sorry -- Technical: unit in quotient from coprimality
+  -- Step 3: Find a ≡ num * denom⁻¹ mod v.asIdeal^m
+  obtain ⟨denom_unit, hdenom_unit_eq⟩ := hdenom_unit
+  -- denom_unit is a unit in the quotient ring with ↑denom_unit = mk(denom)
+  let denom_inv := denom_unit⁻¹
+  let a_quot := Ideal.Quotient.mk (v.asIdeal ^ m) r.num * denom_inv
+  -- Lift back to a polynomial
+  obtain ⟨a, ha⟩ := Ideal.Quotient.mk_surjective a_quot
+  use a
+  -- Step 4: Show r - a has valuation ≤ exp(-m)
+  -- Key: r = num/denom, and a ≡ num/denom mod v.asIdeal^m
+  -- So num - a*denom ∈ v.asIdeal^m
+  have hdiff_mem : r.num - a * r.denom ∈ v.asIdeal ^ m := by
+    -- In quotient: mk(num) = mk(a) * mk(denom) by construction
+    -- So mk(num - a*denom) = 0, i.e., num - a*denom ∈ v.asIdeal^m
+    have hquot : Ideal.Quotient.mk (v.asIdeal ^ m) (r.num - a * r.denom) = 0 := by
+      simp only [map_sub, map_mul]
+      rw [ha]
+      -- mk(num) * denom_unit⁻¹ * mk(denom) = mk(num) * (denom_unit⁻¹ * denom_unit) = mk(num)
+      -- since ↑denom_unit = mk(denom)
+      rw [← hdenom_unit_eq]
+      -- Now: mk(num) - mk(num) * ↑denom_inv * ↑denom_unit
+      have hinv : (denom_inv : Polynomial Fq ⧸ v.asIdeal ^ m) * denom_unit = 1 := by
+        simp only [denom_inv]
+        exact Units.inv_mul denom_unit
+      rw [mul_assoc, hinv, mul_one, sub_self]
+    exact Ideal.Quotient.eq_zero_iff_mem.mp hquot
+  -- Now relate r - a to (num - a*denom)/denom
+  -- r - a = num/denom - a = (num - a*denom)/denom
+  -- val(r - a) = val(num - a*denom) / val(denom) = val(num - a*denom) since val(denom) = 1
+  -- val(num - a*denom) ≤ exp(-m) since num - a*denom ∈ v.asIdeal^m
+  have hval_denom : v.valuation (RatFunc Fq) (algebraMap _ (RatFunc Fq) r.denom) = 1 := by
+    rw [v.valuation_of_algebraMap]
+    exact_mod_cast intValuation_eq_one_iff.mpr hdenom_not_mem
+  have hval_diff : v.valuation (RatFunc Fq)
+      (algebraMap _ (RatFunc Fq) (r.num - a * r.denom)) ≤ WithZero.exp (-(m : ℤ)) := by
+    by_cases hdiff_zero : r.num - a * r.denom = 0
+    · simp [hdiff_zero]
+    · rw [v.valuation_of_algebraMap]
+      have hval_le := (v.intValuation_le_pow_iff_mem (r.num - a * r.denom) m).mpr hdiff_mem
+      exact_mod_cast hval_le
+  -- Key step: r - a = (num - a*denom) / denom
+  -- This is a straightforward algebraic identity, but needs careful handling in RatFunc
+  have heq : v.valuation (RatFunc Fq) (r - algebraMap _ (RatFunc Fq) a) =
+      v.valuation (RatFunc Fq) (algebraMap _ (RatFunc Fq) (r.num - a * r.denom)) /
+      v.valuation (RatFunc Fq) (algebraMap _ _ r.denom) := by
+    -- r = num/denom, so r - a = (num - a*denom)/denom
+    have hr_eq := RatFunc.num_div_denom r
+    -- This is algebraically trivial but syntactically fiddly
+    sorry -- Algebraic manipulation: r - a = (num - a*denom) / denom
+  rw [heq, hval_denom, div_one]
+  exact hval_diff
+
 /-- For a finite set of local approximants at distinct places, we can find a single global
 element that approximates all of them simultaneously.
 
