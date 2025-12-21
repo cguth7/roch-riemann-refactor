@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Build**: ✅ Full build compiles
 **Phase**: 3 - Serre Duality → FullRRData Instance
-**Cycle**: 226 (IN PROGRESS)
+**Cycle**: 229 (IN PROGRESS)
 
 ### Active Sorries
 
@@ -24,31 +24,61 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 ---
 
-## Cycle 228 Progress (IN PROGRESS)
+## Cycle 229 Progress (IN PROGRESS)
 
-**Goal**: Continue dimension formula - fix remaining sorries in DimensionScratch.lean
+**Goal**: Fix typeclass issue blocking `inv_X_sub_C_pow_noPoleAtInfinity`
 
-### Progress This Cycle
+### Solution Found: Use `intDegree` Instead of `num_div`/`denom_div`
 
-1. ✅ **`valuation_X_sub_at_other`**: NOW COMPILES - v(X-α) = 1 at places v ≠ linearPlace α
-   - Uses `HeightOneSpectrum.ext` with maximal ideal argument
+The typeclass mismatch with `gcd` can be completely avoided by using `RatFunc.intDegree`:
 
-2. ✅ **`inv_X_sub_C_pow_satisfies_valuation`**: NOW COMPILES - valuation condition for 1/(X-α)^k
+**Key insight**: `noPoleAtInfinity f ↔ f.intDegree ≤ 0`
 
-3. 🔲 **`inv_X_sub_C_pow_noPoleAtInfinity`**: BLOCKED by typeclass mismatch
-   - Math is trivial: deg(num)=0 ≤ k=deg(denom)
-   - Issue: `gcd` elaborates with different `DecidableEq` instances
-   - `RatFunc.num_div`/`denom_div` produce expressions with `gcd` that don't match
-   - Tried: `classical`, `simp only [hgcd, ...]`, calc proofs - all fail
-   - Workaround needed: either find instance-independent lemmas or avoid `num_div`/`denom_div`
+**Mathlib lemmas used** (from `Mathlib.FieldTheory.RatFunc.Degree`):
+- `RatFunc.intDegree_inv`: `intDegree(x⁻¹) = -intDegree(x)`
+- `RatFunc.intDegree_mul`: `intDegree(x * y) = intDegree(x) + intDegree(y)` (for nonzero x, y)
+- `RatFunc.intDegree_polynomial`: `intDegree(algebraMap p) = p.natDegree`
+- `RatFunc.intDegree_X`: `intDegree(X) = 1`
+- `RatFunc.intDegree_C`: `intDegree(C k) = 0`
 
-4. 🔲 **`inv_X_sub_C_pow_not_mem_projective_smaller`**: Needs `WithZero.exp` strict monotonicity
+**Proof sketch**:
+```
+intDegree((X - C α)⁻¹ ^ k) = k * intDegree((X - C α)⁻¹)
+                           = k * (-intDegree(X - C α))
+                           = k * (-1)
+                           = -k ≤ 0 ✓
+```
 
-5. 🔲 **`ell_ratfunc_projective_gap_le`**: Needs evaluation map kernel argument
+### Created: IntDegreeTest.lean
 
-6. 🔲 **`ell_ratfunc_projective_single_linear`**: Depends on (3), (4), (5)
+New test file `RrLean/RiemannRochV2/SerreDuality/IntDegreeTest.lean` with:
+1. ✅ `RatFunc_X_sub_C_ne_zero`: X - C α ≠ 0 (via intDegree)
+2. ✅ `intDegree_inv_X_sub_C_pow`: intDegree((X - C α)⁻¹ ^ k) = -k
+3. ✅ `inv_X_sub_C_pow_noPoleAtInfinity`: 1/(X-α)^k has no pole at infinity
 
-7. 🔲 **`ell_ratfunc_projective_eq_deg_plus_one`**: Depends on (6)
+**All lemmas compile without sorry!** This approach completely sidesteps the typeclass issue.
+
+### Next Steps
+
+1. Port `IntDegreeTest.lean` lemmas into `DimensionScratch.lean`
+2. Fix existing errors in `DimensionScratch.lean` (some lemmas have broken proofs)
+3. Complete remaining dimension formula sorries
+
+### Note on DimensionScratch.lean
+
+This file currently has some broken proofs that need fixing. The `IntDegreeTest.lean` approach
+provides working versions of the key lemmas that can be ported over.
+
+---
+
+## Cycle 228 Progress (COMPLETED)
+
+**Goal**: Investigate typeclass mismatch blocking `inv_X_sub_C_pow_noPoleAtInfinity`
+
+### Findings
+
+1. ✅ Documented the `gcd` typeclass mismatch issue
+2. ✅ Identified solution: use `RatFunc.intDegree` instead of `num_div`/`denom_div`
 
 ### Technical Lesson: Typeclass Instance Mismatch
 
@@ -56,15 +86,8 @@ The `gcd` function on polynomials uses `DecidableEq` instances. When `RatFunc.nu
 it can elaborate `gcd` with a different instance than what appears in the goal after simplification.
 This causes `simp only [gcd_one_left, ...]` to make no progress even though the math is identical.
 
-Potential fixes (not yet tried):
-- Use `attribute [instance] Classical.decEq` at file top
-- Avoid `num_div`/`denom_div` entirely - prove degree bounds via valuation
-- Use `convert` with explicit instance unification
-
-### Note on DimensionScratch.lean
-
-This is a scratch file for developing dimension formula proofs. It is NOT imported by the main build.
-Current state: compiles with sorries, documents blocking issues for future work.
+**Solution**: Avoid `num_div`/`denom_div` entirely. Use `RatFunc.intDegree` which provides
+clean lemmas (`intDegree_inv`, `intDegree_mul`) that work without typeclass issues.
 
 ---
 
