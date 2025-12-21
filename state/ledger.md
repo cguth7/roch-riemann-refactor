@@ -8,19 +8,17 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Build**: ✅ Full build compiles with sorries (warnings only)
 **Phase**: 3 - Serre Duality
-**Cycle**: 204
+**Cycle**: 205
 
-### Active Sorries (6 total)
+### Active Sorries (5 total)
 
 | File | Lemma | Priority | Notes |
 |------|-------|----------|-------|
-| RatFuncPairing.lean | `h1_vanishing_ratfunc` | **HIGH** | Follows from strong_approximation (now unblocked!) |
-| RatFuncPairing.lean | `h1_finrank_zero_of_large_deg` | **HIGH** | Follows from h1_vanishing |
-| Abstract.lean | `serrePairing_left_nondegen` | MED | Vacuously true once h1=0 is proved |
-| Abstract.lean | `serrePairing_right_nondegen` | MED | Vacuously true once h1=0 is proved |
+| Abstract.lean | `serrePairing_left_nondegen` | MED | Vacuously true now that h1=0 is proved! |
+| Abstract.lean | `serrePairing_right_nondegen` | MED | Vacuously true now that h1=0 is proved! |
 | Residue.lean | `residueAtIrreducible` | LOW | Placeholder for higher-degree places |
 | Residue.lean | `residue_sum_eq_zero` | MED | General residue theorem |
-| FullAdelesCompact.lean | (2 sorries) | LOW | Edge cases in weak approximation |
+| FullAdelesCompact.lean | (1 sorry) | LOW | Edge case in weak approximation |
 
 ### ⚠️ ARCHITECTURE NOTE: Zero Pairing Strategy
 
@@ -30,10 +28,11 @@ This is mathematically justified for genus 0 (P¹ over Fq) because:
 - Finite residue sum of A_K(D) × L(K-D) vanishes by pole cancellation
 - Hence induced pairing on H¹(D) quotient is 0
 
-**Current status**:
-- Non-degeneracy lemmas are sorries pending proof that both spaces are 0-dimensional
-- For deg(D) ≥ -1: H¹(D) = 0 (requires strong approximation) and L(K-D) = 0 (negative degree)
-- Once dimensional triviality is proved, non-degeneracy is vacuously true
+**Current status** (Cycle 205 - KEY MILESTONE):
+- **H¹(D) = 0 is now PROVED** via `h1_subsingleton`, `h1_unique`, `h1_finrank_zero_of_large_deg` ✅
+- Strong approximation shows every adele is equivalent to a global element mod A_K(D)
+- Non-degeneracy lemmas are now vacuously true (spaces are 0-dimensional)
+- For deg(D) ≥ -1: H¹(D) = 0 (proved!) and L(K-D) = 0 (negative degree)
 
 ### Key Infrastructure ✅
 
@@ -82,39 +81,51 @@ This is mathematically justified for genus 0 (P¹ over Fq) because:
 | exists_polyRep_of_integral_mod_pow | ✅ | SerreDuality/RatFuncPairing.lean |
 | exists_global_approximant_from_local | ✅ | SerreDuality/RatFuncPairing.lean |
 | strong_approximation_ratfunc | ✅ | SerreDuality/RatFuncPairing.lean |
-| h1_vanishing_ratfunc | ⚠️ | SerreDuality/RatFuncPairing.lean |
+| globalPlusBoundedSubmodule_eq_top | ✅ | SerreDuality/RatFuncPairing.lean |
+| h1_subsingleton (instance) | ✅ | SerreDuality/RatFuncPairing.lean |
+| h1_finrank_zero_of_large_deg | ✅ | SerreDuality/RatFuncPairing.lean |
+| h1_unique (instance) | ✅ | SerreDuality/RatFuncPairing.lean |
 
 ---
 
-## Next Steps (Cycle 205)
+## Next Steps (Cycle 206)
 
-### 🎯 PRIMARY GOAL: Prove `h1_vanishing_ratfunc`
+### 🎯 PRIMARY GOAL: Prove non-degeneracy (vacuously)
 
-**Cycle 204 achieved key milestone**: `strong_approximation_ratfunc` is now FULLY PROVED! 🎉
+**Cycle 205 achieved key milestone**: H¹(D) = 0 is now FULLY PROVED! 🎉
 
-The `hk_int` sorry is resolved by strengthening `exists_global_approximant_from_local` to return
-integrality at places outside S as a second conjunct.
-
-**Now unlocked**: `h1_vanishing_ratfunc` and `h1_finrank_zero_of_large_deg`
-
-**Proof strategy for h1_vanishing**:
-- Every [a] ∈ H¹(D) has a representative a ∈ FiniteAdeleRing
-- Strong approximation: ∃ k ∈ K with a - diag(k) ∈ A_K(D)
-- Hence [a] = [diag(k)] = 0 (since diag(k) ∈ globalSubmodule)
-- Therefore H¹(D) = 0
-
-**Technical approach**: Need to show that the quotient SpaceModule is trivial (= PUnit).
-Use `Submodule.Quotient.eq_zero_iff` or similar to show every element is zero.
-
-### Once h1_vanishing is proved:
+With `h1_subsingleton`, `h1_unique`, and `h1_finrank_zero_of_large_deg` proved, the
+non-degeneracy lemmas in Abstract.lean should now be provable vacuously:
 
 **Non-degeneracy becomes vacuous**:
-- `serrePairing_left_nondegen`: H¹(D) = 0, so no nonzero elements to test
+- `serrePairing_left_nondegen`: H¹(D) = 0 (by `h1_subsingleton`), so ∀ x ∈ H¹(D) hypothesis is vacuous
 - `serrePairing_right_nondegen`: For deg(D) ≥ -1, deg(K-D) = -2 - deg(D) ≤ -3, so L(K-D) = 0
+
+**Strategy**:
+1. Show `serrePairing_left_nondegen` by contradiction: if x ≠ 0 then x = 0 by `h1_subsingleton`
+2. Show `serrePairing_right_nondegen` using `RRSpace_deg_neg_eq_bot` or similar for L(K-D)
 
 ---
 
 ## Recent Progress
+
+### Cycle 205 - **H¹(D) = 0 FULLY PROVED** 🎉
+- **KEY MILESTONE**: `h1_finrank_zero_of_large_deg` is now PROVED!
+- **New proved lemmas**:
+  1. `globalPlusBoundedSubmodule_eq_top` ✅ - Strong approximation → K + A_K(D) = ⊤
+  2. `h1_subsingleton` (instance) ✅ - SpaceModule is a subsingleton
+  3. `h1_finrank_zero_of_large_deg` ✅ - finrank = 0
+  4. `h1_unique` (instance) ✅ - SpaceModule has unique element
+- **Proof strategy**:
+  - `strong_approximation_ratfunc`: For any a, exists k with a - diag(k) ∈ boundedSubmodule
+  - `globalPlusBoundedSubmodule_eq_top`: Every a = diag(k) + (a - diag(k)) ∈ globalPlusBoundedSubmodule
+  - `h1_subsingleton`: Quotient by ⊤ is subsingleton via `Submodule.Quotient.subsingleton_iff`
+  - `h1_finrank_zero_of_large_deg`: Subsingleton module has finrank 0
+- **Removed** awkward `h1_vanishing_ratfunc = PUnit` type equality (replaced with `h1_unique`)
+- **Sorries reduced**: 6 → 5 (−1)
+- **RatFuncPairing.lean**: 2 → 0 sorries (fully sorry-free!)
+- **Build**: ✅ compiles with sorries (only in Abstract.lean, Residue.lean, FullAdelesCompact.lean)
+- **Next step**: Prove non-degeneracy lemmas vacuously in Abstract.lean
 
 ### Cycle 204 - **`strong_approximation_ratfunc` FULLY PROVED** 🎉
 - **KEY MILESTONE**: The `hk_int` sorry is now RESOLVED!
@@ -542,12 +553,12 @@ lake build RrLean.RiemannRochV2.SerreDuality
 - `Basic`, `Divisor`, `RRSpace`, `Typeclasses`
 - `RiemannInequality` ✅
 - `Infrastructure`, `RRDefinitions`
-- `FullAdelesBase`, `FullAdelesCompact` ✅
+- `FullAdelesBase`, `FullAdelesCompact` ✅ (1 sorry)
 - `AdelicH1v2` ✅
 - `SerreDuality/` (directory with 3 files):
   - `Abstract.lean` ✅ (2 sorries: left_nondegen, right_nondegen)
   - `RatFuncResidues.lean` ✅ (0 sorries)
-  - `RatFuncPairing.lean` ✅ (2 sorries: exists_global_approximant, strong_approx) ← was 4!
+  - `RatFuncPairing.lean` ✅ (0 sorries - FULLY COMPLETE!) ← was 2!
 - `Residue.lean` ✅ (2 sorries: residueAtIrreducible, residue_sum_eq_zero)
 - `SerreDuality.lean` ✅ (thin re-export module)
 

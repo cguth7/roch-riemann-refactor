@@ -1767,21 +1767,69 @@ theorem strong_approximation_ratfunc
       simp only [WithZero.exp_zero]
       exact hsub_int
 
-/-- Consequence: H¹(D) = 0 when the divisor is large enough.
+/-- Strong approximation implies globalPlusBoundedSubmodule = ⊤.
 
-For genus 0 curves (P¹ over Fq), this holds for deg(D) ≥ -1.
-More generally, h¹(D) = 0 when deg(D) > 2g - 2.
+This is the key consequence: every finite adele can be written as
+diag(k) + bounded, so the quotient H¹(D) is trivial.
 -/
-theorem h1_vanishing_ratfunc (D : DivisorV2 (Polynomial Fq))
-    (hD : D.deg ≥ -1) :
-    AdelicH1v2.SpaceModule Fq (Polynomial Fq) (RatFunc Fq) D = PUnit := by
-  sorry -- Follows from strong_approximation: every adele ≡ some k mod A_K(D)
+theorem globalPlusBoundedSubmodule_eq_top (D : DivisorV2 (Polynomial Fq)) :
+    globalPlusBoundedSubmodule Fq (Polynomial Fq) (RatFunc Fq) D = ⊤ := by
+  rw [eq_top_iff]
+  intro a _
+  -- Use strong approximation: ∃ k with a - diag(k) ∈ boundedSubmodule
+  obtain ⟨k, hk⟩ := strong_approximation_ratfunc a D
+  -- a = diag(k) + (a - diag(k))
+  have hdec : a = diagonalK (Polynomial Fq) (RatFunc Fq) k +
+      (a - diagonalK (Polynomial Fq) (RatFunc Fq) k) := by ring
+  rw [hdec]
+  -- diag(k) ∈ globalSubmodule and (a - diag(k)) ∈ boundedSubmodule
+  apply Submodule.add_mem
+  · -- diag(k) ∈ globalSubmodule
+    apply Submodule.mem_sup_left
+    exact ⟨k, rfl⟩
+  · -- (a - diag(k)) ∈ boundedSubmodule
+    apply Submodule.mem_sup_right
+    exact hk
 
-/-- h¹(D) = 0 as a finrank statement. -/
+/-- H¹(D) is a subsingleton (all elements are equal to 0).
+
+This follows from globalPlusBoundedSubmodule = ⊤.
+-/
+instance h1_subsingleton (D : DivisorV2 (Polynomial Fq)) :
+    Subsingleton (AdelicH1v2.SpaceModule Fq (Polynomial Fq) (RatFunc Fq) D) := by
+  rw [Submodule.Quotient.subsingleton_iff]
+  exact globalPlusBoundedSubmodule_eq_top D
+
+/-- h¹(D) = 0 as a finrank statement.
+
+For genus 0 curves (P¹ over Fq), strong approximation shows that
+every finite adele is equivalent to a global element modulo A_K(D).
+Hence the quotient H¹(D) = FiniteAdeleRing / (K + A_K(D)) is trivial.
+
+The degree condition deg(D) ≥ -1 is included for consistency with the
+general Riemann-Roch theory, but the proof works for all D in genus 0.
+-/
 theorem h1_finrank_zero_of_large_deg (D : DivisorV2 (Polynomial Fq))
-    (hD : D.deg ≥ -1) :
+    (_hD : D.deg ≥ -1) :
     AdelicH1v2.h1_finrank Fq (Polynomial Fq) (RatFunc Fq) D = 0 := by
-  sorry -- Follows from h1_vanishing_ratfunc
+  -- The quotient is a subsingleton by h1_subsingleton
+  haveI : Subsingleton (AdelicH1v2.SpaceModule Fq (Polynomial Fq) (RatFunc Fq) D) :=
+    h1_subsingleton D
+  exact Module.finrank_zero_of_subsingleton
+
+/-- H¹(D) has a unique element (i.e., is isomorphic to the trivial module).
+
+For genus 0 curves (P¹ over Fq), this holds for all D. The degree condition
+is included for consistency with the general Riemann-Roch theory where
+h¹(D) = 0 when deg(D) > 2g - 2.
+
+This combines `h1_subsingleton` (all elements are equal) with the fact that
+the quotient is nonempty (it contains 0).
+-/
+instance h1_unique (D : DivisorV2 (Polynomial Fq)) :
+    Unique (AdelicH1v2.SpaceModule Fq (Polynomial Fq) (RatFunc Fq) D) where
+  default := 0
+  uniq := fun x => Subsingleton.elim x 0
 
 end StrongApproximation
 
