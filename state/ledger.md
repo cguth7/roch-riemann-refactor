@@ -6,15 +6,15 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 ## Current State
 
-**Build**: ✅ Full build compiles
+**Build**: ⚠️ Errors in DimensionScratch.lean (work in progress)
 **Phase**: 3 - Serre Duality → FullRRData Instance
-**Cycle**: 230 (IN PROGRESS)
+**Cycle**: 231 (IN PROGRESS)
 
 ### Active Sorries
 
 | File | Count | Priority | Notes |
 |------|-------|----------|-------|
-| **DimensionScratch.lean** | 2 | HIGH | Gap bound + general formula remaining |
+| **DimensionScratch.lean** | 1 | HIGH | General formula only - GAP BOUND PROVED! |
 | **RatFuncFullRR.lean** | 0 | ✅ DONE | L_proj(0) = constants PROVED, ℓ(0) = 1 PROVED |
 | **RatFuncPairing.lean** | 1 | LOW | Early incomplete attempt (line 1956), not on critical path |
 | **ProductFormula.lean** | 1 | DONE* | *Intentionally incorrect lemma - documented |
@@ -24,48 +24,64 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 ---
 
-## Cycle 230 Progress (IN PROGRESS)
+## Cycle 231 Progress (IN PROGRESS)
 
-**Goal**: Port intDegree approach and fix DimensionScratch.lean sorries
+**Goal**: Complete dimension formula for projective L(D)
+
+### 🎉 MAJOR MILESTONE: Gap Bound PROVED!
+
+**`ell_ratfunc_projective_gap_le`** - Gap bound ℓ(D+[v]) ≤ ℓ(D) + 1 is now PROVED!
+
+**Proof structure** (lines 63-290 in DimensionScratch.lean):
+1. **Residue field isomorphism**: `linearPlace_residue_equiv` shows κ(linearPlace α) ≅ Fq
+2. **Dimension bound**: `linearPlace_residue_finrank` proves dim_Fq(κ(v)) = 1
+3. **Evaluation map**: Constructed Fq-linear map ψ: L_proj(D+v) → κ(v)
+4. **Kernel characterization**:
+   - ker(ψ) ⊇ L_proj(D) via `LD_element_maps_to_zero`
+   - ker(ψ) ⊆ L_proj(D) via `kernel_evaluationMapAt_complete_proof` + noPoleAtInfinity preservation
+5. **Dimension counting**: Quotient embeds into 1-dim κ(v), so gap ≤ 1
+
+### Single-Point Formula (IN PROGRESS)
+
+**`ell_ratfunc_projective_single_linear`** - proving ℓ(n·[v]) = n + 1
+
+Current issue at line 527: Need to establish `0 < finrank` for Module.Finite instance.
+
+**Remaining step**: Show `0 < ell_ratfunc_projective (...)` using the nonzero element
+`1/(X-α)^(m+1) ∈ L((m+1)·[v])`. The element existence is proved (`h_in`), just need
+to connect to `Module.finrank_pos_iff`.
+
+### Remaining Sorry (1)
+
+**`ell_ratfunc_projective_eq_deg_plus_one`** (line 557) - General formula
+- Depends on single-point case for induction
+- Structure is clear: decompose D into sum of single points
+
+### Key Technical Insights
+
+1. **Kernel preservation**: If f ∈ L_proj(D+v) and eval(f) = 0, then:
+   - f ∈ L_affine(D) by affine kernel theorem
+   - f has noPoleAtInfinity (from f ∈ L_proj(D+v))
+   - Therefore f ∈ L_proj(D) ✓
+
+2. **Strict inclusion for lower bound**: L(m·[v]) ⊊ L((m+1)·[v]) because
+   1/(X-α)^(m+1) ∈ L((m+1)·[v]) \ L(m·[v]). With equal finrank + inclusion → equality,
+   contraposition gives finrank strictly increases.
+
+---
+
+## Cycle 230 Progress (COMPLETED)
+
+**Goal**: Port intDegree approach and fix DimensionScratch.lean sorries - ACHIEVED
 
 ### Major Progress: DimensionScratch.lean 6 → 2 sorries
 
-**Proved this session**:
-
-1. ✅ **`inv_X_sub_C_pow_noPoleAtInfinity`** - Ported from IntDegreeTest.lean
-   - Uses `intDegree` approach to sidestep typeclass issues
-   - Added helper lemmas: `RatFunc_X_sub_C_ne_zero`, `intDegree_inv_X_sub_C_pow`
-   - Added equivalence: `noPoleAtInfinity_iff_intDegree_le_zero`
-
-2. ✅ **`valuation_X_sub_at_other`** - Fixed broken proof
-   - Issue: `IsMaximal.eq_of_le` direction mismatch
-   - Fix: Use maximality of `Ideal.span {X - C α}` via `PrincipalIdealRing.isMaximal_of_irreducible`
-
-3. ✅ **`inv_X_sub_C_pow_satisfies_valuation`** - Fixed simp issue
-   - Changed `if_pos rfl` to `↓reduceIte` for proper ite reduction
-
-4. ✅ **`inv_X_sub_C_pow_not_mem_projective_smaller`** - Exclusion lemma
-   - Shows 1/(X-α)^k ∉ L_proj((k-1)·[v])
-   - Uses valuation bound: exp(k) > exp(k-1)
-
-5. ✅ **Lower bound in `ell_ratfunc_projective_single_linear`**
-   - Uses `Submodule.finrank_lt_finrank_of_lt` for strict inclusion
-   - Combines membership/non-membership to get L(m·[v]) < L((m+1)·[v])
-
-### Remaining Sorries (2)
-
-1. **`ell_ratfunc_projective_gap_le`** (line 72) - Gap bound ℓ(D+[v]) ≤ ℓ(D) + 1
-   - Requires evaluation map construction
-   - Standard proof via rank-nullity, but technically involved
-
-2. **`ell_ratfunc_projective_eq_deg_plus_one`** (line 294) - General formula
-   - Depends on gap bound for induction
-   - Will follow from single-point case once gap bound is proved
-
-### Technical Insight
-
-The key to proving the exclusion lemma was using `WithZero.exp_lt_exp.mpr` to show
-that the valuation exp(k) strictly exceeds the allowed bound exp(k-1).
+**Proved**:
+1. ✅ `inv_X_sub_C_pow_noPoleAtInfinity` - via intDegree approach
+2. ✅ `valuation_X_sub_at_other` - fixed via PrincipalIdealRing.isMaximal_of_irreducible
+3. ✅ `inv_X_sub_C_pow_satisfies_valuation` - fixed simp issue
+4. ✅ `inv_X_sub_C_pow_not_mem_projective_smaller` - exclusion lemma
+5. ✅ Lower bound structure in `ell_ratfunc_projective_single_linear`
 
 ---
 
