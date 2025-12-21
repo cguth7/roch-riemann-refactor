@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Build**: ✅ Full build compiles with sorries
 **Phase**: 3 - Serre Duality
-**Cycle**: 216
+**Cycle**: 217
 
 ### Active Sorries (2 in RatFuncPairing.lean)
 
@@ -19,6 +19,29 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 | **Residue.lean** | 2 | LOW | Higher-degree places, general residue theorem (deferred) |
 | **FullAdelesCompact.lean** | 1 | LOW | Edge case bound < 1 (not needed) |
 | **TraceDualityProof.lean** | 1 | LOW | Alternative approach (not on critical path) |
+
+---
+
+## Cycle 217 Progress
+
+**Completed**:
+1. ✅ **Proved Step 2 completely**: Irreducible factors of denom give poles at linear places
+   - For any irreducible factor π | denom, constructed place v_π with asIdeal = span{π}
+   - Proved v_π.intValuation(denom) < 1 (π ∈ v_π.asIdeal)
+   - Proved v_π.intValuation(num) = 1 (coprimality: π ∤ num)
+   - Therefore valuation(f) = val(num)/val(denom) > 1 (f has pole at v_π)
+   - From L(D) membership: valuation(f) ≤ exp(D(v_π)), so exp(D(v_π)) > 1
+   - Therefore D(v_π) > 0, so v_π ∈ D.support
+   - By IsLinearPlaceSupport: v_π is a linear place
+   - Conclusion: all irreducible factors of denom are linear (X - α)
+
+**Remaining for `projective_LRatFunc_eq_zero_of_neg_deg`** (Step 3 - counting argument):
+The formal counting argument requires tracking multiplicities:
+- Σ_{D(v)>0} D(v) ≥ deg(denom) (from pole multiplicities)
+- Σ_{D(v)<0} |D(v)| > Σ_{D(v)>0} D(v) (from deg(D) < 0)
+- Σ_{D(v)<0} |D(v)| ≤ deg(num) (from zero multiplicities)
+- deg(num) ≤ deg(denom) (from noPoleAtInfinity)
+- Contradiction: deg(denom) < deg(denom)
 
 ---
 
@@ -38,14 +61,6 @@ The theorem as originally stated (without IsLinearPlaceSupport) is actually FALS
 - But f = X²/π satisfies L(D) with noPoleAtInfinity (both have degree 2)
 
 For divisors supported only on linear places, the unweighted degree equals the weighted degree, making the theorem true.
-
-**Remaining for `projective_LRatFunc_eq_zero_of_neg_deg`**:
-The counting argument steps are documented in code. Still needs:
-1. Irreducible factors of polynomials give poles
-2. At poles, valuation > 1 implies D(v) ≥ 1
-3. Linear-support + D(v) > 0 implies v is linear
-4. Sum of multiplicities at linear factors = degree (for split poly)
-5. Sum of multiplicities at zeros bounded by deg(num)
 
 ---
 

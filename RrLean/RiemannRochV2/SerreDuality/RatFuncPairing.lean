@@ -2386,27 +2386,121 @@ theorem projective_LRatFunc_eq_zero_of_neg_deg (D : DivisorV2 (Polynomial Fq)) (
       have hnc_ne : n / c ≠ 0 := div_ne_zero hn hc_ne
       exact hf_const ⟨n / c, hnc_ne, hf_is_const⟩
 
-  -- Step 2: denom has an irreducible factor, giving f a pole
-  -- At that pole v, valuation(f) > 1, so D(v) > 0 (from L(D) condition)
-  -- Since D is linear-supported and D(v) > 0 means v ∈ supp(D), v is linear
-  -- This means all irreducible factors of denom are linear (X - α)
+  -- Step 2: Any irreducible factor of denom gives a pole
+  -- Get an irreducible factor of denom (exists since denom has positive degree)
+  have hdenom_ne : f.denom ≠ 0 := f.denom_ne_zero
+  have hexists_factor : ∃ π : Polynomial Fq, Irreducible π ∧ π ∣ f.denom :=
+    Polynomial.exists_irreducible_of_natDegree_pos hdenom_pos
+  obtain ⟨π, hπ_irr, hπ_dvd⟩ := hexists_factor
 
-  -- Step 3: Counting argument
-  -- - At each pole α: D(α) ≥ mult_α(denom) (from valuation condition)
-  -- - Σ_{poles} D(α) ≥ deg(denom) (since denom only has linear factors)
-  -- - At each v with D(v) < 0: num has factor at v with mult_v(num) ≥ |D(v)|
-  -- - Σ_{D(v)<0} mult_v(num) ≥ Σ_{D(v)<0} |D(v)| > Σ_{D(v)>0} D(v) ≥ deg(denom)
-  -- - But Σ_{D(v)<0} mult_v(num) ≤ deg(num) ≤ deg(denom) (noPoleAtInfinity)
-  -- - Contradiction: deg(denom) > deg(denom)
+  -- Define the place v_π corresponding to π
+  -- v_π.asIdeal = span{π}
+  have hπ_ne : π ≠ 0 := hπ_irr.ne_zero
+  let v_π : HeightOneSpectrum (Polynomial Fq) :=
+    ⟨Ideal.span {π}, Ideal.span_singleton_prime hπ_ne |>.mpr hπ_irr.prime,
+     by rw [ne_eq, Ideal.span_singleton_eq_bot]; exact hπ_ne⟩
 
-  -- For now, we document the remaining steps and leave a sorry.
-  -- The key remaining infrastructure needed:
-  -- 1. Irreducible factors of polynomials give poles
-  -- 2. At poles, valuation > 1 implies D(v) ≥ 1
-  -- 3. Linear-support + D(v) > 0 implies v is linear
-  -- 4. Sum of multiplicities at linear factors = degree (for split poly)
-  -- 5. Sum of multiplicities at zeros bounded by deg(num)
+  -- At v_π, denom has valuation < 1 (since π | denom means denom ∈ v_π.asIdeal)
+  have hdenom_in_v : f.denom ∈ v_π.asIdeal := by
+    simp only [v_π, Ideal.mem_span_singleton]
+    exact hπ_dvd
 
+  have hdenom_val_lt : v_π.intValuation f.denom < 1 :=
+    (intValuation_lt_one_iff_mem v_π f.denom).mpr hdenom_in_v
+
+  -- num and denom are coprime
+  have hcop : IsCoprime f.num f.denom := f.isCoprime_num_denom
+
+  -- Since num and denom are coprime, π ∤ num (else π would divide both)
+  have hπ_not_dvd_num : ¬(π ∣ f.num) := by
+    intro hπ_dvd_num
+    have hdvd_one : π ∣ (1 : Polynomial Fq) := by
+      obtain ⟨a, b, hab⟩ := hcop
+      calc π ∣ a * f.num + b * f.denom := dvd_add (dvd_mul_of_dvd_right hπ_dvd_num a)
+                                                   (dvd_mul_of_dvd_right hπ_dvd b)
+         _ = 1 := hab
+    exact Irreducible.not_isUnit hπ_irr (isUnit_of_dvd_one hdvd_one)
+
+  -- So num ∉ v_π.asIdeal
+  have hnum_not_in_v : f.num ∉ v_π.asIdeal := by
+    simp only [v_π, Ideal.mem_span_singleton]
+    exact hπ_not_dvd_num
+
+  -- Therefore num has valuation 1 at v_π
+  have hnum_val_one : v_π.intValuation f.num = 1 :=
+    intValuation_eq_one_iff.mpr hnum_not_in_v
+
+  -- valuation(f) = valuation(num)/valuation(denom) > 1 since denom val < 1 and num val = 1
+  have hf_val_gt_one : v_π.valuation (RatFunc Fq) f > 1 := by
+    rw [← RatFunc.num_div_denom f]
+    have hnum_ne : f.num ≠ 0 := by
+      intro heq
+      have hf_eq_zero : f = 0 := by
+        rw [← RatFunc.num_div_denom f, heq, map_zero, zero_div]
+      exact hf_ne hf_eq_zero
+    have hdenom_alg_ne : algebraMap (Polynomial Fq) (RatFunc Fq) f.denom ≠ 0 :=
+      RatFunc.algebraMap_ne_zero hdenom_ne
+    rw [Valuation.map_div, v_π.valuation_of_algebraMap, v_π.valuation_of_algebraMap]
+    rw [hnum_val_one]
+    simp only [one_div]
+    have hdenom_mem : f.denom ∈ nonZeroDivisors (Polynomial Fq) :=
+      mem_nonZeroDivisors_of_ne_zero hdenom_ne
+    have hval_ne : v_π.intValuation f.denom ≠ 0 := v_π.intValuation_ne_zero' ⟨f.denom, hdenom_mem⟩
+    have hcoe_val_lt : (v_π.intValuation f.denom : WithZero (Multiplicative ℤ)) < 1 := hdenom_val_lt
+    exact one_lt_inv_iff₀.mpr ⟨zero_lt_iff.mpr (by exact_mod_cast hval_ne), hcoe_val_lt⟩
+
+  -- From hf_val (f ∈ L(D)): v_π.valuation f ≤ exp(D v_π)
+  have hf_bound := hf_val v_π
+
+  -- valuation > 1 means exp(D v_π) ≥ valuation > 1, so exp(D v_π) > 1, so D v_π ≥ 1
+  have hD_pos : D v_π > 0 := by
+    have hexp_gt_one : WithZero.exp (D v_π) > 1 := lt_of_lt_of_le hf_val_gt_one hf_bound
+    rw [← WithZero.exp_zero] at hexp_gt_one
+    exact WithZero.exp_lt_exp.mp hexp_gt_one
+
+  -- D v_π > 0 means v_π ∈ D.support
+  have hv_in_supp : v_π ∈ D.support := by
+    rw [Finsupp.mem_support_iff]
+    omega
+
+  -- By IsLinearPlaceSupport, v_π must be a linear place
+  have hv_linear := hDlin v_π hv_in_supp
+  obtain ⟨α, hv_eq⟩ := hv_linear
+
+  -- So π generates the ideal (X - α), i.e., π is associate to (X - α)
+  -- v_π.asIdeal = span{π} and v_π = linearPlace α means span{π} = span{X - α}
+  have hspan_eq : v_π.asIdeal = (linearPlace α).asIdeal := by rw [hv_eq]
+  -- This means π and (X - α) are associates - they generate the same ideal
+
+  -- So denom only has linear irreducible factors!
+  -- This is the key: every irreducible factor of denom is linear.
+  -- We've shown: at each pole v_π of f, we have D(v_π) > 0 and v_π is a linear place
+
+  -- Step 3: Counting argument via multiplicity sum
+  -- Summary of established facts:
+  -- 1. hD_pos : D v_π > 0  (divisor is positive at some pole)
+  -- 2. hv_linear : v_π is a linear place (by IsLinearPlaceSupport + D(v_π) > 0)
+  -- 3. hdenom_pos : f.denom.natDegree > 0 (denom has positive degree)
+  -- 4. hf_nopole : f.num.natDegree ≤ f.denom.natDegree (no pole at infinity)
+  -- 5. hD : D.deg < 0 (degree of divisor is negative)
+
+  -- The counting argument (outline):
+  -- Let S_+ = {v : D(v) > 0}, S_- = {v : D(v) < 0}
+  -- Both are finite subsets of linear places (by IsLinearPlaceSupport)
+  --
+  -- From deg(D) < 0: Σ_{S_-} |D(v)| > Σ_{S_+} D(v)
+  --
+  -- At each pole v of f: valuation(f) > 1 implies D(v) ≥ 1, so all poles are in S_+
+  -- The sum Σ_{S_+} D(v) ≥ deg(denom) (counting multiplicities of poles)
+  --
+  -- At each v ∈ S_-: D(v) < 0 means valuation(f) < 1, so num has zeros there
+  -- The sum Σ_{S_-} |D(v)| ≤ deg(num) (counting multiplicities of zeros)
+  --
+  -- Combining: deg(num) ≥ Σ_{S_-} |D(v)| > Σ_{S_+} D(v) ≥ deg(denom) ≥ deg(num)
+  -- Contradiction!
+
+  -- The formal proof requires tracking multiplicities with Finsupp.sum
+  -- For now, we document the established progress and mark the counting step as TODO
   sorry
 
 /-- The projective RRSpace is trivial when deg(D) < 0 and D is supported on linear places. -/
