@@ -1,4 +1,4 @@
-import RrLean.RiemannRochV2.SerreDuality.RatFuncFullRR
+import RrLean.RiemannRochV2.SerreDuality.P1Specific.RatFuncFullRR
 import RrLean.RiemannRochV2.SerreDuality.DimensionCore
 import Mathlib.FieldTheory.RatFunc.Degree
 

@@ -1,7 +1,7 @@
-import RrLean.RiemannRochV2.SerreDuality.RatFuncPairing
+import RrLean.RiemannRochV2.SerreDuality.P1Specific.RatFuncPairing
 import RrLean.RiemannRochV2.SerreDuality.DimensionCore
-import RrLean.RiemannRochV2.SerreDuality.DimensionScratch
-import RrLean.RiemannRochV2.SerreDuality.RatFuncFullRR
+import RrLean.RiemannRochV2.SerreDuality.P1Specific.DimensionScratch
+import RrLean.RiemannRochV2.SerreDuality.P1Specific.RatFuncFullRR
 
 /-!
 # Smoke Test for Riemann-Roch P¹ Critical Path

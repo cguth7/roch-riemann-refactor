@@ -1,5 +1,5 @@
 import RrLean.RiemannRochV2.FullRRData
-import RrLean.RiemannRochV2.SerreDuality.RatFuncPairing
+import RrLean.RiemannRochV2.SerreDuality.P1Specific.RatFuncPairing
 
 /-!
 # Full Riemann-Roch for RatFunc Fq (Genus 0)

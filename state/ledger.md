@@ -6,9 +6,9 @@ Tactical tracking for Riemann-Roch formalization.
 
 ## Current State
 
-**Build**: ✅ Compiles (0 sorries)
+**Build**: ✅ Compiles (0 sorries in main path)
 **Result**: Restricted P¹ Riemann-Roch (linear places only)
-**Cycle**: 241
+**Cycle**: 242
 
 ---
 
@@ -43,7 +43,29 @@ Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more in
 
 ---
 
-## Cycle 241 Summary
+## Cycle 242 Summary
+
+**Task**: Reorganize SerreDuality folder - create P1Specific subfolder
+
+**Changes**:
+1. Created `RrLean/RiemannRochV2/SerreDuality/P1Specific/` directory
+2. Moved `RatFuncPairing.lean` → `P1Specific/`
+3. Moved `DimensionScratch.lean` → `P1Specific/`
+4. Moved `RatFuncFullRR.lean` → `P1Specific/`
+5. Updated imports in all affected files (5 files total)
+
+**Verification**:
+```bash
+lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "sorryAx"
+# No output = no sorries
+
+ls RrLean/RiemannRochV2/SerreDuality/P1Specific/
+# DimensionScratch.lean  RatFuncFullRR.lean  RatFuncPairing.lean
+```
+
+---
+
+## Cycle 241 Summary (Previous)
 
 **Fixes applied**:
 1. `add_le_add_left` → `linarith` with explicit sum non-negativity
@@ -51,14 +73,6 @@ Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more in
 3. Replaced circular proof with direct calc-based proof
 4. Moved 6 dead-code sorried lemmas to Archive
 5. Eliminated last sorry by adding `1 ≤ bound` hypothesis
-
-**Verification**:
-```bash
-lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "sorryAx"
-# No output = no sorries
-
-# Axioms: [propext, Classical.choice, Quot.sound] (standard mathlib)
-```
 
 ---
 
@@ -81,24 +95,32 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ## Next Steps
 
-### Immediate (Cycle 242): Reorganize SerreDuality folder
+### Immediate (Cycle 243): Fill AdelicH1Full.lean sorries
 
-**Task**: Create `SerreDuality/P1Specific/` subfolder and move P¹-only files there.
+**Task**: Complete scalar mult lemmas in `AdelicH1Full.lean`
 
-**Files to move**:
-- `RatFuncPairing.lean` → `P1Specific/`
-- `DimensionScratch.lean` → `P1Specific/`
-- `RatFuncFullRR.lean` → `P1Specific/`
+**File**: `RrLean/RiemannRochV2/SerreDuality/AdelicH1Full.lean`
+
+**Priority sorries** (lines 230, 234, 276):
+- `smul_mem_boundedSubset_full` - Scalar mult preserves bounded adeles
+- `smul_mem_globalSubset_full` - Scalar mult on diagonal
+
+**Strategy**: Show that k-scalars don't change valuations (k ⊆ integers at all places).
 
 **Success criteria**:
 ```bash
-lake build RrLean.RiemannRochV2.SerreDuality.Smoke  # Still compiles
-ls RrLean/RiemannRochV2/SerreDuality/P1Specific/    # Shows 3 files
+grep -c "sorry" RrLean/RiemannRochV2/SerreDuality/AdelicH1Full.lean
+# Should decrease from 8
 ```
 
-**Context**: This separates curve-agnostic infrastructure from P¹-specific code, making it clear what generalizes vs. what needs replacement.
+**Outcome**: Unlocks `SpaceModule_full` as the correct H¹(D) definition for arbitrary curves.
 
-**After**: Fill the 2 sorries in `AdelicH1Full.lean` (scalar mult lemmas), which unblocks the correct H¹(D) definition for arbitrary curves.
+### Follow-up (Cycle 244+): Continue Phase 0 reorganization
+
+Per `REFACTOR_PLAN.md`:
+- Move `Abstract.lean` and `AdelicH1Full.lean` to `SerreDuality/General/`
+- Move `DimensionCore.lean` to `P1Specific/`
+- Archive `IntDegreeTest.lean`
 
 ---
 

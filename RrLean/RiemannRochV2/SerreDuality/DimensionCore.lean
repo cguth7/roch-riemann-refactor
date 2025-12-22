@@ -1,4 +1,4 @@
-import RrLean.RiemannRochV2.SerreDuality.RatFuncPairing
+import RrLean.RiemannRochV2.SerreDuality.P1Specific.RatFuncPairing
 import Mathlib.LinearAlgebra.Dimension.Finrank
 import Mathlib.RingTheory.Polynomial.DegreeLT
 
