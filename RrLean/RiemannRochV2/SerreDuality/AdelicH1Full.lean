@@ -222,16 +222,44 @@ lemma smul_mem_boundedSubset_full (D : ExtendedDivisor (Polynomial Fq))
     c • a ∈ boundedSubset_full Fq D := by
   constructor
   · intro v
-    -- For the finite part, use existing lemma
-    have h := AdelicH1v2.smul_mem_boundedSubset Fq (Polynomial Fq) (RatFunc Fq)
-              D.finite c (ha.1)
-    -- The scalar action on Prod gives (c • a).1 = c • a.1
-    -- This needs to be shown via the algebra structure
-    sorry -- TODO: finish scalar mult for finite part
-  · -- Infinity part
+    -- (c • a).1 = (diag(c) * a).1 = diag(c).1 * a.1
+    -- Show this equals c • a.1 using scalar tower
+    have heq : (c • a).1 = c • a.1 := by
+      -- c • a = fqFullDiagonalEmbedding (algebraMap c) * a
+      show (fqFullDiagonalEmbedding Fq (algebraMap Fq (RatFunc Fq) c) * a).1 = c • a.1
+      -- Product multiplication is componentwise
+      rw [show (fqFullDiagonalEmbedding Fq (algebraMap Fq (RatFunc Fq) c) * a).1 =
+              (fqFullDiagonalEmbedding Fq (algebraMap Fq (RatFunc Fq) c)).1 * a.1 from rfl]
+      -- diag.1 = FiniteAdeleRing.algebraMap = algebraMap (RatFunc Fq) (FiniteAdeleRing ...)
+      rw [Algebra.smul_def]
+      -- Use scalar tower: algebraMap Fq (FiniteAdeleRing) = algebraMap K ∘ algebraMap Fq K
+      rw [IsScalarTower.algebraMap_apply Fq (RatFunc Fq) (FiniteAdeleRing (Polynomial Fq) (RatFunc Fq))]
+      rfl
+    rw [heq]
+    exact AdelicH1v2.smul_mem_boundedSubset Fq (Polynomial Fq) (RatFunc Fq) D.finite c (ha.1) v
+  · -- Infinity part: Valued.v (c • a).2 ≤ exp(D.inftyCoeff)
     show Valued.v (c • a).2 ≤ WithZero.exp D.inftyCoeff
-    -- The scalar action via the algebra structure
-    sorry -- TODO: finish scalar mult for infinity part
+    -- (c • a).2 = diag(c).2 * a.2
+    have heq : (c • a).2 = (fqFullDiagonalEmbedding Fq (algebraMap Fq (RatFunc Fq) c)).2 * a.2 := rfl
+    rw [heq, Valuation.map_mul]
+    -- Constants have valuation ≤ 1 at infinity
+    have hc_val : Valued.v (fqFullDiagonalEmbedding Fq (algebraMap Fq (RatFunc Fq) c)).2 ≤ 1 := by
+      by_cases hc : c = 0
+      · subst hc
+        -- c = 0, so algebraMap 0 = 0, and diag(0) = 0
+        simp only [map_zero, Prod.snd_zero, Valuation.map_zero]
+        exact WithZero.zero_le (1 : WithZero (Multiplicative ℤ))
+      · -- For nonzero c, use diag_infty_valuation and FunctionField.inftyValuation.C
+        rw [FullAdeles.diag_infty_valuation Fq (algebraMap Fq (RatFunc Fq) c)]
+        -- algebraMap Fq (RatFunc Fq) c = RatFunc.C c
+        have halg : algebraMap Fq (RatFunc Fq) c = RatFunc.C c := rfl
+        rw [halg, ← FunctionField.inftyValuation_apply]
+        rw [FunctionField.inftyValuation.C Fq hc]
+    calc Valued.v (fqFullDiagonalEmbedding Fq (algebraMap Fq (RatFunc Fq) c)).2 * Valued.v (a.2)
+        ≤ 1 * Valued.v (a.2) := by
+          apply mul_le_mul_of_nonneg_right hc_val (WithZero.zero_le _)
+      _ = Valued.v (a.2) := one_mul _
+      _ ≤ WithZero.exp D.inftyCoeff := ha.2
 
 /-- A_K(D) as an Fq-submodule of FullAdeleRing. -/
 def boundedSubmodule_full (D : ExtendedDivisor (Polynomial Fq)) :
@@ -268,12 +296,13 @@ lemma smul_mem_globalSubset_full (c : Fq) {a : FqFullAdeleRing Fq}
     (ha : a ∈ globalSubset_full Fq) : c • a ∈ globalSubset_full Fq := by
   obtain ⟨k, rfl⟩ := ha
   use c • k
-  -- The scalar action is via algebraMap composed with fqFullDiagonalEmbedding
-  simp only [Algebra.smul_def]
-  -- algebraMap Fq (FqFullAdeleRing Fq) c * fqFullDiagonalEmbedding Fq k
-  -- = fqFullDiagonalEmbedding Fq (algebraMap Fq (RatFunc Fq) c * k)
-  -- This follows from how the Algebra instance is defined
-  sorry -- TODO: scalar mult preserves global embedding
+  -- Goal: fqFullDiagonalEmbedding Fq (c • k) = c • fqFullDiagonalEmbedding Fq k
+  -- c • diag(k) = diag(algebraMap c) * diag(k) by definition of SMul
+  -- = diag(algebraMap c * k) by map_mul
+  -- = diag(c • k) by Algebra.smul_def on RatFunc Fq
+  rw [Algebra.smul_def]
+  -- Goal: diag(algebraMap c * k) = diag(algebraMap c) * diag(k)
+  exact map_mul (fqFullDiagonalEmbedding Fq) (algebraMap Fq (RatFunc Fq) c) k
 
 /-- The diagonal of K as an Fq-submodule of FullAdeleRing. -/
 def globalSubmodule_full : Submodule Fq (FqFullAdeleRing Fq) where
