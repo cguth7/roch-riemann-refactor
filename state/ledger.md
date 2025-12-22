@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization.
 
 **Build**: ✅ Compiles (0 sorries in main path)
 **Result**: Restricted P¹ Riemann-Roch (linear places only)
-**Cycle**: 249
+**Cycle**: 250
 
 ---
 
@@ -43,7 +43,42 @@ Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more in
 
 ---
 
-## Cycle 249 Summary
+## Cycle 250 Summary
+
+**Task**: Create `DivisorV3.lean` - projective divisors using unified Place type
+
+**New File**: `RrLean/RiemannRochV2/Core/DivisorV3.lean`
+
+Created projective divisors that include both finite and infinite places:
+
+```lean
+/-- A projective divisor on a curve is a finitely supported function from all places to ℤ. -/
+abbrev DivisorV3 := Place R K →₀ ℤ
+```
+
+**Key definitions**:
+- `DivisorV3.deg`: Degree (sum of all coefficients)
+- `DivisorV3.degFinite`: Degree contribution from finite places
+- `DivisorV3.degInfinite`: Degree contribution from infinite places
+- `DivisorV3.Effective`: Non-negative divisors
+- `DivisorV3.ofAffine`: Embedding from DivisorV2 (affine) to DivisorV3 (projective)
+- `DivisorV3.singleFinite`, `DivisorV3.singleInfinite`: Single-place divisors
+
+**Key lemmas**:
+- `deg_eq_degFinite_add_degInfinite`: Total degree = finite + infinite contributions
+- `finiteFilter_add_infiniteFilter`: Divisor = finiteFilter + infiniteFilter
+- `deg_ofAffine`: Embedding preserves degree
+- `ofAffine_effective`: Embedding preserves effectivity
+
+**Verification**:
+```bash
+lake build RrLean.RiemannRochV2.Core.DivisorV3  # ✅
+lake build RrLean.RiemannRochV2.SerreDuality.Smoke  # ✅ Still passes
+```
+
+---
+
+## Cycle 249 Summary (Previous)
 
 **Task**: Create `Place.lean` - unified Place type for Phase 3
 
@@ -69,12 +104,6 @@ inductive Place (R : Type*) (K : Type*) ...
 - `Place.isFinite`, `Place.isInfinite`: Classification predicates
 - `HasInfinitePlaces`: Typeclass for curves with infinite places
 - `HasInfinitePlaces.allPlaces`: Combined finite + infinite places
-
-**Verification**:
-```bash
-lake build RrLean.RiemannRochV2.Core.Place  # ✅
-lake build RrLean.RiemannRochV2.SerreDuality.Smoke  # ✅ Still passes
-```
 
 ---
 
@@ -271,10 +300,12 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "sorryAx"
 **3 sorries total** in non-archived code:
 - `Abstract.lean`: 3 (placeholder `AdelicRRData` instance fields)
 
-**Sorry-free files** (confirmed Cycle 247):
+**Sorry-free files** (confirmed Cycle 250):
 - DimensionCore.lean ✅
 - AdelicH1Full.lean ✅
 - DimensionScratch.lean ✅
+- Place.lean ✅ (new)
+- DivisorV3.lean ✅ (new)
 - All other SerreDuality files ✅
 
 6 dead-code lemmas in `RrLean/Archive/SorriedLemmas.lean`.
@@ -294,19 +325,19 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ## Next Steps
 
-### Immediate: Continue Phase 3 - Extend DivisorV2
+### Immediate: Continue Phase 3 - RRSpaceV3
 
-**Cycle 249 complete**: `Place.lean` created with unified Place type.
+**Cycle 250 complete**: `DivisorV3.lean` created with projective divisors over unified Place type.
 
-**Cycle 250**: Create `DivisorV3.lean` (or extend DivisorV2)
-- Define `DivisorV3 R K := Place R K →₀ ℤ`
-- Port existing `DivisorV2` lemmas (deg_add, deg_single, Effective, etc.)
-- Add `deg_finite`, `deg_infinite` for separate degree contributions
+**Cycle 251**: Create `RRSpaceV3.lean` (or extend RRSpace)
+- Define `L(D)` using `DivisorV3` and `Place.valuation`
+- Port existing RRSpace lemmas (membership conditions, module structure)
+- Handle both finite and infinite valuation constraints
 
-**Cycle 251-252**: Update RRDefinitions.lean
-- Add valuation dispatching on Place (finite vs infinite)
-- Define L(D) using unified Place type
-- Wire in infinity handling from FullAdelesBase.lean
+**Cycle 252**: Connect to P¹ Instance
+- Define `inftyPlace` for P¹ (using `FunctionField.inftyValuation`)
+- Create `HasInfinitePlaces` instance for `Polynomial Fq / RatFunc Fq`
+- Prove `inftyPlace.deg = 1` (degree 1 place)
 
 **After Phase 3**: Abstract.lean sorries become fillable for all projective curves.
 
