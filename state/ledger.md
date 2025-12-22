@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization.
 
 **Build**: ✅ Compiles (0 sorries in main path)
 **Result**: Restricted P¹ Riemann-Roch (linear places only)
-**Cycle**: 245
+**Cycle**: 246
 
 ---
 
@@ -43,7 +43,36 @@ Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more in
 
 ---
 
-## Cycle 245 Summary
+## Cycle 246 Summary
+
+**Task**: Fix `RRSpace_proj_ext` definition in AdelicH1Full.lean
+
+**Problem Found**: The carrier definition had two bugs:
+1. **Wrong inequality direction**: `exp(D(v)) ≤ v(f)` instead of `v(f) ≤ exp(D(v))`
+   - The original was NOT closed under addition (pole cancellation breaks it)
+   - Fixed to match `RRModuleV2_real` pattern
+2. **Missing zero handling**: Needed `f = 0 ∨ ...` pattern since v(0) = 0 is bottom element
+
+**Changes**:
+1. Fixed carrier to: `f = 0 ∨ ((∀ v, v(f) ≤ exp(D(v))) ∧ degree bound)`
+2. Proved `zero_mem'`: Now trivial via `Or.inl rfl`
+3. Proved `add_mem'` valuation: Uses ultrametric `Valuation.map_add_le_max'`
+4. Proved `smul_mem'` valuation: Uses `IsScalarTower.algebraMap_apply` + `valuation_le_one`
+5. Degree proofs left as sorry (2 sorries) - need careful intDegree ↔ natDegree conversion
+
+**Sorries remaining in RRSpace_proj_ext**: 2
+- `add_mem'` degree bound (line 407)
+- `smul_mem'` degree bound (line 438)
+
+**Verification**:
+```bash
+lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "error\|sorryAx"
+# No output = main path still sorry-free
+```
+
+---
+
+## Cycle 245 Summary (Previous)
 
 **Task**: Complete SerreDuality reorganization - General/ subfolder + archive
 
@@ -150,7 +179,11 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "sorryAx"
 
 ## Sorries
 
-**0 sorries in main codebase.**
+**0 sorries in main path** (Smoke test passes).
+
+**2 sorries in RRSpace_proj_ext** (AdelicH1Full.lean - not on main path):
+- `add_mem'` degree bound (line 407)
+- `smul_mem'` degree bound (line 438)
 
 6 dead-code lemmas in `RrLean/Archive/SorriedLemmas.lean`.
 
@@ -167,11 +200,16 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ## Next Steps
 
-### Immediate (Cycle 246): Fill RRSpace_proj_ext sorries
+### Immediate (Cycle 247): Fill RRSpace_proj_ext degree sorries
 
 **File**: `RrLean/RiemannRochV2/SerreDuality/General/AdelicH1Full.lean`
 
-5 sorries for the Riemann-Roch space with infinity constraint (RRSpace_proj_ext)
+2 sorries for degree bounds in RRSpace_proj_ext submodule:
+1. `add_mem'` degree: Use `RatFunc.intDegree_add_le` with careful type coercion
+2. `smul_mem'` degree: Use `RatFunc.intDegree_mul` + `RatFunc.intDegree_C`
+
+**Key insight**: The condition `num.natDegree ≤ denom.natDegree + n` is equivalent to `intDegree ≤ n`.
+Need to handle the ℕ → ℤ coercion and `sub_le_iff_le_add` carefully.
 
 ### Alternative: Clean up remaining linter warnings
 

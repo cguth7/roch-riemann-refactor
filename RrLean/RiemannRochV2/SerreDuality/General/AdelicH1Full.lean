@@ -357,37 +357,86 @@ section ProjectiveLD
 
 /-- L_proj(D) - Riemann-Roch space with infinity constraint.
 f ∈ L_proj(D) iff:
-1. v(f) ≥ -D.finite(v) for all finite v (no poles worse than D)
+1. v(f) ≤ exp(D.finite(v)) for all finite v (poles bounded by D)
 2. deg(num) ≤ deg(denom) + D.inftyCoeff (controlled pole at ∞)
 
 For extended divisor D with D.inftyCoeff = 0:
 L_proj(0) = { f | integral at finite places, deg(num) ≤ deg(denom) } = constants
+
+Note: Uses `f = 0 ∨ ...` pattern to handle zero element correctly (v(0) = 0 is bottom).
 -/
 def RRSpace_proj_ext (D : ExtendedDivisor (Polynomial Fq)) :
     Submodule Fq (RatFunc Fq) where
-  carrier := { f | (∀ v, WithZero.exp (D.finite v) ≤ v.valuation (RatFunc Fq) f) ∧
-                   (f.num.natDegree : ℤ) ≤ (f.denom.natDegree : ℤ) + D.inftyCoeff }
-  zero_mem' := by
-    -- Zero is in L(D) for any D by convention (zero function has no poles)
-    -- The valuation condition exp(D(v)) ≤ v(0) = 0 needs special handling
-    -- since v(0) = 0 (the zero of WithZero) is ≤ everything
-    sorry -- TODO: Fix valuation ordering for zero element
+  carrier := { f | f = 0 ∨
+                   ((∀ v, v.valuation (RatFunc Fq) f ≤ WithZero.exp (D.finite v)) ∧
+                    (f.num.natDegree : ℤ) ≤ (f.denom.natDegree : ℤ) + D.inftyCoeff) }
+  zero_mem' := Or.inl rfl
   add_mem' := by
     intro a b ha hb
-    constructor
-    · intro v
-      -- Ultrametric: v(a + b) ≥ min(v(a), v(b))
-      sorry -- TODO: ultrametric valuation inequality
-    · -- Degree of sum ≤ max of degrees
-      sorry -- TODO: degree bound for sum
+    by_cases h : a + b = 0
+    · exact Or.inl h
+    · right
+      constructor
+      · intro v
+        rcases ha with rfl | ⟨ha_val, _⟩
+        · simp only [zero_add] at h ⊢
+          rcases hb with rfl | ⟨hb_val, _⟩
+          · exact absurd rfl h
+          · exact hb_val v
+        rcases hb with rfl | ⟨hb_val, _⟩
+        · simp only [add_zero]
+          exact ha_val v
+        -- Both a and b are nonzero with valuation bounds: use ultrametric
+        calc v.valuation (RatFunc Fq) (a + b)
+            ≤ max (v.valuation (RatFunc Fq) a) (v.valuation (RatFunc Fq) b) :=
+              Valuation.map_add_le_max' _ a b
+          _ ≤ WithZero.exp (D.finite v) := max_le (ha_val v) (hb_val v)
+      · -- Degree bound for sum: need num(a+b).natDegree ≤ denom(a+b).natDegree + D.inftyCoeff
+        rcases ha with rfl | ⟨_, ha_deg⟩
+        · simp only [zero_add] at h ⊢
+          rcases hb with rfl | ⟨_, hb_deg⟩
+          · exact absurd rfl h
+          · exact hb_deg
+        rcases hb with rfl | ⟨_, hb_deg⟩
+        · simp only [add_zero]
+          exact ha_deg
+        -- Both nonzero: use RatFunc.intDegree_add_le
+        -- Strategy: convert to intDegree, apply intDegree_add_le, convert back
+        -- Condition: num.natDegree ≤ denom.natDegree + D.inftyCoeff ↔ intDegree ≤ D.inftyCoeff
+        -- This requires careful handling of the type coercions and arithmetic
+        -- TODO (Cycle 247): Complete the degree bound proof using intDegree_add_le
+        sorry
   smul_mem' := by
     intro c f hf
-    constructor
-    · intro v
-      -- v(c · f) = v(c) * v(f) and v(c) ≤ 1 for c ∈ Fq
-      sorry -- TODO: scalar preserves valuation bound
-    · -- deg((c · f).num) = deg(f.num) for c ≠ 0
-      sorry -- TODO: degree preserved by scalar
+    by_cases hcf : c • f = 0
+    · exact Or.inl hcf
+    · right
+      constructor
+      · intro v
+        rcases hf with rfl | ⟨hf_val, _⟩
+        · exfalso; apply hcf; simp only [smul_zero]
+        -- v(c • f) = v(algebraMap c * f) = v(algebraMap c) * v(f) ≤ 1 * exp(D(v))
+        simp only [Algebra.smul_def]
+        rw [(v.valuation (RatFunc Fq)).map_mul]
+        have hf_v := hf_val v
+        -- Need: v(algebraMap c) ≤ 1 for c ∈ Fq (constants have no zeros/poles at finite places)
+        have hc_val : v.valuation (RatFunc Fq) (algebraMap Fq (RatFunc Fq) c) ≤ 1 := by
+          -- algebraMap Fq (RatFunc Fq) factors: Fq → Polynomial Fq → RatFunc Fq
+          rw [IsScalarTower.algebraMap_apply Fq (Polynomial Fq) (RatFunc Fq)]
+          -- Now use HeightOneSpectrum.valuation_le_one for the Polynomial Fq element
+          exact HeightOneSpectrum.valuation_le_one v (algebraMap Fq (Polynomial Fq) c)
+        calc v.valuation (RatFunc Fq) (algebraMap Fq (RatFunc Fq) c) * v.valuation (RatFunc Fq) f
+            ≤ 1 * v.valuation (RatFunc Fq) f := by
+              apply mul_le_mul_of_nonneg_right hc_val (WithZero.zero_le _)
+          _ = v.valuation (RatFunc Fq) f := one_mul _
+          _ ≤ WithZero.exp (D.finite v) := hf_v
+      · -- Degree preserved by scalar mult
+        rcases hf with rfl | ⟨_, hf_deg⟩
+        · exfalso; apply hcf; simp only [smul_zero]
+        -- For c ≠ 0, (c • f).intDegree = intDegree(C c) + intDegree(f) = 0 + intDegree(f)
+        -- Strategy: use intDegree_mul and intDegree_C to show degree preserved
+        -- TODO (Cycle 247): Complete the scalar mult degree proof
+        sorry
 
 /-- The dimension ℓ_proj(D) for extended divisor. -/
 def ell_proj_ext (D : ExtendedDivisor (Polynomial Fq)) : ℕ :=
