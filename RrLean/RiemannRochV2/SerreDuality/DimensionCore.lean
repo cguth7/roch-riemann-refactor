@@ -47,24 +47,55 @@ For f ∈ RRSpace(n·[α]), the function (X-α)^n · f is a polynomial of degree
 This gives a linear injection into the finite-dimensional space Fq[X]_{≤n}.
 -/
 
-/-- Key lemma: If f ∈ RRSpace_ratfunc_projective (n·[linearPlace α]), then
-(X-α)^n · f is a polynomial (has no poles at finite places) of degree ≤ n. -/
+/-- Helper: If f ∈ RRSpace_ratfunc_projective (n·[α]), then f.denom = (X-α)^m for some m ≤ n.
+This is because:
+1. At any place v ≠ linearPlace α, val_v(f) ≤ 1, so denom has no other irreducible factors
+2. At linearPlace α, val_α(f) ≤ exp(n), so m ≤ n -/
+lemma denom_is_power_of_X_sub (α : Fq) (n : ℕ) (f : RatFunc Fq) (hf_ne : f ≠ 0)
+    (hf : f ∈ RRSpace_ratfunc_projective ((n : ℤ) • DivisorV2.single (linearPlace α) 1)) :
+    ∃ m : ℕ, m ≤ n ∧ f.denom = (Polynomial.X - Polynomial.C α) ^ m := by
+  -- The proof proceeds by:
+  -- 1. Factor denom = (X-α)^m * R
+  -- 2. Show R = 1 (no other factors) using valuation constraints
+  -- 3. Show m ≤ n from the valuation bound at linearPlace α
+  sorry
+
 lemma mul_X_sub_pow_is_polynomial (α : Fq) (n : ℕ) (f : RatFunc Fq)
     (hf : f ∈ RRSpace_ratfunc_projective ((n : ℤ) • DivisorV2.single (linearPlace α) 1)) :
     ∃ p : Polynomial Fq, (Polynomial.X - Polynomial.C α)^n * RatFunc.num f =
         p * RatFunc.denom f ∧ p.natDegree ≤ n := by
-  -- First handle the case f = 0
-  rcases hf with ⟨hval, hinfty⟩
   by_cases hf0 : f = 0
   · use 0
     simp [hf0]
-  -- For f ≠ 0, extract the valuation condition at linearPlace α
-  rcases hval with hzero | hval_all
-  · exact (hf0 hzero).elim
-  -- The valuation condition says v_α(f) ≤ n
-  -- which means ord_α(f) ≥ -n
-  -- so (X-α)^n · f has ord_α ≥ 0, i.e., no pole at α
-  sorry -- Technical: need to show polynomial form from valuation bounds
+  -- Get denom = (X-α)^m with m ≤ n
+  obtain ⟨m, hm_le, hdenom_eq⟩ := denom_is_power_of_X_sub Fq α n f hf0 hf
+  -- Define p = (X-α)^(n-m) * num
+  use (Polynomial.X - Polynomial.C α) ^ (n - m) * f.num
+  constructor
+  · -- (X-α)^n * num = p * denom = (X-α)^(n-m) * num * (X-α)^m
+    rw [hdenom_eq]
+    have hpow : (Polynomial.X - Polynomial.C α) ^ n =
+        (Polynomial.X - Polynomial.C α) ^ (n - m) * (Polynomial.X - Polynomial.C α) ^ m := by
+      rw [← pow_add, Nat.sub_add_cancel hm_le]
+    rw [hpow]
+    ring
+  · -- natDegree(p) ≤ n
+    rcases hf with ⟨_, hinfty⟩
+    rcases hinfty with rfl | hnopole
+    · exact (hf0 rfl).elim
+    -- noPoleAtInfinity: num.natDegree ≤ denom.natDegree = m
+    have hnum_deg : f.num.natDegree ≤ m := by
+      unfold noPoleAtInfinity at hnopole
+      rw [hdenom_eq] at hnopole
+      simp only [Polynomial.natDegree_pow, Polynomial.natDegree_X_sub_C, mul_one] at hnopole
+      exact hnopole
+    calc ((Polynomial.X - Polynomial.C α) ^ (n - m) * f.num).natDegree
+        ≤ ((Polynomial.X - Polynomial.C α) ^ (n - m)).natDegree + f.num.natDegree := Polynomial.natDegree_mul_le
+      _ = (n - m) * (Polynomial.X - Polynomial.C α).natDegree + f.num.natDegree := by
+          rw [Polynomial.natDegree_pow]
+      _ = (n - m) + f.num.natDegree := by simp [Polynomial.natDegree_X_sub_C]
+      _ ≤ (n - m) + m := Nat.add_le_add_left hnum_deg _
+      _ = n := Nat.sub_add_cancel hm_le
 
 /-- Partial pole clearing: maps f to the polynomial part of (X-α)^n · f.
 This is only defined on the subspace RRSpace_ratfunc_projective (n·[α]). -/
@@ -91,13 +122,16 @@ def partialClearPoles (α : Fq) (n : ℕ) :
     ext
     sorry -- Need to show polynomial extraction respects scalar mult
 
-/-- The pole clearing map is injective: if (X-α)^n · f = 0, then f = 0. -/
+/-- The pole clearing map is injective: if the cleared polynomials are equal, f = g.
+
+The proof uses the fact that if p_f = p_g where (X-α)^n * num = p * denom,
+then (X-α)^n * f = (X-α)^n * g (as RatFunc), hence f = g by cancellativity. -/
 lemma partialClearPoles_injective (α : Fq) (n : ℕ) :
     Function.Injective (partialClearPoles Fq α n) := by
   intro f g heq
   ext
-  -- If the polynomials are equal, then the original functions are equal
-  -- because (X-α)^n ≠ 0 and we're in a domain
+  -- The key insight: partialClearPoles f determines (X-α)^n * f uniquely
+  -- If p_f = p_g, then (X-α)^n * f = (X-α)^n * g, so f = g
   sorry
 
 /-! ## Module.Finite Instance

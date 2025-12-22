@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization. For strategy, see `playbook.md
 
 **Build**: ✅ Compiles (with sorries in DimensionCore + ell_ratfunc_projective_eq_deg_plus_one)
 **Phase**: 3 - Serre Duality → Dimension Formula
-**Cycle**: 236
+**Cycle**: 237
 
 ---
 
@@ -104,18 +104,20 @@ Smoke.lean                 (NEW: umbrella + #print axioms check)
 
 ---
 
-## Honest Sorry Audit (Cycle 236)
+## Honest Sorry Audit (Cycle 237)
 
 ### CRITICAL PATH FOR P¹ (6 sorries total)
 
 **DimensionCore.lean** (5 sorries):
 ```
-Line 67:  mul_X_sub_pow_is_polynomial     - valuation bounds → polynomial form
-Line 88:  partialClearPoles.map_add'      - linearity (addition)
-Line 92:  partialClearPoles.map_smul'     - linearity (scalar mult)
-Line 101: partialClearPoles_injective    - mult by nonzero is injective
-Line 126: RRSpace_...add_single_finite   - finiteness for D + [v]
+Line 54:  denom_is_power_of_X_sub        - denom = (X-α)^m with m ≤ n (KEY LEMMA)
+Line 119: partialClearPoles.map_add'      - linearity (addition)
+Line 123: partialClearPoles.map_smul'     - linearity (scalar mult)
+Line 135: partialClearPoles_injective    - mult by nonzero is injective
+Line 155: RRSpace_...add_single_finite   - finiteness for D + [v]
 ```
+
+Note: `mul_X_sub_pow_is_polynomial` is now fully proved modulo `denom_is_power_of_X_sub`.
 
 **DimensionScratch.lean** (1 sorry):
 ```
@@ -184,6 +186,78 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1
 # Verify no sorryAx in final theorem (after Smoke.lean exists)
 lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "sorryAx"
 ```
+
+---
+
+## Cycle 237 Summary
+
+**Goal**: Fill DimensionCore sorries
+
+**What happened**: Attempted to prove `denom_is_power_of_X_sub` with a ~150 line proof. Hit many API mismatches and wasted time debugging non-existent lemmas.
+
+**Outcome**:
+- Simplified `denom_is_power_of_X_sub` to a sorry with clear math sketch
+- `mul_X_sub_pow_is_polynomial` proof structure is correct (modulo `denom_is_power_of_X_sub`)
+- Build compiles with 5 sorries in DimensionCore
+
+**Lesson learned**: Don't write 150 lines at once. Build incrementally, test each step.
+
+---
+
+## ⚠️ API Lessons (Cycle 237)
+
+### APIs that DON'T EXIST (don't use these):
+```lean
+-- WRONG - these don't exist:
+Irreducible.not_unit           -- use Irreducible.not_isUnit
+Associated.normalize_eq        -- not a method
+Polynomial.normalize_monic     -- not in this form
+Associated.eq_of_monic_of_associated  -- doesn't exist
+RatFunc.mk_eq_div              -- doesn't exist
+Polynomial.rootMultiplicity_pow_self  -- may not exist
+WithZero.inv_exp               -- may not exist
+```
+
+### APIs that DO work:
+```lean
+-- CORRECT patterns:
+Irreducible.not_isUnit hπ_irr (isUnit_of_dvd_one hdvd_one)
+Polynomial.exists_eq_pow_rootMultiplicity_mul_and_not_dvd  -- factors p = (X-α)^m * R
+intValuation_linearPlace_eq_exp_neg_rootMultiplicity       -- valuation ↔ rootMultiplicity
+WfDvdMonoid.exists_irreducible_factor hR_not_unit hR_ne    -- get irreducible factor
+Valuation.map_div, v.valuation_of_algebraMap              -- valuation computation
+one_lt_inv_iff₀                                           -- for inverse comparisons
+RatFunc.num_div_denom f                                   -- NOT mk_eq_div
+Polynomial.isUnit_iff                                     -- returns ∃ c ≠ 0, p = C c
+```
+
+### Proof Strategy for `denom_is_power_of_X_sub`:
+The math is clear:
+1. Factor `denom = (X-α)^m * R` using `exists_eq_pow_rootMultiplicity_mul_and_not_dvd`
+2. Show `R = 1` by contradiction: any irreducible factor π of R creates place v_π where val(f) > 1
+3. Show `m ≤ n` from valuation bound at `linearPlace α`
+
+The implementation is tricky due to:
+- Constructing `HeightOneSpectrum` from an irreducible
+- Showing π ≠ (X-α) when π | R and (X-α) ∤ R (associated elements and normalization)
+- Computing valuations in RatFunc correctly
+
+**Recommendation for next Claude**: Prove this in small pieces. First prove a helper that any irreducible factor of denom creates a pole. Then use that to show R = 1.
+
+---
+
+## Incremental Proof Strategy (Cycle 237)
+
+**DO**:
+- Write 10-20 lines, build, fix errors
+- Use `sorry` to validate proof structure first
+- Extract helper lemmas when a sub-proof is complex
+- Check if APIs exist before using them (grep codebase)
+
+**DON'T**:
+- Write 100+ line proofs hoping they compile
+- Assume lemma names from memory (they're often wrong)
+- Try to prove everything at once when stuck on one piece
 
 ---
 
