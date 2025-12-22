@@ -202,9 +202,14 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "sorryAx"
 
 ## Sorries
 
-**0 sorries in main path** (Smoke test passes).
+**3 sorries total** in non-archived code:
+- `Abstract.lean`: 3 (placeholder `AdelicRRData` instance fields)
 
-**0 sorries in RRSpace_proj_ext** (AdelicH1Full.lean is now sorry-free!)
+**Sorry-free files** (confirmed Cycle 247):
+- DimensionCore.lean ✅
+- AdelicH1Full.lean ✅
+- DimensionScratch.lean ✅
+- All other SerreDuality files ✅
 
 6 dead-code lemmas in `RrLean/Archive/SorriedLemmas.lean`.
 
@@ -221,25 +226,22 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ## Next Steps
 
-### Option A (Cycle 248): Clean up remaining linter warnings
+### Immediate (Cycle 248): Fill Abstract.lean sorries
 
-Several files have `unusedSectionVars` warnings that could be cleaned up with `omit` annotations.
-This is low-priority cleanup work.
+**File**: `RrLean/RiemannRochV2/SerreDuality/General/Abstract.lean`
 
-### Option B (Cycle 248): Continue with Serre duality infrastructure
+Only 3 sorries remain in non-archived code (all placeholder instance fields):
+1. `h1_finite := sorry` (line 199) - H¹ finiteness from compactness
+2. `ell_finite := sorry` (line 200) - L(D) finiteness from RRSpace theory
+3. `h1_vanishing := sorry` (line 202) - H¹ vanishing from strong approximation
 
-With `RRSpace_proj_ext` now sorry-free, the next logical step is:
-1. Prove `ell_proj_ext` dimension formulas for specific divisors
-2. Connect `SpaceModule_full` (H¹) to `RRSpace_proj_ext` (L(D)) via the pairing
+**Success**: `lake build Abstract` with fewer sorries.
 
-### Option C (Cycle 248): Fill DimensionCore sorries
+**Context**: These complete the `AdelicRRData` instance for the abstract Serre duality framework.
 
-The main P¹ theorem path still depends on 5 sorries in DimensionCore.lean:
-- `mul_X_sub_pow_is_polynomial`
-- `partialClearPoles.map_add'`
-- `partialClearPoles.map_smul'`
-- `partialClearPoles_injective`
-- `RRSpace_ratfunc_projective_add_single_finite`
+### Alternative options:
+- **Clean up linter warnings** - Low priority, `unusedSectionVars` warnings
+- **Continue Serre duality** - Wire real residue pairing into Abstract.lean
 
 ---
 

@@ -1,6 +1,6 @@
 # Playbook
 
-Strategic guide for formalizing Riemann-Roch. Updated Cycle 241.
+Strategic guide for formalizing Riemann-Roch. Updated Cycle 247.
 
 ---
 
@@ -64,7 +64,7 @@ Example:
 
 ## Ultimate Goal
 
-Formalize the **Riemann-Roch theorem** for function fields in Lean 4 — **no axioms, no sorries**:
+Formalize the **Riemann-Roch theorem** for **arbitrary smooth projective curves** over finite fields in Lean 4 — **no axioms, no sorries**:
 
 ```
 ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
@@ -73,8 +73,19 @@ Formalize the **Riemann-Roch theorem** for function fields in Lean 4 — **no ax
 Where:
 - `ℓ(D)` = dimension of L(D) over the base field k
 - `K` = canonical divisor (from differentIdeal)
-- `g` = genus
+- `g` = genus of the curve
 - `deg(D)` = degree of divisor D
+
+### Scope
+
+| Curve Type | Genus | Status |
+|------------|-------|--------|
+| P¹ (projective line) | 0 | Current focus (linear places proved) |
+| Elliptic curves | 1 | Future (Phase 6) |
+| Hyperelliptic curves | (deg f - 1)/2 | Future (Phase 6) |
+| General smooth projective | any g | Architecture supports it |
+
+The core infrastructure (~3,700 lines) is **curve-agnostic**. Only the `AdelicRRData` instance needs to be provided for each curve family.
 
 ---
 
@@ -146,13 +157,22 @@ lemma coeIdeal_differentIdeal :
 
 ## Architecture
 
+### Design Philosophy
+
+The codebase is split into **curve-agnostic infrastructure** and **curve-specific instances**:
+
+- **Infrastructure** (general): Divisors, L(D), adeles, H¹(D), Serre pairing machinery
+- **Instances** (specific): P¹ over Fq, elliptic curves, hyperelliptic curves, etc.
+
+To add a new curve, you provide an `AdelicRRData` instance. The RR theorem follows automatically.
+
 ### Type Hierarchy
 ```
 k : Field                    -- base field (e.g., Fq)
-R : CommRing, IsDedekindDomain  -- coordinate ring (e.g., Fq[X])
-K : Field, IsFractionRing R K   -- function field (e.g., RatFunc Fq)
+R : CommRing, IsDedekindDomain  -- coordinate ring (e.g., Fq[X], or k[x,y]/(f))
+K : Field, IsFractionRing R K   -- function field (e.g., RatFunc Fq, or Frac(R))
 
-HeightOneSpectrum R          -- finite places
+HeightOneSpectrum R          -- finite places (prime ideals of R)
 K∞ : Valued field            -- completion at infinity
 
 FiniteAdeleRing R K          -- restricted product ∏'_v K_v
@@ -238,24 +258,34 @@ If a "converse" lemma is hard, check if there's a higher-level equivalence givin
 
 ## What's Proved (Milestones)
 
-### Phase 1: Riemann Inequality ✅
+### Phase 1: Riemann Inequality ✅ (Curve-Agnostic)
 ```lean
 lemma riemann_inequality_affine [BaseDim R K] {D : DivisorV2 R} (hD : D.Effective) :
     (ellV2_real R K D : ℤ) ≤ D.deg + bd.basedim
 ```
+- Works for ANY Dedekind domain R with fraction field K
 - Tag: `v1.0-riemann-inequality` (2025-12-18)
 - Cycles 1-75
 
-### Phase 2: Adelic Infrastructure ✅
+### Phase 2: Adelic Infrastructure ✅ (Curve-Agnostic)
 - K discrete in full adeles
 - K closed in full adeles
 - Integral adeles compact
 - Weak approximation
 - Cycles 76-155
 
-### Phase 3: Dimension Formula for P¹ - IN PROGRESS (Cycle 236)
+### Phase 3: P¹ Instance - NEARLY COMPLETE (Cycle 247)
 
-**Status**: Build compiles. Core theorem `ell_ratfunc_projective_single_linear` proved (modulo DimensionCore sorries).
+**Status**: Build compiles. All P¹-specific files are **sorry-free**!
+
+**Completed**:
+- DimensionCore.lean ✅ sorry-free
+- DimensionScratch.lean ✅ sorry-free
+- AdelicH1Full.lean ✅ sorry-free (Cycle 247)
+- Strong approximation for RatFunc Fq
+- Residue computations at linear places
+
+**Remaining**: 3 sorries in Abstract.lean (curve-agnostic `AdelicRRData` placeholders)
 
 ---
 
@@ -294,37 +324,28 @@ What was actually true:
 
 ---
 
-## Honest Sorry Audit (Cycle 236)
+## Honest Sorry Audit (Cycle 247)
 
-### CRITICAL PATH FOR P¹ (6 sorries)
+### Total: 3 sorries in non-archived code
 
-**DimensionCore.lean** (5 sorries) - finiteness via embedding:
-| Line | Lemma | What's needed |
+**Abstract.lean** (3 sorries) - placeholder `AdelicRRData` instance:
+| Line | Field | What's needed |
 |------|-------|---------------|
-| 67 | `mul_X_sub_pow_is_polynomial` | Prove (X-α)^n·f is poly of deg ≤ n from valuation bounds |
-| 88 | `partialClearPoles.map_add'` | Linear map respects addition |
-| 92 | `partialClearPoles.map_smul'` | Linear map respects scalar mult |
-| 101 | `partialClearPoles_injective` | Multiplication by nonzero is injective |
-| 126 | `RRSpace_ratfunc_projective_add_single_finite` | Finiteness for D + [v] |
+| 199 | `h1_finite` | H¹ finiteness from compactness argument |
+| 200 | `ell_finite` | L(D) finiteness from RRSpace theory |
+| 202 | `h1_vanishing` | H¹ vanishing from strong approximation |
 
-**DimensionScratch.lean** (1 sorry):
-| Line | Theorem | What's needed |
-|------|---------|---------------|
-| 892 | `ell_ratfunc_projective_eq_deg_plus_one` | Strong induction on deg(D), uses single_linear as base |
+### Sorry-Free Files ✅
 
-### NOT ON P¹ CRITICAL PATH (15 sorries)
-
-These are imported but not used by the dimension theorems:
-
-| File | Sorries | Purpose |
-|------|---------|---------|
-| AdelicH1Full.lean | 8 | Adelic approach (alternative track) |
-| FullAdelesCompact.lean | 1 | Adelic infrastructure |
-| Residue.lean | 2 | General residue theorem, higher-degree places |
-| RatFuncPairing.lean | 1 | Negative degree edge case |
-| TraceDualityProof.lean | 1 | Trace dual dimension |
-| ProductFormula.lean | 1 | Product formula |
-| FullAdeles.lean | 1 | Full adele infrastructure |
+| File | Status |
+|------|--------|
+| DimensionCore.lean | ✅ Sorry-free |
+| DimensionScratch.lean | ✅ Sorry-free |
+| AdelicH1Full.lean | ✅ Sorry-free (Cycle 247) |
+| RatFuncPairing.lean | ✅ Sorry-free |
+| RatFuncResidues.lean | ✅ Sorry-free |
+| All Core/ files | ✅ Sorry-free |
+| All Adelic/ files | ✅ Sorry-free |
 
 ### What's Actually Proved (no sorryAx)
 
