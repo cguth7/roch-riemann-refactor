@@ -1,6 +1,64 @@
 # Playbook
 
-Strategic guide for formalizing Riemann-Roch. Updated Cycle 236.
+Strategic guide for formalizing Riemann-Roch. Updated Cycle 241.
+
+---
+
+## Cycle Discipline
+
+**Critical Lesson from Cycles 230-241**: We got impatient near the end and tried to do too much per cycle. This led to context overflow, incomplete work, and debugging spirals.
+
+### The ~50k Token Reality
+
+Each Claude cycle has ~50k usable tokens of context. This means:
+- **Read**: ~3-5 files deeply, or ~10 files shallowly
+- **Write**: ~200-400 lines of new code max
+- **Debug**: 2-3 error-fix iterations before context exhaustion
+
+### One Cycle = One Focused Goal
+
+**Good cycle scope**:
+- Fill ONE sorry with a clean proof
+- Add ONE new definition + basic lemmas
+- Fix ONE compilation error chain
+- Refactor ONE file (extract/reorganize)
+
+**Bad cycle scope**:
+- "Fill all sorries in this file" (unless trivial)
+- "Implement the full residue theorem"
+- "Refactor the adelic infrastructure"
+
+### When to Slow Down for Infrastructure
+
+If you're about to write a proof and find yourself saying:
+- "I need a helper lemma for X"
+- "This would be cleaner if Y existed"
+- "I'm pattern-matching on the same thing repeatedly"
+
+**STOP.** That cycle should become an infrastructure cycle:
+1. Write the helper/abstraction
+2. Prove basic properties
+3. Leave the original goal for NEXT cycle
+
+### Ledger Discipline
+
+The "Next Steps" section should contain:
+1. **Immediate** (this cycle): ONE specific task with clear success criteria
+2. **Context**: 1-2 sentences on WHY this task matters
+3. **After**: Brief note on what unlocks after this task
+
+Example:
+```
+## Next Steps
+
+**Immediate**: Fill `smul_mem_boundedSubset_full` sorry (line 230)
+- Show k-scalar multiplication preserves valuation bounds
+- Success: `lake build AdelicH1Full` with no sorries
+
+**Context**: This unblocks `SpaceModule_full` as the correct H¹(D) for arbitrary curves.
+
+**After**: Complete the second sorry (line 234), then move to Place type definition.
+```
 
 ---
 

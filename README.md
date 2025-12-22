@@ -65,6 +65,14 @@ RrLean/RiemannRochV2/
 
 **0 sorries in main codebase.** 6 dead-code lemmas moved to `RrLean/Archive/SorriedLemmas.lean`.
 
+## Next: Arbitrary Curves Refactor
+
+We're pivoting from this restricted P¹ proof to a **general framework for arbitrary algebraic curves**. The good news: ~3,700 lines of infrastructure are already curve-agnostic.
+
+See:
+- `state/INVENTORY_REPORT.md` - Complete file-by-file analysis (KEEP/REFACTOR/BURN/ARCHIVE)
+- `state/REFACTOR_PLAN.md` - Phased execution plan with dependencies
+
 ## Documentation
 
 Main docs are in `state/`:
@@ -73,6 +81,11 @@ Main docs are in `state/`:
 - `state/playbook.md` - Strategy and architecture notes
 
 Note: Old git commits contain outdated documentation that may not reflect the final state.
+
+## Deprecated
+
+- `agents/` - Experimental multi-agent orchestration (see `agents/README.md`)
+- `archive/random/` - Miscellaneous archived files
 
 ## License
 

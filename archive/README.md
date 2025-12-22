@@ -28,6 +28,20 @@ Historical and deprecated versions of the Riemann-Roch formalization.
 - **Status**: Test file for debugging proof strategies
 - **Note**: Contains isolated proof attempts for blocked lemmas
 
+### random/
+Miscellaneous archived files:
+- `BUILD_PATH_SORRIES.md` - Old sorry tracking (superseded by ledger)
+- `handoff_cycle68.md` - Historical handoff notes
+
+### docs/
+Old documentation:
+- `for_humans.md` - Early human-readable explanation
+- `index.html` - Generated documentation page
+
+### problem/
+Original problem statement:
+- `problem.md` - Initial formalization goals
+
 ## Current Active Code
 
 The active formalization is modular, located in `RrLean/RiemannRochV2/`.

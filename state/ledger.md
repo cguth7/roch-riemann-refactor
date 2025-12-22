@@ -79,4 +79,37 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ---
 
+## Next Steps
+
+### Immediate (Cycle 242): Reorganize SerreDuality folder
+
+**Task**: Create `SerreDuality/P1Specific/` subfolder and move P¹-only files there.
+
+**Files to move**:
+- `RatFuncPairing.lean` → `P1Specific/`
+- `DimensionScratch.lean` → `P1Specific/`
+- `RatFuncFullRR.lean` → `P1Specific/`
+
+**Success criteria**:
+```bash
+lake build RrLean.RiemannRochV2.SerreDuality.Smoke  # Still compiles
+ls RrLean/RiemannRochV2/SerreDuality/P1Specific/    # Shows 3 files
+```
+
+**Context**: This separates curve-agnostic infrastructure from P¹-specific code, making it clear what generalizes vs. what needs replacement.
+
+**After**: Fill the 2 sorries in `AdelicH1Full.lean` (scalar mult lemmas), which unblocks the correct H¹(D) definition for arbitrary curves.
+
+---
+
+## Refactor Status
+
+**Phase**: 0 (Cleanup) - mostly complete
+**Docs created**: `INVENTORY_REPORT.md`, `REFACTOR_PLAN.md`
+**Next phase**: 1 (Complete incomplete infrastructure)
+
+See `REFACTOR_PLAN.md` for full roadmap.
+
+---
+
 *For historical cycles 1-240, see `ledger_archive.md`*
