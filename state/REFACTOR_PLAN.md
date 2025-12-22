@@ -64,35 +64,38 @@ RrLean/RiemannRochV2/SerreDuality/
 
 ## Phase 1: Complete Incomplete Infrastructure
 
-**Priority**: HIGH - Blocks all generalization work
+**Status**: ✅ COMPLETE (Cycles 243-247)
 
-### 1.1 Finish AdelicH1Full.lean Sorries
+### 1.1 Finish AdelicH1Full.lean Sorries - DONE
 
-**File**: `RrLean/RiemannRochV2/SerreDuality/AdelicH1Full.lean`
+All sorries in AdelicH1Full.lean filled. `SpaceModule_full` compiles.
 
-**Sorries to fill**:
-| Line | Lemma | Description |
-|------|-------|-------------|
-| 230 | `smul_mem_boundedSubset_full` | Scalar mult preserves bounded adeles |
-| 234 | `smul_mem_boundedSubset_full` | Second sorry in same lemma |
-| 276 | `smul_mem_globalSubset_full` | Scalar mult on diagonal |
+### 1.2 Residue.lean Status
 
-**Strategy**: These are straightforward - show that k-scalars don't change valuations (k ⊆ integers at all places).
+- Phase A (X-adic): ✅ Complete
+- Phase B (infinity): ✅ Complete (`residueAtInfty`)
+- Phase C (residue sum): ✅ Complete for linear places (`residueSumTotal_splits`)
+- Higher-degree places: Deferred to Phase 4 (needs trace maps)
 
-**Outcome**: Unlocks `SpaceModule_full` as the correct H¹(D) definition for arbitrary curves.
+---
 
-### 1.2 Complete Residue.lean Phase B/C
+## ⚠️ CRITICAL DISCOVERY (Cycle 248): The Affine Trap
 
-**File**: `RrLean/RiemannRochV2/Residue.lean`
+**Problem**: The current `AdelicRRData` framework models **Affine Riemann-Roch**, not Projective.
 
-**Current State**: Phase A (X-adic residue) complete. Phases B (infinity) and C (sum) incomplete.
+| Curve Type | Coordinate Ring R | Missing Place(s) |
+|------------|-------------------|------------------|
+| P¹ | k[t] | ∞ |
+| Elliptic | k[x,y]/(y²-x³-ax-b) | Point O at infinity |
+| Hyperelliptic | k[x,y]/(y²-f(x)) | 1-2 points at infinity |
 
-**Work Needed**:
-1. Define `residueAt v` for arbitrary HeightOneSpectrum v (not just X)
-2. Generalize LaurentSeries expansion to arbitrary uniformizers
-3. Prove `residue_sum_eq_zero` for finite places
+**Root cause**: `HeightOneSpectrum R` only contains finite places. Any Dedekind domain R
+represents the AFFINE part of a curve. The infinite place(s) are missing.
 
-**Dependency**: Needs trace maps for higher-degree places (see Phase 3).
+**Impact**: Abstract.lean sorries CANNOT be filled for any projective curve until
+`DivisorV2` is extended to include infinite places.
+
+**Resolution**: Phase 3 (Place Type) is now CRITICAL PATH, not optional cleanup.
 
 ---
 
@@ -144,7 +147,8 @@ FullAdelesFqWeakApproximation.lean (lines 436+)   → EXTRACT to new file
 
 ## Phase 3: Generalize Place Type
 
-**Priority**: MEDIUM - Core architectural change
+**Priority**: 🔴 CRITICAL - Blocks all projective curve work (see Affine Trap above)
+**Status**: Starting Cycle 249
 
 ### 3.1 Define Unified Place Type
 
@@ -310,47 +314,41 @@ lake build RrLean.RiemannRochV2.SerreDuality.Abstract 2>&1 | grep "sorryAx"
 
 ## Estimated Effort (Cycle-by-Cycle Breakdown)
 
-### Phase 0: Cleanup
-| Cycle | Task |
-|-------|------|
-| 242 | Move 3 files to `SerreDuality/P1Specific/`, update imports |
+### Phase 0: Cleanup - ✅ COMPLETE
+| Cycle | Task | Status |
+|-------|------|--------|
+| 242 | Move 3 files to `SerreDuality/P1Specific/`, update imports | ✅ Done |
 
-### Phase 1: Complete Infrastructure
-| Cycle | Task |
-|-------|------|
-| 243 | Fill `smul_mem_boundedSubset_full` sorry (line 230) |
-| 244 | Fill `smul_mem_boundedSubset_full` sorry (line 234) + `smul_mem_globalSubset_full` (276) |
-| 245-247 | Residue.lean Phase B: define `residueAt` for arbitrary places |
-| 248-249 | Residue.lean Phase C: prove finite residue sum |
+### Phase 1: Complete Infrastructure - ✅ COMPLETE
+| Cycle | Task | Status |
+|-------|------|--------|
+| 243-247 | AdelicH1Full.lean sorries + RRSpace_proj_ext | ✅ Done |
+| — | Residue.lean Phases A/B/C (linear places) | ✅ Done |
 
-### Phase 2: Extract P¹ Instances
-| Cycle | Task |
-|-------|------|
-| 250 | Extract FqInstance from FullAdelesBase.lean |
-| 251 | Extract weak approximation from FullAdelesCompact.lean |
-| 252 | Create FqPolynomialFullInstance.lean aggregator |
+### Phase 2: Extract P¹ Instances - DEFERRED
+Skipping for now - Phase 3 is more urgent due to Affine Trap discovery.
 
-### Phase 3: Place Type
+### Phase 3: Place Type - 🔴 STARTING NOW
 | Cycle | Task |
 |-------|------|
-| 253 | Define `Place` inductive type + basic API |
-| 254 | Add `InfinitePlace` structure |
-| 255-256 | Extend `DivisorV2` to include infinite places |
-| 257-259 | Update `RRDefinitions.lean` to dispatch on Place |
+| 249 | Define `Place` inductive type + basic API |
+| 250 | Add `InfinitePlace` structure |
+| 251-252 | Extend `DivisorV2` to include infinite places |
+| 253-255 | Update `RRDefinitions.lean` to dispatch on Place |
 
 ### Phase 4: Residue Theorem
 | Cycle | Task |
 |-------|------|
-| 260-262 | Trace-compatible residues at higher-degree places |
-| 263-265 | Prove `residue_sum_eq_zero` for all places |
-| 266-267 | Wire residue pairing into Abstract.lean |
+| 256-258 | Trace-compatible residues at higher-degree places |
+| 259-261 | Prove `residue_sum_eq_zero` for all places |
+| 262-263 | Wire residue pairing into Abstract.lean |
 
 ### Phase 5: Cleanup
 | Cycle | Task |
 |-------|------|
-| 268 | Move remaining P¹ files to archive, update all imports |
+| 264 | Move remaining P¹ files to archive, update all imports |
 
-**Total**: ~27 cycles (rough estimate, will vary based on proof difficulty)
+**Revised Total**: ~16 cycles remaining (from 249)
 
 ---
 
@@ -366,4 +364,4 @@ The refactor is complete when:
 
 ---
 
-*Plan created Cycle 241+. Update as work progresses.*
+*Plan created Cycle 241+. Updated Cycle 248 with Affine Trap discovery and revised timeline.*

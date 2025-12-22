@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization.
 
 **Build**: ✅ Compiles (0 sorries in main path)
 **Result**: Restricted P¹ Riemann-Roch (linear places only)
-**Cycle**: 247
+**Cycle**: 248
 
 ---
 
@@ -43,7 +43,38 @@ Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more in
 
 ---
 
-## Cycle 247 Summary
+## Cycle 248 Summary
+
+**Task**: Investigate Abstract.lean sorries and plan next steps
+
+**Key Discovery**: The Abstract.lean "sorries" are in a **docstring template**, not actual code.
+
+**CRITICAL CORRECTION** (from Gemini review):
+
+The current `AdelicRRData` framework is **broken for ALL projective curves**, not just P¹:
+
+| Curve Type | Coordinate Ring R | Missing Place(s) |
+|------------|-------------------|------------------|
+| P¹ | k[t] | ∞ |
+| Elliptic | k[x,y]/(y²-x³-ax-b) | Point O at infinity |
+| Hyperelliptic | k[x,y]/(y²-f(x)) | 1-2 points at infinity |
+
+**The Affine Trap**: Any Dedekind domain R models the AFFINE part of a curve.
+`HeightOneSpectrum R` = finite places only. The framework currently computes
+**Affine Riemann-Roch**, not Projective Riemann-Roch.
+
+**Implication**: Abstract.lean sorries CANNOT be filled for any projective curve
+until Phase 3 (Place type) is complete. Phase 3 is not optional cleanup - it's
+required infrastructure for the general framework to work.
+
+**Changes**:
+- Corrected understanding of Affine vs Projective framework
+- Phase 3 is now immediate priority
+- Build remains clean (0 sorryAx)
+
+---
+
+## Cycle 247 Summary (Previous)
 
 **Task**: Fill `RRSpace_proj_ext` degree sorries in AdelicH1Full.lean
 
@@ -228,22 +259,28 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ## Next Steps
 
-### Immediate (Cycle 248): Fill Abstract.lean sorries
+### Immediate: Start Phase 3 (Place Type)
 
-**File**: `RrLean/RiemannRochV2/SerreDuality/General/Abstract.lean`
+**Why now**: The Affine Trap blocks ALL projective curves, not just P¹. The general
+framework cannot work until `DivisorV2` includes infinite places.
 
-Only 3 sorries remain in non-archived code (all placeholder instance fields):
-1. `h1_finite := sorry` (line 199) - H¹ finiteness from compactness
-2. `ell_finite := sorry` (line 200) - L(D) finiteness from RRSpace theory
-3. `h1_vanishing := sorry` (line 202) - H¹ vanishing from strong approximation
+**Cycle 249**: Create `Place.lean`
+```lean
+/-- A place on a curve: finite (HeightOneSpectrum R) or infinite. -/
+inductive Place (R : Type*) (K : Type*) [CommRing R] [Field K] [Algebra R K]
+  | finite : HeightOneSpectrum R → Place R K
+  | infinite : InfinitePlace K → Place R K
+```
 
-**Success**: `lake build Abstract` with fewer sorries.
+**Follow-up cycles**:
+- Define `InfinitePlace` structure (valuation at infinity)
+- Extend `DivisorV2` to `Place R K →₀ ℤ`
+- Refactor `RRDefinitions.lean` to dispatch on Place
 
-**Context**: These complete the `AdelicRRData` instance for the abstract Serre duality framework.
+**After Phase 3**: Abstract.lean sorries become fillable for all projective curves.
 
-### Alternative options:
-- **Clean up linter warnings** - Low priority, `unusedSectionVars` warnings
-- **Continue Serre duality** - Wire real residue pairing into Abstract.lean
+### Protocol Update
+We should update REFACTOR_PLAN.md as we complete phases to track actual vs planned cycles.
 
 ---
 

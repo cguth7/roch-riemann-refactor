@@ -82,6 +82,22 @@ Example:
 **After**: Complete the second sorry (line 234), then move to Place type definition.
 ```
 
+### Refactor Plan Discipline
+
+Update `REFACTOR_PLAN.md` when:
+1. **Completing a phase**: Mark phase complete, note actual vs planned cycles
+2. **Discovering blockers**: Add notes about unexpected dependencies
+3. **Changing scope**: If a phase needs more/fewer cycles than planned, update estimates
+4. **Learning insights**: Add lessons that affect future phases
+
+Example update after completing Phase 1:
+```
+## Phase 1: Complete Incomplete Infrastructure
+**Status**: COMPLETE (Cycles 243-247, originally estimated 243-249)
+**Actual work**: AdelicH1Full sorries filled, RRSpace_proj_ext degree proofs added
+**Lessons**: Degree bounds needed more infrastructure than expected
+```
+
 ---
 
 ## Ultimate Goal
