@@ -328,13 +328,13 @@ lake build RrLean.RiemannRochV2.SerreDuality.Abstract 2>&1 | grep "sorryAx"
 ### Phase 2: Extract P¹ Instances - DEFERRED
 Skipping for now - Phase 3 is more urgent due to Affine Trap discovery.
 
-### Phase 3: Place Type - 🔴 STARTING NOW
-| Cycle | Task |
-|-------|------|
-| 249 | Define `Place` inductive type + basic API |
-| 250 | Add `InfinitePlace` structure |
-| 251-252 | Extend `DivisorV2` to include infinite places |
-| 253-255 | Update `RRDefinitions.lean` to dispatch on Place |
+### Phase 3: Place Type - 🔴 IN PROGRESS
+| Cycle | Task | Status |
+|-------|------|--------|
+| 249 | Define `Place` inductive type + basic API | ✅ Done |
+| 250 | Create `DivisorV3` with Place-based divisors | |
+| 251-252 | Extend `DivisorV2` to include infinite places | |
+| 253-255 | Update `RRDefinitions.lean` to dispatch on Place | |
 
 ### Phase 4: Residue Theorem
 | Cycle | Task |

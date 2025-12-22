@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization.
 
 **Build**: ✅ Compiles (0 sorries in main path)
 **Result**: Restricted P¹ Riemann-Roch (linear places only)
-**Cycle**: 248
+**Cycle**: 249
 
 ---
 
@@ -43,7 +43,42 @@ Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more in
 
 ---
 
-## Cycle 248 Summary
+## Cycle 249 Summary
+
+**Task**: Create `Place.lean` - unified Place type for Phase 3
+
+**New File**: `RrLean/RiemannRochV2/Core/Place.lean`
+
+Created the foundational type for projective Riemann-Roch:
+
+```lean
+/-- An infinite place on a function field K. -/
+structure InfinitePlace (K : Type*) [Field K] where
+  val : Valuation K (WithZero (Multiplicative ℤ))
+  deg : ℕ
+  deg_pos : 0 < deg
+
+/-- A place on a curve is either finite or infinite. -/
+inductive Place (R : Type*) (K : Type*) ...
+  | finite : HeightOneSpectrum R → Place R K
+  | infinite : InfinitePlace K → Place R K
+```
+
+**Key definitions**:
+- `Place.valuation`: Dispatches to finite or infinite valuation
+- `Place.isFinite`, `Place.isInfinite`: Classification predicates
+- `HasInfinitePlaces`: Typeclass for curves with infinite places
+- `HasInfinitePlaces.allPlaces`: Combined finite + infinite places
+
+**Verification**:
+```bash
+lake build RrLean.RiemannRochV2.Core.Place  # ✅
+lake build RrLean.RiemannRochV2.SerreDuality.Smoke  # ✅ Still passes
+```
+
+---
+
+## Cycle 248 Summary (Previous)
 
 **Task**: Investigate Abstract.lean sorries and plan next steps
 
@@ -259,28 +294,21 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ## Next Steps
 
-### Immediate: Start Phase 3 (Place Type)
+### Immediate: Continue Phase 3 - Extend DivisorV2
 
-**Why now**: The Affine Trap blocks ALL projective curves, not just P¹. The general
-framework cannot work until `DivisorV2` includes infinite places.
+**Cycle 249 complete**: `Place.lean` created with unified Place type.
 
-**Cycle 249**: Create `Place.lean`
-```lean
-/-- A place on a curve: finite (HeightOneSpectrum R) or infinite. -/
-inductive Place (R : Type*) (K : Type*) [CommRing R] [Field K] [Algebra R K]
-  | finite : HeightOneSpectrum R → Place R K
-  | infinite : InfinitePlace K → Place R K
-```
+**Cycle 250**: Create `DivisorV3.lean` (or extend DivisorV2)
+- Define `DivisorV3 R K := Place R K →₀ ℤ`
+- Port existing `DivisorV2` lemmas (deg_add, deg_single, Effective, etc.)
+- Add `deg_finite`, `deg_infinite` for separate degree contributions
 
-**Follow-up cycles**:
-- Define `InfinitePlace` structure (valuation at infinity)
-- Extend `DivisorV2` to `Place R K →₀ ℤ`
-- Refactor `RRDefinitions.lean` to dispatch on Place
+**Cycle 251-252**: Update RRDefinitions.lean
+- Add valuation dispatching on Place (finite vs infinite)
+- Define L(D) using unified Place type
+- Wire in infinity handling from FullAdelesBase.lean
 
 **After Phase 3**: Abstract.lean sorries become fillable for all projective curves.
-
-### Protocol Update
-We should update REFACTOR_PLAN.md as we complete phases to track actual vs planned cycles.
 
 ---
 
