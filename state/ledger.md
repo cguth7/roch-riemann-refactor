@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization.
 
 **Build**: ✅ Compiles (0 sorries in main path)
 **Result**: Restricted P¹ Riemann-Roch (linear places only)
-**Cycle**: 244
+**Cycle**: 245
 
 ---
 
@@ -43,7 +43,42 @@ Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more in
 
 ---
 
-## Cycle 244 Summary
+## Cycle 245 Summary
+
+**Task**: Complete SerreDuality reorganization - General/ subfolder + archive
+
+**Changes**:
+1. Created `SerreDuality/General/` subfolder for curve-agnostic infrastructure
+2. Moved `Abstract.lean` → `General/` (abstract Serre pairing)
+3. Moved `AdelicH1Full.lean` → `General/` (full adele H¹)
+4. Moved `DimensionCore.lean` → `P1Specific/` (P¹ finiteness proofs)
+5. Archived `IntDegreeTest.lean` → `Archive/`
+6. Updated imports in `SerreDuality.lean`, `Smoke.lean`, `DimensionScratch.lean`
+
+**Final SerreDuality structure**:
+```
+SerreDuality/
+├── General/
+│   ├── Abstract.lean        # Abstract Serre pairing
+│   └── AdelicH1Full.lean    # Full adele H¹(D)
+├── P1Specific/
+│   ├── DimensionCore.lean   # Finiteness for L(n·[α])
+│   ├── DimensionScratch.lean
+│   ├── RatFuncFullRR.lean
+│   └── RatFuncPairing.lean
+├── RatFuncResidues.lean
+└── Smoke.lean
+```
+
+**Verification**:
+```bash
+lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "error\|sorryAx"
+# No output = success
+```
+
+---
+
+## Cycle 244 Summary (Previous)
 
 **Task**: Major reorganization - group files into subfolders
 
@@ -63,19 +98,13 @@ RrLean/RiemannRochV2/
 **Files moved**: 28 files → 7 subfolders
 **Imports updated**: All references across codebase
 
-**Verification**:
-```bash
-lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "error\|sorryAx"
-# No output = success
-```
-
 ---
 
 ## Cycle 243 Summary (Previous)
 
 **Task**: Fill scalar mult sorries in `AdelicH1Full.lean`
 
-**File**: `RrLean/RiemannRochV2/SerreDuality/AdelicH1Full.lean`
+**File**: `RrLean/RiemannRochV2/SerreDuality/General/AdelicH1Full.lean`
 
 **Sorries fixed**:
 1. `smul_mem_boundedSubset_full` (lines 230, 234) - Scalar mult preserves bounded adeles
@@ -138,19 +167,15 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ## Next Steps
 
-### Immediate (Cycle 245): Complete SerreDuality reorganization
+### Immediate (Cycle 246): Fill RRSpace_proj_ext sorries
 
-1. Create `SerreDuality/General/` subfolder
-2. Move `Abstract.lean` → `General/`
-3. Move `AdelicH1Full.lean` → `General/`
-4. Move `DimensionCore.lean` → `P1Specific/`
-5. Archive `IntDegreeTest.lean`
+**File**: `RrLean/RiemannRochV2/SerreDuality/General/AdelicH1Full.lean`
 
-### Alternative: Fill RRSpace_proj_ext sorries
+5 sorries for the Riemann-Roch space with infinity constraint (RRSpace_proj_ext)
 
-**File**: `RrLean/RiemannRochV2/SerreDuality/AdelicH1Full.lean` (lines 374-390)
+### Alternative: Clean up remaining linter warnings
 
-5 sorries for the Riemann-Roch space with infinity constraint
+Several files have `unusedSectionVars` warnings that could be cleaned up with `omit` annotations
 
 ---
 

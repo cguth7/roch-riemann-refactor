@@ -1,4 +1,4 @@
-import RrLean.RiemannRochV2.SerreDuality.Abstract
+import RrLean.RiemannRochV2.SerreDuality.General.Abstract
 import RrLean.RiemannRochV2.SerreDuality.RatFuncResidues
 import RrLean.RiemannRochV2.SerreDuality.P1Specific.RatFuncPairing
 import RrLean.RiemannRochV2.SerreDuality.P1Specific.DimensionScratch
@@ -8,7 +8,7 @@ import RrLean.RiemannRochV2.SerreDuality.P1Specific.DimensionScratch
 
 This module re-exports the Serre duality infrastructure split across:
 
-* `SerreDuality/Abstract.lean` - Abstract pairing types and statements
+* `SerreDuality/General/Abstract.lean` - Abstract pairing types and statements
 * `SerreDuality/RatFuncResidues.lean` - Residue infrastructure for RatFunc Fq
 * `SerreDuality/RatFuncPairing.lean` - Concrete pairing construction
 

@@ -1,5 +1,5 @@
 import RrLean.RiemannRochV2.SerreDuality.P1Specific.RatFuncPairing
-import RrLean.RiemannRochV2.SerreDuality.DimensionCore
+import RrLean.RiemannRochV2.SerreDuality.P1Specific.DimensionCore
 import RrLean.RiemannRochV2.SerreDuality.P1Specific.DimensionScratch
 import RrLean.RiemannRochV2.SerreDuality.P1Specific.RatFuncFullRR
 
