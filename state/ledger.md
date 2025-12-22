@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization.
 
 **Build**: ✅ Compiles (0 sorries in main path)
 **Result**: Restricted P¹ Riemann-Roch (linear places only)
-**Cycle**: 246
+**Cycle**: 247
 
 ---
 
@@ -43,7 +43,34 @@ Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more in
 
 ---
 
-## Cycle 246 Summary
+## Cycle 247 Summary
+
+**Task**: Fill `RRSpace_proj_ext` degree sorries in AdelicH1Full.lean
+
+**Changes**:
+1. Fixed `add_mem'` degree bound proof:
+   - Used `by_cases` on `a = 0` and `b = 0` to handle zero cases explicitly
+   - Applied `RatFunc.intDegree_add_le` for the non-zero case
+   - Converted between `num.natDegree ≤ denom.natDegree + n` and `intDegree ≤ n`
+
+2. Fixed `smul_mem'` degree bound proof:
+   - Used `by_cases hf_zero : f = 0` to handle zero case
+   - Applied `RatFunc.intDegree_mul` and `RatFunc.intDegree_C` (which equals 0)
+   - Used `map_eq_zero` instead of non-existent `RatFunc.C_eq_zero`
+
+**Sorries remaining in RRSpace_proj_ext**: 0
+
+**Verification**:
+```bash
+lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "error\|sorryAx"
+# No output = main path still sorry-free
+grep -n "sorry" RrLean/RiemannRochV2/SerreDuality/General/AdelicH1Full.lean
+# No output = AdelicH1Full.lean is sorry-free
+```
+
+---
+
+## Cycle 246 Summary (Previous)
 
 **Task**: Fix `RRSpace_proj_ext` definition in AdelicH1Full.lean
 
@@ -59,10 +86,6 @@ Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more in
 3. Proved `add_mem'` valuation: Uses ultrametric `Valuation.map_add_le_max'`
 4. Proved `smul_mem'` valuation: Uses `IsScalarTower.algebraMap_apply` + `valuation_le_one`
 5. Degree proofs left as sorry (2 sorries) - need careful intDegree ↔ natDegree conversion
-
-**Sorries remaining in RRSpace_proj_ext**: 2
-- `add_mem'` degree bound (line 407)
-- `smul_mem'` degree bound (line 438)
 
 **Verification**:
 ```bash
@@ -181,9 +204,7 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "sorryAx"
 
 **0 sorries in main path** (Smoke test passes).
 
-**2 sorries in RRSpace_proj_ext** (AdelicH1Full.lean - not on main path):
-- `add_mem'` degree bound (line 407)
-- `smul_mem'` degree bound (line 438)
+**0 sorries in RRSpace_proj_ext** (AdelicH1Full.lean is now sorry-free!)
 
 6 dead-code lemmas in `RrLean/Archive/SorriedLemmas.lean`.
 
@@ -200,20 +221,25 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ## Next Steps
 
-### Immediate (Cycle 247): Fill RRSpace_proj_ext degree sorries
+### Option A (Cycle 248): Clean up remaining linter warnings
 
-**File**: `RrLean/RiemannRochV2/SerreDuality/General/AdelicH1Full.lean`
+Several files have `unusedSectionVars` warnings that could be cleaned up with `omit` annotations.
+This is low-priority cleanup work.
 
-2 sorries for degree bounds in RRSpace_proj_ext submodule:
-1. `add_mem'` degree: Use `RatFunc.intDegree_add_le` with careful type coercion
-2. `smul_mem'` degree: Use `RatFunc.intDegree_mul` + `RatFunc.intDegree_C`
+### Option B (Cycle 248): Continue with Serre duality infrastructure
 
-**Key insight**: The condition `num.natDegree ≤ denom.natDegree + n` is equivalent to `intDegree ≤ n`.
-Need to handle the ℕ → ℤ coercion and `sub_le_iff_le_add` carefully.
+With `RRSpace_proj_ext` now sorry-free, the next logical step is:
+1. Prove `ell_proj_ext` dimension formulas for specific divisors
+2. Connect `SpaceModule_full` (H¹) to `RRSpace_proj_ext` (L(D)) via the pairing
 
-### Alternative: Clean up remaining linter warnings
+### Option C (Cycle 248): Fill DimensionCore sorries
 
-Several files have `unusedSectionVars` warnings that could be cleaned up with `omit` annotations
+The main P¹ theorem path still depends on 5 sorries in DimensionCore.lean:
+- `mul_X_sub_pow_is_polynomial`
+- `partialClearPoles.map_add'`
+- `partialClearPoles.map_smul'`
+- `partialClearPoles_injective`
+- `RRSpace_ratfunc_projective_add_single_finite`
 
 ---
 

@@ -392,20 +392,39 @@ def RRSpace_proj_ext (D : ExtendedDivisor (Polynomial Fq)) :
               Valuation.map_add_le_max' _ a b
           _ ≤ WithZero.exp (D.finite v) := max_le (ha_val v) (hb_val v)
       · -- Degree bound for sum: need num(a+b).natDegree ≤ denom(a+b).natDegree + D.inftyCoeff
-        rcases ha with rfl | ⟨_, ha_deg⟩
-        · simp only [zero_add] at h ⊢
+        -- Handle zero cases first
+        by_cases ha_zero : a = 0
+        · subst ha_zero; simp only [zero_add] at h ⊢
           rcases hb with rfl | ⟨_, hb_deg⟩
           · exact absurd rfl h
           · exact hb_deg
-        rcases hb with rfl | ⟨_, hb_deg⟩
-        · simp only [add_zero]
-          exact ha_deg
-        -- Both nonzero: use RatFunc.intDegree_add_le
-        -- Strategy: convert to intDegree, apply intDegree_add_le, convert back
-        -- Condition: num.natDegree ≤ denom.natDegree + D.inftyCoeff ↔ intDegree ≤ D.inftyCoeff
-        -- This requires careful handling of the type coercions and arithmetic
-        -- TODO (Cycle 247): Complete the degree bound proof using intDegree_add_le
-        sorry
+        by_cases hb_zero : b = 0
+        · subst hb_zero; simp only [add_zero]
+          rcases ha with rfl | ⟨_, ha_deg⟩
+          · exact absurd rfl ha_zero
+          · exact ha_deg
+        -- Both a ≠ 0 and b ≠ 0: use RatFunc.intDegree_add_le
+        -- Extract degree bounds from ha and hb
+        have ha_deg : (a.num.natDegree : ℤ) ≤ (a.denom.natDegree : ℤ) + D.inftyCoeff := by
+          rcases ha with rfl | ⟨_, ha_deg⟩
+          · exact absurd rfl ha_zero
+          · exact ha_deg
+        have hb_deg : (b.num.natDegree : ℤ) ≤ (b.denom.natDegree : ℤ) + D.inftyCoeff := by
+          rcases hb with rfl | ⟨_, hb_deg⟩
+          · exact absurd rfl hb_zero
+          · exact hb_deg
+        -- Convert to intDegree form
+        have ha_int : a.intDegree ≤ D.inftyCoeff := by
+          simp only [RatFunc.intDegree]; omega
+        have hb_int : b.intDegree ≤ D.inftyCoeff := by
+          simp only [RatFunc.intDegree]; omega
+        -- Apply intDegree_add_le
+        have hab_int : (a + b).intDegree ≤ D.inftyCoeff := by
+          calc (a + b).intDegree
+              ≤ max a.intDegree b.intDegree := RatFunc.intDegree_add_le hb_zero h
+            _ ≤ D.inftyCoeff := max_le ha_int hb_int
+        -- Convert back to num/denom form
+        simp only [RatFunc.intDegree] at hab_int; omega
   smul_mem' := by
     intro c f hf
     by_cases hcf : c • f = 0
@@ -431,12 +450,32 @@ def RRSpace_proj_ext (D : ExtendedDivisor (Polynomial Fq)) :
           _ = v.valuation (RatFunc Fq) f := one_mul _
           _ ≤ WithZero.exp (D.finite v) := hf_v
       · -- Degree preserved by scalar mult
-        rcases hf with rfl | ⟨_, hf_deg⟩
-        · exfalso; apply hcf; simp only [smul_zero]
-        -- For c ≠ 0, (c • f).intDegree = intDegree(C c) + intDegree(f) = 0 + intDegree(f)
-        -- Strategy: use intDegree_mul and intDegree_C to show degree preserved
-        -- TODO (Cycle 247): Complete the scalar mult degree proof
-        sorry
+        -- Handle f = 0 case first
+        by_cases hf_zero : f = 0
+        · subst hf_zero; exfalso; apply hcf; simp only [smul_zero]
+        -- Now f ≠ 0, extract degree bound
+        have hf_deg : (f.num.natDegree : ℤ) ≤ (f.denom.natDegree : ℤ) + D.inftyCoeff := by
+          rcases hf with rfl | ⟨_, hf_deg⟩
+          · exact absurd rfl hf_zero
+          · exact hf_deg
+        -- c • f = algebraMap c * f = RatFunc.C c * f
+        -- For c ≠ 0: intDegree(c • f) = intDegree(C c) + intDegree(f) = 0 + intDegree(f)
+        have hc_ne : c ≠ 0 := by
+          rintro rfl; apply hcf; simp only [zero_smul]
+        have hCc_ne : RatFunc.C c ≠ (0 : RatFunc Fq) := by
+          simp only [ne_eq, map_eq_zero]; exact hc_ne
+        -- Convert hf_deg to intDegree form
+        have hf_int : f.intDegree ≤ D.inftyCoeff := by
+          simp only [RatFunc.intDegree]; omega
+        -- Compute intDegree of c • f
+        have hsmul_eq : c • f = RatFunc.C c * f := by
+          simp only [Algebra.smul_def]; rfl
+        have hsmul_int : (c • f).intDegree = f.intDegree := by
+          rw [hsmul_eq, RatFunc.intDegree_mul hCc_ne hf_zero, RatFunc.intDegree_C, zero_add]
+        -- Goal: (c • f).num.natDegree ≤ (c • f).denom.natDegree + D.inftyCoeff
+        have goal_int : (c • f).intDegree ≤ D.inftyCoeff := by
+          rw [hsmul_int]; exact hf_int
+        simp only [RatFunc.intDegree] at goal_int; omega
 
 /-- The dimension ℓ_proj(D) for extended divisor. -/
 def ell_proj_ext (D : ExtendedDivisor (Polynomial Fq)) : ℕ :=
