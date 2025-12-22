@@ -97,30 +97,80 @@ lemma mul_X_sub_pow_is_polynomial (α : Fq) (n : ℕ) (f : RatFunc Fq)
       _ ≤ (n - m) + m := Nat.add_le_add_left hnum_deg _
       _ = n := Nat.sub_add_cancel hm_le
 
+/-! ## Step 1: Raw function -/
+
+/-- Raw function: extracts the polynomial part of (X-α)^n · f.
+This is the underlying function before we prove it's linear. -/
+def partialClearPolesFun (α : Fq) (n : ℕ)
+    (f : RRSpace_ratfunc_projective ((n : ℤ) • DivisorV2.single (linearPlace α) 1)) :
+    Polynomial.degreeLT Fq (n + 1) := by
+  have hpoly := mul_X_sub_pow_is_polynomial Fq α n f.val f.property
+  refine ⟨hpoly.choose, ?_⟩
+  have hdeg := hpoly.choose_spec.2
+  simp only [Polynomial.mem_degreeLT]
+  calc hpoly.choose.degree
+      ≤ hpoly.choose.natDegree := Polynomial.degree_le_natDegree
+    _ ≤ n := Nat.cast_le.mpr hdeg
+    _ < n + 1 := by exact_mod_cast Nat.lt_succ_self n
+
+/-! ## Step 2: Specification lemma -/
+
+/-- The polynomial extracted by partialClearPolesFun satisfies the key equation.
+In RatFunc: algebraMap p = algebraMap (X-α)^n * f -/
+lemma partialClearPolesFun_spec (α : Fq) (n : ℕ)
+    (f : RRSpace_ratfunc_projective ((n : ℤ) • DivisorV2.single (linearPlace α) 1)) :
+    algebraMap (Polynomial Fq) (RatFunc Fq) (partialClearPolesFun Fq α n f).val =
+    algebraMap (Polynomial Fq) (RatFunc Fq) ((Polynomial.X - Polynomial.C α) ^ n) * f.val := by
+  have hpoly := mul_X_sub_pow_is_polynomial Fq α n f.val f.property
+  have hspec := hpoly.choose_spec.1
+  have hdenom_ne : f.val.denom ≠ 0 := RatFunc.denom_ne_zero f.val
+  have hdenom_alg_ne : algebraMap (Polynomial Fq) (RatFunc Fq) f.val.denom ≠ 0 := by
+    rw [ne_eq, map_eq_zero_iff _ (IsFractionRing.injective (Polynomial Fq) (RatFunc Fq))]
+    exact hdenom_ne
+  have hf_eq : f.val = algebraMap (Polynomial Fq) (RatFunc Fq) f.val.num /
+                       algebraMap (Polynomial Fq) (RatFunc Fq) f.val.denom :=
+    (RatFunc.num_div_denom f.val).symm
+  rw [hf_eq, mul_div_assoc']
+  have hspec_lifted := congrArg (algebraMap (Polynomial Fq) (RatFunc Fq)) hspec
+  rw [map_mul, map_mul] at hspec_lifted
+  rw [eq_div_iff hdenom_alg_ne]
+  exact hspec_lifted.symm
+
+/-! ## Step 3: Bundle as LinearMap -/
+
 /-- Partial pole clearing: maps f to the polynomial part of (X-α)^n · f.
-This is only defined on the subspace RRSpace_ratfunc_projective (n·[α]). -/
+This is the linear map version bundled with linearity proofs. -/
 def partialClearPoles (α : Fq) (n : ℕ) :
     RRSpace_ratfunc_projective ((n : ℤ) • DivisorV2.single (linearPlace α) 1) →ₗ[Fq]
     Polynomial.degreeLT Fq (n + 1) where
-  toFun f := by
-    -- For now, we construct using choice from the existence lemma
-    have hpoly := mul_X_sub_pow_is_polynomial Fq α n f.val f.property
-    refine ⟨hpoly.choose, ?_⟩
-    have hdeg := hpoly.choose_spec.2
-    simp only [Polynomial.mem_degreeLT]
-    -- Convert natDegree ≤ n to degree < n+1
-    calc hpoly.choose.degree
-        ≤ hpoly.choose.natDegree := Polynomial.degree_le_natDegree
-      _ ≤ n := Nat.cast_le.mpr hdeg
-      _ < n + 1 := by exact_mod_cast Nat.lt_succ_self n
-  map_add' := by
-    intro f g
-    ext
-    sorry -- Need to show polynomial extraction respects addition
-  map_smul' := by
-    intro c f
-    ext
-    sorry -- Need to show polynomial extraction respects scalar mult
+  toFun := partialClearPolesFun Fq α n
+  map_add' := fun f g => by
+    apply Subtype.ext
+    apply IsFractionRing.injective (Polynomial Fq) (RatFunc Fq)
+    rw [Submodule.coe_add, map_add]
+    rw [partialClearPolesFun_spec, partialClearPolesFun_spec, partialClearPolesFun_spec]
+    -- Goal: (X-α)^n * ↑(f + g) = (X-α)^n * ↑f + (X-α)^n * ↑g
+    -- Need to unfold ↑(f + g) = ↑f + ↑g first
+    simp only [Submodule.coe_add]
+    ring
+  map_smul' := fun c f => by
+    apply Subtype.ext
+    apply IsFractionRing.injective (Polynomial Fq) (RatFunc Fq)
+    rw [SetLike.val_smul, RingHom.id_apply]
+    rw [Algebra.smul_def, map_mul]
+    rw [partialClearPolesFun_spec, partialClearPolesFun_spec]
+    -- Goal: (X-α)^n * ↑(c • f) = algebraMap c * ((X-α)^n * ↑f)
+    simp only [SetLike.val_smul, Algebra.smul_def]
+    -- Normalize algebraMap paths: algebraMap Fq (RatFunc Fq) = algebraMap Fq[X] (RatFunc Fq) ∘ algebraMap Fq Fq[X]
+    simp only [← IsScalarTower.algebraMap_apply Fq (Polynomial Fq) (RatFunc Fq)]
+    ring
+
+/-- Alias: partialClearPoles uses partialClearPolesFun -/
+lemma partialClearPoles_spec (α : Fq) (n : ℕ)
+    (f : RRSpace_ratfunc_projective ((n : ℤ) • DivisorV2.single (linearPlace α) 1)) :
+    algebraMap (Polynomial Fq) (RatFunc Fq) (partialClearPoles Fq α n f).val =
+    algebraMap (Polynomial Fq) (RatFunc Fq) ((Polynomial.X - Polynomial.C α) ^ n) * f.val :=
+  partialClearPolesFun_spec Fq α n f
 
 /-- The pole clearing map is injective: if the cleared polynomials are equal, f = g.
 
@@ -129,10 +179,25 @@ then (X-α)^n * f = (X-α)^n * g (as RatFunc), hence f = g by cancellativity. -/
 lemma partialClearPoles_injective (α : Fq) (n : ℕ) :
     Function.Injective (partialClearPoles Fq α n) := by
   intro f g heq
+  -- From heq: the polynomials are equal
+  have hp_eq : (partialClearPoles Fq α n f).val = (partialClearPoles Fq α n g).val :=
+    congrArg Subtype.val heq
+  -- Use the spec: algebraMap p_f = algebraMap (X-α)^n * f, same for g
+  have hf_spec := partialClearPoles_spec Fq α n f
+  have hg_spec := partialClearPoles_spec Fq α n g
+  -- From hp_eq: algebraMap p_f = algebraMap p_g
+  have halg_eq : algebraMap (Polynomial Fq) (RatFunc Fq) (partialClearPoles Fq α n f).val =
+                 algebraMap (Polynomial Fq) (RatFunc Fq) (partialClearPoles Fq α n g).val := by
+    rw [hp_eq]
+  -- So algebraMap (X-α)^n * f = algebraMap (X-α)^n * g
+  rw [hf_spec, hg_spec] at halg_eq
+  -- Cancel (X-α)^n (nonzero) from both sides
+  have hpow_ne : algebraMap (Polynomial Fq) (RatFunc Fq) ((Polynomial.X - Polynomial.C α) ^ n) ≠ 0 := by
+    rw [ne_eq, map_eq_zero_iff _ (IsFractionRing.injective (Polynomial Fq) (RatFunc Fq))]
+    exact pow_ne_zero n (Polynomial.X_sub_C_ne_zero α)
+  have hval_eq : f.val = g.val := mul_left_cancel₀ hpow_ne halg_eq
   ext
-  -- The key insight: partialClearPoles f determines (X-α)^n * f uniquely
-  -- If p_f = p_g, then (X-α)^n * f = (X-α)^n * g, so f = g
-  sorry
+  exact hval_eq
 
 /-! ## Module.Finite Instance
 
