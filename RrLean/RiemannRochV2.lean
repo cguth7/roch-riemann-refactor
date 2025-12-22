@@ -1,11 +1,11 @@
-import RrLean.RiemannRochV2.Basic
-import RrLean.RiemannRochV2.Divisor
-import RrLean.RiemannRochV2.RRSpace
-import RrLean.RiemannRochV2.Typeclasses
-import RrLean.RiemannRochV2.RiemannInequality
-import RrLean.RiemannRochV2.Infrastructure
-import RrLean.RiemannRochV2.RRDefinitions
-import RrLean.RiemannRochV2.FullAdeles
+import RrLean.RiemannRochV2.Core.Basic
+import RrLean.RiemannRochV2.Core.Divisor
+import RrLean.RiemannRochV2.Core.RRSpace
+import RrLean.RiemannRochV2.Core.Typeclasses
+import RrLean.RiemannRochV2.Dimension.RiemannInequality
+import RrLean.RiemannRochV2.Definitions.Infrastructure
+import RrLean.RiemannRochV2.Definitions.RRDefinitions
+import RrLean.RiemannRochV2.Adelic.FullAdeles
 import RrLean.RiemannRochV2.SerreDuality
 
 /-!

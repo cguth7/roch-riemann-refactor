@@ -1,5 +1,5 @@
-import RrLean.RiemannRochV2.FullAdelesBase
-import RrLean.RiemannRochV2.AdelicH1v2
+import RrLean.RiemannRochV2.Adelic.FullAdelesBase
+import RrLean.RiemannRochV2.Adelic.AdelicH1v2
 import RrLean.RiemannRochV2.SerreDuality.RatFuncResidues
 
 /-!

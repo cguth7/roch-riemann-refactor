@@ -1,4 +1,4 @@
-import RrLean.RiemannRochV2.RRSpace
+import RrLean.RiemannRochV2.Core.RRSpace
 
 /-!
 # Typeclasses for Riemann-Roch

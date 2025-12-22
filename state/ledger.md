@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization.
 
 **Build**: ✅ Compiles (0 sorries in main path)
 **Result**: Restricted P¹ Riemann-Roch (linear places only)
-**Cycle**: 243
+**Cycle**: 244
 
 ---
 
@@ -43,7 +43,35 @@ Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more in
 
 ---
 
-## Cycle 243 Summary
+## Cycle 244 Summary
+
+**Task**: Major reorganization - group files into subfolders
+
+**New structure**:
+```
+RrLean/RiemannRochV2/
+├── Core/           # Basic, Divisor, RRSpace, Typeclasses
+├── Adelic/         # Adeles, AdelicH1v2, AdelicTopology, FullAdeles*
+├── Definitions/    # RRDefinitions, Infrastructure, Projective, FullRRData
+├── Dimension/      # DimensionCounting, KernelProof, RiemannInequality
+├── ResidueTheory/  # Residue, ResidueFieldIso, DifferentIdealBridge
+├── Support/        # DedekindDVR, AllIntegersCompactProof, TraceDualityProof
+├── P1Instance/     # P1Instance, ProductFormula, FqPolynomialInstance
+└── SerreDuality/   # (already organized with P1Specific/)
+```
+
+**Files moved**: 28 files → 7 subfolders
+**Imports updated**: All references across codebase
+
+**Verification**:
+```bash
+lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "error\|sorryAx"
+# No output = success
+```
+
+---
+
+## Cycle 243 Summary (Previous)
 
 **Task**: Fill scalar mult sorries in `AdelicH1Full.lean`
 
@@ -110,29 +138,19 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ## Next Steps
 
-### Immediate (Cycle 244): Continue Phase 0 reorganization
+### Immediate (Cycle 245): Complete SerreDuality reorganization
 
-Per `REFACTOR_PLAN.md`:
 1. Create `SerreDuality/General/` subfolder
 2. Move `Abstract.lean` → `General/`
 3. Move `AdelicH1Full.lean` → `General/`
 4. Move `DimensionCore.lean` → `P1Specific/`
 5. Archive `IntDegreeTest.lean`
 
-**Success criteria**:
-```bash
-lake build RrLean.RiemannRochV2.SerreDuality.Smoke  # Still compiles
-ls RrLean/RiemannRochV2/SerreDuality/General/       # Shows 2 files
-```
-
-### Alternative (Cycle 244): Fill RRSpace_proj_ext sorries
+### Alternative: Fill RRSpace_proj_ext sorries
 
 **File**: `RrLean/RiemannRochV2/SerreDuality/AdelicH1Full.lean` (lines 374-390)
 
-5 sorries for the Riemann-Roch space with infinity constraint:
-- `zero_mem'` - Fix valuation ordering for zero
-- `add_mem'` - Ultrametric inequality + degree bound
-- `smul_mem'` - Scalar preserves valuation + degree
+5 sorries for the Riemann-Roch space with infinity constraint
 
 ---
 

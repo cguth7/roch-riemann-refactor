@@ -24,8 +24,8 @@ This holds for ALL Dedekind domains, without any finiteness hypothesis.
 import Mathlib.RingTheory.DedekindDomain.FiniteAdeleRing
 import Mathlib.Topology.Algebra.Valued.LocallyCompact
 import Mathlib.RingTheory.Valuation.RankOne
-import RrLean.RiemannRochV2.AdelicTopology
-import RrLean.RiemannRochV2.DedekindDVR
+import RrLean.RiemannRochV2.Adelic.AdelicTopology
+import RrLean.RiemannRochV2.Support.DedekindDVR
 
 noncomputable section
 

@@ -1,4 +1,4 @@
-import RrLean.RiemannRochV2.RRDefinitions
+import RrLean.RiemannRochV2.Definitions.RRDefinitions
 
 /-!
 # Kernel Proof for evaluationMapAt

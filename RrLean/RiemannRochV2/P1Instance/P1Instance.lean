@@ -1,4 +1,4 @@
-import RrLean.RiemannRochV2.FullRRData
+import RrLean.RiemannRochV2.Definitions.FullRRData
 import Mathlib.Algebra.Polynomial.FieldDivision
 import Mathlib.RingTheory.DedekindDomain.Basic
 

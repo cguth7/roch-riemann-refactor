@@ -1,4 +1,4 @@
-import RrLean.RiemannRochV2.DifferentIdealBridge
+import RrLean.RiemannRochV2.ResidueTheory.DifferentIdealBridge
 
 /-!
 # Trace Duality and Serre Duality (Track B)

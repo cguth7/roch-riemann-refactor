@@ -1,7 +1,7 @@
 import RrLean.RiemannRochV2.SerreDuality.RatFuncResidues
-import RrLean.RiemannRochV2.AdelicH1v2
-import RrLean.RiemannRochV2.FullAdelesCompact
-import RrLean.RiemannRochV2.ProductFormula
+import RrLean.RiemannRochV2.Adelic.AdelicH1v2
+import RrLean.RiemannRochV2.Adelic.FullAdelesCompact
+import RrLean.RiemannRochV2.P1Instance.ProductFormula
 import Mathlib.RingTheory.Ideal.Quotient.Operations
 import Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 

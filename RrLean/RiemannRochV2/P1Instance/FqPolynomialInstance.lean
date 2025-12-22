@@ -31,8 +31,8 @@ import Mathlib.FieldTheory.Finite.Basic
 import Mathlib.RingTheory.DedekindDomain.Basic
 import Mathlib.RingTheory.DedekindDomain.FiniteAdeleRing
 import Mathlib.RingTheory.Finiteness.Cardinality
-import RrLean.RiemannRochV2.AllIntegersCompactProof
-import RrLean.RiemannRochV2.ResidueFieldIso
+import RrLean.RiemannRochV2.Support.AllIntegersCompactProof
+import RrLean.RiemannRochV2.ResidueTheory.ResidueFieldIso
 
 noncomputable section
 

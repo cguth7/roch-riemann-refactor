@@ -1,4 +1,4 @@
-import RrLean.RiemannRochV2.FullRRData
+import RrLean.RiemannRochV2.Definitions.FullRRData
 import Mathlib.RingTheory.DedekindDomain.Factorization
 import Mathlib.RingTheory.DedekindDomain.Different
 

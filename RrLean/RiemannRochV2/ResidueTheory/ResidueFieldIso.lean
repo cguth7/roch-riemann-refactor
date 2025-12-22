@@ -54,10 +54,10 @@ This connects to `Ideal.ResidueField` which might bridge to `Valued.ResidueField
 import Mathlib.RingTheory.DedekindDomain.FiniteAdeleRing
 import Mathlib.Topology.Algebra.Valued.LocallyCompact
 import Mathlib.RingTheory.Valuation.RankOne
-import RrLean.RiemannRochV2.AdelicTopology
-import RrLean.RiemannRochV2.DedekindDVR
-import RrLean.RiemannRochV2.AllIntegersCompactProof
-import RrLean.RiemannRochV2.RRDefinitions
+import RrLean.RiemannRochV2.Adelic.AdelicTopology
+import RrLean.RiemannRochV2.Support.DedekindDVR
+import RrLean.RiemannRochV2.Support.AllIntegersCompactProof
+import RrLean.RiemannRochV2.Definitions.RRDefinitions
 
 noncomputable section
 

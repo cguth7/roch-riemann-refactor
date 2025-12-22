@@ -8,5 +8,5 @@ This file re-exports from the split files:
 Split for faster incremental builds.
 -/
 
-import RrLean.RiemannRochV2.FullAdelesBase
-import RrLean.RiemannRochV2.FullAdelesCompact
+import RrLean.RiemannRochV2.Adelic.FullAdelesBase
+import RrLean.RiemannRochV2.Adelic.FullAdelesCompact

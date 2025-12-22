@@ -1,4 +1,4 @@
-import RrLean.RiemannRochV2.TraceDualityProof
+import RrLean.RiemannRochV2.Support.TraceDualityProof
 
 /-!
 # Adelic Cohomology for Riemann-Roch (Track B)

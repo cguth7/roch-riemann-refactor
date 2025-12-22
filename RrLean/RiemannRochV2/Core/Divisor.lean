@@ -1,4 +1,4 @@
-import RrLean.RiemannRochV2.Basic
+import RrLean.RiemannRochV2.Core.Basic
 
 /-!
 # Divisor Theory for Dedekind Domains

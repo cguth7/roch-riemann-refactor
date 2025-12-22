@@ -1,5 +1,5 @@
-import RrLean.RiemannRochV2.KernelProof
-import RrLean.RiemannRochV2.Typeclasses
+import RrLean.RiemannRochV2.Dimension.KernelProof
+import RrLean.RiemannRochV2.Core.Typeclasses
 import Mathlib.RingTheory.Length
 import Mathlib.RingTheory.SimpleModule.Basic
 

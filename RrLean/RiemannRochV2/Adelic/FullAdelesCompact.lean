@@ -10,7 +10,7 @@ Split from FullAdeles.lean for faster incremental builds.
 * Weak approximation theorems
 -/
 
-import RrLean.RiemannRochV2.FullAdelesBase
+import RrLean.RiemannRochV2.Adelic.FullAdelesBase
 
 noncomputable section
 

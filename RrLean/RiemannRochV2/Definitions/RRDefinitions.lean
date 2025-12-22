@@ -1,4 +1,4 @@
-import RrLean.RiemannRochV2.Infrastructure
+import RrLean.RiemannRochV2.Definitions.Infrastructure
 
 /-!
 # RR Definitions: Essential Infrastructure for Kernel Proof

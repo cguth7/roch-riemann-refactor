@@ -1,5 +1,5 @@
-import RrLean.RiemannRochV2.Typeclasses
-import RrLean.RiemannRochV2.DimensionCounting
+import RrLean.RiemannRochV2.Core.Typeclasses
+import RrLean.RiemannRochV2.Dimension.DimensionCounting
 
 /-!
 # Riemann Inequality

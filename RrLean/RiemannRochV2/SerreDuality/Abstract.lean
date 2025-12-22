@@ -1,5 +1,5 @@
-import RrLean.RiemannRochV2.AdelicH1v2
-import RrLean.RiemannRochV2.DifferentIdealBridge
+import RrLean.RiemannRochV2.Adelic.AdelicH1v2
+import RrLean.RiemannRochV2.ResidueTheory.DifferentIdealBridge
 import Mathlib.LinearAlgebra.PerfectPairing.Basic
 
 /-!

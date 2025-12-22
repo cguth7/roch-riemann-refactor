@@ -1,4 +1,4 @@
-import RrLean.RiemannRochV2.Adeles
+import RrLean.RiemannRochV2.Adelic.Adeles
 import Mathlib.RingTheory.DedekindDomain.FiniteAdeleRing
 
 /-!

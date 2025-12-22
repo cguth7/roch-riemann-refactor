@@ -1,4 +1,4 @@
-import RrLean.RiemannRochV2.FullRRData
+import RrLean.RiemannRochV2.Definitions.FullRRData
 import RrLean.RiemannRochV2.SerreDuality.P1Specific.RatFuncPairing
 
 /-!

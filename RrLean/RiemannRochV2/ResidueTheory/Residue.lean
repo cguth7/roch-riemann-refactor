@@ -1,6 +1,6 @@
 import Mathlib.RingTheory.LaurentSeries
 import Mathlib.FieldTheory.RatFunc.AsPolynomial
-import RrLean.RiemannRochV2.Basic
+import RrLean.RiemannRochV2.Core.Basic
 
 /-!
 # Residues for RatFunc Fq

@@ -42,8 +42,8 @@ import Mathlib.Topology.Algebra.UniformRing
 import Mathlib.Topology.DiscreteSubset
 import Mathlib.Data.Int.WithZero
 import Mathlib.Topology.Algebra.Valued.LocallyCompact
-import RrLean.RiemannRochV2.AdelicTopology
-import RrLean.RiemannRochV2.FqPolynomialInstance
+import RrLean.RiemannRochV2.Adelic.AdelicTopology
+import RrLean.RiemannRochV2.P1Instance.FqPolynomialInstance
 
 noncomputable section
 

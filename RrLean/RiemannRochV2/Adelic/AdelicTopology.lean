@@ -1,7 +1,7 @@
 import Mathlib.RingTheory.DedekindDomain.FiniteAdeleRing
 import Mathlib.Topology.Algebra.Valued.LocallyCompact
 import Mathlib.Topology.Algebra.RestrictedProduct.TopologicalSpace
-import RrLean.RiemannRochV2.AdelicH1v2
+import RrLean.RiemannRochV2.Adelic.AdelicH1v2
 
 /-!
 # Topological Properties of Adele Rings

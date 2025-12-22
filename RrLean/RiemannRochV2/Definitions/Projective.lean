@@ -1,6 +1,6 @@
-import RrLean.RiemannRochV2.Infrastructure
-import RrLean.RiemannRochV2.KernelProof
-import RrLean.RiemannRochV2.RRDefinitions
+import RrLean.RiemannRochV2.Definitions.Infrastructure
+import RrLean.RiemannRochV2.Dimension.KernelProof
+import RrLean.RiemannRochV2.Definitions.RRDefinitions
 import Mathlib.LinearAlgebra.Dimension.Finrank
 
 /-!

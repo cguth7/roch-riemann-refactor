@@ -1,4 +1,4 @@
-import RrLean.RiemannRochV2.Divisor
+import RrLean.RiemannRochV2.Core.Divisor
 
 /-!
 # Riemann-Roch Space L(D) and Dimension ℓ(D)
