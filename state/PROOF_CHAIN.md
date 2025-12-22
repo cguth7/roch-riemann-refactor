@@ -164,6 +164,57 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke
 
 ---
 
+## Future Chain: General Curves
+
+The P¹ proof uses a "brute force" approach - explicit construction of 1/(x-α)^n functions
+and strong induction on degree. This **bypasses** the Riemann Inequality + Serre Duality strategy.
+
+For **general curves** (elliptic, hyperelliptic, etc.), we cannot do brute force because we
+don't have explicit function formulas. We must use the standard approach:
+
+```
+General Curve Proof Chain (Target)
+==================================
+
+Smoke.lean (or new GeneralSmoke.lean)
+  │
+  ├── Abstract.lean                      # Curve-agnostic Serre duality (3 sorries to fill)
+  │     ├── AdelicH1Full.lean            # H¹(D) via full adeles (now sorry-free!)
+  │     └── [New: SerrePairing.lean]     # Residue pairing construction
+  │
+  ├── RiemannInequality.lean             # ℓ(D) ≥ deg(D) + 1 - g  ← NOT USED BY P¹
+  │     └── DimensionCounting.lean       # General dimension machinery
+  │           └── KernelProof.lean       # Kernel dimension lemmas
+  │
+  └── [New: CurveInstance.lean]          # Instance for specific curve
+        └── FullRRData.lean              # RR data structure
+
+The Logic:
+1. Riemann Inequality:  ℓ(D) ≥ deg(D) + 1 - g
+2. Serre Duality:       h¹(D) = ℓ(K - D)
+3. Combine:             ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
+```
+
+### Why P¹ Didn't Need This
+
+| Component | P¹ Approach | General Approach |
+|-----------|-------------|------------------|
+| Dimension formula | Direct induction on deg(D) | Riemann Inequality + Duality |
+| Function construction | Explicit 1/(x-α)^n | Abstract existence via Serre |
+| Finiteness | Embedding into polynomial space | Compactness of adeles |
+| h¹ computation | Not needed (g=0, so h¹=0 for deg≥-1) | Full Serre duality pairing |
+
+### Files to Connect for General Curves
+
+| File | Current Status | Action Needed |
+|------|---------------|---------------|
+| `RiemannInequality.lean` | Sorry-free, disconnected | Import into general chain |
+| `DimensionCounting.lean` | Sorry-free, disconnected | Import via RiemannInequality |
+| `Abstract.lean` | 3 sorries | Fill h1_finite, ell_finite, h1_vanishing |
+| `AdelicH1Full.lean` | Sorry-free | Wire into Abstract.lean |
+
+---
+
 ## History
 
 | Cycle | Change |
