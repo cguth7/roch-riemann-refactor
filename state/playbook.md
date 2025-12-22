@@ -4,6 +4,28 @@ Strategic guide for formalizing Riemann-Roch. Updated Cycle 247.
 
 ---
 
+## State Folder Overview
+
+```
+state/
+├── playbook.md          # This file - strategy, heuristics, lessons learned
+├── ledger.md            # Tactical tracking - current cycle, recent changes, next steps
+├── ledger_archive.md    # Historical cycles 1-240
+├── PROOF_CHAIN.md       # Import chain from theorems to Mathlib, file status
+├── REFACTOR_PLAN.md     # Roadmap for generalizing P¹ → arbitrary curves
+└── INVENTORY_REPORT.md  # Deep scan of all files (from Cycle 241 refactor)
+```
+
+| File | When to read | When to update |
+|------|--------------|----------------|
+| `ledger.md` | Start of every cycle | End of every cycle |
+| `playbook.md` | When stuck or planning | When learning new lessons |
+| `PROOF_CHAIN.md` | After adding new files | After connecting files to chain |
+| `REFACTOR_PLAN.md` | When planning next phase | After completing a phase |
+| `INVENTORY_REPORT.md` | Reference only | Rarely (was a one-time scan) |
+
+---
+
 ## Cycle Discipline
 
 **Critical Lesson from Cycles 230-241**: We got impatient near the end and tried to do too much per cycle. This led to context overflow, incomplete work, and debugging spirals.
