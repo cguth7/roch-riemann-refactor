@@ -104,25 +104,51 @@ Smoke.lean                 (NEW: umbrella + #print axioms check)
 
 ---
 
-## Dependency Graph (Updated - Cycle 236)
+## Honest Sorry Audit (Cycle 236)
 
+### CRITICAL PATH FOR P¹ (6 sorries total)
+
+**DimensionCore.lean** (5 sorries):
 ```
-riemann_roch_ratfunc (NOT PROVED - depends on sorry)
-    ├─→ ell_ratfunc_projective_eq_deg_plus_one (sorry in DimensionScratch - main blocker)
-    │       ├─→ ell_ratfunc_projective_single_linear ✅ PROVED (Cycle 236)
-    │       │       ├─→ RRSpace_single_linear_finite ✅ INSTANCE (DimensionCore, sorries inside)
-    │       │       │       └─→ partialClearPoles (sorry - embedding construction)
-    │       │       │       └─→ mul_X_sub_pow_is_polynomial (sorry - polynomial form)
-    │       │       └─→ ell_ratfunc_projective_gap_le ✅ DONE (Cycle 234)
-    │       │               └─→ linearPlace_residue_finrank ✅ DONE (Cycle 234)
-    │       ├─→ inv_X_sub_C_pow_mem_projective_general ✅
-    │       └─→ inv_X_sub_C_pow_not_mem_projective_general ✅
-    └─→ ell_canonical_sub_zero ✅ DONE (Cycle 224)
+Line 67:  mul_X_sub_pow_is_polynomial     - valuation bounds → polynomial form
+Line 88:  partialClearPoles.map_add'      - linearity (addition)
+Line 92:  partialClearPoles.map_smul'     - linearity (scalar mult)
+Line 101: partialClearPoles_injective    - mult by nonzero is injective
+Line 126: RRSpace_...add_single_finite   - finiteness for D + [v]
 ```
 
-**Key insight**: `ell_ratfunc_projective_single_linear` is now proved using finiteness instances
-from DimensionCore. The finiteness instances themselves use sorries for the embedding construction,
-but the dimension formula proof is structurally complete.
+**DimensionScratch.lean** (1 sorry):
+```
+Line 892: ell_ratfunc_projective_eq_deg_plus_one - main theorem (strong induction)
+```
+
+### NOT ON CRITICAL PATH (15 sorries - imported but not used)
+
+| File | Count | Why not critical |
+|------|-------|------------------|
+| AdelicH1Full.lean | 8 | Adelic approach (alternative) |
+| Residue.lean | 2 | Higher-degree places |
+| Others | 5 | Infrastructure not used by P¹ |
+
+### Dependency Graph
+
+```
+riemann_roch_ratfunc (NOT PROVED)
+    ├─→ ell_ratfunc_projective_eq_deg_plus_one (1 sorry - MAIN BLOCKER)
+    │       ├─→ ell_ratfunc_projective_single_linear ✅ PROVED (modulo DimensionCore)
+    │       │       ├─→ RRSpace_single_linear_finite (5 sorries in DimensionCore)
+    │       │       └─→ ell_ratfunc_projective_gap_le ✅ PROVED
+    │       ├─→ inv_X_sub_C_pow_mem_projective ✅
+    │       └─→ inv_X_sub_C_pow_not_mem_projective_smaller ✅
+    └─→ ell_canonical_sub_zero ✅ PROVED
+```
+
+### Verification
+
+```bash
+lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "sorryAx"
+# Shows sorryAx now. When empty, P¹ is complete.
+```
 
 ---
 

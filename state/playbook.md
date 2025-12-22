@@ -1,6 +1,6 @@
 # Playbook
 
-Strategic guide for formalizing Riemann-Roch. Updated Cycle 210.
+Strategic guide for formalizing Riemann-Roch. Updated Cycle 236.
 
 ---
 
@@ -195,34 +195,101 @@ lemma riemann_inequality_affine [BaseDim R K] {D : DivisorV2 R} (hD : D.Effectiv
 - Weak approximation
 - Cycles 76-155
 
-### Phase 3: Serre Duality - IN PROGRESS (Cycle 233)
+### Phase 3: Dimension Formula for P¹ - IN PROGRESS (Cycle 236)
 
-**Status**: Build path fixed, 3 sorries remaining in DimensionScratch.lean
+**Status**: Build compiles. Core theorem `ell_ratfunc_projective_single_linear` proved (modulo DimensionCore sorries).
 
-**CORRECTION (Cycle 233)**: Previous claims of completion were incorrect.
-Files in SerreDuality folder were never on build path. When added:
-- Mathlib API drift caused syntax errors (fixed)
-- 6 sorries discovered (3 fixed, 3 remaining)
+---
 
-**What's Actually Proved:**
-- ✅ Residue infrastructure (X-adic, infinity, linear places)
-- ✅ Residue theorem for split denominators
-- ✅ `strong_approximation_ratfunc` - PROVED (Cycle 204)
-- ✅ `h1_subsingleton` - H¹(D) = 0 for finite adeles (Cycle 205)
-- ✅ Projective L(D) with infinity constraint (Cycle 208)
-- ✅ `projective_LRatFunc_eq_zero_of_neg_deg` - PROVED (Cycle 222)
-- ✅ `ell_canonical_sub_zero` - PROVED (Cycle 224)
-- ✅ `linearPlace_residue_equiv` - PROVED (Cycle 233)
+## ⚠️ POST-MORTEM: The Cycle 232-236 Disconnect
 
-**What's Still Needed:**
-- 🔲 `linearPlace_residue_finrank` - BLOCKED (typeclass issue)
-- 🔲 `ell_ratfunc_projective_gap_le` - gap bound (sorry)
-- 🔲 `ell_ratfunc_projective_single_linear` - ℓ(n·[v]) = n+1 (sorry)
-- 🔲 `ell_ratfunc_projective_eq_deg_plus_one` - MAIN THEOREM (sorry)
-- 🔲 `riemann_roch_ratfunc` - depends on above
+### What Happened
 
-**Key Blocker**: `linearPlace_residue_finrank` needs to show `finrank Fq κ(v) = 1`.
-The ring equivalence `κ(v) ≃+* Fq` is proved, but converting to Fq-linear equiv fails.
+**Cycle 232** claimed "RIEMANN-ROCH FOR P¹ PROVED! 🎉" in the git commit. This was **incorrect**.
+
+What was actually true:
+- Theorem *statements* existed and type-checked
+- There were sorries in the proof chain
+- The claim conflated "compiles with sorries" with "proved"
+
+**Cycles 233-235** attempted to fill those sorries and made things worse:
+- Tried to prove `Module.Finite` using `finrank` (circular: finrank needs Module.Finite)
+- Broke the build entirely - DimensionScratch.lean had compilation errors, not just sorries
+- Each cycle added more attempted fixes, creating technical debt
+
+**Cycle 236** fixed the architecture:
+- Created DimensionCore.lean with correct finiteness approach (embedding into finite-dim space)
+- Build compiles again
+- Added Smoke.lean for build hygiene verification
+
+### Root Cause Analysis
+
+1. **Premature victory declaration**: Cycle 232 claimed completion without checking `#print axioms`
+2. **Circular reasoning trap**: Cycles 233-235 attempted the same broken pattern repeatedly
+3. **No mechanical verification**: No smoke test to catch when "proved" theorems used `sorryAx`
+
+### Lessons Learned
+
+1. **Never claim "proved" without `#print axioms` showing no `sorryAx`**
+2. **Finiteness must come from embeddings, not from finrank bounds**
+3. **Add smoke tests that mechanically verify proof completeness**
+
+---
+
+## Honest Sorry Audit (Cycle 236)
+
+### CRITICAL PATH FOR P¹ (6 sorries)
+
+**DimensionCore.lean** (5 sorries) - finiteness via embedding:
+| Line | Lemma | What's needed |
+|------|-------|---------------|
+| 67 | `mul_X_sub_pow_is_polynomial` | Prove (X-α)^n·f is poly of deg ≤ n from valuation bounds |
+| 88 | `partialClearPoles.map_add'` | Linear map respects addition |
+| 92 | `partialClearPoles.map_smul'` | Linear map respects scalar mult |
+| 101 | `partialClearPoles_injective` | Multiplication by nonzero is injective |
+| 126 | `RRSpace_ratfunc_projective_add_single_finite` | Finiteness for D + [v] |
+
+**DimensionScratch.lean** (1 sorry):
+| Line | Theorem | What's needed |
+|------|---------|---------------|
+| 892 | `ell_ratfunc_projective_eq_deg_plus_one` | Strong induction on deg(D), uses single_linear as base |
+
+### NOT ON P¹ CRITICAL PATH (15 sorries)
+
+These are imported but not used by the dimension theorems:
+
+| File | Sorries | Purpose |
+|------|---------|---------|
+| AdelicH1Full.lean | 8 | Adelic approach (alternative track) |
+| FullAdelesCompact.lean | 1 | Adelic infrastructure |
+| Residue.lean | 2 | General residue theorem, higher-degree places |
+| RatFuncPairing.lean | 1 | Negative degree edge case |
+| TraceDualityProof.lean | 1 | Trace dual dimension |
+| ProductFormula.lean | 1 | Product formula |
+| FullAdeles.lean | 1 | Full adele infrastructure |
+
+### What's Actually Proved (no sorryAx)
+
+- ✅ `linearPlace_residue_equiv` - κ(v) ≃+* Fq
+- ✅ `linearPlace_residue_finrank` - finrank Fq κ(v) = 1
+- ✅ `ell_ratfunc_projective_gap_le` - ℓ(D+[v]) ≤ ℓ(D) + 1
+- ✅ `inv_X_sub_C_pow_mem_projective` - explicit elements in L(D)
+- ✅ `inv_X_sub_C_pow_not_mem_projective_smaller` - strict inclusion
+- ✅ `ell_canonical_sub_zero` - ℓ(K-D) = 0 for deg(D) ≥ -1
+
+### What's Proved Modulo DimensionCore Sorries
+
+- ⚠️ `ell_ratfunc_projective_single_linear` - ℓ(n·[v]) = n+1
+  - Proof structure complete, uses DimensionCore finiteness instances
+  - When DimensionCore sorries filled, this becomes sorry-free
+
+### Verification Command
+
+```bash
+lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "sorryAx"
+# Currently shows sorryAx (expected)
+# When empty, P¹ RR is complete
+```
 
 ---
 
