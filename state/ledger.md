@@ -222,6 +222,8 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "sorryAx"
 lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axioms"
 ```
 
+**See also**: `state/PROOF_CHAIN.md` for the full import chain and verification details.
+
 ---
 
 ## Next Steps

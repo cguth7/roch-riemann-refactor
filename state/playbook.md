@@ -321,6 +321,7 @@ What was actually true:
 1. **Never claim "proved" without `#print axioms` showing no `sorryAx`**
 2. **Finiteness must come from embeddings, not from finrank bounds**
 3. **Add smoke tests that mechanically verify proof completeness**
+4. **Don't use static sorry audits** - Cycle 236's "Honest Sorry Audit" table wasn't updated when sorries were filled (Cycles 237-240), causing stale info to propagate through Cycle 247. Use `grep -rn sorry` or the Smoke test instead of manually-maintained tables.
 
 ---
 
@@ -366,9 +367,10 @@ What was actually true:
 
 ```bash
 lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "sorryAx"
-# Currently shows sorryAx (expected)
-# When empty, P¹ RR is complete
+# No output = P¹ RR is complete (achieved Cycle 247!)
 ```
+
+**See also**: `state/PROOF_CHAIN.md` for the full import chain and file status.
 
 ---
 
