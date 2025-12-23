@@ -225,6 +225,17 @@ lemma generator_intValuation_at_other_prime (v w : HeightOneSpectrum (Polynomial
   rw [HeightOneSpectrum.intValuation_eq_one_iff]
   exact generator_not_mem_other_prime k v w hw
 
+/-- The generator of v has v-adic valuation exp(-1).
+
+This is the key lemma that connects generators to uniformizers.
+Since v.asIdeal = span{generator}, and intValuation_singleton says
+the valuation of a generator of the ideal is exp(-1), we're done. -/
+lemma generator_intValuation_at_self (v : HeightOneSpectrum (Polynomial k)) :
+    v.intValuation (generator k v) = WithZero.exp (-1 : ℤ) := by
+  have hgen_ne : generator k v ≠ 0 := (generator_irreducible k v).ne_zero
+  have hspan := asIdeal_eq_span_generator k v
+  exact v.intValuation_singleton hgen_ne hspan
+
 /-! ## Note on Abstract Uniformizers
 
 The abstract `uniformizerAt v` from Infrastructure.lean is defined as ANY element with

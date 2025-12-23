@@ -150,7 +150,76 @@ theorem evaluationMapAt_surj (v : HeightOneSpectrum (Polynomial k))
     -- At v: v(f) = v(q)/v(gen^n) = 1/exp(-n) = exp(n) = exp(D(v)+1) ≤ exp((D+[v])(v)) ✓
     -- At w ≠ v: w(f) = w(q)/w(gen^n) ≤ 1/1 = 1 ≤ exp(D(w)) for effective D ✓
     have hf_affine : f ∈ RRModuleV2_real (Polynomial k) (RatFunc k) (D + DivisorV2.single v 1) := by
-      sorry
+      -- f ≠ 0 since q ≠ 0
+      right
+      intro w
+      -- Compute f = q_K / gen_K^n
+      have hgen_pow_ne : gen_K ^ n.toNat ≠ 0 := pow_ne_zero _ hgen_K_ne
+      -- val(f) = val(q) / val(gen^n)
+      rw [map_div₀]
+
+      by_cases hw : w = v
+      · -- Case w = v: substitute and prove
+        rw [hw]
+        -- v.val(gen) = exp(-1) by generator_intValuation_at_self
+        have hgen_val : v.valuation (RatFunc k) gen_K = WithZero.exp (-1 : ℤ) := by
+          rw [HeightOneSpectrum.valuation_of_algebraMap]
+          exact generator_intValuation_at_self k v
+        -- v.val(gen^n) = exp(-n.toNat) using exp_nsmul: exp(a)^n = exp(n•a)
+        have hgen_pow_val : v.valuation (RatFunc k) (gen_K ^ n.toNat) =
+            WithZero.exp (-(n.toNat : ℤ)) := by
+          rw [map_pow, hgen_val, ← WithZero.exp_nsmul]
+          simp only [smul_neg, nsmul_eq_mul, mul_one]
+        -- v.val(q) ≤ 1 (q is a polynomial)
+        have hq_val_le : v.valuation (RatFunc k) q_K ≤ 1 := by
+          rw [HeightOneSpectrum.valuation_of_algebraMap]
+          exact v.intValuation_le_one q
+        -- Goal: v.val(q)/v.val(gen^n) ≤ exp((D + [v])(v)) = exp(D(v) + 1) = exp(n)
+        have hDv_eq : (D + DivisorV2.single v 1) v = n := by
+          simp only [Finsupp.add_apply, DivisorV2.single, Finsupp.single_eq_same]
+          ring
+        rw [hDv_eq, hgen_pow_val]
+        -- n ≥ 0 since D is effective (D v ≥ 0, so D v + 1 ≥ 1 > 0)
+        have hDv_ge : 0 ≤ D v := hD v
+        have hn_nn : 0 ≤ n := by show 0 ≤ D v + 1; omega
+        -- exp(-n.toNat) = exp(-n) since n ≥ 0
+        have hexp_neg : WithZero.exp (-(n.toNat : ℤ)) = WithZero.exp (-n) := by
+          congr 1
+          rw [Int.toNat_of_nonneg hn_nn]
+        rw [hexp_neg]
+        -- val(q)/exp(-n) ≤ exp(n) ↔ val(q) ≤ exp(n) * exp(-n) = exp(0) = 1
+        have hexp_pos : 0 < WithZero.exp (-n) := WithZero.exp_pos
+        rw [div_le_iff₀ hexp_pos]
+        calc v.valuation (RatFunc k) q_K
+            ≤ 1 := hq_val_le
+          _ = WithZero.exp (0 : ℤ) := WithZero.exp_zero.symm
+          _ = WithZero.exp (n + -n) := by ring_nf
+          _ = WithZero.exp n * WithZero.exp (-n) := WithZero.exp_add n (-n)
+
+      · -- Case w ≠ v
+        -- w.val(gen) = 1 at other primes
+        have hgen_val_w : w.valuation (RatFunc k) gen_K = 1 := by
+          rw [HeightOneSpectrum.valuation_of_algebraMap]
+          exact generator_intValuation_at_other_prime k v w hw
+        -- w.val(gen^n) = 1
+        have hgen_pow_val_w : w.valuation (RatFunc k) (gen_K ^ n.toNat) = 1 := by
+          rw [map_pow, hgen_val_w, one_pow]
+        -- w.val(q) ≤ 1
+        have hq_val_le_w : w.valuation (RatFunc k) q_K ≤ 1 := by
+          rw [HeightOneSpectrum.valuation_of_algebraMap]
+          exact w.intValuation_le_one q
+        -- Goal: w.val(q)/1 ≤ exp((D+[v])(w))
+        have hDw_eq : (D + DivisorV2.single v 1) w = D w := by
+          simp only [Finsupp.add_apply, DivisorV2.single, Finsupp.single_apply]
+          rw [if_neg (Ne.symm hw)]
+          ring
+        rw [hDw_eq, hgen_pow_val_w, div_one]
+        -- D w ≥ 0 since D is effective, so exp(D w) ≥ 1
+        have hDw_nn : 0 ≤ D w := hD w
+        calc w.valuation (RatFunc k) q_K
+            ≤ 1 := hq_val_le_w
+          _ = WithZero.exp (0 : ℤ) := WithZero.exp_zero.symm
+          _ ≤ WithZero.exp (D w) := WithZero.exp_le_exp.mpr hDw_nn
 
     -- Step 4: Show f satisfies no pole at infinity (projective condition)
     have hf_infty : f = 0 ∨ noPoleAtInfinity f := by

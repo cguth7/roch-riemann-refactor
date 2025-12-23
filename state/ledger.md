@@ -6,9 +6,9 @@ Tactical tracking for Riemann-Roch formalization.
 
 ## Current State
 
-**Build**: ✅ Compiles (4 sorries in DimensionGeneral.lean)
+**Build**: ✅ Compiles (3 sorries in DimensionGeneral.lean)
 **Result**: Riemann-Roch for P¹ (linear places) + Generalized gap bound + Finiteness for all effective D
-**Cycle**: 263 (Ready to Start)
+**Cycle**: 263 (In Progress)
 
 ---
 
@@ -49,29 +49,29 @@ Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more in
 
 ---
 
-## Cycle 263 Task
+## Cycle 263 Progress
 
 **Task**: Prove `generator_intValuation_at_self` + fill remaining evaluationMapAt_surj sorries
 
-**Blocking Lemma**: Need to add to PlaceDegree.lean:
+**Status**: ✅ Partial Success (4 → 3 sorries)
+
+**Completed**:
+1. ✅ `generator_intValuation_at_self` - PROVED using Mathlib's `intValuation_singleton`
+2. ✅ `hf_affine` - PROVED (valuation bounds for f = q/gen^n at all finite places)
+   - Key: Used `generator_intValuation_at_self` for v, `generator_intValuation_at_other_prime` for w≠v
+   - Technique: `map_div₀`, `WithZero.exp_nsmul`, `WithZero.exp_le_exp.mpr`
+
+**Remaining Sorries** (3):
+- Line 226: `hf_infty` - Need deg(q) ≤ deg(gen^n) via polynomial remainder
+- Line 236: `evaluation = c` - Trace evaluation through residue field bridge
+- Line 259: `gap_eq` - Dimension equality from surjectivity
+
+**Key Discovery**: The proof of `generator_intValuation_at_self` was much simpler than expected!
+Mathlib's `HeightOneSpectrum.intValuation_singleton` directly gives:
 ```lean
-lemma generator_intValuation_at_self (v : HeightOneSpectrum (Polynomial k)) :
-    v.intValuation (generator k v) = WithZero.exp (-1 : ℤ)
+v.intValuation_singleton hgen_ne hspan  -- where hspan : v.asIdeal = span{gen}
 ```
-
-**Proof Strategy** (attempted but hit type issues):
-1. Show `gen ∈ v.asIdeal` (trivial: gen generates the ideal)
-2. Show `gen ∉ v.asIdeal²` (gen is irreducible, so gen² ∤ gen)
-3. Use `intValuation_le_pow_iff_mem` to get bounds: `exp(-2) < val ≤ exp(-1)`
-4. Use `intValuation_if_neg` to express val as `exp(-count)` for some ℕ
-5. **Peel the type wrappers** to reduce to integer arithmetic:
-   - `WithZero.exp` = `↑(Multiplicative.ofAdd _)`
-   - Use `WithZero.coe_le_coe` / `coe_lt_coe` to strip WithZero
-   - Use `Multiplicative.ofAdd_le` / `ofAdd_lt` to strip Multiplicative
-   - Now have `-2 < -count ≤ -1` in ℤ, so `count = 1` by `omega`
-
-**Type Hell Warning**: The `WithZero (Multiplicative ℤ)` type requires careful peeling.
-Do NOT guess lemma names - search for actual usage in codebase (e.g., P1VanishingLKD.lean:181).
+No type-peeling required.
 
 ---
 
@@ -169,17 +169,17 @@ Do NOT guess lemma names - search for actual usage in codebase (e.g., P1Vanishin
 
 ## Sorries
 
-**7 sorries total** in non-archived code:
+**6 sorries total** in non-archived code:
 - `Abstract.lean`: 3 (placeholder `AdelicRRData` instance fields)
-- `DimensionGeneral.lean`: 4 (see breakdown below)
+- `DimensionGeneral.lean`: 3 (see breakdown below)
 
 **Files with sorries** (Cycle 263):
-- DimensionGeneral.lean: ⚠️ 4 sorries
+- DimensionGeneral.lean: ⚠️ 3 sorries
   - ~~Line 132: zero case~~ ✅ DONE (Cycle 262)
-  - Line 153: hf_affine (valuation conditions for f = q/gen^n)
-  - Line 157: hf_infty (no pole at infinity)
-  - Line 167: evaluation equals c
-  - Line 190: ell_ratfunc_projective_gap_eq (follows from surjectivity)
+  - ~~Line 153: hf_affine~~ ✅ DONE (Cycle 263)
+  - Line 226: hf_infty (no pole at infinity - needs modByMonic)
+  - Line 236: evaluation equals c
+  - Line 259: ell_ratfunc_projective_gap_eq (follows from surjectivity)
 
 **Sorry-free files** (confirmed Cycle 262):
 - PlaceDegree.lean ✅ (Cycle 262 - removed unprovable uniformizer lemmas)
@@ -213,47 +213,24 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ## Next Steps
 
-### Immediate: Prove `generator_intValuation_at_self` (Blocking)
+### Immediate: Fill remaining 3 sorries in evaluationMapAt_surj
 
-**Add to PlaceDegree.lean** - This lemma is required for the remaining sorries.
+**Blockers for remaining sorries**:
 
-**Proof outline** (90% done, needs type-peeling fixes):
-```lean
-lemma generator_intValuation_at_self (v : HeightOneSpectrum (Polynomial k)) :
-    v.intValuation (generator k v) = WithZero.exp (-1 : ℤ) := by
-  -- 1. gen ∈ v.asIdeal (trivial)
-  have hgen_mem : generator k v ∈ v.asIdeal := ...
-  -- 2. gen ∉ v.asIdeal² (irreducible ⟹ gen² ∤ gen)
-  have hgen_not_mem_sq : generator k v ∉ v.asIdeal ^ 2 := ...
-  -- 3. Get bounds via intValuation_le_pow_iff_mem
-  have hle : v.intValuation (generator k v) ≤ WithZero.exp (-1) := ...
-  have hgt : v.intValuation (generator k v) > WithZero.exp (-2) := ...
-  -- 4. Express as exp(-count) via intValuation_if_neg
-  have hval_form := v.intValuation_if_neg hgen_ne
-  rw [hval_form] at hle hgt ⊢
-  -- 5. Peel types: WithZero → Multiplicative → ℤ
-  rw [WithZero.exp, WithZero.exp] at hle hgt
-  simp only [WithZero.coe_le_coe, WithZero.coe_lt_coe] at hle hgt
-  rw [Multiplicative.ofAdd_le] at hle
-  rw [Multiplicative.ofAdd_lt] at hgt
-  -- 6. Now -2 < -count ≤ -1, so count = 1
-  have hcount_eq : count = 1 := by omega
-  simp [hcount_eq]
-```
+1. **hf_infty** (Line 226) - Need to control polynomial degree
+   - Current `q` from `Ideal.Quotient.mk_surjective` has arbitrary degree
+   - Solution: Replace `q` with `q %ₘ gen` using `Polynomial.modByMonic`
+   - Then deg(q') < deg(gen) ≤ deg(gen^n), giving `noPoleAtInfinity`
 
-**Key issue encountered**: The `mul_left_cancel₀` step for proving `gen ∉ v.asIdeal²` had
-argument order problems. Need to carefully match `hc : gen² * c = gen` to the cancellation form.
+2. **evaluation = c** (Line 236) - Complex residue field mechanics
+   - Need to trace: `f ↦ (f * π^n).residue → κ(v) ↦ c`
+   - Key: Show that q/gen^n * (something with gen factors) gives back [q] in κ(v)
 
-### After generator_intValuation_at_self
+3. **gap_eq** (Line 259) - Standard dimension argument
+   - Surjectivity of ψ implies quotient ≅ κ(v)
+   - Combined with injectivity gives dimension = deg(v)
 
-Fill remaining 4 sorries in DimensionGeneral.lean:
-
-1. **hf_affine** (line 153) - Now straightforward with generator valuation lemma
-2. **hf_infty** (line 157) - Need deg(q) ≤ deg(gen^n) for no pole at infinity
-3. **evaluation = c** (line 167) - Trace through residue field bridge
-4. **gap_eq** (line 190) - Follows from surjectivity
-
-### Key Technical Insight
+### Key Technical Insight (Confirmed)
 
 **Abstract uniformizer vs generator**: The abstract `uniformizerAt v` is defined as ANY element
 with v.intValuation = exp(-1). In k[X], this could be `gen * other_irreducible`, which belongs
@@ -261,6 +238,15 @@ to multiple prime ideals. Therefore:
 - ❌ `uniformizerAt_not_mem_other_prime` is FALSE in general
 - ✅ `generator_not_mem_other_prime` is TRUE (generator is monic irreducible)
 - **Always use generator for coprimality arguments in k[X]**
+
+### Mathlib Lemma Discovery
+
+`HeightOneSpectrum.intValuation_singleton` provides a direct path to proving generator valuations:
+```lean
+theorem intValuation_singleton {r : R} (hr : r ≠ 0) (hv : v.asIdeal = Ideal.span {r}) :
+    v.intValuation r = exp (-1 : ℤ)
+```
+No type-peeling through `WithZero (Multiplicative ℤ)` needed!
 
 ---
 
