@@ -52,7 +52,7 @@ lemma valuation_product_strict_bound_nonneg
   rw [Valuation.map_mul]
   rw [uniformizerAt_pow_valuation_of_nonneg v (D v + 1) hn]
   calc v.valuation K f * WithZero.exp (-(D v + 1))
-      ≤ WithZero.exp (D v) * WithZero.exp (-(D v + 1)) := mul_le_mul_right' hfv _
+      ≤ WithZero.exp (D v) * WithZero.exp (-(D v + 1)) := mul_le_mul_left hfv _
     _ = WithZero.exp (D v + (-(D v + 1))) := by rw [← WithZero.exp_add]
     _ = WithZero.exp (-1) := by ring_nf
 
@@ -277,7 +277,7 @@ lemma LD_element_maps_to_zero
       unfold shiftedElement
       rw [Valuation.map_mul, uniformizerAt_zpow_valuation]
       calc v.valuation K (f : K) * WithZero.exp (-(D v + 1))
-          ≤ WithZero.exp (D v) * WithZero.exp (-(D v + 1)) := mul_le_mul_right' hfv _
+          ≤ WithZero.exp (D v) * WithZero.exp (-(D v + 1)) := mul_le_mul_left hfv _
         _ = WithZero.exp (D v + (-(D v + 1))) := by rw [← WithZero.exp_add]
         _ = WithZero.exp (-1) := by ring_nf
     -- exp(-1) < 1 = exp(0)

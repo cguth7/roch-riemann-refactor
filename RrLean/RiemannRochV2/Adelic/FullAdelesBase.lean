@@ -342,7 +342,7 @@ theorem polynomial_inftyVal_ge_one {p : Fq[X]} (hp : p ≠ 0) :
   rw [FunctionField.inftyValuation.polynomial (Fq := Fq) hp]
   -- exp(natDegree) ≥ 1 since natDegree ≥ 0 and 1 = exp 0
   rw [← WithZero.exp_zero, WithZero.exp_le_exp]
-  exact Int.ofNat_nonneg _
+  exact Int.natCast_nonneg _
 
 /-- The open ball {x | Valued.v x < 1} in FqtInfty is open.
 

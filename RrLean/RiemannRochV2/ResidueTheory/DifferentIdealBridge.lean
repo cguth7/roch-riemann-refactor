@@ -36,7 +36,7 @@ open FractionalIdeal
 open Classical in
 /-- Convert a fractional ideal to a divisor using the count function. -/
 noncomputable def fractionalIdealToDivisor (I : FractionalIdeal R⁰ K) : DivisorV2 R :=
-  if hI : I = 0 then 0 else
+  if _hI : I = 0 then 0 else
     (finite_factors I).toFinset.sum fun v => Finsupp.single v (count K v I)
 
 /-- Convert a divisor to a fractional ideal. -/

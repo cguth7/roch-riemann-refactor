@@ -119,7 +119,7 @@ open FractionalIdeal
 -- See docstring in archive for why this approach doesn't work
 
 /-- The trace dual operation is involutive on fractional ideals. -/
-lemma dual_dual_eq (I : FractionalIdeal R⁰ K) (hI : I ≠ 0) :
+lemma dual_dual_eq (I : FractionalIdeal R⁰ K) (_hI : I ≠ 0) :
     dual A K_A (dual A K_A I) = I :=
   FractionalIdeal.dual_dual A K_A I
 

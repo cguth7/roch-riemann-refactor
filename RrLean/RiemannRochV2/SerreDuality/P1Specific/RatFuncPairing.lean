@@ -187,7 +187,7 @@ def translatePolyEquiv (α : Fq) : Polynomial Fq ≃+* Polynomial Fq where
     rw [Polynomial.comp_assoc]; simp [sub_add_cancel]
   right_inv := fun p => by
     show (p.comp _).comp _ = p
-    rw [Polynomial.comp_assoc]; simp [add_sub_cancel]
+    rw [Polynomial.comp_assoc]; simp
   map_mul' := fun p q => Polynomial.mul_comp p q _
   map_add' := fun p q => by simp only [Polynomial.add_comp]
 
@@ -568,7 +568,7 @@ lemma valuation_X_sub_at_ne (α β : Fq) (hne : β ≠ α) :
   exact_mod_cast h
 
 /-- The valuation of 1/(X-α)^n at a different place β ≠ α is 1 (it's a unit). -/
-lemma valuation_inv_X_sub_pow_at_ne (α β : Fq) (hne : β ≠ α) (n : ℕ) (hn : n > 0) :
+lemma valuation_inv_X_sub_pow_at_ne (α β : Fq) (hne : β ≠ α) (n : ℕ) (_hn : n > 0) :
     (linearPlace β).valuation (RatFunc Fq) ((RatFunc.X - RatFunc.C α)⁻¹ ^ n) = 1 := by
   have hunit := valuation_X_sub_at_ne α β hne
   have hinv : (linearPlace β).valuation (RatFunc Fq) (RatFunc.X - RatFunc.C α)⁻¹ = 1 := by
@@ -829,7 +829,7 @@ lemma valuation_le_one_at_coprime_place (v w : HeightOneSpectrum (Polynomial Fq)
       exact hne (HeightOneSpectrum.ext heq.symm)
     have hp_val_one : w.intValuation p = 1 := intValuation_eq_one_iff.mpr hp_not_mem_w
     have hpn_val : w.valuation (RatFunc Fq) (algebraMap _ (RatFunc Fq) (p ^ n)) = 1 := by
-      simp only [map_pow, w.valuation_of_algebraMap, hp_val_one, one_pow, WithZero.coe_one]
+      simp only [map_pow, w.valuation_of_algebraMap, hp_val_one, one_pow]
     rw [Valuation.map_div, hpn_val, div_one]
     exact hnum_val
 
@@ -1319,7 +1319,7 @@ lemma exists_global_approximant_from_local
     -- Split k_pole = pp_v + Σ_{w ∈ S.erase v.val} pp_w using insert/erase
     have hmem : v.val ∈ S := v.property
     have hS_eq : S = insert v.val (S.erase v.val) := (Finset.insert_erase hmem).symm
-    have hv_notin : v.val ∉ S.erase v.val := Finset.not_mem_erase v.val S
+    have hv_notin : v.val ∉ S.erase v.val := Finset.notMem_erase v.val S
     -- We need to show val_v(y_v - k_pole) ≤ 1
     -- Key insight: y_v - k_pole = (pp_v + r_v) - Σ pp_w = r_v - Σ_{w ≠ v} pp_w
     -- Since r_v is integral at v, and each pp_w (w ≠ v) is integral at v, the result follows.
@@ -1722,7 +1722,7 @@ theorem strong_approximation_ratfunc
       obtain ⟨hv_supp, hv_int⟩ := hv
 
       -- D(v) = 0 since v ∉ D.support
-      have hDv : D v = 0 := Finsupp.not_mem_support_iff.mp hv_supp
+      have hDv : D v = 0 := Finsupp.notMem_support_iff.mp hv_supp
 
       -- a_v is integral since v ∉ nonIntPlaces
       have ha_int : a v ∈ v.adicCompletionIntegers (RatFunc Fq) := by

@@ -106,7 +106,7 @@ theorem ell_ratfunc_projective_gap_le (D : DivisorV2 (Polynomial Fq)) (α : Fq)
     map_add' := fun x y => by
       have := φ.map_add ⟨x.val, h_proj_to_affine x.val x.property⟩
           ⟨y.val, h_proj_to_affine y.val y.property⟩
-      convert this using 1 <;> rfl
+      convert this using 1
     map_smul' := fun c x => by
       have h1 : (c • x).val = (algebraMap Fq (Polynomial Fq) c) • x.val :=
         (IsScalarTower.algebraMap_smul (Polynomial Fq) c x.val).symm
@@ -445,7 +445,7 @@ lemma valuation_X_sub_at_other (α : Fq) (v : HeightOneSpectrum (Polynomial Fq))
   exact HeightOneSpectrum.ext heq'.symm
 
 /-- 1/(X-α)^k satisfies the valuation condition for k·[linearPlace α]. -/
-lemma inv_X_sub_C_pow_satisfies_valuation (α : Fq) (k : ℕ) (hk : k ≠ 0) :
+lemma inv_X_sub_C_pow_satisfies_valuation (α : Fq) (k : ℕ) (_hk : k ≠ 0) :
     satisfiesValuationCondition (Polynomial Fq) (RatFunc Fq)
       ((k : ℤ) • DivisorV2.single (linearPlace α) 1)
       ((RatFunc.X (K := Fq) - RatFunc.C α)⁻¹ ^ k) := by
@@ -532,7 +532,7 @@ lemma inv_X_sub_C_pow_mem_projective (α : Fq) (k : ℕ) :
 /-- 1/(X-α)^k is NOT in L_proj((k-1)·[linearPlace α]) for k ≥ 1.
 
 This shows the gap is exactly 1, not just ≤ 1. -/
-lemma inv_X_sub_C_pow_not_mem_projective_smaller (α : Fq) (k : ℕ) (hk : 0 < k) :
+lemma inv_X_sub_C_pow_not_mem_projective_smaller (α : Fq) (k : ℕ) (_hk : 0 < k) :
     (RatFunc.X (K := Fq) - RatFunc.C α)⁻¹ ^ k ∉
     RRSpace_ratfunc_projective (((k : ℤ) - 1) • DivisorV2.single (linearPlace α) 1) := by
   intro ⟨hval, _⟩
@@ -778,7 +778,7 @@ lemma IsLinearPlaceSupport_sub_single (D : DivisorV2 (Polynomial Fq))
 
 /-- 1/(X-α)^n is in L_proj(D) when D(linearPlace α) = n and D is effective. -/
 lemma inv_X_sub_C_pow_mem_projective_general (α : Fq) (D : DivisorV2 (Polynomial Fq))
-    (hD : D.Effective) (n : ℕ) (hDα : D (linearPlace α) = ↑n) (hn : n ≠ 0) :
+    (hD : D.Effective) (n : ℕ) (hDα : D (linearPlace α) = ↑n) (_hn : n ≠ 0) :
     (RatFunc.X (K := Fq) - RatFunc.C α)⁻¹ ^ n ∈ RRSpace_ratfunc_projective D := by
   constructor
   · -- Valuation condition
@@ -801,7 +801,7 @@ lemma inv_X_sub_C_pow_mem_projective_general (α : Fq) (D : DivisorV2 (Polynomia
 
 /-- 1/(X-α)^n is NOT in L_proj(D') when D'(linearPlace α) = n - 1 and n ≥ 1. -/
 lemma inv_X_sub_C_pow_not_mem_projective_general (α : Fq) (D' : DivisorV2 (Polynomial Fq))
-    (n : ℕ) (hn : 0 < n) (hD'α : D' (linearPlace α) = (n : ℤ) - 1) :
+    (n : ℕ) (_hn : 0 < n) (hD'α : D' (linearPlace α) = (n : ℤ) - 1) :
     (RatFunc.X (K := Fq) - RatFunc.C α)⁻¹ ^ n ∉ RRSpace_ratfunc_projective D' := by
   intro ⟨hval, _⟩
   have hf_ne : (RatFunc.X (K := Fq) - RatFunc.C α)⁻¹ ^ n ≠ 0 :=

@@ -179,7 +179,7 @@ end DimensionBound
 
 -- Lower priority so it doesn't conflict with SinglePointBound inheritance
 instance localGapBound_of_dedekind (R : Type*) [CommRing R] [IsDomain R] [IsDedekindDomain R]
-    (K : Type*) [Field K] [Algebra R K] [IsFractionRing R K] (priority := 100) :
+    (K : Type*) [Field K] [Algebra R K] [IsFractionRing R K] (_priority := 100) :
     LocalGapBound R K where
   gap_le_one := fun D v => ellV2_real_gap_le_one v D
 

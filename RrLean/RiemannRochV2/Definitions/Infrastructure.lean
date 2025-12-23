@@ -324,7 +324,7 @@ lemma valuation_product_le_one_of_nonneg
   -- Goal: v(f) * exp(-(D v + 1)) ≤ 1
   calc v.valuation K f * WithZero.exp (-(D v + 1))
       = v.valuation K f * (WithZero.exp (D v + 1))⁻¹ := by rw [WithZero.exp_inv_eq_neg_int]
-    _ ≤ WithZero.exp (D v + 1) * (WithZero.exp (D v + 1))⁻¹ := mul_le_mul_right' hfv _
+    _ ≤ WithZero.exp (D v + 1) * (WithZero.exp (D v + 1))⁻¹ := mul_le_mul_left hfv _
     _ = 1 := by rw [mul_inv_cancel₀ (WithZero.coe_ne_zero)]
 
 -- Candidate 8 [tag: valuation_product_le_one_neg] [status: PROVED] [cycle: 54]
@@ -391,7 +391,7 @@ lemma shifted_element_valuation_le_one
   -- Goal: v(f) * exp(-(D v + 1)) ≤ 1
   calc v.valuation K f * WithZero.exp (-(D v + 1))
       = v.valuation K f * (WithZero.exp (D v + 1))⁻¹ := by rw [WithZero.exp_inv_eq_neg_int]
-    _ ≤ WithZero.exp (D v + 1) * (WithZero.exp (D v + 1))⁻¹ := mul_le_mul_right' hfv _
+    _ ≤ WithZero.exp (D v + 1) * (WithZero.exp (D v + 1))⁻¹ := mul_le_mul_left hfv _
     _ = 1 := by rw [mul_inv_cancel₀ (WithZero.coe_ne_zero)]
 
 end UniformizerInfrastructure

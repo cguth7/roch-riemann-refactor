@@ -90,7 +90,7 @@ theorem residueSumTotal_eq_zero_simple [Fintype Fq] (c : Fq) (α : Fq) :
   have h_finite : residueSumFinite (c • (RatFunc.X - RatFunc.C α)⁻¹ : RatFunc Fq) = c := by
     simp only [residueSumFinite]
     rw [← Finset.insert_erase (Finset.mem_univ α)]
-    rw [Finset.sum_insert (Finset.not_mem_erase α Finset.univ)]
+    rw [Finset.sum_insert (Finset.notMem_erase α Finset.univ)]
     have h1 : residueAt α (c • (RatFunc.X - RatFunc.C α)⁻¹ : RatFunc Fq) = c :=
       residueAt_eq_residueAtLinear_simple α c
     rw [h1]

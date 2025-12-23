@@ -55,7 +55,7 @@ instance isNontrivial_FqtInfty :
   use inftyRingHom Fq (1 / RatFunc.X)
   constructor
   · -- v(1/X) ≠ 0
-    simp only [ne_eq, Valuation.zero_iff, map_eq_zero]
+    simp only [ne_eq, map_eq_zero]
     exact one_div_ne_zero RatFunc.X_ne_zero
   · -- v(1/X) < 1
     have hval : Valued.v (inftyRingHom Fq (1 / RatFunc.X)) =
@@ -483,7 +483,7 @@ lemma intValuation_ge_exp_neg_natDegree (v : HeightOneSpectrum Fq[X]) (D : Fq[X]
     -- 1 = exp(0) ≥ exp(-natDegree D) since -natDegree D ≤ 0
     rw [← WithZero.exp_zero]
     apply WithZero.exp_le_exp.mpr
-    linarith [Int.ofNat_nonneg D.natDegree]
+    linarith [Int.natCast_nonneg D.natDegree]
 
 /-- For any finite adele, there exists k ∈ K such that a - diag(k) is integral at all finite places.
 

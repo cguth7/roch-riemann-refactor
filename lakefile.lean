@@ -12,4 +12,6 @@ require mathlib from git
   "https://github.com/leanprover-community/mathlib4"
 
 @[default_target]
-lean_lib RrLean
+lean_lib RrLean where
+  -- Disable unused section variable linter (too noisy for this codebase)
+  moreLeanArgs := #["-Dlinter.unusedSectionVars=false"]

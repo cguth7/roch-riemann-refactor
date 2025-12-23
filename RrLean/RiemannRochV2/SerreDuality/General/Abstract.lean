@@ -69,7 +69,7 @@ then the "residue sum" of `a · f` is zero for any `f`.
 -/
 lemma serrePairing_wellDefined (D : DivisorV2 R)
     (a : FiniteAdeleRing R K)
-    (ha : a ∈ AdelicH1v2.globalPlusBoundedSubmodule k R K D)
+    (_ha : a ∈ AdelicH1v2.globalPlusBoundedSubmodule k R K D)
     (f : RRSpace_proj k R K (canonical - D)) :
     serrePairing k R K canonical D (Submodule.Quotient.mk a) f = 0 := by
   -- Trivially true since serrePairing is definitionally 0
@@ -86,7 +86,7 @@ so this is vacuously true. The Subsingleton instance is provided by
 lemma serrePairing_left_nondegen (D : DivisorV2 R)
     [Subsingleton (AdelicH1v2.SpaceModule k R K D)]
     (x : AdelicH1v2.SpaceModule k R K D)
-    (hx : ∀ f : RRSpace_proj k R K (canonical - D),
+    (_hx : ∀ f : RRSpace_proj k R K (canonical - D),
           serrePairing k R K canonical D x f = 0) :
     x = 0 :=
   Subsingleton.elim x 0
@@ -101,7 +101,7 @@ so L(K-D) = 0. The Subsingleton instance follows from the space being trivial.
 lemma serrePairing_right_nondegen (D : DivisorV2 R)
     [Subsingleton (RRSpace_proj k R K (canonical - D))]
     (f : RRSpace_proj k R K (canonical - D))
-    (hf : ∀ x : AdelicH1v2.SpaceModule k R K D,
+    (_hf : ∀ x : AdelicH1v2.SpaceModule k R K D,
           serrePairing k R K canonical D x f = 0) :
     f = 0 :=
   Subsingleton.elim f 0

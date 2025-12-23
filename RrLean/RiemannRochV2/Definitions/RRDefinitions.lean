@@ -158,7 +158,7 @@ lemma range_algebraMap_subset_valuationRingAt (v : HeightOneSpectrum R) :
 /-! ## Section 4: DVR Valuation Bridge -/
 
 /-- Technical: v(r/s) = v(r) / v(s). -/
-lemma valuation_of_fraction (v : HeightOneSpectrum R) (r : R) {s : R} (hs : s ≠ 0) :
+lemma valuation_of_fraction (v : HeightOneSpectrum R) (r : R) {s : R} (_hs : s ≠ 0) :
     v.valuation K (algebraMap R K r / algebraMap R K s) =
       v.valuation K (algebraMap R K r) / v.valuation K (algebraMap R K s) := by
   rw [Valuation.map_div]

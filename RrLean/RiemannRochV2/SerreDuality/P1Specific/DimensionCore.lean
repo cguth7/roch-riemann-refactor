@@ -68,7 +68,7 @@ lemma RRSpace_valuation_le_one_at_other_places (α : Fq) (n : ℕ) (f : RatFunc 
 /-- If an irreducible π divides f.denom and π ≠ (X-α), then v_π.valuation f > 1. -/
 lemma valuation_gt_one_at_other_irreducible (α : Fq) (f : RatFunc Fq) (hf_ne : f ≠ 0)
     (π : Polynomial Fq) (hπ_irr : Irreducible π) (hπ_dvd : π ∣ f.denom)
-    (hπ_ne : π ≠ Polynomial.X - Polynomial.C α) :
+    (_hπ_ne : π ≠ Polynomial.X - Polynomial.C α) :
     let v_π : HeightOneSpectrum (Polynomial Fq) :=
       ⟨Ideal.span {π}, Ideal.span_singleton_prime hπ_irr.ne_zero |>.mpr hπ_irr.prime,
        by rw [ne_eq, Ideal.span_singleton_eq_bot]; exact hπ_irr.ne_zero⟩
@@ -133,7 +133,7 @@ lemma irreducible_place_ne_linearPlace (α : Fq) (π : Polynomial Fq) (hπ_irr :
 
 /-- If (X-α) ∤ R and π | R with π irreducible, then π is not associate to (X-α). -/
 lemma irreducible_factor_not_assoc_of_not_dvd (α : Fq) (R π : Polynomial Fq)
-    (hπ_irr : Irreducible π) (hπ_dvd : π ∣ R) (hX_not_dvd : ¬ (Polynomial.X - Polynomial.C α) ∣ R) :
+    (_hπ_irr : Irreducible π) (hπ_dvd : π ∣ R) (hX_not_dvd : ¬ (Polynomial.X - Polynomial.C α) ∣ R) :
     ¬ Associated π (Polynomial.X - Polynomial.C α) := by
   intro hassoc
   apply hX_not_dvd
@@ -331,7 +331,7 @@ lemma mul_X_sub_pow_is_polynomial (α : Fq) (n : ℕ) (f : RatFunc Fq)
         ≤ ((Polynomial.X - Polynomial.C α) ^ (n - m)).natDegree + f.num.natDegree := Polynomial.natDegree_mul_le
       _ = (n - m) * (Polynomial.X - Polynomial.C α).natDegree + f.num.natDegree := by
           rw [Polynomial.natDegree_pow]
-      _ = (n - m) + f.num.natDegree := by simp [Polynomial.natDegree_X_sub_C]
+      _ = (n - m) + f.num.natDegree := by simp
       _ ≤ (n - m) + m := Nat.add_le_add_left hnum_deg _
       _ = n := Nat.sub_add_cancel hm_le
 
@@ -473,13 +473,12 @@ lemma RRSpace_ratfunc_projective_mono (D : DivisorV2 (Polynomial Fq)) (α : Fq) 
     intro w
     by_cases hw : w = linearPlace α
     · subst hw
-      simp only [Finsupp.add_apply, DivisorV2.single, Finsupp.single_apply, if_pos rfl]
+      simp only [Finsupp.add_apply, DivisorV2.single, Finsupp.single_apply, ↓reduceIte]
       calc (linearPlace α).valuation (RatFunc Fq) f
           ≤ WithZero.exp (D (linearPlace α)) := hval' (linearPlace α)
         _ ≤ WithZero.exp (D (linearPlace α) + 1) := by
             apply WithZero.exp_le_exp.mpr; omega
-    · simp only [Finsupp.add_apply, DivisorV2.single, Finsupp.single_apply, hw,
-                 if_neg (Ne.symm hw), add_zero]
+    · simp only [Finsupp.add_apply, DivisorV2.single, Finsupp.single_apply, if_neg (Ne.symm hw), add_zero]
       exact hval' w
   · exact hinfty
 
@@ -555,7 +554,7 @@ instance RRSpace_ratfunc_projective_add_single_finite (α : Fq)
     map_add' := fun x y => by
       have := φ.map_add ⟨x.val, h_proj_to_affine x.val x.property⟩
           ⟨y.val, h_proj_to_affine y.val y.property⟩
-      convert this using 1 <;> rfl
+      convert this using 1
     map_smul' := fun c x => by
       have h1 : (c • x).val = (algebraMap Fq (Polynomial Fq) c) • x.val :=
         (IsScalarTower.algebraMap_smul (Polynomial Fq) c x.val).symm

@@ -391,7 +391,7 @@ lemma residue_of_K_element (v : HeightOneSpectrum R) (k : K)
   -- Goal: toResidueField v (a * t) = res ⟨k, hk⟩
   -- First, show toResidueField v (a * t) = res(a) * res(t)
   have h_expand : toResidueField (K := K) v (a * t) = res (algebraMap R S a) * res (algebraMap R S t) := by
-    simp only [toResidueField, algebraMapToIntegers, RingHom.coe_comp, RingHom.comp_apply, map_mul]
+    simp only [toResidueField, map_mul]
     rfl
   -- Compute: res(a) * res(t) = res(a) * res(s)⁻¹ = res ⟨k, hk⟩ * res(s) * res(s)⁻¹ = res ⟨k, hk⟩
   have ha_eq : res (algebraMap R S a) = res ⟨algebraMap K C k, hk⟩ * res (algebraMap R S s) := h.symm
@@ -419,7 +419,6 @@ theorem toResidueField_surjective (v : HeightOneSpectrum R) :
     apply residue_eq_of_sub_mem_maximalIdeal
     rw [mem_maximalIdeal_iff_val_lt_one]
     show Valued.v ((k' : v.adicCompletion K) - (x : v.adicCompletion K)) < 1
-    simp only [k', Subtype.coe_mk]
     rw [Valuation.map_sub_swap]
     exact hclose
   -- Step 5: Get r ∈ R with toResidueField r = residue(k)

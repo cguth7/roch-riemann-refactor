@@ -59,7 +59,7 @@ equals the cardinality of the roots multiset.
 
 This uses that `Multiset.count α p.roots = p.rootMultiplicity α` for α a root.
 Key Mathlib lemma: `Polynomial.count_roots` -/
-theorem sum_rootMultiplicity_eq_card_roots (p : Polynomial Fq) (hp : p ≠ 0) :
+theorem sum_rootMultiplicity_eq_card_roots (p : Polynomial Fq) (_hp : p ≠ 0) :
     (p.roots.toFinset.sum fun α => p.rootMultiplicity α) = p.roots.card := by
   -- Use that rootMultiplicity = count in roots multiset
   simp only [← count_roots p]
@@ -96,7 +96,7 @@ def finitePrincipalDivisorDegree (f : RatFunc Fq) : ℤ :=
 
 /-- For polynomials (no denominator), the principal divisor has non-negative degree
 at finite places, and the infinity contribution makes total = 0. -/
-theorem polynomial_principal_divisor (p : Polynomial Fq) (hp : p ≠ 0) :
+theorem polynomial_principal_divisor (p : Polynomial Fq) (_hp : p ≠ 0) :
     (p.roots.card : ℤ) + (0 - (p.natDegree : ℤ)) ≤ 0 := by
   have h := Polynomial.card_roots' p
   omega
