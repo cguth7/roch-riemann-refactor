@@ -6,9 +6,9 @@ Tactical tracking for Riemann-Roch formalization.
 
 ## Current State
 
-**Build**: ✅ Compiles (2 sorries in DimensionGeneral.lean)
+**Build**: ✅ Compiles (4 sorries in DimensionGeneral.lean)
 **Result**: Riemann-Roch for P¹ (linear places) + Generalized gap bound + Finiteness for all effective D
-**Cycle**: 262 (In Progress)
+**Cycle**: 263 (Ready to Start)
 
 ---
 
@@ -49,15 +49,42 @@ Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more in
 
 ---
 
+## Cycle 263 Task
+
+**Task**: Prove `generator_intValuation_at_self` + fill remaining evaluationMapAt_surj sorries
+
+**Blocking Lemma**: Need to add to PlaceDegree.lean:
+```lean
+lemma generator_intValuation_at_self (v : HeightOneSpectrum (Polynomial k)) :
+    v.intValuation (generator k v) = WithZero.exp (-1 : ℤ)
+```
+
+**Proof Strategy** (attempted but hit type issues):
+1. Show `gen ∈ v.asIdeal` (trivial: gen generates the ideal)
+2. Show `gen ∉ v.asIdeal²` (gen is irreducible, so gen² ∤ gen)
+3. Use `intValuation_le_pow_iff_mem` to get bounds: `exp(-2) < val ≤ exp(-1)`
+4. Use `intValuation_if_neg` to express val as `exp(-count)` for some ℕ
+5. **Peel the type wrappers** to reduce to integer arithmetic:
+   - `WithZero.exp` = `↑(Multiplicative.ofAdd _)`
+   - Use `WithZero.coe_le_coe` / `coe_lt_coe` to strip WithZero
+   - Use `Multiplicative.ofAdd_le` / `ofAdd_lt` to strip Multiplicative
+   - Now have `-2 < -count ≤ -1` in ℤ, so `count = 1` by `omega`
+
+**Type Hell Warning**: The `WithZero (Multiplicative ℤ)` type requires careful peeling.
+Do NOT guess lemma names - search for actual usage in codebase (e.g., P1VanishingLKD.lean:181).
+
+---
+
 ## Cycle 262 Summary
 
 **Task**: Fix PlaceDegree.lean + skeleton for evaluationMapAt_surj
 
-**Status**: 🔄 In Progress
+**Status**: ✅ Complete (5 → 4 sorries)
 
 **Done**:
 - PlaceDegree.lean ✅ sorry-free (removed unprovable uniformizer lemmas)
-- evaluationMapAt_surj skeleton with 4 documented sorries
+- evaluationMapAt_surj skeleton with documented sorries
+- **Zero case filled** (line 132): q=0 ⟹ c=0, eval(0)=0 ✅
 
 **Key discovery**: Abstract `uniformizerAt` can have extra prime factors in k[X], making
 `uniformizerAt_not_mem_other_prime` unprovable. Use `generator` instead.
@@ -142,17 +169,17 @@ Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more in
 
 ## Sorries
 
-**8 sorries total** in non-archived code:
+**7 sorries total** in non-archived code:
 - `Abstract.lean`: 3 (placeholder `AdelicRRData` instance fields)
-- `DimensionGeneral.lean`: 5 (see breakdown below)
+- `DimensionGeneral.lean`: 4 (see breakdown below)
 
-**Files with sorries** (Cycle 262):
-- DimensionGeneral.lean: ⚠️ 5 sorries
-  - Line 132: zero case (q = 0 ⟹ c = 0)
-  - Line 145: hf_affine (valuation conditions for f = q/gen^n)
-  - Line 149: hf_infty (no pole at infinity)
-  - Line 159: evaluation equals c
-  - Line 182: ell_ratfunc_projective_gap_eq (follows from surjectivity)
+**Files with sorries** (Cycle 263):
+- DimensionGeneral.lean: ⚠️ 4 sorries
+  - ~~Line 132: zero case~~ ✅ DONE (Cycle 262)
+  - Line 153: hf_affine (valuation conditions for f = q/gen^n)
+  - Line 157: hf_infty (no pole at infinity)
+  - Line 167: evaluation equals c
+  - Line 190: ell_ratfunc_projective_gap_eq (follows from surjectivity)
 
 **Sorry-free files** (confirmed Cycle 262):
 - PlaceDegree.lean ✅ (Cycle 262 - removed unprovable uniformizer lemmas)
@@ -186,28 +213,45 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ## Next Steps
 
-### Immediate: Fill `evaluationMapAt_surj` Sorries
+### Immediate: Prove `generator_intValuation_at_self` (Blocking)
 
-**Skeleton complete** - 4 sorries remain in the main proof:
+**Add to PlaceDegree.lean** - This lemma is required for the remaining sorries.
 
-1. **hf_affine** (line 145) - Valuation conditions for f = q/gen^n
-   ```
-   At v: v(f) = v(q) - n*v(gen) = 1 - n*exp(-1) = exp(n) ≤ exp(D(v)+1) ✓
-   At w ≠ v: w(f) = w(q)/w(gen)^n ≤ 1/1 = 1 ≤ exp(D(w)) ✓
-   ```
-   Key lemmas: `generator_intValuation_at_other_prime`, `intValuation_le_one`
+**Proof outline** (90% done, needs type-peeling fixes):
+```lean
+lemma generator_intValuation_at_self (v : HeightOneSpectrum (Polynomial k)) :
+    v.intValuation (generator k v) = WithZero.exp (-1 : ℤ) := by
+  -- 1. gen ∈ v.asIdeal (trivial)
+  have hgen_mem : generator k v ∈ v.asIdeal := ...
+  -- 2. gen ∉ v.asIdeal² (irreducible ⟹ gen² ∤ gen)
+  have hgen_not_mem_sq : generator k v ∉ v.asIdeal ^ 2 := ...
+  -- 3. Get bounds via intValuation_le_pow_iff_mem
+  have hle : v.intValuation (generator k v) ≤ WithZero.exp (-1) := ...
+  have hgt : v.intValuation (generator k v) > WithZero.exp (-2) := ...
+  -- 4. Express as exp(-count) via intValuation_if_neg
+  have hval_form := v.intValuation_if_neg hgen_ne
+  rw [hval_form] at hle hgt ⊢
+  -- 5. Peel types: WithZero → Multiplicative → ℤ
+  rw [WithZero.exp, WithZero.exp] at hle hgt
+  simp only [WithZero.coe_le_coe, WithZero.coe_lt_coe] at hle hgt
+  rw [Multiplicative.ofAdd_le] at hle
+  rw [Multiplicative.ofAdd_lt] at hgt
+  -- 6. Now -2 < -count ≤ -1, so count = 1
+  have hcount_eq : count = 1 := by omega
+  simp [hcount_eq]
+```
 
-2. **hf_infty** (line 149) - No pole at infinity
-   - f = q/gen^n where deg(q) can be arbitrary, deg(gen^n) = n*deg(gen)
-   - Need: deg(numerator) ≤ deg(denominator) for effective D
-   - This may require choosing q with deg(q) < deg(gen) (modular reduction)
+**Key issue encountered**: The `mul_left_cancel₀` step for proving `gen ∉ v.asIdeal²` had
+argument order problems. Need to carefully match `hc : gen² * c = gen` to the cancellation form.
 
-3. **evaluation = c** (line 159) - Trace through shiftedElement
-   - f * π^n = (q/gen^n) * π^n = q * (π/gen)^n
-   - π and gen are associates: π = u*gen for some unit u in localization
-   - Residue of q*u^n should give [q] = c
+### After generator_intValuation_at_self
 
-4. **zero case** (line 132) - Trivial: q=0 ⟹ c=0, eval(0)=0
+Fill remaining 4 sorries in DimensionGeneral.lean:
+
+1. **hf_affine** (line 153) - Now straightforward with generator valuation lemma
+2. **hf_infty** (line 157) - Need deg(q) ≤ deg(gen^n) for no pole at infinity
+3. **evaluation = c** (line 167) - Trace through residue field bridge
+4. **gap_eq** (line 190) - Follows from surjectivity
 
 ### Key Technical Insight
 
@@ -217,12 +261,6 @@ to multiple prime ideals. Therefore:
 - ❌ `uniformizerAt_not_mem_other_prime` is FALSE in general
 - ✅ `generator_not_mem_other_prime` is TRUE (generator is monic irreducible)
 - **Always use generator for coprimality arguments in k[X]**
-
-### After Surjectivity
-
-1. `ell_ratfunc_projective_gap_eq` follows from surjectivity + kernel characterization
-2. Update `riemann_roch_p1` to use `degWeighted` instead of `deg`
-3. Remove `IsLinearPlaceSupport` restriction from main theorem
 
 ---
 

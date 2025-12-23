@@ -129,7 +129,15 @@ theorem evaluationMapAt_surj (v : HeightOneSpectrum (Polynomial k))
     use ⟨0, by simp [satisfiesValuationCondition, RRModuleV2_real]⟩
     -- q = 0 implies c_quot = 0 implies c = 0
     -- evaluationMapAt_complete 0 = 0 = c
-    sorry
+    -- c_quot = Ideal.Quotient.mk v.asIdeal q = Ideal.Quotient.mk v.asIdeal 0 = 0
+    have hc_quot_zero : c_quot = 0 := by rw [← hq, hq_zero, map_zero]
+    -- c = residueFieldAtPrime.linearEquiv v c_quot = ... 0 = 0
+    have hc_zero : c = 0 := by
+      rw [← (residueFieldAtPrime.linearEquiv v).apply_symm_apply c]
+      simp only [c_quot, hc_quot_zero, map_zero]
+    rw [hc_zero]
+    -- evaluationMapAt_complete is linear, so map of 0 is 0
+    exact (evaluationMapAt_complete v D).map_zero
 
   -- Case q ≠ 0: construct f = q / gen^n
   · have hgen_ne : gen ≠ 0 := (generator_irreducible k v).ne_zero
