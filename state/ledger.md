@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization.
 
 **Build**: ✅ Compiles (0 sorries in P1Instance, 1 sorry in ResidueTrace.lean)
 **Result**: Riemann-Roch for P¹ (all effective divisors) + Higher-degree residue infrastructure
-**Cycle**: 268 (In Progress)
+**Cycle**: 269 (In Progress)
 
 ---
 
@@ -31,6 +31,29 @@ Key results:
 - **ℓ(D) = degWeighted(D) + 1** for ALL effective D (any places, any degrees)
 - **ℓ(K-D) = 0** for effective D on P¹
 - **g = 0** (genus of P¹)
+
+---
+
+## Cycle 269 Summary (In Progress)
+
+**Task**: Fill `tracedResidueAtPlace_eq_residueAt_linear` sorry
+
+**Status**: 🔄 Partial progress
+
+**Key Achievements**:
+1. **Proved no-pole case** - When f has no pole at α, both sides are 0
+   - Uses `tracedResidueAtPlace_eq_zero_of_no_pole` for LHS
+   - Shows translateBy α f has unit denominator → PowerSeries → no X⁻¹ coeff
+
+**Remaining sorry** (1 in ResidueTrace.lean:552):
+- Simple pole case: When f has a simple pole at α, need to show both sides equal num(α)/cofactor(α)
+- **Blockers identified**:
+  - `simp only [linearPlace_residueField_equiv]` makes no progress (definition not simp lemma)
+  - Need Field instance on quotient for `map_inv` on units
+  - Goal/hypothesis mismatch with `map_div₀` and `map_mul` at different algebraMap levels
+  - The commented proof sketch (lines 553-783) has the right structure but needs fixing
+
+**Build**: ✅ Passes with 1 sorry in ResidueTrace.lean
 
 ---
 
@@ -65,13 +88,7 @@ Key results:
 - `localResidueAtPlace_eq_zero_of_no_pole`: No pole → residue = 0
 - `tracedResidueAtPlace_eq_zero_of_no_pole`: No pole → traced residue = 0
 
-**Remaining sorry** (1 in ResidueTrace.lean:490):
-- `tracedResidueAtPlace_eq_residueAt_linear`: Connect traced residue to standard residue
-  - **Now has hypothesis**: `¬(X - C α)² | f.denom` (at most simple pole)
-  - **Proof strategy documented**: Case 1 (no pole) both 0; Case 2 (simple pole) both = num(α)/cofactor(α)
-  - Requires careful PowerSeries/LaurentSeries coercion handling
-
-**Build**: ✅ Passes with 1 sorry in ResidueTrace.lean
+**Build**: ✅ Passed with 1 sorry in ResidueTrace.lean
 
 ---
 
@@ -179,14 +196,21 @@ grep -n "sorry" RrLean/RiemannRochV2/P1Instance/DimensionGeneral.lean
 
 ## Next Steps
 
-### Cycle 269: Fill tracedResidueAtPlace_eq_residueAt_linear Sorry
+### Cycle 269 (continued): Fill simple pole case
 
 **Immediate**:
-- Fill `tracedResidueAtPlace_eq_residueAt_linear` (ResidueTrace.lean:490)
-- Proof structure already established:
-  - Case 1 (no pole): Show `translateBy α f` has no pole at 0, hence residue = 0
-  - Case 2 (simple pole): Show both compute `num(α)/cofactor(α)`
-- Main blocker: PowerSeries/LaurentSeries coercion lemmas need careful handling
+- Fill `tracedResidueAtPlace_eq_residueAt_linear` simple pole case (ResidueTrace.lean:552)
+- **No-pole case is DONE** ✅
+- Simple pole case strategy:
+  1. Show `e' = e` where `e = linearPlace_residueField_equiv` (both are AlgEquivs κ(v) → Fq)
+  2. Show `e'(num_res * cofactor_res⁻¹) = num(α) / cofactor(α)`
+  3. Show `residueAt α f = num(α) / cofactor(α)` via Laurent series computation
+
+**Blockers for simple pole case**:
+- `simp only [linearPlace_residueField_equiv]` doesn't work (need explicit unfolding or @[simp] lemma)
+- Need Field instance on quotient for `map_inv`
+- Goal/hypothesis mismatch: `map (a / b)` vs `(map a) / (map b)` at nested algebraMap levels
+- Commented proof sketch (lines 553-783) has right structure but many tactical errors
 
 ### Cycle 270+ Options:
 

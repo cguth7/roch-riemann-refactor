@@ -483,11 +483,73 @@ theorem tracedResidueAtPlace_eq_residueAt_linear (α : Fq) (f : RatFunc Fq)
     (hf : ¬(Polynomial.X - Polynomial.C α) ^ 2 ∣ f.denom) :
     tracedResidueAtPlace Fq (linearPlace Fq α) f =
     RiemannRochV2.Residue.residueAt α f := by
-  -- Proof strategy established in Cycle 268:
-  -- Case 1 (no pole): Both sides are 0 - translateBy α f has no pole at 0
-  -- Case 2 (simple pole): Both compute num(α)/cofactor(α)
-  -- The proof requires careful handling of PowerSeries/LaurentSeries coercions
-  sorry
+  set v := linearPlace Fq α with hv_def
+  set gen := RiemannRochV2.PlaceDegree.generator Fq v with hgen_def
+  -- gen = X - C α for linear places
+  have hgen_eq : gen = Polynomial.X - Polynomial.C α := generator_linearPlace_eq Fq α
+  -- Rewrite hypothesis using gen
+  rw [← hgen_eq] at hf
+  -- Case analysis: does f have a pole at v?
+  by_cases hpole : hasPoleAt Fq v f
+  case neg =>
+    -- Case 1: No pole at α - both sides are 0
+    have hlhs : tracedResidueAtPlace Fq v f = 0 :=
+      tracedResidueAtPlace_eq_zero_of_no_pole Fq v f hpole
+    rw [hlhs]
+    -- hasPoleAt v f = (gen | f.denom), and gen = X - C α
+    unfold hasPoleAt at hpole
+    rw [← hgen_def, hgen_eq] at hpole
+    -- hpole : ¬(X - C α | f.denom)
+    -- Since (X - C α) ∤ f.denom, f.denom(α) ≠ 0
+    have hdenom_α_ne : f.denom.eval α ≠ 0 := by
+      intro h
+      apply hpole
+      rw [Polynomial.dvd_iff_isRoot, Polynomial.IsRoot]
+      exact h
+    -- translateBy α f has denominator with nonzero constant term → unit → residue = 0
+    unfold RiemannRochV2.Residue.residueAt RiemannRochV2.Residue.translateBy
+    set shift := Polynomial.X + Polynomial.C α with hshift_def
+    set denom' := f.denom.comp shift with hdenom'_def
+    -- denom'.coeff 0 = denom.eval α ≠ 0
+    have hdenom'_const : denom'.coeff 0 = f.denom.eval α := by
+      rw [hdenom'_def, Polynomial.coeff_zero_eq_eval_zero, Polynomial.eval_comp, hshift_def]
+      simp [Polynomial.eval_add, Polynomial.eval_X, Polynomial.eval_C]
+    have hdenom'_ne : denom' ≠ 0 := by
+      intro h
+      rw [h, Polynomial.coeff_zero] at hdenom'_const
+      rw [hdenom'_const] at hdenom_α_ne
+      exact hdenom_α_ne rfl
+    have hdenom'_unit : IsUnit (denom' : PowerSeries Fq) := by
+      rw [PowerSeries.isUnit_iff_constantCoeff]
+      simp only [Polynomial.constantCoeff_coe]
+      rw [hdenom'_const]
+      exact hdenom_α_ne.isUnit
+    -- The translated function is a power series (no pole at 0)
+    rw [RiemannRochV2.Residue.residueAtX]
+    set num' := f.num.comp shift with hnum'_def
+    have hnum'_coe : (algebraMap (Polynomial Fq) (RatFunc Fq) num' : LaurentSeries Fq) =
+        ((num' : PowerSeries Fq) : LaurentSeries Fq) := (RatFunc.coe_coe num').symm
+    have hdenom'_coe : (algebraMap (Polynomial Fq) (RatFunc Fq) denom' : LaurentSeries Fq) =
+        ((denom' : PowerSeries Fq) : LaurentSeries Fq) := (RatFunc.coe_coe denom').symm
+    rw [map_div₀, hnum'_coe, hdenom'_coe]
+    -- denom' is a unit, so its inverse is also a power series
+    rw [← hdenom'_unit.unit_spec]
+    rw [div_eq_mul_inv, ← map_units_inv, ← map_mul]
+    rw [HahnSeries.ofPowerSeries_apply]
+    -- The coefficient at -1 of a power series embedding is 0 since -1 ∉ range ℕ → ℤ
+    rw [HahnSeries.embDomain_notin_range]
+    simp only [Set.mem_range, not_exists, RelEmbedding.coe_mk, Function.Embedding.coeFn_mk]
+    intro n hn
+    have h : (0 : ℤ) ≤ n := Int.natCast_nonneg n
+    omega
+  case pos =>
+    -- Case 2: f has a simple pole at α (since hf says ¬(gen² | denom))
+    have hsimple : hasSimplePoleAt Fq v f := ⟨hpole, hf⟩
+    -- This case requires careful handling of trace maps and Laurent series coercions.
+    -- The proof involves showing that both tracedResidueAtPlace and residueAt compute
+    -- num(α) / cofactor(α) for simple poles at linear places.
+    -- TODO: Complete this proof in a future cycle with cleaner infrastructure
+    sorry
   /-
   set v := linearPlace Fq α with hv_def
   set gen := RiemannRochV2.PlaceDegree.generator Fq v with hgen_def
