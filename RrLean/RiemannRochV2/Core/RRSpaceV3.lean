@@ -20,7 +20,7 @@ The affine version `RRModuleV2_real` is a `Submodule R K` where:
 - R-scalars preserve membership because elements of R have valuation ≤ 1 at all finite places
 
 The projective version `RRModuleV3` must be a `Submodule k K` where k is the base field:
-- ALL places (finite + infinite) are considered
+- ALL places (finite + registered infinite) are considered
 - Elements of R may have valuation > 1 at infinite places (e.g., X ∈ Fq[X] has v_∞(X) = -1)
 - Only BASE FIELD elements have valuation ≤ 1 at all places
 
@@ -34,9 +34,9 @@ In multiplicative notation (Mathlib convention):
 
 ## Design Note
 
-We parameterize over a base field k with:
-- An algebra map k → K (embedding constants)
-- A proof that constants have valuation ≤ 1 at all places
+We require `HasInfinitePlaces R K` to specify which infinite places to consider.
+This avoids issues with arbitrary `InfinitePlace K` values that don't correspond
+to actual places on the curve.
 
 For P¹ = RatFunc Fq, k = Fq and constants have valuation = 1 everywhere.
 -/
@@ -47,42 +47,31 @@ open IsDedekindDomain
 
 variable (R : Type*) [CommRing R] [IsDomain R] [IsDedekindDomain R]
 variable (K : Type*) [Field K] [Algebra R K] [IsFractionRing R K]
+variable [hip : HasInfinitePlaces R K]
 
 /-! ## Membership Condition for Projective L(D) -/
 
-/-- The membership condition for L(D) using all places (finite + infinite).
+/-- The membership condition for L(D) using all registered places (finite + registered infinite).
 
 f ∈ L(D) iff:
   f = 0, OR
-  for all places p, the valuation satisfies v_p(f) ≤ exp(D(p))
+  for all finite places v, v(f) ≤ exp(D(finite v)), AND
+  for all registered infinite places v, v(f) ≤ exp(D(infinite v))
 
 In additive notation: ord_p(f) ≥ -D(p) (poles bounded by D). -/
 def satisfiesValuationConditionV3 (D : DivisorV3 R K) (f : K) : Prop :=
-  f = 0 ∨ ∀ p : Place R K, p.valuation f ≤ WithZero.exp (D p)
+  f = 0 ∨ ((∀ v : HeightOneSpectrum R, (Place.finite v : Place R K).valuation f ≤
+              WithZero.exp (D (Place.finite v))) ∧
+           (∀ v ∈ hip.infinitePlaces, (Place.infinite v : Place R K).valuation f ≤
+              WithZero.exp (D (Place.infinite v))))
 
-/-- Alternative formulation: explicit disjunction for each place type. -/
-lemma satisfiesValuationConditionV3_iff (D : DivisorV3 R K) (f : K) :
+/-- Alternative formulation when we want to check a specific infinite place. -/
+lemma satisfiesValuationConditionV3_iff_forall_registered (D : DivisorV3 R K) (f : K) :
     satisfiesValuationConditionV3 R K D f ↔
     f = 0 ∨ ((∀ v : HeightOneSpectrum R, (Place.finite v : Place R K).valuation f ≤
                 WithZero.exp (D (Place.finite v))) ∧
-             (∀ v : InfinitePlace K, (Place.infinite v : Place R K).valuation f ≤
-                WithZero.exp (D (Place.infinite v)))) := by
-  constructor
-  · intro h
-    rcases h with rfl | h
-    · left; rfl
-    · right
-      constructor
-      · intro v; exact h (Place.finite v)
-      · intro v; exact h (Place.infinite v)
-  · intro h
-    rcases h with rfl | ⟨hfin, hinf⟩
-    · left; rfl
-    · right
-      intro p
-      cases p with
-      | finite v => exact hfin v
-      | infinite v => exact hinf v
+             (∀ v ∈ hip.infinitePlaces, (Place.infinite v : Place R K).valuation f ≤
+                WithZero.exp (D (Place.infinite v)))) := Iff.rfl
 
 /-! ## Carrier Set -/
 
@@ -101,38 +90,49 @@ lemma add_mem_RRSpaceV3 {D : DivisorV3 R K} {a b : K}
   by_cases h : a + b = 0
   · exact Or.inl h
   · right
-    intro p
-    rcases ha with rfl | ha'
+    rcases ha with rfl | ⟨ha_fin, ha_inf⟩
     · simp only [zero_add] at h ⊢
-      rcases hb with rfl | hb'
+      rcases hb with rfl | ⟨hb_fin, hb_inf⟩
       · exact absurd rfl h
-      · exact hb' p
-    rcases hb with rfl | hb'
+      · exact ⟨hb_fin, hb_inf⟩
+    rcases hb with rfl | ⟨hb_fin, hb_inf⟩
     · simp only [add_zero] at h ⊢
-      exact ha' p
+      exact ⟨ha_fin, ha_inf⟩
     -- Both a and b are nonzero with valuation bounds
-    have hap := ha' p
-    have hbp := hb' p
-    -- The ultrametric inequality: v(a+b) ≤ max(v(a), v(b))
-    calc p.valuation (a + b)
-        ≤ max (p.valuation a) (p.valuation b) := Place.valuation_add_le p a b
-      _ ≤ WithZero.exp (D p) := max_le hap hbp
+    constructor
+    · intro v
+      have hav := ha_fin v
+      have hbv := hb_fin v
+      calc (Place.finite v : Place R K).valuation (a + b)
+          ≤ max ((Place.finite v).valuation a) ((Place.finite v).valuation b) :=
+            Place.valuation_add_le _ a b
+        _ ≤ WithZero.exp (D (Place.finite v)) := max_le hav hbv
+    · intro v hv
+      have hav := ha_inf v hv
+      have hbv := hb_inf v hv
+      calc (Place.infinite v : Place R K).valuation (a + b)
+          ≤ max ((Place.infinite v).valuation a) ((Place.infinite v).valuation b) :=
+            Place.valuation_add_le _ a b
+        _ ≤ WithZero.exp (D (Place.infinite v)) := max_le hav hbv
 
 /-- L(D) is closed under negation. -/
 lemma neg_mem_RRSpaceV3 {D : DivisorV3 R K} {a : K}
     (ha : a ∈ RRSpaceV3 R K D) : -a ∈ RRSpaceV3 R K D := by
-  rcases ha with rfl | ha'
+  rcases ha with rfl | ⟨ha_fin, ha_inf⟩
   · simp only [neg_zero]; exact Or.inl rfl
   · right
-    intro p
-    have hap := ha' p
-    -- v(-a) = v(a) for valuations
-    have h_neg : p.valuation (-a) = p.valuation a := by
-      cases p with
-      | finite v => simp only [Place.valuation_finite]; exact Valuation.map_neg _ a
-      | infinite v => simp only [Place.valuation_infinite, InfinitePlace.valuation]; exact Valuation.map_neg _ a
-    rw [h_neg]
-    exact hap
+    constructor
+    · intro v
+      have hav := ha_fin v
+      have h_neg : (Place.finite v : Place R K).valuation (-a) = (Place.finite v).valuation a := by
+        simp only [Place.valuation_finite]; exact Valuation.map_neg _ a
+      rw [h_neg]; exact hav
+    · intro v hv
+      have hav := ha_inf v hv
+      have h_neg : (Place.infinite v : Place R K).valuation (-a) =
+          (Place.infinite v : Place R K).valuation a := by
+        simp only [Place.valuation_infinite, InfinitePlace.valuation]; exact Valuation.map_neg _ a
+      rw [h_neg]; exact hav
 
 /-! ## Monotonicity -/
 
@@ -140,15 +140,22 @@ lemma neg_mem_RRSpaceV3 {D : DivisorV3 R K} {a : K}
 lemma RRSpaceV3_mono {D E : DivisorV3 R K} (hDE : D ≤ E) :
     RRSpaceV3 R K D ⊆ RRSpaceV3 R K E := by
   intro f hf
-  rcases hf with rfl | hf'
+  rcases hf with rfl | ⟨hf_fin, hf_inf⟩
   · exact Or.inl rfl
   · right
-    intro p
-    have hDp := hDE p  -- D p ≤ E p
-    have hfp := hf' p  -- p.valuation f ≤ WithZero.exp (D p)
-    calc p.valuation f
-        ≤ WithZero.exp (D p) := hfp
-      _ ≤ WithZero.exp (E p) := WithZero.exp_le_exp.mpr hDp
+    constructor
+    · intro v
+      have hDv := hDE (Place.finite v)
+      have hfv := hf_fin v
+      calc (Place.finite v : Place R K).valuation f
+          ≤ WithZero.exp (D (Place.finite v)) := hfv
+        _ ≤ WithZero.exp (E (Place.finite v)) := WithZero.exp_le_exp.mpr hDv
+    · intro v hv
+      have hDv := hDE (Place.infinite v)
+      have hfv := hf_inf v hv
+      calc (Place.infinite v : Place R K).valuation f
+          ≤ WithZero.exp (D (Place.infinite v)) := hfv
+        _ ≤ WithZero.exp (E (Place.infinite v)) := WithZero.exp_le_exp.mpr hDv
 
 /-! ## Submodule Structure over Base Field -/
 
@@ -160,12 +167,19 @@ which have valuation = 1 at all places.
 Parameters:
 - k: the base field (e.g., Fq)
 - R: the Dedekind domain (e.g., Fq[X])
-- K: the function field (e.g., RatFunc Fq) -/
+- K: the function field (e.g., RatFunc Fq)
+
+We only require the bound for registered infinite places (those in HasInfinitePlaces.infinitePlaces). -/
 class ConstantsValuationBound (k : Type*) (R : Type*) (K : Type*)
     [Field k] [CommRing R] [IsDomain R] [IsDedekindDomain R] [Field K]
-    [Algebra R K] [IsFractionRing R K] [Algebra k K] where
-  /-- Elements of k have valuation ≤ 1 at all places. -/
-  valuation_le_one : ∀ (c : k) (p : Place R K), p.valuation (algebraMap k K c) ≤ 1
+    [Algebra R K] [IsFractionRing R K] [Algebra k K] [hip : HasInfinitePlaces R K] where
+  /-- Elements of k have valuation ≤ 1 at all finite places. -/
+  valuation_le_one_finite : ∀ (c : k) (v : HeightOneSpectrum R),
+    (Place.finite v : Place R K).valuation (algebraMap k K c) ≤ 1
+  /-- Elements of k have valuation ≤ 1 at all registered infinite places. -/
+  valuation_le_one_infinite : ∀ (c : k) (v : InfinitePlace K),
+    v ∈ hip.infinitePlaces →
+    (Place.infinite v : Place R K).valuation (algebraMap k K c) ≤ 1
 
 variable (k : Type*) [Field k] [Algebra k K]
 
@@ -175,19 +189,29 @@ lemma smul_mem_RRSpaceV3 [ConstantsValuationBound k R K] {D : DivisorV3 R K} {c 
   by_cases h : c • f = 0
   · exact Or.inl h
   · right
-    intro p
-    -- c • f = algebraMap k K c * f for an algebra
-    simp only [Algebra.smul_def]
-    -- p.valuation (c * f) = p.valuation c * p.valuation f
-    rw [Place.valuation_mul]
-    rcases hf with rfl | hf'
+    rcases hf with rfl | ⟨hf_fin, hf_inf⟩
     · exfalso; apply h; simp only [smul_zero]
-    have hfp := hf' p
-    -- Key: p.valuation (algebraMap k K c) ≤ 1 for all c ∈ k
-    have hc : p.valuation (algebraMap k K c) ≤ 1 := ConstantsValuationBound.valuation_le_one c p
-    calc p.valuation (algebraMap k K c) * p.valuation f
-        ≤ 1 * WithZero.exp (D p) := mul_le_mul' hc hfp
-      _ = WithZero.exp (D p) := one_mul _
+    constructor
+    · intro v
+      simp only [Algebra.smul_def]
+      rw [Place.valuation_mul]
+      have hfv := hf_fin v
+      have hc : (Place.finite v : Place R K).valuation (algebraMap k K c) ≤ 1 :=
+        ConstantsValuationBound.valuation_le_one_finite c v
+      calc (Place.finite v : Place R K).valuation (algebraMap k K c) *
+              (Place.finite v).valuation f
+          ≤ 1 * WithZero.exp (D (Place.finite v)) := mul_le_mul' hc hfv
+        _ = WithZero.exp (D (Place.finite v)) := one_mul _
+    · intro v hv
+      simp only [Algebra.smul_def]
+      rw [Place.valuation_mul]
+      have hfv := hf_inf v hv
+      have hc : (Place.infinite v : Place R K).valuation (algebraMap k K c) ≤ 1 :=
+        ConstantsValuationBound.valuation_le_one_infinite c v hv
+      calc (Place.infinite v : Place R K).valuation (algebraMap k K c) *
+              (Place.infinite v).valuation f
+          ≤ 1 * WithZero.exp (D (Place.infinite v)) := mul_le_mul' hc hfv
+        _ = WithZero.exp (D (Place.infinite v)) := one_mul _
 
 /-- L(D) as a submodule over the base field k.
 
@@ -235,39 +259,24 @@ lemma ellV3_mono [ConstantsValuationBound k R K] {D E : DivisorV3 R K} (hDE : D 
 /-! ## Connection to Affine RR Space -/
 
 /-- For divisors supported only at finite places, the projective and affine
-conditions agree on those places. -/
+conditions agree on finite places. The infinite places need separate handling. -/
 lemma satisfiesValuationConditionV3_of_affine {D : DivisorV2 R} {f : K}
     (hf : satisfiesValuationCondition R K D f)
-    (hinf : ∀ v : InfinitePlace K, (Place.infinite v : Place R K).valuation f ≤ 1) :
+    (hinf : ∀ v ∈ hip.infinitePlaces,
+      (Place.infinite v : Place R K).valuation f ≤ WithZero.exp ((DivisorV3.ofAffine (K := K) D) (Place.infinite v))) :
     satisfiesValuationConditionV3 R K (DivisorV3.ofAffine D) f := by
   rcases hf with rfl | hf'
   · left; rfl
   · right
-    intro p
-    cases p with
-    | finite v =>
+    constructor
+    · intro v
       have hfv := hf' v
       simp only [Place.valuation_finite]
-      -- Need: D.ofAffine (Place.finite v) = D v
       have h_coeff : (DivisorV3.ofAffine (K := K) D) (Place.finite v) = D v := by
         unfold DivisorV3.ofAffine
         rw [Finsupp.mapDomain_apply Place.finite_injective]
       rw [h_coeff]
       exact hfv
-    | infinite v =>
-      have hiv := hinf v
-      -- D.ofAffine has 0 coefficient at infinite places
-      have h_coeff : (DivisorV3.ofAffine (K := K) D) (Place.infinite v) = 0 := by
-        -- Place.infinite v is not in the range of Place.finite
-        have h_not_finite : ∀ w : HeightOneSpectrum R, Place.finite w ≠ Place.infinite v := by
-          intro w h
-          cases h
-        unfold DivisorV3.ofAffine
-        rw [Finsupp.mapDomain_notin_range]
-        intro ⟨w, hw⟩
-        exact h_not_finite w hw
-      rw [h_coeff]
-      simp only [WithZero.exp_zero]
-      exact hiv
+    · exact hinf
 
 end RiemannRochV2

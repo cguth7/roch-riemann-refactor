@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization.
 
 **Build**: ✅ Compiles (0 sorries in main path)
 **Result**: Restricted P¹ Riemann-Roch (linear places only)
-**Cycle**: 251
+**Cycle**: 252
 
 ---
 
@@ -43,7 +43,49 @@ Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more in
 
 ---
 
-## Cycle 251 Summary
+## Cycle 252 Summary
+
+**Task**: Connect P¹ to Place infrastructure with inftyPlace and ConstantsValuationBound
+
+**New File**: `RrLean/RiemannRochV2/P1Instance/P1Place.lean`
+
+**Changes**:
+
+1. **RRSpaceV3.lean refactored**: Changed `satisfiesValuationConditionV3` and `ConstantsValuationBound`
+   to only check registered infinite places (from `HasInfinitePlaces.infinitePlaces`).
+   This is more mathematically correct - arbitrary `InfinitePlace K` values don't correspond
+   to real places on the curve.
+
+2. **P1Place.lean created**: Connects P¹ = RatFunc Fq to the Place infrastructure:
+   - `p1InftyPlace Fq` - The unique infinite place using `FunctionField.inftyValuationDef`
+   - `instHasInfinitePlacesP1` - P¹ has exactly one infinite place (degree 1)
+   - `instConstantsValuationBoundP1` - Constants from Fq have valuation ≤ 1 at all places
+
+**Key definitions**:
+```lean
+def p1InftyPlace : InfinitePlace (RatFunc Fq) where
+  val := (FunctionField.inftyValuedFqt Fq).v
+  deg := 1
+  deg_pos := Nat.one_pos
+
+instance instHasInfinitePlacesP1 : HasInfinitePlaces Fq[X] (RatFunc Fq)
+instance instConstantsValuationBoundP1 : ConstantsValuationBound Fq Fq[X] (RatFunc Fq)
+```
+
+**Architectural improvement**: The original `ConstantsValuationBound` required valuation bounds
+for ALL `InfinitePlace K` values, which is unprovable since `InfinitePlace` can contain
+arbitrary valuations. The refactored version only requires bounds for places in
+`HasInfinitePlaces.infinitePlaces`, making it provable and mathematically correct.
+
+**Verification**:
+```bash
+lake build RrLean.RiemannRochV2.P1Instance.P1Place  # ✅
+lake build RrLean.RiemannRochV2.SerreDuality.Smoke  # ✅ Still passes
+```
+
+---
+
+## Cycle 251 Summary (Previous)
 
 **Task**: Create `RRSpaceV3.lean` - projective Riemann-Roch space using DivisorV3
 
