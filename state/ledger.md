@@ -6,9 +6,9 @@ Tactical tracking for Riemann-Roch formalization.
 
 ## Current State
 
-**Build**: ✅ Compiles (2 sorries in DimensionGeneral.lean)
+**Build**: ✅ Compiles (2 sorries in DimensionGeneral.lean + 1 sorry in PlaceDegree.lean)
 **Result**: Riemann-Roch for P¹ (linear places) + Generalized gap bound + Finiteness for all effective D
-**Cycle**: 260 (Complete)
+**Cycle**: 261 (In Progress)
 
 ---
 
@@ -46,6 +46,45 @@ Not covered:
 - Divisors mixing linear and non-linear places
 
 Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more interesting than the result.
+
+---
+
+## Cycle 261 Summary
+
+**Task**: Add helper lemmas for uniformizer valuation at other primes (prerequisite for evaluationMapAt_surj)
+
+**Status**: 🔄 In Progress - Helper lemmas added, 1 sorry remains
+
+**What was done**:
+
+Added to `PlaceDegree.lean`:
+```lean
+-- Coprimality of distinct primes (sorry-free)
+lemma generator_not_mem_other_prime (v w : HeightOneSpectrum (Polynomial k))
+    (hw : w ≠ v) : generator k v ∉ w.asIdeal
+
+lemma generator_intValuation_at_other_prime (v w : HeightOneSpectrum (Polynomial k))
+    (hw : w ≠ v) : w.intValuation (generator k v) = 1
+
+-- Uniformizer at other primes (1 sorry - proving π | generator in UFD)
+lemma uniformizerAt_not_mem_other_prime (v w : HeightOneSpectrum (Polynomial k))
+    (hw : w ≠ v) : uniformizerAt v ∉ w.asIdeal
+
+lemma uniformizerAt_intValuation_at_other_prime (v w : HeightOneSpectrum (Polynomial k))
+    (hw : w ≠ v) : w.intValuation (uniformizerAt v) = 1
+```
+
+**The remaining sorry** (line 255 in PlaceDegree.lean):
+```lean
+-- Need: π | generator(v)
+-- Both have v-valuation exp(-1), so they're associates
+-- In k[X], valuation exp(-1) means exactly one factor of the prime
+-- π = u * generator(v) for some unit u
+```
+
+This is a UFD argument: in k[X], elements with the same v-valuation (both = exp(-1)) differ by units coprime to the prime. The proof requires extracting the unit from valuation equality.
+
+**Next**: Either fill this sorry or proceed with evaluationMapAt_surj using these lemmas.
 
 ---
 
@@ -401,14 +440,16 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke  # ✅ Still passes
 
 ## Sorries
 
-**5 sorries total** in non-archived code:
+**6 sorries total** in non-archived code:
 - `Abstract.lean`: 3 (placeholder `AdelicRRData` instance fields)
 - `DimensionGeneral.lean`: 2 (evaluationMapAt_surj, ell_ratfunc_projective_gap_eq)
+- `PlaceDegree.lean`: 1 (uniformizerAt_not_mem_other_prime - π | generator(v) in UFD)
 
-**Sorry-free files** (confirmed Cycle 260):
-- PlaceDegree.lean ✅ (+ degWeighted_neg, degWeighted_sub)
+**Files with sorries** (Cycle 261):
+- PlaceDegree.lean: ⚠️ 1 sorry (uniformizerAt_not_mem_other_prime - π | generator(v) in UFD)
+
+**Sorry-free files** (confirmed Cycle 261):
 - GapBoundGeneral.lean ✅ (Generalized gap bound)
-- PlaceDegree.lean ✅ (Place degree infrastructure)
 - P1RiemannRoch.lean ✅ (Full Riemann-Roch theorem)
 - P1VanishingLKD.lean ✅
 - DimensionCore.lean ✅

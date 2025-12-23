@@ -1,6 +1,7 @@
 import RrLean.RiemannRochV2.Core.Basic
 import RrLean.RiemannRochV2.Core.Divisor
 import RrLean.RiemannRochV2.SerreDuality.P1Specific.RatFuncPairing
+import RrLean.RiemannRochV2.Definitions.Infrastructure
 import Mathlib.RingTheory.AdjoinRoot
 import Mathlib.RingTheory.Polynomial.Quotient
 
@@ -194,6 +195,80 @@ lemma degWeighted_neg (D : DivisorV2 (Polynomial k)) :
 lemma degWeighted_sub (D E : DivisorV2 (Polynomial k)) :
     degWeighted k (D - E) = degWeighted k D - degWeighted k E := by
   rw [sub_eq_add_neg, degWeighted_add, degWeighted_neg, sub_eq_add_neg]
+
+/-! ## Coprimality of Distinct Primes -/
+
+/-- The generator of one prime is not in another prime ideal for distinct primes.
+
+In k[X], distinct HeightOneSpectrum correspond to distinct monic irreducibles.
+These generate coprime ideals. -/
+lemma generator_not_mem_other_prime (v w : HeightOneSpectrum (Polynomial k))
+    (hw : w ≠ v) : generator k v ∉ w.asIdeal := by
+  -- If generator k v ∈ w.asIdeal, then v.asIdeal ⊆ w.asIdeal
+  intro hgen_mem_w
+  -- v.asIdeal = span{generator k v} ⊆ w.asIdeal
+  have hv_le_w : v.asIdeal ≤ w.asIdeal := by
+    rw [asIdeal_eq_span_generator k v]
+    exact Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hgen_mem_w)
+  -- v.asIdeal is maximal (height-1 prime in k[X] is maximal)
+  have hv_max := v.isMaximal
+  -- w.asIdeal is prime and ≠ ⊤
+  have hw_prime := w.isPrime
+  -- By maximality: v.asIdeal ≤ w.asIdeal and w ≠ ⊤ implies v.asIdeal = w.asIdeal
+  have heq : v.asIdeal = w.asIdeal := hv_max.eq_of_le hw_prime.ne_top hv_le_w
+  -- But v.asIdeal ≠ w.asIdeal since hw : w ≠ v
+  exact hw (HeightOneSpectrum.ext heq.symm)
+
+/-- The generator of v has valuation 1 at other primes w ≠ v. -/
+lemma generator_intValuation_at_other_prime (v w : HeightOneSpectrum (Polynomial k))
+    (hw : w ≠ v) : w.intValuation (generator k v) = 1 := by
+  rw [HeightOneSpectrum.intValuation_eq_one_iff]
+  exact generator_not_mem_other_prime k v w hw
+
+/-- The uniformizer at v is not in w.asIdeal for w ≠ v.
+
+Key insight: uniformizer π has intValuation = exp(-1) at v, meaning π ∈ v.asIdeal \ v.asIdeal².
+Since π and generator(v) both have v-valuation exp(-1), they're associates.
+Associates have the same ideal membership, so π ∈ w.asIdeal iff generator(v) ∈ w.asIdeal.
+But generator(v) ∉ w.asIdeal for w ≠ v (by generator_not_mem_other_prime). -/
+lemma uniformizerAt_not_mem_other_prime (v w : HeightOneSpectrum (Polynomial k))
+    (hw : w ≠ v) : uniformizerAt v ∉ w.asIdeal := by
+  intro hπ_mem_w
+  -- π ∈ v.asIdeal (with valuation exp(-1))
+  have hπ_mem_v : uniformizerAt v ∈ v.asIdeal := by
+    have hval := uniformizerAt_val v
+    rw [← v.intValuation_lt_one_iff_mem, hval]
+    exact WithZero.exp_lt_exp.mpr (by omega : (-1 : ℤ) < 0)
+
+  -- Both π and generator(v) have v-valuation exp(-1), so they generate the same ideal
+  -- In a PID, this means they're associates
+  have hspan_π : Ideal.span {uniformizerAt v} = v.asIdeal := by
+    apply le_antisymm
+    · exact Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hπ_mem_v)
+    · -- Use that both have the same v-valuation
+      rw [asIdeal_eq_span_generator k v, Ideal.span_singleton_le_span_singleton]
+      -- Need: π | generator(v)
+      -- This follows from both having v-val exp(-1) in a UFD
+      -- In k[X], valuation exp(-1) means exactly one factor of the prime
+      -- So π = u * generator(v) for some unit u, hence generator(v) | π and π | generator(v)
+      sorry
+
+  have hassoc : Associated (uniformizerAt v) (generator k v) := by
+    rw [← Ideal.span_singleton_eq_span_singleton, hspan_π, asIdeal_eq_span_generator k v]
+
+  -- hu : uniformizerAt v * u = generator k v for some unit u
+  obtain ⟨u, hu⟩ := hassoc
+  have hgen_mem_w : generator k v ∈ w.asIdeal := by
+    rw [← hu]
+    exact w.asIdeal.mul_mem_right (u : Polynomial k) hπ_mem_w
+
+  exact generator_not_mem_other_prime k v w hw hgen_mem_w
+
+/-- The uniformizer at v has intValuation 1 at primes w ≠ v. -/
+lemma uniformizerAt_intValuation_at_other_prime (v w : HeightOneSpectrum (Polynomial k))
+    (hw : w ≠ v) : w.intValuation (uniformizerAt v) = 1 := by
+  rw [HeightOneSpectrum.intValuation_eq_one_iff]
+  exact uniformizerAt_not_mem_other_prime k v w hw
 
 end PlaceDegree
 
