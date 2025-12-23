@@ -6,9 +6,9 @@ Tactical tracking for Riemann-Roch formalization.
 
 ## Current State
 
-**Build**: ✅ Compiles (0 sorries in main path)
-**Result**: Riemann-Roch for P¹ (linear places) + Generalized gap bound
-**Cycle**: 258 (Complete)
+**Build**: ✅ Compiles (4 sorries in DimensionGeneral.lean)
+**Result**: Riemann-Roch for P¹ (linear places) + Generalized gap bound + Dimension formula skeleton
+**Cycle**: 259 (Complete)
 
 ---
 
@@ -46,6 +46,69 @@ Not covered:
 - Divisors mixing linear and non-linear places
 
 Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more interesting than the result.
+
+---
+
+## Cycle 259 Summary
+
+**Task**: Remove `IsLinearPlaceSupport` - dimension formula generalization
+
+**Status**: ✅ Partial - DimensionGeneral.lean skeleton created
+
+**New file**: `RrLean/RiemannRochV2/P1Instance/DimensionGeneral.lean` (4 sorries)
+
+**What was done**:
+Created the structure for proving `ℓ(D) = degWeighted(D) + 1` for all effective divisors:
+
+```lean
+-- Main theorem (depends on sorries)
+theorem ell_ratfunc_projective_eq_degWeighted_plus_one (D : DivisorV2 (Polynomial k))
+    (hD : D.Effective) :
+    ell_ratfunc_projective D = (degWeighted k D).toNat + 1
+
+-- Key intermediate results:
+theorem evaluationMapAt_surj  -- surjectivity for tight gap bound
+theorem ell_ratfunc_projective_gap_eq  -- gap = deg(v) exactly
+instance RRSpace_ratfunc_projective_effective_finite  -- finiteness for all effective D
+```
+
+**Helper lemmas proved (sorry-free)**:
+- `degWeighted_nonneg_of_effective` - degWeighted(D) ≥ 0 for effective D
+- `effective_degWeighted_zero_imp_zero` - degWeighted = 0 ⟹ D = 0
+- `exists_pos_of_degWeighted_pos` - degWeighted > 0 ⟹ ∃ v, D(v) > 0
+
+**Remaining sorries (4 total)**:
+| Line | Lemma | What's needed |
+|------|-------|---------------|
+| 56 | `evaluationMapAt_surj` | Construct q/generator(v) preimages |
+| 79 | `ell_ratfunc_projective_gap_eq` | Combine surjectivity with gap bound |
+| 87 | `RRSpace_ratfunc_projective_effective_finite` | Induction on degWeighted |
+| 201 | degWeighted subtraction | Technical Finsupp calculation |
+
+**CRITICAL: Finsupp Arithmetic Hell**
+
+The cycle got stuck on line 201 trying to prove:
+```lean
+degWeighted k (D - single v 1) = degWeighted k D - deg(v)
+```
+
+**The fix** (for Cycle 260): Add these lemmas to `PlaceDegree.lean`:
+
+```lean
+-- Add to PlaceDegree.lean
+lemma degWeighted_neg (D : DivisorV2 (Polynomial k)) :
+    degWeighted k (-D) = - degWeighted k D := by
+  unfold degWeighted
+  rw [Finsupp.sum_neg_index]
+  · simp only [neg_mul, Finsupp.sum_neg]
+  · intro _; ring
+
+lemma degWeighted_sub (D E : DivisorV2 (Polynomial k)) :
+    degWeighted k (D - E) = degWeighted k D - degWeighted k E := by
+  rw [sub_eq_add_neg, degWeighted_add, degWeighted_neg, sub_eq_add_neg]
+```
+
+This lifts the proof above raw Finsupp manipulation, avoiding the fragile `calc` blocks.
 
 ---
 
@@ -287,11 +350,12 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke  # ✅ Still passes
 
 ## Sorries
 
-**3 sorries total** in non-archived code:
+**7 sorries total** in non-archived code:
 - `Abstract.lean`: 3 (placeholder `AdelicRRData` instance fields)
+- `DimensionGeneral.lean`: 4 (NEW - generalization infrastructure)
 
-**Sorry-free files** (confirmed Cycle 258):
-- GapBoundGeneral.lean ✅ (NEW! Generalized gap bound)
+**Sorry-free files** (confirmed Cycle 259):
+- GapBoundGeneral.lean ✅ (Generalized gap bound)
 - PlaceDegree.lean ✅ (Place degree infrastructure)
 - P1RiemannRoch.lean ✅ (Full Riemann-Roch theorem)
 - P1VanishingLKD.lean ✅
@@ -324,23 +388,32 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ### Removing `IsLinearPlaceSupport` - In Progress
 
-**Cycle 258 complete**: GapBoundGeneral.lean finished.
+**Cycle 259 complete**: DimensionGeneral.lean skeleton created.
 
 **What's been done**:
-- ✅ Defined `PlaceDegree.degree` - place degree = natDegree of generator
-- ✅ Proved `linearPlace_degree_eq_one` - linear places have degree 1
-- ✅ Proved `finrank_residueField_eq_degree` - residue field dim = place degree
-- ✅ Defined `degWeighted` - weighted degree Σ nᵥ * deg(v)
-- ✅ Proved `degWeighted_eq_deg_of_linear` - weighted = unweighted for linear support
-- ✅ Proved `ell_ratfunc_projective_gap_le_general` - gap ≤ deg(v) for arbitrary places
+- ✅ PlaceDegree.degree - place degree infrastructure
+- ✅ GapBoundGeneral - gap ≤ deg(v) for arbitrary places
+- ✅ DimensionGeneral skeleton - induction structure with 4 sorries
+- ✅ Helper lemmas: degWeighted_nonneg, effective_zero, exists_pos
 
-**Remaining work (Cycle 259)**:
-1. **Update induction proof**: Modify `ell_ratfunc_projective_eq_deg_plus_one`
-   - Replace unweighted degree with weighted degree
-   - Remove `IsLinearPlaceSupport` hypothesis
-   - Key: induction on degWeighted instead of deg
+**Immediate (Cycle 260)**: Fix Finsupp Arithmetic Hell
 
-2. **Update main theorem**: `riemann_roch_p1` to work for all effective divisors
+Add to `PlaceDegree.lean`:
+```lean
+lemma degWeighted_neg (D : DivisorV2 (Polynomial k)) :
+    degWeighted k (-D) = - degWeighted k D
+
+lemma degWeighted_sub (D E : DivisorV2 (Polynomial k)) :
+    degWeighted k (D - E) = degWeighted k D - degWeighted k E
+```
+
+Then fill the 4 sorries in DimensionGeneral.lean:
+1. `evaluationMapAt_surj` - construct q/generator(v) preimages
+2. `ell_ratfunc_projective_gap_eq` - tight gap bound
+3. `RRSpace_ratfunc_projective_effective_finite` - finiteness by induction
+4. degWeighted subtraction (will be trivial with degWeighted_sub)
+
+**After**: Update `riemann_roch_p1` to use degWeighted instead of deg
 
 ### Alternative Directions
 
