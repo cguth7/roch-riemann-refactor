@@ -1,4 +1,4 @@
-import RrLean.RiemannRochV2.ResidueTheory.Residue
+import RrLean.RiemannRochV2.ResidueTheory.ResidueTheorem
 import Mathlib.Algebra.Polynomial.PartialFractions
 
 /-!

@@ -70,12 +70,16 @@ RrLean/RiemannRochV2/SerreDuality/
 
 All sorries in AdelicH1Full.lean filled. `SpaceModule_full` compiles.
 
-### 1.2 Residue.lean Status
+### 1.2 Residue.lean Status - REFACTORED (Cycle 266)
 
-- Phase A (X-adic): ✅ Complete
-- Phase B (infinity): ✅ Complete (`residueAtInfty`)
-- Phase C (residue sum): ✅ Complete for linear places (`residueSumTotal_splits`)
-- Higher-degree places: Deferred to Phase 4 (needs trace maps)
+**Residue.lean (1,385 lines) split into 5 files:**
+- `ResidueAtX.lean` (~160 lines) - X-adic residue via Laurent series
+- `ResidueAtInfinity.lean` (~445 lines) - Residue at ∞ via polynomial remainder
+- `ResidueAtLinear.lean` (~235 lines) - Direct residue at linear places
+- `ResidueLinearCorrect.lean` (~265 lines) - Translation-based `residueAt` (truly linear)
+- `ResidueTheorem.lean` (~115 lines) - Global residue theorem for linear places
+
+All phases complete for linear places. Higher-degree places deferred to Phase 4.
 
 ---
 
@@ -358,6 +362,7 @@ lake build RrLean.RiemannRochV2.SerreDuality.Abstract 2>&1 | grep "sorryAx"
 |-------|------|--------|
 | 243-247 | AdelicH1Full.lean sorries + RRSpace_proj_ext | ✅ Done |
 | — | Residue.lean Phases A/B/C (linear places) | ✅ Done |
+| 266 | Refactor Residue.lean (1,385 lines → 5 files) | ✅ Done |
 
 ### Phase 2: Extract P¹ Instances - DEFERRED
 Skipping for now - Phase 3 is more urgent due to Affine Trap discovery.
@@ -408,4 +413,4 @@ The refactor is complete when:
 
 ---
 
-*Plan created Cycle 241+. Updated Cycle 265: Phase 3.5 COMPLETE - P¹ Riemann-Roch fully proved!*
+*Plan created Cycle 241+. Updated Cycle 266: Residue.lean refactored into 5 smaller files.*

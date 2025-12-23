@@ -1,6 +1,6 @@
 # Playbook
 
-Strategic guide for formalizing Riemann-Roch. Updated Cycle 262.
+Strategic guide for formalizing Riemann-Roch. Updated Cycle 266.
 
 ---
 
@@ -260,7 +260,12 @@ RrLean/RiemannRochV2/
 ├── FullAdelesCompact.lean  # Compactness, discreteness ✅
 ├── DifferentIdealBridge.lean  # L(D) ↔ FractionalIdeal ✅
 ├── AdelicH1v2.lean         # H¹(D), AdelicRRData ✅
-├── Residue.lean            # residueAtX, residueAtInfty, residueAt ✅
+├── ResidueTheory/          # Residue infrastructure (split Cycle 266)
+│   ├── ResidueAtX.lean         # X-adic residue via Laurent series
+│   ├── ResidueAtInfinity.lean  # Residue at ∞ via polynomial remainder
+│   ├── ResidueAtLinear.lean    # Direct residue at linear places
+│   ├── ResidueLinearCorrect.lean # Translation-based residue (truly linear)
+│   └── ResidueTheorem.lean     # Global residue theorem
 ├── SerreDuality.lean       # residuePairing, serrePairing (in progress)
 └── FullRRData.lean         # Full RR theorem (pending)
 ```

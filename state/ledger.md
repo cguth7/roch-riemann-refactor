@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization.
 
 **Build**: ✅ Compiles (0 sorries in P1Instance)
 **Result**: Riemann-Roch for P¹ (all effective divisors) + General dimension formula ℓ(D) = degWeighted(D) + 1
-**Cycle**: 266 (Ready to start)
+**Cycle**: 266 (Complete)
 
 ---
 
@@ -34,6 +34,31 @@ Key results:
 
 ---
 
+## Cycle 266 Summary
+
+**Task**: Refactor Residue.lean (too large at 1,385 lines)
+
+**Status**: ✅ Complete
+
+**Key Achievement**: Split Residue.lean into 5 focused files
+
+**Split structure**:
+| File | Lines | Content |
+|------|-------|---------|
+| `ResidueAtX.lean` | ~160 | X-adic residue via Laurent series |
+| `ResidueAtInfinity.lean` | ~445 | Residue at ∞ via polynomial remainder |
+| `ResidueAtLinear.lean` | ~235 | Direct `residueAtLinear` (simple poles) |
+| `ResidueLinearCorrect.lean` | ~265 | Translation-based `residueAt` (truly linear) |
+| `ResidueTheorem.lean` | ~115 | Global residue theorem for linear places |
+
+**Changes**:
+- Created 5 new files in `ResidueTheory/`
+- Updated `RatFuncResidues.lean` to import `ResidueTheorem`
+- Archived original to `archive/RefactoredFiles/Residue.lean.bak`
+- Full build passes ✅
+
+---
+
 ## Cycle 265 Summary
 
 **Task**: Fill remaining sorry in `ell_ratfunc_projective_gap_eq`
@@ -41,19 +66,6 @@ Key results:
 **Status**: ✅ Complete (1 → 0 sorries in P1Instance)
 
 **Key Achievement**: Proved tight gap bound `ℓ(D+[v]) = ℓ(D) + deg(v)` for effective D
-
-**Strategy**:
-1. Added `evaluationMapAt_surj_projective` - strengthens `evaluationMapAt_surj` to return projective elements
-2. Proved `ψ` surjective by case split: c=0 uses 0, c≠0 uses construction with `noPoleAtInfinity`
-3. Used first isomorphism theorem: quotient `L(D+v)/L(D) ≅ κ(v)` via bijective descended map
-4. `LinearEquiv.ofBijective` + `finrank_eq` gives `finrank(quotient) = deg(v)`
-5. Combined with `finrank_quotient_add_finrank` to get equality
-
-**Key lemmas**:
-- `evaluationMapAt_surj_projective` - surjectivity from projective space (new)
-- `LinearEquiv.ofBijective` - constructs equivalence from bijection
-- `LinearEquiv.finrank_eq` - dimension preserved under equivalence
-- `Submodule.finrank_quotient_add_finrank` - quotient dimension formula
 
 ---
 
@@ -85,24 +97,35 @@ grep -n "sorry" RrLean/RiemannRochV2/P1Instance/DimensionGeneral.lean
 
 ## Next Steps
 
+### Cycle 267: Implement Trace Maps for Higher-Degree Places
+
+**Goal**: Extend residue theory from linear places (deg 1) to all finite places (any degree).
+
+**Why**: P¹ only has linear places, but elliptic/hyperelliptic curves have higher-degree places.
+The current `residueAtLinear` only works for (X - α). For irreducible p(X) of degree d > 1,
+we need `Tr_{κ(v)/k}(local residue)` to get a value in the base field k.
+
+**Immediate task**: Create `ResidueTrace.lean` with:
+```lean
+/-- Residue at finite place v, traced to base field k. -/
+def residueAtFiniteTraced (k : Type*) [Field k] (v : HeightOneSpectrum R) (f : K) : k :=
+  Algebra.trace (κ v) k (localResidue v f)
+```
+
+**Key Mathlib imports**:
+- `Algebra.Trace` - trace map
+- `RingTheory.DedekindDomain.Ideal` - residue field κ(v) = R/v
+
+**Success criteria**: `residue_sum_eq_zero` proved for ALL finite places (not just linear).
+
+**After**: Wire into `Abstract.lean` to fill the 3 remaining sorries.
+
+---
+
 ### P¹ Riemann-Roch: COMPLETE ✅
 
-The full P¹ Riemann-Roch theorem is now proved for all effective divisors:
-- `ell_ratfunc_projective_eq_degWeighted_plus_one` - ℓ(D) = degWeighted(D) + 1
-
-Key components:
-- `evaluationMapAt_surj_projective` - evaluation is surjective from projective space
-- `ell_ratfunc_projective_gap_eq` - tight gap bound ℓ(D+[v]) = ℓ(D) + deg(v)
-- `RRSpace_ratfunc_projective_effective_finite` - L(D) is finite-dimensional for effective D
-
-### Future Work
-
-The main remaining work is in Abstract.lean (general Dedekind domain case):
-- `AdelicRRData` instance for general R, K
-- Strong approximation arguments
-- Compactness-based finiteness proofs
-
-See `REFACTOR_PLAN.md` for full roadmap.
+The full P¹ Riemann-Roch theorem is now proved for all effective divisors.
+See Cycle 265 summary for details.
 
 ---
 
