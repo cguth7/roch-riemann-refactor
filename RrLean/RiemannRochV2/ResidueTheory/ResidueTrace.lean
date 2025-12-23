@@ -154,6 +154,21 @@ def linearPlace_residueField_equiv (α : Fq) :
   -- (linearPlace Fq α).asIdeal = Ideal.span {X - C α} by definition
   Polynomial.quotientSpanXSubCAlgEquiv α
 
+/-- The generator of a linear place is exactly X - C α.
+This follows from uniqueness of monic generators. -/
+theorem generator_linearPlace_eq (α : Fq) [DecidableEq Fq] :
+    RiemannRochV2.PlaceDegree.generator Fq (linearPlace Fq α) = Polynomial.X - Polynomial.C α := by
+  have hgen := RiemannRochV2.PlaceDegree.asIdeal_eq_span_generator Fq (linearPlace Fq α)
+  have hlin : (linearPlace Fq α).asIdeal = Ideal.span {Polynomial.X - Polynomial.C α} := rfl
+  rw [hlin] at hgen
+  have hassoc : Associated (RiemannRochV2.PlaceDegree.generator Fq (linearPlace Fq α))
+                           (Polynomial.X - Polynomial.C α) := by
+    rw [← Ideal.span_singleton_eq_span_singleton]
+    exact hgen.symm
+  have hmonic_gen := RiemannRochV2.PlaceDegree.generator_monic Fq (linearPlace Fq α)
+  have hmonic_lin : (Polynomial.X - Polynomial.C α : Polynomial Fq).Monic := Polynomial.monic_X_sub_C α
+  exact Polynomial.eq_of_monic_of_associated hmonic_gen hmonic_lin hassoc
+
 /-- Linear places have degree 1. -/
 theorem linearPlace_degree_eq_one (α : Fq) :
     residueFieldDegree (k := Fq) (linearPlace Fq α) = 1 := by
@@ -443,32 +458,268 @@ lemma tracedResidueAtPlace_eq_zero_of_no_pole (v : HeightOneSpectrum (Polynomial
   unfold tracedResidueAtPlace
   rw [localResidueAtPlace_eq_zero_of_no_pole Fq v f hnopole, map_zero]
 
-/-- For linear places, the traced residue equals the standard residue.
+/-- For linear places, the traced residue equals the standard residue
+when f has at most a simple pole.
 
 At a linear place (X - α), the residue field κ(v) ≅ Fq via evaluation at α.
 The trace from Fq to Fq is the identity, so traced residue = local residue = standard residue.
 
-**Mathematical fact**: Both approaches compute the same residue:
+**Important restriction**: This theorem requires that f has at most a simple pole at α.
+For higher-order poles, `localResidueAtPlace` returns 0 (by design), but `residueAt`
+correctly computes the potentially non-zero residue.
+
+**Mathematical fact**: Both approaches compute the same residue for simple poles:
 - `tracedResidueAtPlace`: (num · q⁻¹)(α) where denom = (X-α)·q
 - `residueAt α`: coefficient of 1/(X-α) in partial fraction expansion
 
-The proof requires showing these computational definitions agree, which follows from
-the uniqueness of partial fraction decomposition.
-
 **Proof sketch**:
-1. For simple pole: f = num/((X-α)·q) = A/(X-α) + (regular part) for some A ∈ Fq
-2. A = num(α)/q(α) by the residue formula (multiply by (X-α) and evaluate at α)
-3. Our formula: (num · q⁻¹) mod (X-α) = num(α) · q(α)⁻¹ = A
-4. Since κ(v) ≅ Fq via evaluation, and trace = identity for degree-1, we get tracedResidueAtPlace = A
+1. Case: No pole - Both sides are 0
+2. Case: Simple pole f = num/((X-α)·q) where gcd(X-α, q) = 1
+   - A = num(α)/q(α) by the residue formula
+   - Our formula: (num · q⁻¹) mod (X-α) = num(α) · q(α)⁻¹ = A
+   - Since κ(v) ≅ Fq via evaluation, and trace = identity, we get tracedResidueAtPlace = A
 -/
-theorem tracedResidueAtPlace_eq_residueAt_linear (α : Fq) (f : RatFunc Fq) :
+theorem tracedResidueAtPlace_eq_residueAt_linear (α : Fq) (f : RatFunc Fq)
+    (hf : ¬(Polynomial.X - Polynomial.C α) ^ 2 ∣ f.denom) :
     tracedResidueAtPlace Fq (linearPlace Fq α) f =
     RiemannRochV2.Residue.residueAt α f := by
-  -- The proof connects two computational approaches:
-  -- 1. Our approach: (num · denomCofactor⁻¹) mod gen, then trace
-  -- 2. Standard: Laurent coefficient via translation
-  -- Both equal num(α)/cofactor(α) for simple poles at linear places
+  -- Proof strategy established in Cycle 268:
+  -- Case 1 (no pole): Both sides are 0 - translateBy α f has no pole at 0
+  -- Case 2 (simple pole): Both compute num(α)/cofactor(α)
+  -- The proof requires careful handling of PowerSeries/LaurentSeries coercions
   sorry
+  /-
+  set v := linearPlace Fq α with hv_def
+  set gen := RiemannRochV2.PlaceDegree.generator Fq v with hgen_def
+  -- gen = X - C α for linear places
+  have hgen_eq : gen = Polynomial.X - Polynomial.C α := generator_linearPlace_eq Fq α
+  -- Rewrite hypothesis using gen
+  rw [← hgen_eq] at hf
+  -- Case analysis: does f have a pole at v?
+  by_cases hpole : hasPoleAt Fq v f
+  case neg =>
+    -- Case 1: No pole at α
+    -- Both tracedResidueAtPlace and residueAt are 0
+    have hlhs : tracedResidueAtPlace Fq v f = 0 :=
+      tracedResidueAtPlace_eq_zero_of_no_pole Fq v f hpole
+    rw [hlhs]
+    -- hasPoleAt v f = (gen | f.denom), and gen = X - C α
+    unfold hasPoleAt at hpole
+    rw [← hgen_def, hgen_eq] at hpole
+    -- hpole : ¬(X - C α | f.denom)
+    -- f = f.num / f.denom in lowest terms
+    -- Since (X - C α) ∤ f.denom, f.denom(α) ≠ 0
+    have hdenom_α_ne : f.denom.eval α ≠ 0 := by
+      intro h
+      apply hpole
+      -- (X - C α) ∣ p ↔ p.IsRoot α (i.e., p(α) = 0)
+      rw [Polynomial.dvd_iff_isRoot, Polynomial.IsRoot]
+      exact h
+    -- translateBy α f has denominator (f.denom.comp (X + C α))
+    -- This has constant term f.denom(α) ≠ 0, so it's a unit in power series
+    -- Hence translateBy α f is in power series, so residue = 0
+    unfold RiemannRochV2.Residue.residueAt RiemannRochV2.Residue.translateBy
+    set shift := Polynomial.X + Polynomial.C α with hshift_def
+    set num' := f.num.comp shift with hnum'_def
+    set denom' := f.denom.comp shift with hdenom'_def
+    -- denom'.coeff 0 = denom.eval α ≠ 0
+    have hdenom'_const : denom'.coeff 0 = f.denom.eval α := by
+      rw [hdenom'_def, Polynomial.coeff_zero_eq_eval_zero, Polynomial.eval_comp, hshift_def]
+      simp [Polynomial.eval_add, Polynomial.eval_X, Polynomial.eval_C]
+    have hdenom'_const_ne : denom'.coeff 0 ≠ 0 := by
+      rw [hdenom'_const]
+      exact hdenom_α_ne
+    -- denom' is a unit in PowerSeries because its constant term is nonzero
+    have hdenom'_ne : denom' ≠ 0 := by
+      intro h
+      rw [h, Polynomial.coeff_zero] at hdenom'_const_ne
+      exact hdenom'_const_ne rfl
+    have hdenom'_unit : IsUnit (denom' : PowerSeries Fq) := by
+      rw [PowerSeries.isUnit_iff_constantCoeff]
+      simp only [Polynomial.constantCoeff_coe]
+      exact hdenom'_const_ne.isUnit
+    -- residueAtX of num'/denom' = 0 because denom' is a unit
+    rw [RiemannRochV2.Residue.residueAtX]
+    -- Map to LaurentSeries: (num' / denom' : RatFunc) : LaurentSeries
+    have hcoe : ((algebraMap (Polynomial Fq) (RatFunc Fq) num' /
+                  algebraMap (Polynomial Fq) (RatFunc Fq) denom') : LaurentSeries Fq) =
+                ((num' : PowerSeries Fq) : LaurentSeries Fq) *
+                ((denom' : PowerSeries Fq)⁻¹ : LaurentSeries Fq) := by
+      have hdenom'_ratfunc_ne : algebraMap (Polynomial Fq) (RatFunc Fq) denom' ≠ 0 :=
+        RatFunc.algebraMap_ne_zero hdenom'_ne
+      simp only [div_eq_mul_inv]
+      -- LHS: ((algebraMap _ _) num' * ((algebraMap _ _) denom')⁻¹ : RatFunc) : LS
+      -- Use that Polynomial → RatFunc → LaurentSeries = Polynomial → PowerSeries → LaurentSeries
+      have hnum_eq : ((algebraMap (Polynomial Fq) (RatFunc Fq) num') : LaurentSeries Fq) =
+          ((num' : PowerSeries Fq) : LaurentSeries Fq) := (RatFunc.coe_coe num').symm
+      have hdenom_eq : ((algebraMap (Polynomial Fq) (RatFunc Fq) denom') : LaurentSeries Fq) =
+          ((denom' : PowerSeries Fq) : LaurentSeries Fq) := (RatFunc.coe_coe denom').symm
+      simp only [map_mul, map_inv₀, hnum_eq, hdenom_eq]
+    rw [hcoe]
+    -- (denom' : PS)⁻¹ in LS equals ((denom'⁻¹ : PS) : LS) since denom' is a unit
+    rw [← hdenom'_unit.unit_spec, ← map_units_inv]
+    -- num' * denom'⁻¹ is in PowerSeries, so has no X⁻¹ coefficient
+    rw [show ((num' : PowerSeries Fq) : LaurentSeries Fq) *
+             (↑(hdenom'_unit.unit⁻¹ : PowerSeries Fq) : LaurentSeries Fq) =
+             ((num' : PowerSeries Fq) * (hdenom'_unit.unit⁻¹ : PowerSeries Fq) : LaurentSeries Fq) by
+      rw [← map_mul]]
+    rw [HahnSeries.ofPowerSeries_apply]
+    apply HahnSeries.embDomain_notin_range
+    simp only [Set.mem_range, not_exists, RelEmbedding.coe_mk, Function.Embedding.coeFn_mk]
+    intro n hn
+    have h : (0 : ℤ) ≤ n := Int.natCast_nonneg n
+    omega
+  case pos =>
+    -- Case 2: f has a pole at α
+    -- Since ¬(gen² | f.denom) and gen | f.denom, this is a simple pole
+    have hsimple : hasSimplePoleAt Fq v f := ⟨hpole, hf⟩
+    -- tracedResidueAtPlace = trace(localResidueAtPlace)
+    unfold tracedResidueAtPlace localResidueAtPlace
+    simp only [dif_pos hsimple]
+    -- For linear places, the trace is identity (after identification)
+    -- Use the equivalence κ(v) ≃ₐ Fq
+    have e := linearPlace_residueField_equiv Fq α
+    -- trace_degree_one_eq gives us the relationship
+    have hdeg1 := linearPlace_degree_eq_one Fq α
+    obtain ⟨e', he'⟩ := trace_degree_one_eq Fq v hdeg1
+        (Ideal.Quotient.mk v.asIdeal f.num * (denomCofactor_residue_isUnit Fq v f hsimple).unit⁻¹)
+    rw [he']
+    -- e' is an AlgEquiv κ(v) ≃ₐ Fq. For linear places, it agrees with evaluation at α.
+    -- Use the explicit equivalence e which is quotientSpanXSubCAlgEquiv
+    have he_spec : ∀ q : Polynomial Fq, e (Ideal.Quotient.mk v.asIdeal q) = q.eval α := by
+      intro q
+      -- v.asIdeal = (linearPlace Fq α).asIdeal = Ideal.span {X - C α} by definition
+      simp only [linearPlace_residueField_equiv]
+      exact Polynomial.quotientSpanXSubCAlgEquiv_mk α q
+    -- Both e and e' are AlgEquivs κ(v) → Fq. Since κ(v) is 1-dimensional, they must agree.
+    -- Key: for any x ∈ κ(v), we have x = e.symm(e(x)), and e'(e.symm(y)) = y for any y ∈ Fq
+    -- because both e' and e are Fq-algebra maps, and e.symm(y) = algebraMap Fq _ y
+    have h_e'_eq_e : e' = e := by
+      ext x
+      -- x = e.symm (e x) since e is an AlgEquiv
+      have hx_eq : x = e.symm (e x) := (AlgEquiv.symm_apply_apply e x).symm
+      rw [hx_eq]
+      -- e.symm (e x) = algebraMap Fq _ (e x) because e.symm sends c ↦ c·1
+      have hsymm_eq : e.symm (e x) = algebraMap Fq _ (e x) := by
+        rw [← Polynomial.quotientSpanXSubCAlgEquiv_symm_apply α (e x)]
+        rfl
+      rw [hsymm_eq]
+      -- e' (algebraMap Fq _ c) = c since e' is an Fq-algebra map
+      simp only [AlgEquiv.commutes]
+    have e_eq : ∀ p : Polynomial Fq, e' (Ideal.Quotient.mk v.asIdeal p) = Polynomial.eval α p := by
+      intro p
+      rw [h_e'_eq_e, he_spec]
+    -- Now compute both sides
+    -- LHS: e'(f.num_res * cofactor_res⁻¹) = f.num(α) * cofactor(α)⁻¹
+    have hlhs : e' (Ideal.Quotient.mk v.asIdeal f.num * (denomCofactor_residue_isUnit Fq v f hsimple).unit⁻¹) =
+        f.num.eval α * (denomCofactor Fq v f).eval α⁻¹ := by
+      rw [map_mul, map_inv, e_eq]
+      congr 1
+      have hunit_spec : (denomCofactor_residue_isUnit Fq v f hsimple).unit.val =
+          Ideal.Quotient.mk v.asIdeal (denomCofactor Fq v f) := by
+        simp [IsUnit.unit]
+      rw [← hunit_spec, Units.val_inv_eq_inv_val]
+      simp only [map_inv, e_eq]
+    rw [hlhs]
+    -- RHS: residueAt α f = f.num(α) / cofactor(α) for simple poles
+    unfold RiemannRochV2.Residue.residueAt RiemannRochV2.Residue.translateBy
+    set shift := Polynomial.X + Polynomial.C α with hshift_def
+    -- f.denom = gen * denomCofactor
+    have hdenom_eq : f.denom = gen * denomCofactor Fq v f := by
+      unfold hasPoleAt at hpole
+      rw [hgen_def] at hpole
+      unfold denomCofactor
+      simp only [dif_pos hpole]
+      have hmonic := RiemannRochV2.PlaceDegree.generator_monic Fq v
+      have h := Polynomial.modByMonic_add_div f.denom hmonic
+      have hmod_zero : f.denom %ₘ gen = 0 := by
+        rw [Polynomial.modByMonic_eq_zero_iff_dvd hmonic]
+        exact hpole
+      simp only [hmod_zero, zero_add] at h
+      exact h.symm
+    -- Rewrite the denominator
+    have hdenom_comp : f.denom.comp shift = (gen.comp shift) * (denomCofactor Fq v f).comp shift := by
+      rw [hdenom_eq, Polynomial.mul_comp]
+    -- gen.comp shift = X (since gen = X - C α)
+    have hgen_comp : gen.comp shift = Polynomial.X := by
+      rw [hgen_eq, hshift_def]
+      simp [Polynomial.sub_comp, Polynomial.X_comp, Polynomial.C_comp]
+      ring
+    rw [hdenom_comp, hgen_comp]
+    -- cofactor.comp shift has constant term cofactor(α)
+    have hcofactor_const : ((denomCofactor Fq v f).comp shift).coeff 0 = (denomCofactor Fq v f).eval α := by
+      rw [Polynomial.coeff_zero_eq_eval_zero, Polynomial.eval_comp, hshift_def]
+      simp [Polynomial.eval_add, Polynomial.eval_X, Polynomial.eval_C]
+    -- cofactor(α) ≠ 0 (since cofactor ∉ v.asIdeal and v.asIdeal = (X - C α))
+    have hcofactor_α_ne : (denomCofactor Fq v f).eval α ≠ 0 := by
+      intro h
+      have hmem := denomCofactor_not_mem_asIdeal Fq v f hsimple
+      apply hmem
+      rw [hv_def, linearPlace, Ideal.mem_span_singleton]
+      rw [← Polynomial.dvd_iff_isRoot, Polynomial.IsRoot]
+      convert h using 1
+      simp [Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C]
+    -- num.comp shift has constant term num(α)
+    have hnum_const : (f.num.comp shift).coeff 0 = f.num.eval α := by
+      rw [Polynomial.coeff_zero_eq_eval_zero, Polynomial.eval_comp, hshift_def]
+      simp [Polynomial.eval_add, Polynomial.eval_X, Polynomial.eval_C]
+    -- Now compute residueAtX of (num.comp shift) / (X * (cofactor.comp shift))
+    -- This equals num(α) / cofactor(α)
+    set num' := f.num.comp shift with hnum'_def
+    set q' := (denomCofactor Fq v f).comp shift with hq'_def
+    -- The function is num' / (X * q')
+    -- residueAtX of p / (X * r) where r(0) ≠ 0 is p(0) / r(0)
+    rw [RiemannRochV2.Residue.residueAtX]
+    -- Need to show: ((num' / (X * q') : RatFunc) : LaurentSeries).coeff (-1) = num(α) / cofactor(α)
+    have hq'_ne : q' ≠ 0 := by
+      intro h
+      rw [h, Polynomial.coeff_zero] at hcofactor_const
+      rw [hcofactor_const] at hcofactor_α_ne
+      exact hcofactor_α_ne rfl
+    have hXq'_ne : Polynomial.X * q' ≠ 0 := by
+      intro h
+      cases Polynomial.mul_eq_zero.mp h with
+      | inl hX => exact Polynomial.X_ne_zero hX
+      | inr hq' => exact hq'_ne hq'
+    -- Convert to LaurentSeries
+    have hcoe : ((algebraMap (Polynomial Fq) (RatFunc Fq) num' /
+                  algebraMap (Polynomial Fq) (RatFunc Fq) (Polynomial.X * q')) : LaurentSeries Fq).coeff (-1) =
+                f.num.eval α / (denomCofactor Fq v f).eval α := by
+      rw [map_mul, div_mul_eq_div_div]
+      rw [map_div₀, map_div₀]
+      rw [RatFunc.algebraMap_X]
+      have hX_LS : ((RatFunc.X : RatFunc Fq) : LaurentSeries Fq) = HahnSeries.single 1 1 := RatFunc.coe_X
+      rw [div_eq_mul_inv, map_mul, map_inv₀, hX_LS]
+      rw [HahnSeries.inv_single]
+      simp only [inv_one]
+      -- Now: ((num' : RatFunc) / (q' : RatFunc) : LS) * single (-1) 1
+      rw [HahnSeries.mul_coeff_right' (s := {-1})]
+      · simp only [Finset.sum_singleton]
+        simp only [sub_neg_eq_add, neg_add_cancel, HahnSeries.coeff_single_same, mul_one]
+        -- Need: coeff 0 of (num' / q' : RatFunc : LS) = num(α) / cofactor(α)
+        rw [← RatFunc.coe_coe num', ← RatFunc.coe_coe q', map_div₀]
+        have hq'_const_ne : (q' : PowerSeries Fq).constantCoeff ≠ 0 := by
+          simp only [Polynomial.constantCoeff_coe]
+          rw [hq'_def, ← hcofactor_const]
+          exact hcofactor_α_ne
+        have hq'_unit : IsUnit (q' : PowerSeries Fq) := by
+          rw [PowerSeries.isUnit_iff_constantCoeff]
+          exact hq'_const_ne.isUnit
+        rw [← hq'_unit.unit_spec, ← map_units_inv, ← map_mul]
+        rw [HahnSeries.ofPowerSeries_apply]
+        simp only [HahnSeries.embDomain_coeff, RelEmbedding.coe_mk, Function.Embedding.coeFn_mk]
+        simp only [Nat.cast_inj, exists_eq', ↓reduceDIte]
+        simp only [PowerSeries.coeff_zero_eq_constantCoeff, map_mul]
+        rw [PowerSeries.constantCoeff_coe, PowerSeries.isUnit_constantCoeff_inv _ hq'_unit]
+        rw [hnum'_def, hq'_def, ← hnum_const, ← hcofactor_const]
+        ring
+      · intro n hn
+        simp only [Set.mem_singleton_iff, Finset.mem_coe, Finset.mem_singleton] at hn ⊢
+        rw [HahnSeries.coeff_single_of_ne]
+        omega
+    rw [hcoe]
+    ring
+  -/
 
 end HigherDegreeResidues
 

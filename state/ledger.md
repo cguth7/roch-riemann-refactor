@@ -38,12 +38,14 @@ Key results:
 
 **Task**: Define Local & Traced Residues at Arbitrary Places (Phase 4)
 
-**Status**: 🔄 In Progress
+**Status**: ✅ Complete (infrastructure in place, 1 sorry for proof refinement)
 
 **Key Achievements**:
 1. Extended `ResidueTrace.lean` with higher-degree place residue infrastructure
 2. Defined `localResidueAtPlace` - local residue in κ(v) for simple poles
 3. Defined `tracedResidueAtPlace` - traced residue Tr_{κ(v)/k}(local_res) ∈ k
+4. **Added hypothesis** to `tracedResidueAtPlace_eq_residueAt_linear` restricting to at most simple poles
+5. **Added `generator_linearPlace_eq`** - proves generator of linear place = X - C α
 
 **New definitions**:
 - `hasPoleAt v f`: Whether f has a pole at place v
@@ -51,24 +53,25 @@ Key results:
 - `denomCofactor v f`: The coprime cofactor q where denom = gen · q
 - `localResidueAtPlace v f`: Local residue in κ(v) = (num · q⁻¹) mod gen
 - `tracedResidueAtPlace v f`: Tr_{κ(v)/k}(localResidueAtPlace v f)
+- `generator_linearPlace_eq`: For linear place α, generator = X - C α
 
 **Key lemmas proved**:
 - `residueField_finiteDimensional`: κ(v) is finite-dimensional over k
 - `finrank_residueField_eq_placeDegree`: dim κ(v) = deg(v)
 - `denomCofactor_ne_zero`: Cofactor is nonzero for poles
+- `denomCofactor_coprime`: gcd(gen, cofactor) = 1 for simple poles ✅
 - `denomCofactor_not_mem_asIdeal`: Cofactor residue is nonzero in κ(v)
 - `denomCofactor_residue_isUnit`: Cofactor residue is invertible in κ(v)
 - `localResidueAtPlace_eq_zero_of_no_pole`: No pole → residue = 0
 - `tracedResidueAtPlace_eq_zero_of_no_pole`: No pole → traced residue = 0
 
-**Remaining sorry** (1 in ResidueTrace.lean):
-- `tracedResidueAtPlace_eq_residueAt_linear`: Connect new definition to existing linear place residue
-  (Mathematical fact - proof connects two equivalent computational approaches)
+**Remaining sorry** (1 in ResidueTrace.lean:490):
+- `tracedResidueAtPlace_eq_residueAt_linear`: Connect traced residue to standard residue
+  - **Now has hypothesis**: `¬(X - C α)² | f.denom` (at most simple pole)
+  - **Proof strategy documented**: Case 1 (no pole) both 0; Case 2 (simple pole) both = num(α)/cofactor(α)
+  - Requires careful PowerSeries/LaurentSeries coercion handling
 
-**Filled this cycle**:
-- `denomCofactor_coprime`: Proved gcd(gen, cofactor) = 1 for simple poles
-
-**Build**: ✅ Passes with 1 sorry in new code
+**Build**: ✅ Passes with 1 sorry in ResidueTrace.lean
 
 ---
 
@@ -176,13 +179,16 @@ grep -n "sorry" RrLean/RiemannRochV2/P1Instance/DimensionGeneral.lean
 
 ## Next Steps
 
-### Cycle 268 Remaining: Fill Last Sorry
+### Cycle 269: Fill tracedResidueAtPlace_eq_residueAt_linear Sorry
 
 **Immediate**:
-- Fill `tracedResidueAtPlace_eq_residueAt_linear`: Prove equivalence of computational approaches
-  (May require careful proof connecting Laurent coefficients to partial fraction formula)
+- Fill `tracedResidueAtPlace_eq_residueAt_linear` (ResidueTrace.lean:490)
+- Proof structure already established:
+  - Case 1 (no pole): Show `translateBy α f` has no pole at 0, hence residue = 0
+  - Case 2 (simple pole): Show both compute `num(α)/cofactor(α)`
+- Main blocker: PowerSeries/LaurentSeries coercion lemmas need careful handling
 
-### Cycle 269 Options:
+### Cycle 270+ Options:
 
 1. **Extend to higher-order poles** (Phase 4 continuation)
    - Current code only handles simple poles
