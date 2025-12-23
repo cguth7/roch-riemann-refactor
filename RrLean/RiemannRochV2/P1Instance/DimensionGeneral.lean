@@ -431,6 +431,214 @@ theorem evaluationMapAt_surj (v : HeightOneSpectrum (Polynomial k))
 
 For effective D, the gap ℓ(D+[v]) - ℓ(D) equals exactly deg(v). -/
 
+/-- Surjectivity of evaluation on projective space for effective D.
+This strengthens evaluationMapAt_surj to return a projective element. -/
+theorem evaluationMapAt_surj_projective (v : HeightOneSpectrum (Polynomial k))
+    (D : DivisorV2 (Polynomial k)) (hD : D.Effective)
+    (c : residueFieldAtPrime (Polynomial k) v) :
+    ∃ f : RRSpace_ratfunc_projective (D + DivisorV2.single v 1),
+      evaluationMapAt_complete (R := Polynomial k) (K := RatFunc k) v D
+        ⟨f.val, f.property.1⟩ = c := by
+  by_cases hc : c = 0
+  · -- c = 0: use 0 which is in projective space
+    use ⟨0, by simp [satisfiesValuationCondition], Or.inl rfl⟩
+    rw [hc]
+    exact (evaluationMapAt_complete v D).map_zero
+  · -- c ≠ 0: construct f = q'/gen^n with noPoleAtInfinity
+    let gen := generator k v
+    let n := D v + 1
+    have hgen_monic : gen.Monic := generator_monic k v
+    have hgen_ne : gen ≠ 0 := (generator_irreducible k v).ne_zero
+    have hgen_ne_one : gen ≠ 1 := (generator_irreducible k v).ne_one
+
+    let w := uniformizerQuotient k v
+    have hw_ne : w ≠ 0 := uniformizerQuotient_ne_zero k v
+    let w_res : Polynomial k ⧸ v.asIdeal := Ideal.Quotient.mk v.asIdeal w
+    have hw_res_ne : w_res ≠ 0 := uniformizerQuotient_residue_ne_zero k v
+
+    haveI : v.asIdeal.IsMaximal := v.isMaximal
+    letI : Field (Polynomial k ⧸ v.asIdeal) := Ideal.Quotient.field v.asIdeal
+
+    let c_quot := (residueFieldAtPrime.linearEquiv v).symm c
+    let w_pow_n := w_res ^ n.toNat
+    have hw_pow_ne : w_pow_n ≠ 0 := pow_ne_zero n.toNat hw_res_ne
+    let w_pow_inv := w_pow_n⁻¹
+    let c_adj := c_quot * w_pow_inv
+
+    have hc_quot_ne : c_quot ≠ 0 := by
+      intro heq
+      have : c = (residueFieldAtPrime.linearEquiv v) c_quot := by
+        simp only [c_quot, LinearEquiv.apply_symm_apply]
+      rw [heq, map_zero] at this
+      exact hc this
+
+    have hc_adj_ne : c_adj ≠ 0 := mul_ne_zero hc_quot_ne (inv_ne_zero hw_pow_ne)
+
+    obtain ⟨q, hq⟩ := Ideal.Quotient.mk_surjective c_adj
+    let q' := q %ₘ gen
+
+    have hq'_quot : Ideal.Quotient.mk v.asIdeal q' = Ideal.Quotient.mk v.asIdeal q := by
+      rw [Ideal.Quotient.eq]
+      have hdiv : q' - q = -(gen * (q /ₘ gen)) := by
+        have h := Polynomial.modByMonic_add_div q hgen_monic
+        calc q' - q = q %ₘ gen - q := rfl
+          _ = q %ₘ gen - (q %ₘ gen + gen * (q /ₘ gen)) := by rw [h]
+          _ = -(gen * (q /ₘ gen)) := by ring
+      rw [hdiv, asIdeal_eq_span_generator k v, Ideal.neg_mem_iff]
+      exact Ideal.mul_mem_right _ _ (Ideal.mem_span_singleton_self (generator k v))
+
+    have hq'_ne : q' ≠ 0 := by
+      intro heq
+      have : c_adj = 0 := by rw [← hq, ← hq'_quot, heq, map_zero]
+      exact hc_adj_ne this
+
+    let q'_K := algebraMap (Polynomial k) (RatFunc k) q'
+    let gen_K := algebraMap (Polynomial k) (RatFunc k) gen
+    have hgen_K_ne : gen_K ≠ 0 := RatFunc.algebraMap_ne_zero hgen_ne
+    let f : RatFunc k := q'_K / gen_K ^ n.toNat
+
+    have hf_affine : f ∈ RRModuleV2_real (Polynomial k) (RatFunc k) (D + DivisorV2.single v 1) := by
+      right
+      intro w'
+      have hgen_pow_ne : gen_K ^ n.toNat ≠ 0 := pow_ne_zero _ hgen_K_ne
+      rw [map_div₀]
+      by_cases hw' : w' = v
+      · rw [hw']
+        have hgen_val : v.valuation (RatFunc k) gen_K = WithZero.exp (-1 : ℤ) := by
+          rw [HeightOneSpectrum.valuation_of_algebraMap]
+          exact generator_intValuation_at_self k v
+        have hgen_pow_val : v.valuation (RatFunc k) (gen_K ^ n.toNat) =
+            WithZero.exp (-(n.toNat : ℤ)) := by
+          rw [map_pow, hgen_val, ← WithZero.exp_nsmul]
+          simp only [smul_neg, nsmul_eq_mul, mul_one]
+        have hq'_val_le : v.valuation (RatFunc k) q'_K ≤ 1 := by
+          rw [HeightOneSpectrum.valuation_of_algebraMap]
+          exact v.intValuation_le_one q'
+        have hDv_eq : (D + DivisorV2.single v 1) v = n := by
+          simp only [Finsupp.add_apply, DivisorV2.single, Finsupp.single_eq_same]; ring
+        rw [hDv_eq, hgen_pow_val]
+        have hDv_ge : 0 ≤ D v := hD v
+        have hn_nn : 0 ≤ n := by show 0 ≤ D v + 1; omega
+        have hexp_neg : WithZero.exp (-(n.toNat : ℤ)) = WithZero.exp (-n) := by
+          congr 1; rw [Int.toNat_of_nonneg hn_nn]
+        rw [hexp_neg]
+        have hexp_pos : 0 < WithZero.exp (-n) := WithZero.exp_pos
+        rw [div_le_iff₀ hexp_pos]
+        calc v.valuation (RatFunc k) q'_K
+            ≤ 1 := hq'_val_le
+          _ = WithZero.exp (0 : ℤ) := WithZero.exp_zero.symm
+          _ = WithZero.exp (n + -n) := by ring_nf
+          _ = WithZero.exp n * WithZero.exp (-n) := WithZero.exp_add n (-n)
+      · have hgen_val_w : w'.valuation (RatFunc k) gen_K = 1 := by
+          rw [HeightOneSpectrum.valuation_of_algebraMap]
+          exact generator_intValuation_at_other_prime k v w' hw'
+        have hgen_pow_val_w : w'.valuation (RatFunc k) (gen_K ^ n.toNat) = 1 := by
+          rw [map_pow, hgen_val_w, one_pow]
+        have hq'_val_le_w : w'.valuation (RatFunc k) q'_K ≤ 1 := by
+          rw [HeightOneSpectrum.valuation_of_algebraMap]
+          exact w'.intValuation_le_one q'
+        have hDw_eq : (D + DivisorV2.single v 1) w' = D w' := by
+          simp only [Finsupp.add_apply, DivisorV2.single, Finsupp.single_apply]
+          rw [if_neg (Ne.symm hw')]; ring
+        rw [hDw_eq, hgen_pow_val_w, div_one]
+        have hDw_nn : 0 ≤ D w' := hD w'
+        calc w'.valuation (RatFunc k) q'_K
+            ≤ 1 := hq'_val_le_w
+          _ = WithZero.exp (0 : ℤ) := WithZero.exp_zero.symm
+          _ ≤ WithZero.exp (D w') := WithZero.exp_le_exp.mpr hDw_nn
+
+    have hf_infty : noPoleAtInfinity f := by
+      rw [noPoleAtInfinity_iff_intDegree_le_zero]
+      have hq'_K_ne : q'_K ≠ 0 := RatFunc.algebraMap_ne_zero hq'_ne
+      have hgen_pow_K_ne : gen_K ^ n.toNat ≠ 0 := pow_ne_zero _ hgen_K_ne
+      have h_q'_deg : q'_K.intDegree = (q'.natDegree : ℤ) := RatFunc.intDegree_polynomial
+      have h_gen_pow_deg : (gen_K ^ n.toNat).intDegree = n.toNat * (gen.natDegree : ℤ) := by
+        induction n.toNat with
+        | zero => simp [RatFunc.intDegree_one]
+        | succ m ih =>
+          rw [pow_succ, RatFunc.intDegree_mul (pow_ne_zero m hgen_K_ne) hgen_K_ne,
+              ih, RatFunc.intDegree_polynomial]
+          simp only [Nat.cast_succ]; ring
+      have h_f_deg : f.intDegree = q'_K.intDegree - (gen_K ^ n.toNat).intDegree := by
+        show (q'_K / gen_K ^ n.toNat).intDegree = _
+        rw [div_eq_mul_inv, RatFunc.intDegree_mul hq'_K_ne (inv_ne_zero hgen_pow_K_ne),
+            RatFunc.intDegree_inv]; ring
+      rw [h_f_deg, h_q'_deg, h_gen_pow_deg]
+      have h_q'_lt : q'.natDegree < gen.natDegree :=
+        Polynomial.natDegree_modByMonic_lt q hgen_monic hgen_ne_one
+      have hn_pos : 0 < n.toNat := by
+        have hDv_nn : 0 ≤ D v := hD v
+        simp only [n, Int.lt_toNat, Int.ofNat_zero]; omega
+      have h_bound : q'.natDegree < n.toNat * gen.natDegree := by
+        calc q'.natDegree
+            < gen.natDegree := h_q'_lt
+          _ = 1 * gen.natDegree := (one_mul _).symm
+          _ ≤ n.toNat * gen.natDegree := Nat.mul_le_mul_right _ hn_pos
+      omega
+
+    have h_proj : f ∈ RRSpace_ratfunc_projective (D + DivisorV2.single v 1) :=
+      ⟨hf_affine, Or.inr hf_infty⟩
+
+    use ⟨f, h_proj⟩
+
+    -- Show evaluation equals c (same as in evaluationMapAt_surj)
+    let w_K := algebraMap (Polynomial k) (RatFunc k) w
+    have hw_K_ne : w_K ≠ 0 := RatFunc.algebraMap_ne_zero hw_ne
+    have hpi_eq : algebraMap (Polynomial k) (RatFunc k) (uniformizerAt v) = gen_K * w_K := by
+      rw [uniformizerAt_eq_generator_mul_quotient k v, map_mul]
+    have hn_pos' : 0 < n := by have : 0 ≤ D v := hD v; omega
+    have hn_toNat : n.toNat = n := Int.toNat_of_nonneg (le_of_lt hn_pos')
+    have hshift_eq : shiftedElement v D f = algebraMap (Polynomial k) (RatFunc k) (q' * w ^ n.toNat) := by
+      unfold shiftedElement
+      have hf_eq : f = q'_K / gen_K ^ n.toNat := rfl
+      rw [hf_eq, hpi_eq]
+      have hgen_pow_ne' : gen_K ^ n.toNat ≠ 0 := pow_ne_zero _ hgen_K_ne
+      have hzpow_eq : (gen_K * w_K) ^ n = (gen_K * w_K) ^ n.toNat := by
+        conv_lhs => rw [← hn_toNat]
+        exact zpow_natCast (gen_K * w_K) n.toNat
+      rw [hzpow_eq, mul_pow, ← mul_assoc, div_mul_eq_mul_div, mul_div_assoc]
+      rw [div_self hgen_pow_ne', mul_one, map_mul, map_pow]
+
+    unfold evaluationMapAt_complete evaluationMapAt_complete_clean
+    simp only [LinearMap.coe_mk, AddHom.coe_mk]
+    unfold evaluationFun_via_bridge_clean
+
+    have helem_eq : (⟨shiftedElement v D f, shiftedElement_mem_valuationRingAt v D ⟨f, hf_affine⟩⟩ :
+        valuationRingAt (R := Polynomial k) (K := RatFunc k) v) =
+        ⟨algebraMap (Polynomial k) (RatFunc k) (q' * w ^ n.toNat),
+          algebraMap_mem_valuationRingAt v (q' * w ^ n.toNat)⟩ := by
+      ext; exact hshift_eq
+
+    have heval : (residueFieldBridge_explicit_clean (R := Polynomial k) (K := RatFunc k) v)
+        ((valuationRingAt.residue (R := Polynomial k) (K := RatFunc k) v)
+          ⟨shiftedElement v D f, shiftedElement_mem_valuationRingAt v D ⟨f, hf_affine⟩⟩) =
+        algebraMap (Polynomial k) (residueFieldAtPrime (Polynomial k) v) (q' * w ^ n.toNat) := by
+      rw [helem_eq]
+      exact bridge_residue_algebraMap_clean v (q' * w ^ n.toNat)
+
+    simp only at heval ⊢
+    rw [heval]
+
+    have hmap_eq : algebraMap (Polynomial k) (residueFieldAtPrime (Polynomial k) v) (q' * w ^ n.toNat) =
+        (residueFieldAtPrime.linearEquiv v) (Ideal.Quotient.mk v.asIdeal (q' * w ^ n.toNat)) := rfl
+    rw [hmap_eq]
+
+    have hquot_mul : Ideal.Quotient.mk v.asIdeal (q' * w ^ n.toNat) =
+        Ideal.Quotient.mk v.asIdeal q' * (Ideal.Quotient.mk v.asIdeal w) ^ n.toNat := by
+      rw [map_mul, map_pow]
+    rw [hquot_mul, hq'_quot, hq]
+
+    have hw_eq : Ideal.Quotient.mk v.asIdeal w = w_res := rfl
+    rw [hw_eq]
+
+    have hw_pow_inv_spec : w_pow_n * w_pow_inv = 1 := mul_inv_cancel₀ hw_pow_ne
+    have hprod : c_adj * w_pow_n = c_quot := by
+      unfold c_adj w_pow_n
+      rw [mul_assoc, mul_comm w_pow_inv _, hw_pow_inv_spec, mul_one]
+    rw [hprod]
+
+    exact (residueFieldAtPrime.linearEquiv v).apply_symm_apply c
+
 /-- Gap bound is tight for effective D: ℓ(D+[v]) = ℓ(D) + deg(v).
 
 The proof combines:
@@ -443,12 +651,150 @@ theorem ell_ratfunc_projective_gap_eq (D : DivisorV2 (Polynomial k))
     [hfin : Module.Finite k (RRSpace_ratfunc_projective (D + DivisorV2.single v 1))] :
     ell_ratfunc_projective (D + DivisorV2.single v 1) =
     ell_ratfunc_projective D + degree k v := by
-  -- Upper bound from gap bound
-  have h_le := ell_ratfunc_projective_gap_le_general k D v
-  -- For the lower bound, use surjectivity of evaluation map
-  have h_surj := evaluationMapAt_surj k v D hD
-  -- Surjectivity implies: L(D+[v])/L(D) ≅ κ(v), so dim = deg(v)
-  sorry
+  -- Setup: same as in gap_le proof
+  have hle := divisor_le_add_single_general k D v
+  have hincl : RRSpace_ratfunc_projective D ≤
+      RRSpace_ratfunc_projective (D + DivisorV2.single v 1) :=
+    RRSpace_ratfunc_projective_mono_general k D v
+
+  -- LD = comap of L(D) in L(D+v)
+  let LD := (RRSpace_ratfunc_projective D).comap
+      (RRSpace_ratfunc_projective (D + DivisorV2.single v 1)).subtype
+
+  -- The affine evaluation map φ : L_affine(D+v) → κ(v)
+  let φ := evaluationMapAt_complete (R := Polynomial k) (K := RatFunc k) v D
+
+  -- L(D+v) elements satisfy the affine condition
+  have h_proj_to_affine : ∀ f, f ∈ RRSpace_ratfunc_projective (D + DivisorV2.single v 1) →
+      f ∈ RRModuleV2_real (Polynomial k) (RatFunc k) (D + DivisorV2.single v 1) :=
+    fun f hf => hf.1
+
+  -- Define ψ : L(D+v) →ₗ[k] κ(v) (same as in gap bound proof)
+  let ψ : ↥(RRSpace_ratfunc_projective (D + DivisorV2.single v 1)) →ₗ[k]
+      residueFieldAtPrime (Polynomial k) v := {
+    toFun := fun x => φ ⟨x.val, h_proj_to_affine x.val x.property⟩
+    map_add' := fun x y => by
+      have := φ.map_add ⟨x.val, h_proj_to_affine x.val x.property⟩
+          ⟨y.val, h_proj_to_affine y.val y.property⟩
+      convert this using 1 <;> rfl
+    map_smul' := fun c x => by
+      have h1 : (c • x).val = (algebraMap k (Polynomial k) c) • x.val :=
+        (IsScalarTower.algebraMap_smul (Polynomial k) c x.val).symm
+      have hmem : (algebraMap k (Polynomial k) c) • x.val ∈
+          RRModuleV2_real (Polynomial k) (RatFunc k) (D + DivisorV2.single v 1) :=
+        Submodule.smul_mem _ _ (h_proj_to_affine x.val x.property)
+      have h2 : φ ⟨(algebraMap k (Polynomial k) c) • x.val, hmem⟩ =
+          (algebraMap k (Polynomial k) c) • φ ⟨x.val, h_proj_to_affine x.val x.property⟩ := by
+        convert φ.map_smul (algebraMap k (Polynomial k) c) ⟨x.val, h_proj_to_affine x.val x.property⟩
+      have h3 : (algebraMap k (Polynomial k) c) • φ ⟨x.val, h_proj_to_affine x.val x.property⟩ =
+          c • φ ⟨x.val, h_proj_to_affine x.val x.property⟩ :=
+        IsScalarTower.algebraMap_smul (Polynomial k) c _
+      simp only [RingHom.id_apply]
+      calc φ ⟨(c • x).val, h_proj_to_affine (c • x).val (c • x).property⟩
+          = φ ⟨(algebraMap k (Polynomial k) c) • x.val, hmem⟩ := by simp only [h1]
+        _ = (algebraMap k (Polynomial k) c) • φ ⟨x.val, h_proj_to_affine x.val x.property⟩ := h2
+        _ = c • φ ⟨x.val, h_proj_to_affine x.val x.property⟩ := h3
+  }
+
+  -- ψ is surjective (use evaluationMapAt_surj_projective)
+  have h_ψ_surj : Function.Surjective ψ := by
+    intro c
+    obtain ⟨f_proj, hf_proj⟩ := evaluationMapAt_surj_projective k v D hD c
+    use f_proj
+    simp only [ψ, LinearMap.coe_mk, AddHom.coe_mk]
+    convert hf_proj
+
+  -- LD ≤ ker(ψ) (same proof as in GapBoundGeneral)
+  have h_LD_le_ker : LD ≤ LinearMap.ker ψ := by
+    intro x hx
+    rw [LinearMap.mem_ker]
+    rw [Submodule.mem_comap] at hx
+    have h_affine_mem : x.val ∈ RRModuleV2_real (Polynomial k) (RatFunc k) D := hx.1
+    have h_in_affine_Dv : x.val ∈ RRModuleV2_real (Polynomial k) (RatFunc k) (D + DivisorV2.single v 1) :=
+      RRModuleV2_mono_inclusion (Polynomial k) (RatFunc k) hle h_affine_mem
+    let y_affine : RRModuleV2_real (Polynomial k) (RatFunc k) D := ⟨x.val, h_affine_mem⟩
+    have hinc : (⟨x.val, h_in_affine_Dv⟩ : RRModuleV2_real (Polynomial k) (RatFunc k) (D + DivisorV2.single v 1)) =
+        Submodule.inclusion (RRModuleV2_mono_inclusion (Polynomial k) (RatFunc k) hle) y_affine := rfl
+    show ψ x = 0
+    simp only [ψ, LinearMap.coe_mk, AddHom.coe_mk]
+    have hx_eq : (⟨x.val, h_proj_to_affine x.val x.property⟩ :
+        RRModuleV2_real (Polynomial k) (RatFunc k) (D + DivisorV2.single v 1)) =
+        ⟨x.val, h_in_affine_Dv⟩ := rfl
+    rw [hx_eq, hinc]
+    exact LD_element_maps_to_zero v D y_affine
+
+  -- ker(ψ) ≤ LD (same proof as in GapBoundGeneral)
+  have h_ker_le_LD : LinearMap.ker ψ ≤ LD := by
+    intro x hx
+    rw [LinearMap.mem_ker] at hx
+    simp only [ψ, LinearMap.coe_mk, AddHom.coe_mk] at hx
+    have h_in_ker : (⟨x.val, h_proj_to_affine x.val x.property⟩ :
+        RRModuleV2_real (Polynomial k) (RatFunc k) (D + DivisorV2.single v 1)) ∈
+        LinearMap.ker φ := hx
+    rw [kernel_evaluationMapAt_complete_proof, LinearMap.mem_range] at h_in_ker
+    obtain ⟨y, hy⟩ := h_in_ker
+    rw [Submodule.mem_comap, Submodule.coe_subtype]
+    have hval : y.val = x.val := congrArg Subtype.val hy
+    have h_affine : x.val ∈ RRModuleV2_real (Polynomial k) (RatFunc k) D := by
+      rw [← hval]; exact y.property
+    have h_infty : x.val = 0 ∨ noPoleAtInfinity x.val := x.property.2
+    exact ⟨h_affine, h_infty⟩
+
+  -- ker(ψ) = LD
+  have h_eq_ker : LD = LinearMap.ker ψ := le_antisymm h_LD_le_ker h_ker_le_LD
+
+  -- The descended map: quotient → κ(v)
+  let desc := Submodule.liftQ LD ψ h_LD_le_ker
+
+  -- desc is injective (from ker = LD)
+  have h_desc_inj : Function.Injective desc := by
+    rw [← LinearMap.ker_eq_bot]
+    have hker := Submodule.ker_liftQ LD ψ h_LD_le_ker
+    rw [hker, h_eq_ker, Submodule.mkQ_map_self]
+
+  -- desc is surjective (from ψ surjective)
+  have h_desc_surj : Function.Surjective desc := by
+    rw [← LinearMap.range_eq_top, Submodule.range_liftQ]
+    exact LinearMap.range_eq_top.mpr h_ψ_surj
+
+  -- desc is bijective, so quotient ≃ₗ κ(v)
+  let e : (↥(RRSpace_ratfunc_projective (D + DivisorV2.single v 1)) ⧸ LD) ≃ₗ[k]
+      residueFieldAtPrime (Polynomial k) v :=
+    LinearEquiv.ofBijective desc ⟨h_desc_inj, h_desc_surj⟩
+
+  -- finrank(quotient) = finrank(κ(v)) = deg(v)
+  have h_quot_eq : Module.finrank k
+      (↥(RRSpace_ratfunc_projective (D + DivisorV2.single v 1)) ⧸ LD) = degree k v := by
+    rw [e.finrank_eq, finrank_residueFieldAtPrime_eq_degree k v]
+
+  -- finrank(LD) = ell(D)
+  have h_LD_eq : Module.finrank k LD = ell_ratfunc_projective D := by
+    unfold ell_ratfunc_projective LD
+    have h_eq : (RRSpace_ratfunc_projective D).comap
+        (RRSpace_ratfunc_projective (D + DivisorV2.single v 1)).subtype =
+        LinearMap.range (Submodule.inclusion hincl) := by
+      ext x
+      constructor
+      · intro hx
+        rw [Submodule.mem_comap] at hx
+        rw [LinearMap.mem_range]
+        exact ⟨⟨x.val, hx⟩, rfl⟩
+      · intro hx
+        rw [LinearMap.mem_range] at hx
+        obtain ⟨y, hy⟩ := hx
+        rw [Submodule.mem_comap]
+        rw [← hy]; exact y.2
+    rw [h_eq]
+    exact LinearMap.finrank_range_of_inj (Submodule.inclusion_injective hincl)
+
+  -- finrank(L(D+v)) = finrank(LD) + finrank(quotient)
+  have h_add := Submodule.finrank_quotient_add_finrank LD
+  unfold ell_ratfunc_projective
+  calc Module.finrank k ↥(RRSpace_ratfunc_projective (D + DivisorV2.single v 1))
+      = Module.finrank k LD +
+          Module.finrank k (↥(RRSpace_ratfunc_projective (D + DivisorV2.single v 1)) ⧸ LD) := by
+        rw [← h_add, add_comm]
+    _ = ell_ratfunc_projective D + degree k v := by rw [h_LD_eq, h_quot_eq]
 
 /-! ## Finiteness for Arbitrary Effective Divisors -/
 

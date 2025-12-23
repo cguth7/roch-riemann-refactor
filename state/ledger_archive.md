@@ -5410,3 +5410,24 @@ theorem exists_translate_in_integralFullAdeles : ...
 ### Cycle 241 - Dead-code cleanup ✅
 - Moved 6 sorried lemmas to Archive/SorriedLemmas.lean
 - Build fully clean
+
+### Cycle 262 - PlaceDegree cleanup + evaluationMapAt_surj skeleton ✅
+- Fixed PlaceDegree.lean 
+- Key discovery: Abstract `uniformizerAt` can have extra prime factors in k[X]
+- (5 → 4 sorries)
+
+### Cycle 263 - generator_intValuation_at_self + hf_affine ✅
+- Key discovery: `HeightOneSpectrum.intValuation_singleton` directly gives valuation = exp(-1)
+- (4 → 3 sorries)
+
+### Cycle 264 - evaluation = c in evaluationMapAt_surj ✅
+- Key breakthrough: Uniformizer-generator relationship lemmas
+- Added `uniformizerQuotient`, `uniformizerAt_eq_generator_mul_quotient`
+- Core fix: lift c_adj = c * [w]^{-n} to compensate for [w]^n factor
+- (2 → 1 sorries)
+
+### Cycle 265 - ell_ratfunc_projective_gap_eq (FINAL P¹ SORRY) ✅
+- Added `evaluationMapAt_surj_projective` - surjectivity from projective space
+- Used first isomorphism theorem: L(D+v)/L(D) ≅ κ(v)
+- P¹ Riemann-Roch now fully proved for ALL effective divisors!
+- (1 → 0 sorries in P1Instance)

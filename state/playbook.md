@@ -118,7 +118,7 @@ Where:
 
 | Curve Type | Genus | Status |
 |------------|-------|--------|
-| P¹ (projective line) | 0 | Current focus (linear places proved) |
+| P¹ (projective line) | 0 | ✅ COMPLETE (all effective divisors) |
 | Elliptic curves | 1 | Future (Phase 6) |
 | Hyperelliptic curves | (deg f - 1)/2 | Future (Phase 6) |
 | General smooth projective | any g | Architecture supports it |
@@ -387,56 +387,34 @@ What was actually true:
 
 ---
 
-## Honest Sorry Audit (Cycle 262)
+## Honest Sorry Audit (Cycle 265)
 
-### Total: 8 sorries in non-archived code
+### Total: 3 sorries in non-archived code
 
-**DimensionGeneral.lean** (5 sorries) - surjectivity proof skeleton:
-| Line | What's needed |
-|------|---------------|
-| 132 | Zero case: q=0 ⟹ c=0 |
-| 145 | hf_affine: valuation bounds for f=q/gen^n |
-| 149 | hf_infty: no pole at infinity |
-| 159 | evaluation = c: trace through shiftedElement |
-| 182 | ell_ratfunc_projective_gap_eq (depends on surjectivity) |
+**P1Instance/** - ✅ SORRY-FREE - All P¹ Riemann-Roch complete!
 
-**Abstract.lean** (3 sorries) - placeholder `AdelicRRData` instance:
+**Abstract.lean** (3 sorries) - placeholder `AdelicRRData` instance for general curves:
 | Line | Field | What's needed |
 |------|-------|---------------|
 | 199 | `h1_finite` | H¹ finiteness from compactness |
 | 200 | `ell_finite` | L(D) finiteness |
 | 202 | `h1_vanishing` | H¹ vanishing |
 
-### Sorry-Free Files ✅
+### What's Proved (no sorryAx)
 
-PlaceDegree, GapBoundGeneral, P1RiemannRoch, P1VanishingLKD, P1Canonical, P1Place,
-Place, DivisorV3, RRSpaceV3, DimensionCore, DimensionScratch, AdelicH1Full,
-all Core/ files, all Adelic/ files
-
-### What's Actually Proved (no sorryAx)
-
-- ✅ `linearPlace_residue_equiv` - κ(v) ≃+* Fq
-- ✅ `linearPlace_residue_finrank` - finrank Fq κ(v) = 1
-- ✅ `ell_ratfunc_projective_gap_le` - ℓ(D+[v]) ≤ ℓ(D) + 1
-- ✅ `inv_X_sub_C_pow_mem_projective` - explicit elements in L(D)
-- ✅ `inv_X_sub_C_pow_not_mem_projective_smaller` - strict inclusion
-- ✅ `ellV3_p1Canonical_sub_ofAffine_eq_zero` - ℓ(K-D) = 0 for effective D on P¹ (NEW Cycle 255!)
-- ✅ `eq_algebraMap_of_valuation_le_one_forall` - polynomial characterization via valuations
-
-### What's Proved Modulo DimensionCore Sorries
-
-- ⚠️ `ell_ratfunc_projective_single_linear` - ℓ(n·[v]) = n+1
-  - Proof structure complete, uses DimensionCore finiteness instances
-  - When DimensionCore sorries filled, this becomes sorry-free
+- ✅ `ell_ratfunc_projective_eq_degWeighted_plus_one` - ℓ(D) = degWeighted(D) + 1 for all effective D
+- ✅ `ell_ratfunc_projective_gap_eq` - ℓ(D+[v]) = ℓ(D) + deg(v) (tight gap bound)
+- ✅ `evaluationMapAt_surj_projective` - evaluation map surjective from projective space
+- ✅ `RRSpace_ratfunc_projective_effective_finite` - L(D) finite-dimensional for effective D
+- ✅ `ellV3_p1Canonical_sub_ofAffine_eq_zero` - ℓ(K-D) = 0 for effective D on P¹
+- ✅ `riemann_roch_p1` - Full P¹ Riemann-Roch formula
 
 ### Verification Command
 
 ```bash
-lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "sorryAx"
-# No output = P¹ RR is complete (achieved Cycle 247!)
+grep -rn "sorry" RrLean/RiemannRochV2/P1Instance/
+# Expected: No output (all P1Instance sorries filled!)
 ```
-
-**See also**: `state/PROOF_CHAIN.md` for the full import chain and file status.
 
 ---
 

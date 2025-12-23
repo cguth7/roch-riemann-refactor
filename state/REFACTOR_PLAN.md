@@ -372,12 +372,13 @@ Skipping for now - Phase 3 is more urgent due to Affine Trap discovery.
 | 253 | Define canonical divisor K = -2[∞] for P¹ | ✅ Done |
 | 254-255 | Prove L(K-D) = 0 for effective D (sorry-free!) | ✅ Done |
 
-### Phase 3.5: Surjectivity for Dimension Formula (Current)
+### Phase 3.5: Surjectivity for Dimension Formula - ✅ COMPLETE
 | Cycle | Task | Status |
 |-------|------|--------|
 | 256-261 | PlaceDegree + GapBoundGeneral + finiteness | ✅ Done |
 | 262 | PlaceDegree cleanup + evaluationMapAt_surj skeleton | ✅ Done |
-| 263+ | Fill surjectivity sorries (hf_affine, hf_infty, eval=c) | Pending |
+| 263-264 | Fill hf_affine, hf_infty, eval=c in evaluationMapAt_surj | ✅ Done |
+| 265 | Fill ell_ratfunc_projective_gap_eq via first isomorphism theorem | ✅ Done |
 
 ### Phase 4: Residue Theorem
 | Cycle | Task |
@@ -391,7 +392,7 @@ Skipping for now - Phase 3 is more urgent due to Affine Trap discovery.
 |-------|------|
 | TBD | Move remaining P¹ files to archive, update all imports |
 
-**Current focus**: Fill `evaluationMapAt_surj` sorries to complete dimension formula
+**Current focus**: Phase 4 (Residue Theorem) or Phase 6 (New Curve Instances)
 
 ---
 
@@ -400,11 +401,11 @@ Skipping for now - Phase 3 is more urgent due to Affine Trap discovery.
 The refactor is complete when:
 
 1. **Core compiles without P¹**: `lake build RrLean.RiemannRochV2` succeeds with no Polynomial/RatFunc in general modules
-2. **P¹ instance separate**: `lake build RrLean.RiemannRochV2.Instances.P1` provides full P¹ Riemann-Roch
+2. **P¹ instance separate**: ✅ DONE - `P1Instance/` provides full sorry-free P¹ Riemann-Roch
 3. **New instance template works**: Can instantiate `AdelicRRData` for at least one non-P¹ curve
 4. **Residue theorem general**: `residue_sum_eq_zero` proved for all places (not just linear)
-5. **Zero sorries in core**: All infrastructure files sorry-free
+5. **Zero sorries in core**: ✅ DONE for P1Instance (3 sorries remain in Abstract.lean for general curves)
 
 ---
 
-*Plan created Cycle 241+. Updated Cycle 262: Phase 3 COMPLETE, Phase 3.5 (surjectivity) in progress.*
+*Plan created Cycle 241+. Updated Cycle 265: Phase 3.5 COMPLETE - P¹ Riemann-Roch fully proved!*
