@@ -7,8 +7,8 @@ Tactical tracking for Riemann-Roch formalization.
 ## Current State
 
 **Build**: ✅ Compiles (0 sorries in main path)
-**Result**: Riemann-Roch for P¹ (linear places)
-**Cycle**: 256
+**Result**: Riemann-Roch for P¹ (linear places) + PlaceDegree infrastructure
+**Cycle**: 257 (Complete)
 
 ---
 
@@ -46,6 +46,48 @@ Not covered:
 - Divisors mixing linear and non-linear places
 
 Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more interesting than the result.
+
+---
+
+## Cycle 257 Summary
+
+**Task**: Remove `IsLinearPlaceSupport` restriction - infrastructure phase
+
+**Status**: ✅ Complete - PlaceDegree.lean finished
+
+**What was done**:
+The Mathlib API issues from the previous WIP session were resolved:
+- `IsUnit.mul_iff` field notation → replaced with `irreducible_isUnit_mul`
+- `Ideal.span_singleton_eq_span_singleton` notation → used `Submodule.span_singleton_eq_span_singleton` with proper conversion
+
+**New file completed**: `RrLean/RiemannRochV2/P1Instance/PlaceDegree.lean` ✅ (0 sorries)
+
+**Key definitions and lemmas (all sorry-free)**:
+```lean
+-- Generator of a HeightOneSpectrum (monic irreducible polynomial)
+noncomputable def generator (v : HeightOneSpectrum (Polynomial k)) : Polynomial k
+
+-- Degree of a place = natDegree of its generator
+def degree (v : HeightOneSpectrum (Polynomial k)) : ℕ := (generator k v).natDegree
+
+-- Weighted degree of a divisor
+def degWeighted (D : DivisorV2 (Polynomial k)) : ℤ :=
+  D.sum (fun v n => n * (degree k v : ℤ))
+
+-- Key lemmas:
+lemma degree_pos : 0 < degree k v
+lemma linearPlace_degree_eq_one (α : k) : degree k (linearPlace α) = 1
+theorem finrank_residueField_eq_degree : finrank k (Polynomial k ⧸ v.asIdeal) = degree k v
+lemma degWeighted_eq_deg_of_linear : degWeighted k D = D.deg  -- when all places are linear
+lemma degWeighted_single : degWeighted k (single v n) = n * (degree k v : ℤ)
+lemma degWeighted_add : degWeighted k (D + E) = degWeighted k D + degWeighted k E
+```
+
+**Verification**:
+```bash
+lake build RrLean.RiemannRochV2.P1Instance.PlaceDegree  # ✅
+grep -c "sorry" .../PlaceDegree.lean  # 0
+```
 
 ---
 
@@ -202,8 +244,9 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke  # ✅ Still passes
 **3 sorries total** in non-archived code:
 - `Abstract.lean`: 3 (placeholder `AdelicRRData` instance fields)
 
-**Sorry-free files** (confirmed Cycle 256):
-- P1RiemannRoch.lean ✅ (NEW! Full Riemann-Roch theorem)
+**Sorry-free files** (confirmed Cycle 257):
+- PlaceDegree.lean ✅ (NEW! Place degree infrastructure)
+- P1RiemannRoch.lean ✅ (Full Riemann-Roch theorem)
 - P1VanishingLKD.lean ✅
 - DimensionCore.lean ✅
 - AdelicH1Full.lean ✅
@@ -232,31 +275,32 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ## Next Steps
 
-### Riemann-Roch for P¹ Complete! ✅
+### Removing `IsLinearPlaceSupport` - In Progress
 
-**Cycle 256 complete**: The full Riemann-Roch theorem for P¹ is now proved.
+**Cycle 257 complete**: PlaceDegree.lean infrastructure finished.
 
-**What's proved**:
-```lean
-theorem riemann_roch_p1 (D : DivisorV2 (Polynomial Fq))
-    (hD : D.Effective) (hDlin : IsLinearPlaceSupport D) :
-    (ell_ratfunc_projective D : ℤ) -
-      (ellV3 (k := Fq) (R := Polynomial Fq) (K := RatFunc Fq)
-        (p1Canonical Fq - DivisorV3.ofAffine D) : ℤ) =
-    D.deg + 1 - (p1Genus : ℤ)
-```
+**What's been done**:
+- ✅ Defined `PlaceDegree.degree` - place degree = natDegree of generator
+- ✅ Proved `linearPlace_degree_eq_one` - linear places have degree 1
+- ✅ Proved `finrank_residueField_eq_degree` - residue field dim = place degree
+- ✅ Defined `degWeighted` - weighted degree Σ nᵥ * deg(v)
+- ✅ Proved `degWeighted_eq_deg_of_linear` - weighted = unweighted for linear support
 
-This is the Riemann-Roch theorem: ℓ(D) - ℓ(K-D) = deg(D) + 1 - g with g = 0 for P¹.
+**Remaining work (Cycle 258)**:
+1. **Generalize gap bound**: Prove `ℓ(D+[v]) ≤ ℓ(D) + deg(v)` for arbitrary places
+   - Current: `ell_ratfunc_projective_gap_le` only works for linear places (gives +1)
+   - Need to extend the evaluation map construction to use `finrank_residueField_eq_degree`
 
-### Next: Possible Directions
+2. **Update induction proof**: Modify `ell_ratfunc_projective_eq_deg_plus_one`
+   - Replace unweighted degree with weighted degree
+   - Remove `IsLinearPlaceSupport` hypothesis
 
-**Option A**: Remove `IsLinearPlaceSupport` restriction
-- Extend to non-linear places (degree > 1)
-- This is mathematically straightforward but requires more infrastructure
+3. **Update main theorem**: `riemann_roch_p1` to work for all effective divisors
+
+### Alternative Directions
 
 **Option B**: Fill Abstract.lean sorries
 - Connect P¹ projective infrastructure to the abstract framework
-- Make the general RR framework work for P¹
 
 **Option C**: Move to higher genus curves
 - Elliptic curves (g = 1)
