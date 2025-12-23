@@ -62,6 +62,9 @@ Key results:
 **Remaining sorries (1)**:
 - `trace_degree_one_eq`: For degree-1 places, trace = identity (deferred, not blocking)
 
+**Scope limitation**: Current theorem requires split denominator (poles at linear places only).
+For unrestricted P¹ Riemann-Roch, need residue at higher-degree places (Cycle 268).
+
 **Build**: ✅ Passes with 1 minor sorry
 
 ---
@@ -139,11 +142,11 @@ grep -n "sorry" RrLean/RiemannRochV2/P1Instance/DimensionGeneral.lean
 - ✅ Proved `residue_sum_traced_eq_zero_P1` (global residue theorem with traces)
 
 **Remaining tasks**:
-1. Fill `trace_degree_one_eq` sorry (prove trace is identity for degree-1 extensions)
-2. Define residue for higher-degree places (p-adic Laurent expansion + trace)
+1. Define residue for higher-degree places (p-adic Laurent expansion + trace) - **CRITICAL**
+2. Fill `trace_degree_one_eq` sorry (prove trace is identity for degree-1 extensions)
 3. Wire into `Abstract.lean` to fill the 3 remaining AdelicRRData sorries
 
-**Key insight**: For P¹ over Fq, ALL finite places are linear (degree 1), so traced residue = regular residue. The trace infrastructure becomes essential only for elliptic/hyperelliptic curves.
+**Important**: P¹ over Fq has places of ALL degrees, not just degree 1. Degree-d places correspond to irreducible polynomials of degree d (e.g., X² + X + 1 over F₂ gives a degree-2 place with κ(v) = F₄). The current `residue_sum_traced_eq_zero_P1` only handles the split denominator case (poles at linear places). Full unrestricted P¹ Riemann-Roch requires residue at higher-degree places.
 
 ---
 
