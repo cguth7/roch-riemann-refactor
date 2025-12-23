@@ -182,6 +182,19 @@ lemma degWeighted_add (D E : DivisorV2 (Polynomial k)) :
   · intro v; ring
   · intro v n₁ n₂; ring
 
+/-- Weighted degree of negation. -/
+lemma degWeighted_neg (D : DivisorV2 (Polynomial k)) :
+    degWeighted k (-D) = -degWeighted k D := by
+  unfold degWeighted
+  rw [Finsupp.sum_neg_index]
+  · simp only [neg_mul, Finsupp.sum_neg]
+  · intro _; ring
+
+/-- Weighted degree is subtractive. -/
+lemma degWeighted_sub (D E : DivisorV2 (Polynomial k)) :
+    degWeighted k (D - E) = degWeighted k D - degWeighted k E := by
+  rw [sub_eq_add_neg, degWeighted_add, degWeighted_neg, sub_eq_add_neg]
+
 end PlaceDegree
 
 end RiemannRochV2

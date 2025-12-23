@@ -6,9 +6,9 @@ Tactical tracking for Riemann-Roch formalization.
 
 ## Current State
 
-**Build**: ✅ Compiles (4 sorries in DimensionGeneral.lean)
-**Result**: Riemann-Roch for P¹ (linear places) + Generalized gap bound + Dimension formula skeleton
-**Cycle**: 259 (Complete)
+**Build**: ✅ Compiles (2 sorries in DimensionGeneral.lean)
+**Result**: Riemann-Roch for P¹ (linear places) + Generalized gap bound + Finiteness for all effective D
+**Cycle**: 260 (Complete)
 
 ---
 
@@ -46,6 +46,57 @@ Not covered:
 - Divisors mixing linear and non-linear places
 
 Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more interesting than the result.
+
+---
+
+## Cycle 260 Summary
+
+**Task**: Fill sorries in DimensionGeneral.lean - finiteness instance
+
+**Status**: ✅ Partial - Finiteness instance complete, 2 sorries remain
+
+**What was done**:
+
+1. **Added helper lemmas to PlaceDegree.lean** (as planned):
+```lean
+lemma degWeighted_neg (D : DivisorV2 (Polynomial k)) :
+    degWeighted k (-D) = -degWeighted k D
+
+lemma degWeighted_sub (D E : DivisorV2 (Polynomial k)) :
+    degWeighted k (D - E) = degWeighted k D - degWeighted k E
+```
+
+2. **Filled degWeighted subtraction sorry** (was line 201, now trivial with degWeighted_sub)
+
+3. **Filled RRSpace_ratfunc_projective_effective_finite** (the finiteness instance):
+   - Strong induction on degWeighted(D)
+   - Base case: degWeighted = 0 ⟹ D = 0 ⟹ L(0) is finite
+   - Inductive step: D = D' + [v] where D' has smaller degWeighted
+     - L(D') finite by IH
+     - Built evaluation map ψ : L(D' + [v]) → κ(v)
+     - Proved ker(ψ) = LD (comap of L(D'))
+     - Used `Module.Finite.of_injective` + `Module.Finite.of_submodule_quotient`
+
+**Key technical insight** (from Gemini):
+```lean
+-- 1. Descended map is injective
+have hinj : Function.Injective desc :=
+  LinearMap.ker_eq_bot.mp (Submodule.ker_liftQ_eq_bot _ _ _ h_ker_le_LD)
+
+-- 2. Quotient is finite (injection into finite κ(v))
+haveI : Module.Finite k (L(D') ⧸ LD) := Module.Finite.of_injective desc hinj
+
+-- 3. Extension of finite by finite is finite
+exact Module.Finite.of_submodule_quotient LD
+```
+
+**Remaining sorries (2 total)**:
+| Line | Lemma | What's needed |
+|------|-------|---------------|
+| 114 | `evaluationMapAt_surj` | Construct q/generator(v)^{D(v)+1} preimages |
+| 137 | `ell_ratfunc_projective_gap_eq` | Combine surjectivity with upper bound |
+
+**Progress**: 4 sorries → 2 sorries
 
 ---
 
@@ -350,11 +401,12 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke  # ✅ Still passes
 
 ## Sorries
 
-**7 sorries total** in non-archived code:
+**5 sorries total** in non-archived code:
 - `Abstract.lean`: 3 (placeholder `AdelicRRData` instance fields)
-- `DimensionGeneral.lean`: 4 (NEW - generalization infrastructure)
+- `DimensionGeneral.lean`: 2 (evaluationMapAt_surj, ell_ratfunc_projective_gap_eq)
 
-**Sorry-free files** (confirmed Cycle 259):
+**Sorry-free files** (confirmed Cycle 260):
+- PlaceDegree.lean ✅ (+ degWeighted_neg, degWeighted_sub)
 - GapBoundGeneral.lean ✅ (Generalized gap bound)
 - PlaceDegree.lean ✅ (Place degree infrastructure)
 - P1RiemannRoch.lean ✅ (Full Riemann-Roch theorem)
@@ -388,30 +440,25 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ### Removing `IsLinearPlaceSupport` - In Progress
 
-**Cycle 259 complete**: DimensionGeneral.lean skeleton created.
+**Cycle 260 complete**: Finiteness instance filled, 2 sorries remain.
 
 **What's been done**:
 - ✅ PlaceDegree.degree - place degree infrastructure
+- ✅ PlaceDegree.degWeighted_neg, degWeighted_sub - arithmetic lemmas
 - ✅ GapBoundGeneral - gap ≤ deg(v) for arbitrary places
-- ✅ DimensionGeneral skeleton - induction structure with 4 sorries
+- ✅ DimensionGeneral skeleton - induction structure
 - ✅ Helper lemmas: degWeighted_nonneg, effective_zero, exists_pos
+- ✅ **RRSpace_ratfunc_projective_effective_finite** - finiteness for all effective D
 
-**Immediate (Cycle 260)**: Fix Finsupp Arithmetic Hell
+**Immediate (Cycle 261)**: Fill remaining 2 sorries
 
-Add to `PlaceDegree.lean`:
-```lean
-lemma degWeighted_neg (D : DivisorV2 (Polynomial k)) :
-    degWeighted k (-D) = - degWeighted k D
+1. `evaluationMapAt_surj` (line 114) - construct q/generator(v)^{D(v)+1} preimages
+   - For any c ∈ κ(v), represented by polynomial q with deg(q) < deg(generator)
+   - The element q/generator(v)^{D(v)+1} ∈ L(D+[v]) and maps to c
 
-lemma degWeighted_sub (D E : DivisorV2 (Polynomial k)) :
-    degWeighted k (D - E) = degWeighted k D - degWeighted k E
-```
-
-Then fill the 4 sorries in DimensionGeneral.lean:
-1. `evaluationMapAt_surj` - construct q/generator(v) preimages
-2. `ell_ratfunc_projective_gap_eq` - tight gap bound
-3. `RRSpace_ratfunc_projective_effective_finite` - finiteness by induction
-4. degWeighted subtraction (will be trivial with degWeighted_sub)
+2. `ell_ratfunc_projective_gap_eq` (line 137) - tight gap bound
+   - Upper bound: already have gap ≤ deg(v) from GapBoundGeneral
+   - Lower bound: surjectivity implies quotient ≅ κ(v), so gap = deg(v)
 
 **After**: Update `riemann_roch_p1` to use degWeighted instead of deg
 
