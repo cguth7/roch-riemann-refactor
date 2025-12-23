@@ -7,8 +7,8 @@ Tactical tracking for Riemann-Roch formalization.
 ## Current State
 
 **Build**: ✅ Compiles (0 sorries in main path)
-**Result**: Riemann-Roch for P¹ (linear places) + PlaceDegree infrastructure
-**Cycle**: 257 (Complete)
+**Result**: Riemann-Roch for P¹ (linear places) + Generalized gap bound
+**Cycle**: 258 (Complete)
 
 ---
 
@@ -46,6 +46,52 @@ Not covered:
 - Divisors mixing linear and non-linear places
 
 Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more interesting than the result.
+
+---
+
+## Cycle 258 Summary
+
+**Task**: Generalize gap bound from linear places to arbitrary places
+
+**Status**: ✅ Complete - GapBoundGeneral.lean finished
+
+**New file completed**: `RrLean/RiemannRochV2/P1Instance/GapBoundGeneral.lean` ✅ (0 sorries)
+
+**What was done**:
+Extended the gap bound theorem from linear places (where gap ≤ 1) to arbitrary places (where gap ≤ deg(v)):
+
+```lean
+-- Generalized gap bound: ℓ(D + [v]) ≤ ℓ(D) + deg(v)
+theorem ell_ratfunc_projective_gap_le_general (D : DivisorV2 (Polynomial k))
+    (v : HeightOneSpectrum (Polynomial k))
+    [hfin : Module.Finite k (RRSpace_ratfunc_projective (D + DivisorV2.single v 1))] :
+    ell_ratfunc_projective (D + DivisorV2.single v 1) ≤
+    ell_ratfunc_projective D + degree k v
+```
+
+**Key lemmas (all sorry-free)**:
+```lean
+-- Monotonicity for arbitrary places
+lemma RRSpace_ratfunc_projective_mono_general : L(D) ⊆ L(D + [v])
+
+-- Residue field finiteness for arbitrary places
+instance residueField_finite : Module.Finite k (k[X] ⧸ v.asIdeal)
+instance residueFieldAtPrime_finite : Module.Finite k (κ(v))
+
+-- Residue field dimension = place degree
+lemma finrank_residueFieldAtPrime_eq_degree : finrank k (κ(v)) = deg(v)
+```
+
+**Technical notes**:
+- Used `Polynomial.Monic.finite_adjoinRoot` for quotient finiteness
+- The proof follows the same structure as the linear case: evaluation map with kernel = L(D), quotient embeds in κ(v)
+- For linear places, deg(v) = 1, recovering the original gap bound
+
+**Verification**:
+```bash
+lake build RrLean.RiemannRochV2.P1Instance.GapBoundGeneral  # ✅
+grep -n "sorry" .../GapBoundGeneral.lean  # (no output)
+```
 
 ---
 
@@ -244,8 +290,9 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke  # ✅ Still passes
 **3 sorries total** in non-archived code:
 - `Abstract.lean`: 3 (placeholder `AdelicRRData` instance fields)
 
-**Sorry-free files** (confirmed Cycle 257):
-- PlaceDegree.lean ✅ (NEW! Place degree infrastructure)
+**Sorry-free files** (confirmed Cycle 258):
+- GapBoundGeneral.lean ✅ (NEW! Generalized gap bound)
+- PlaceDegree.lean ✅ (Place degree infrastructure)
 - P1RiemannRoch.lean ✅ (Full Riemann-Roch theorem)
 - P1VanishingLKD.lean ✅
 - DimensionCore.lean ✅
@@ -277,7 +324,7 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ### Removing `IsLinearPlaceSupport` - In Progress
 
-**Cycle 257 complete**: PlaceDegree.lean infrastructure finished.
+**Cycle 258 complete**: GapBoundGeneral.lean finished.
 
 **What's been done**:
 - ✅ Defined `PlaceDegree.degree` - place degree = natDegree of generator
@@ -285,17 +332,15 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 - ✅ Proved `finrank_residueField_eq_degree` - residue field dim = place degree
 - ✅ Defined `degWeighted` - weighted degree Σ nᵥ * deg(v)
 - ✅ Proved `degWeighted_eq_deg_of_linear` - weighted = unweighted for linear support
+- ✅ Proved `ell_ratfunc_projective_gap_le_general` - gap ≤ deg(v) for arbitrary places
 
-**Remaining work (Cycle 258)**:
-1. **Generalize gap bound**: Prove `ℓ(D+[v]) ≤ ℓ(D) + deg(v)` for arbitrary places
-   - Current: `ell_ratfunc_projective_gap_le` only works for linear places (gives +1)
-   - Need to extend the evaluation map construction to use `finrank_residueField_eq_degree`
-
-2. **Update induction proof**: Modify `ell_ratfunc_projective_eq_deg_plus_one`
+**Remaining work (Cycle 259)**:
+1. **Update induction proof**: Modify `ell_ratfunc_projective_eq_deg_plus_one`
    - Replace unweighted degree with weighted degree
    - Remove `IsLinearPlaceSupport` hypothesis
+   - Key: induction on degWeighted instead of deg
 
-3. **Update main theorem**: `riemann_roch_p1` to work for all effective divisors
+2. **Update main theorem**: `riemann_roch_p1` to work for all effective divisors
 
 ### Alternative Directions
 
