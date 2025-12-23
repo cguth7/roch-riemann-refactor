@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization.
 
 **Build**: ✅ Compiles (0 sorries in main path)
 **Result**: Restricted P¹ Riemann-Roch (linear places only)
-**Cycle**: 252
+**Cycle**: 253
 
 ---
 
@@ -43,7 +43,43 @@ Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more in
 
 ---
 
-## Cycle 252 Summary
+## Cycle 253 Summary
+
+**Task**: Define the canonical divisor K = -2[∞] for P¹
+
+**New File**: `RrLean/RiemannRochV2/P1Instance/P1Canonical.lean`
+
+**Key definitions**:
+```lean
+/-- The canonical divisor on P¹ = RatFunc Fq. K = -2[∞]. -/
+def p1Canonical : DivisorV3 Fq[X] (RatFunc Fq) :=
+  DivisorV3.singleInfinite (p1InftyPlace Fq) (-2)
+
+/-- The genus of P¹ is 0. -/
+def p1Genus : ℕ := 0
+```
+
+**Key lemmas**:
+- `deg_p1Canonical` : degree is -2
+- `p1Canonical_at_infty` : coefficient at ∞ is -2
+- `p1Canonical_at_finite` : coefficient at finite places is 0
+- `p1_genus_formula` : deg(K) = 2g - 2 holds for P¹
+- `deg_p1Canonical_sub` : deg(K - D) = -2 - deg(D)
+- `deg_p1Canonical_sub_neg` : if deg(D) ≥ -1, then deg(K - D) ≤ -1
+
+**Insight**: The canonical divisor for P¹ arises entirely from the place at infinity.
+Mathlib's `differentIdeal` machinery only captures finite places (the "Affine Trap"),
+so there's no useful connection for P¹. For P¹, we define K = -2[∞] directly.
+
+**Verification**:
+```bash
+lake build RrLean.RiemannRochV2.P1Instance.P1Canonical  # ✅
+lake build RrLean.RiemannRochV2.SerreDuality.Smoke  # ✅ Still passes
+```
+
+---
+
+## Cycle 252 Summary (Previous)
 
 **Task**: Connect P¹ to Place infrastructure with inftyPlace and ConstantsValuationBound
 
@@ -379,13 +415,15 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "sorryAx"
 **3 sorries total** in non-archived code:
 - `Abstract.lean`: 3 (placeholder `AdelicRRData` instance fields)
 
-**Sorry-free files** (confirmed Cycle 251):
+**Sorry-free files** (confirmed Cycle 253):
 - DimensionCore.lean ✅
 - AdelicH1Full.lean ✅
 - DimensionScratch.lean ✅
 - Place.lean ✅
 - DivisorV3.lean ✅
-- RRSpaceV3.lean ✅ (new)
+- RRSpaceV3.lean ✅
+- P1Place.lean ✅
+- P1Canonical.lean ✅ (new)
 - All other SerreDuality files ✅
 
 6 dead-code lemmas in `RrLean/Archive/SorriedLemmas.lean`.
@@ -405,19 +443,16 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ## Next Steps
 
-### Immediate: Continue Phase 3 - P¹ Instance Connection
+### Immediate: Continue Phase 3 - L(K-D) Vanishing
 
-**Cycle 251 complete**: `RRSpaceV3.lean` created with projective L(D) over base field.
+**Cycle 253 complete**: Canonical divisor K = -2[∞] defined for P¹.
 
-**Cycle 252**: Connect to P¹ Instance
-- Define `inftyPlace` for P¹ (using `FunctionField.inftyValuation`)
-- Create `HasInfinitePlaces` instance for `Polynomial Fq / RatFunc Fq`
-- Prove `inftyPlace.deg = 1` (degree 1 place)
-- Prove `ConstantsValuationBound Fq (Polynomial Fq) (RatFunc Fq)`
+**Cycle 254**: Prove L(K-D) vanishing for P¹
+- Show that for D with deg(D) ≥ -1, L(K-D) = 0 as an RRSpaceV3
+- This uses deg(K-D) = -2 - deg(D) ≤ -1
+- For degree ≤ -1 divisors on P¹, only 0 satisfies the valuation bounds
 
-**Cycle 253**: Prove P¹ canonical divisor
-- Define `canonical : DivisorV3 (Polynomial Fq) (RatFunc Fq)` as -2[∞]
-- Connect to `differentIdeal` (if available)
+**Context**: This is the key ingredient for proving h¹(D) = 0 for effective D on P¹.
 
 **After Phase 3**: Abstract.lean sorries become fillable for all projective curves.
 
