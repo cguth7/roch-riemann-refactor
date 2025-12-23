@@ -6,9 +6,9 @@ Tactical tracking for Riemann-Roch formalization.
 
 ## Current State
 
-**Build**: ✅ Compiles (2 sorries in DimensionGeneral.lean)
+**Build**: ✅ Compiles (1 sorry in DimensionGeneral.lean)
 **Result**: Riemann-Roch for P¹ (linear places) + Generalized gap bound + Finiteness for all effective D
-**Cycle**: 264 (In Progress)
+**Cycle**: 265 (Ready to start)
 
 ---
 
@@ -49,40 +49,55 @@ Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more in
 
 ---
 
-## Cycle 264 Progress
+## Cycle 265 Progress
 
-**Task**: Fill `hf_infty` sorry in evaluationMapAt_surj
+**Task**: Fill remaining sorry in `ell_ratfunc_projective_gap_eq`
 
-**Status**: ✅ Complete (3 → 2 sorries)
+**Status**: Ready to start
 
-**Completed**:
-1. ✅ `hf_infty` - PROVED! (noPoleAtInfinity for f = q'/gen^n)
-   - Key insight: Use `q' = q %ₘ gen` (modByMonic) instead of original `q`
-   - Then `deg(q') < deg(gen) ≤ deg(gen^n)` for n ≥ 1
-   - This gives `intDegree(f) = deg(q') - deg(gen^n) < 0`, hence `noPoleAtInfinity f`
-   - Added proof that `q'` and `q` give same element in κ(v) (since `q - q' ∈ ⟨gen⟩`)
+**Remaining Sorry** (1):
+- Line 451: `gap_eq` - Dimension equality from surjectivity
+  - Have: upper bound `gap ≤ deg(v)` and surjectivity of evaluation
+  - Need: first isomorphism theorem argument to get `gap = deg(v)`
 
-**Remaining Sorries** (2):
-- Line 307: `evaluation = c` - Trace evaluation through residue field bridge
-- Line 330: `gap_eq` - Dimension equality from surjectivity
+---
 
-**Technical details**:
-- `Polynomial.natDegree_modByMonic_lt` gives `q'.natDegree < gen.natDegree`
-- `RatFunc.intDegree_polynomial`, `RatFunc.intDegree_mul`, `RatFunc.intDegree_inv` for intDegree computation
-- `noPoleAtInfinity_iff_intDegree_le_zero` to convert condition
+## Cycle 264 Summary
+
+**Task**: Fill `evaluation = c` sorry in evaluationMapAt_surj
+
+**Status**: ✅ Complete (2 → 1 sorries)
+
+**Key Breakthrough**: Uniformizer-generator relationship lemmas
+
+Added to PlaceDegree.lean:
+- `uniformizerAt_mem_asIdeal` - uniformizer is in v.asIdeal (valuation < 1)
+- `uniformizerAt_not_mem_asIdeal_sq` - not in v.asIdeal² (valuation exactly exp(-1))
+- `generator_dvd_uniformizerAt` - generator divides uniformizer in k[X]
+- `uniformizerQuotient` - defines w = uniformizerAt /ₘ generator
+- `uniformizerAt_eq_generator_mul_quotient` - uniformizerAt = generator * w
+- `uniformizerQuotient_not_mem_asIdeal` - w is coprime to generator
+- `uniformizerQuotient_residue_ne_zero` - [w] ≠ 0 in κ(v)
+
+**Core Fix**: Modified preimage construction in `evaluationMapAt_surj`:
+- Original: lift c directly to q', use f = q'/gen^n
+- Problem: eval(f) = [q'] * [w]^n ≠ c (wrong by factor [w]^n)
+- Solution: lift c_adj = c * [w]^{-n} instead, then eval(f) = c_adj * [w]^n = c ✓
+
+**Key Proof Steps**:
+1. Use field structure: `letI : Field (k[X] ⧸ v.asIdeal) := Ideal.Quotient.field`
+2. Compute w^{-n} in quotient field
+3. Show shiftedElement(f) = algebraMap (q' * w^n) using `uniformizerAt_eq_generator_mul_quotient`
+4. Apply `bridge_residue_algebraMap_clean` to get evaluation = [q' * w^n mod gen]
+5. Simplify [q'] * [w]^n = c_adj * w_pow_n = c_quot via `mul_inv_cancel`
+6. Finish with `LinearEquiv.apply_symm_apply`
 
 ---
 
 ## Cycle 263 Summary
 
 **Task**: Prove `generator_intValuation_at_self` + `hf_affine`
-
 **Status**: ✅ Complete (4 → 3 sorries)
-
-**Completed**:
-1. ✅ `generator_intValuation_at_self` - PROVED using Mathlib's `intValuation_singleton`
-2. ✅ `hf_affine` - PROVED (valuation bounds for f = q/gen^n at all finite places)
-
 **Key Discovery**: `HeightOneSpectrum.intValuation_singleton` directly gives valuation = exp(-1).
 
 ---
@@ -90,187 +105,75 @@ Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more in
 ## Cycle 262 Summary
 
 **Task**: Fix PlaceDegree.lean + skeleton for evaluationMapAt_surj
-
 **Status**: ✅ Complete (5 → 4 sorries)
-
-**Done**:
-- PlaceDegree.lean ✅ sorry-free (removed unprovable uniformizer lemmas)
-- evaluationMapAt_surj skeleton with documented sorries
-- **Zero case filled** (line 132): q=0 ⟹ c=0, eval(0)=0 ✅
-
-**Key discovery**: Abstract `uniformizerAt` can have extra prime factors in k[X], making
-`uniformizerAt_not_mem_other_prime` unprovable. Use `generator` instead.
-
----
-
-## Cycle 261 Summary
-
-**Task**: Add coprimality lemmas for distinct primes
-
-**Status**: ✅ Complete (generator lemmas), ❌ Uniformizer lemmas unprovable
-
-**Proved**: `generator_not_mem_other_prime`, `generator_intValuation_at_other_prime`
-
----
-
-## Cycle 260 Summary
-
-**Task**: Fill finiteness instance in DimensionGeneral.lean
-**Status**: ✅ Complete - `RRSpace_ratfunc_projective_effective_finite` proved
-**Key technique**: Strong induction on degWeighted + `Module.Finite.of_submodule_quotient`
-
----
-
-## Cycle 259 Summary
-
-**Task**: Create DimensionGeneral.lean skeleton
-**Status**: ✅ Complete - Main theorem structure with helper lemmas proved
-**File**: `DimensionGeneral.lean` - proves `ℓ(D) = degWeighted(D) + 1` for effective D
-
----
-
-## Cycle 258 Summary
-
-**Task**: Generalize gap bound to arbitrary places
-**Status**: ✅ Complete - `GapBoundGeneral.lean` sorry-free
-**Result**: `ell_ratfunc_projective_gap_le_general`: gap ≤ deg(v) for any place v
-
-**Key technique**: `Polynomial.Monic.finite_adjoinRoot` for quotient finiteness
-
----
-
-## Cycle 257 Summary
-
-**Task**: Create PlaceDegree.lean infrastructure
-**Status**: ✅ Complete
-**Key definitions**: `generator`, `degree`, `degWeighted`, `finrank_residueField_eq_degree`
-
----
-
-## Cycle 256 Summary
-
-**Task**: Assemble P1RiemannRoch.lean
-**Status**: ✅ Complete - `riemann_roch_p1` sorry-free
-**Result**: ℓ(D) - ℓ(K-D) = deg(D) + 1 - g for effective D with linear support
-
----
-
-## Cycle 255 Summary
-
-**Task**: Complete L(K-D) vanishing in P1VanishingLKD.lean
-**Status**: ✅ Complete
-**Key insight**: "v(f) ≤ 1 at all finite places ⟹ f is polynomial" via UFD factorization
-
----
-
-## Cycle 254 Summary
-
-**Task**: P1VanishingLKD.lean setup
-**Key insight**: Mathlib infinity valuation: v_∞(p) = exp(deg(p)) (larger for higher degree!)
-
----
-
-## Cycle 253 Summary
-
-**Task**: P1Canonical.lean - define K = -2[∞] for P¹
-**Key insight**: Canonical divisor for P¹ is entirely at infinity ("Affine Trap" bypass)
-
-*For cycles 241-252, see `ledger_archive.md`.*
+**Key discovery**: Abstract `uniformizerAt` can have extra prime factors in k[X].
 
 ---
 
 ## Sorries
 
-**5 sorries total** in non-archived code:
-- `Abstract.lean`: 3 (placeholder `AdelicRRData` instance fields)
-- `DimensionGeneral.lean`: 2 (see breakdown below)
+**1 sorry total** in DimensionGeneral.lean:
+- Line 451: `ell_ratfunc_projective_gap_eq` - dimension argument from surjectivity
 
-**Files with sorries** (Cycle 264):
-- DimensionGeneral.lean: ⚠️ 2 sorries
-  - ~~Line 132: zero case~~ ✅ DONE (Cycle 262)
-  - ~~Line 153: hf_affine~~ ✅ DONE (Cycle 263)
-  - ~~Line 226: hf_infty~~ ✅ DONE (Cycle 264) - used modByMonic
-  - Line 307: evaluation equals c (residue field bridge)
-  - Line 330: ell_ratfunc_projective_gap_eq (follows from surjectivity)
+**Abstract.lean**: 3 sorries (placeholder `AdelicRRData` instance fields - not blocking)
 
-**Sorry-free files** (confirmed Cycle 262):
-- PlaceDegree.lean ✅ (Cycle 262 - removed unprovable uniformizer lemmas)
-- GapBoundGeneral.lean ✅ (Generalized gap bound)
-- P1RiemannRoch.lean ✅ (Full Riemann-Roch theorem)
+**Sorry-free files**:
+- PlaceDegree.lean ✅ (includes new uniformizer-generator relationship lemmas)
+- GapBoundGeneral.lean ✅
+- P1RiemannRoch.lean ✅
 - P1VanishingLKD.lean ✅
 - DimensionCore.lean ✅
-- AdelicH1Full.lean ✅
-- DimensionScratch.lean ✅
-- Place.lean ✅
-- DivisorV3.lean ✅
-- RRSpaceV3.lean ✅
-- P1Place.lean ✅
-- P1Canonical.lean ✅
 - All other SerreDuality files ✅
-
-6 dead-code lemmas in `RrLean/Archive/SorriedLemmas.lean`.
 
 ---
 
 ## Build Commands
 
 ```bash
-lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "sorryAx"
-lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axioms"
+lake build RrLean.RiemannRochV2.P1Instance.DimensionGeneral 2>&1 | tail -5
+grep -n "sorry" RrLean/RiemannRochV2/P1Instance/DimensionGeneral.lean
 ```
-
-**See also**: `state/PROOF_CHAIN.md` for the full import chain and verification details.
 
 ---
 
 ## Next Steps
 
-### Immediate: Fill remaining 2 sorries in DimensionGeneral.lean
+### Immediate: Fill `ell_ratfunc_projective_gap_eq` (Line 451)
 
-**Remaining sorries**:
+**Have**:
+- `h_le := ell_ratfunc_projective_gap_le_general k D v` (upper bound: gap ≤ deg(v))
+- `h_surj := evaluationMapAt_surj k v D hD` (evaluation map is surjective)
 
-1. ~~**hf_infty** (Line 226)~~ ✅ DONE (Cycle 264) - Used modByMonic approach
+**Need**: Prove gap = deg(v) using first isomorphism theorem
 
-2. **evaluation = c** (Line 307) - Complex residue field mechanics
-   - Need to trace: `f ↦ shiftedElement(f) → residue → bridge → c`
-   - f = q'_K / gen_K^n where q' = q %ₘ gen
-   - shiftedElement multiplies by uniformizer^{D(v)+1}
-   - Key insight: uniformizer and generator both have v-valuation exp(-1)
-   - May need lemma showing `uniformizerAt v` and `generator k v` differ by unit in valuation ring
+**Strategy**:
+1. Evaluation map φ : L(D+[v]) → κ(v) is surjective (h_surj)
+2. ker(φ) = L(D) (from kernel_evaluationMapAt_complete_proof)
+3. By first isomorphism: L(D+[v])/L(D) ≅ κ(v)
+4. dim(κ(v)) = deg(v) (from finrank_residueField_eq_degree)
+5. Therefore: ℓ(D+[v]) - ℓ(D) = deg(v)
 
-3. **gap_eq** (Line 330) - Standard dimension argument
-   - Surjectivity of ψ implies quotient ≅ κ(v)
-   - Use first isomorphism theorem: L(D+v)/ker(ψ) ≅ im(ψ) = κ(v)
-   - Combined with kernel = L(D) gives dim(quotient) = deg(v)
+**Key lemmas to use**:
+- `kernel_evaluationMapAt_complete_proof` - ker = range(inclusion)
+- `finrank_residueField_eq_degree` - dim(κ(v)) = deg(v)
+- `LinearMap.quotKerEquivOfSurjective` or similar for iso
 
-### Key Technical Insight (Confirmed)
+### Technical Context
 
-**Abstract uniformizer vs generator**: The abstract `uniformizerAt v` is defined as ANY element
-with v.intValuation = exp(-1). In k[X], this could be `gen * other_irreducible`, which belongs
-to multiple prime ideals. Therefore:
-- ❌ `uniformizerAt_not_mem_other_prime` is FALSE in general
-- ✅ `generator_not_mem_other_prime` is TRUE (generator is monic irreducible)
-- **Always use generator for coprimality arguments in k[X]**
-
-### Mathlib Lemma Discovery
-
-`HeightOneSpectrum.intValuation_singleton` provides a direct path to proving generator valuations:
-```lean
-theorem intValuation_singleton {r : R} (hr : r ≠ 0) (hv : v.asIdeal = Ideal.span {r}) :
-    v.intValuation r = exp (-1 : ℤ)
-```
-No type-peeling through `WithZero (Multiplicative ℤ)` needed!
+The evaluation map machinery is now fully functional:
+- `evaluationMapAt_complete` is an R-linear map L(D+[v]) → κ(v)
+- Kernel = L(D) (via inclusion)
+- Surjectivity proved via preimage construction with uniformizer adjustment
 
 ---
 
 ## Refactor Status
 
 **Phase**: 0 (Cleanup) - mostly complete
-**Docs created**: `INVENTORY_REPORT.md`, `REFACTOR_PLAN.md`
 **Next phase**: 1 (Complete incomplete infrastructure)
 
 See `REFACTOR_PLAN.md` for full roadmap.
 
 ---
 
-*For historical cycles 1-240, see `ledger_archive.md`*
+*For historical cycles 1-260, see `ledger_archive.md`*

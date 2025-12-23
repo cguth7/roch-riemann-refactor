@@ -112,18 +112,46 @@ theorem evaluationMapAt_surj (v : HeightOneSpectrum (Polynomial k))
     (D : DivisorV2 (Polynomial k)) (hD : D.Effective) :
     Function.Surjective (evaluationMapAt_complete (R := Polynomial k) (K := RatFunc k) v D) := by
   intro c
-  -- Step 1: Lift c ∈ κ(v) to a polynomial representative q
-  -- κ(v) ≅ k[X]/v.asIdeal via residueFieldAtPrime.linearEquiv
-  let c_quot := (residueFieldAtPrime.linearEquiv v).symm c
-  obtain ⟨q, hq⟩ := Ideal.Quotient.mk_surjective c_quot
-
-  -- Step 2: Construct candidate preimage f = q' / generator(v)^{D(v)+1}
-  -- Use q' = q %ₘ gen to ensure deg(q') < deg(gen), so noPoleAtInfinity holds
+  -- Step 0: Setup generator and exponent
   let gen := generator k v
   let n := D v + 1  -- The exponent
   have hgen_monic : gen.Monic := generator_monic k v
   have hgen_ne : gen ≠ 0 := (generator_irreducible k v).ne_zero
   have hgen_ne_one : gen ≠ 1 := (generator_irreducible k v).ne_one
+
+  -- Step 1: Compute the uniformizer/generator ratio w
+  -- The evaluation map uses uniformizerAt, but we construct using generator
+  -- uniformizerAt = gen * w where w = uniformizerQuotient
+  -- The evaluation of q'/gen^n equals [q'] * [w]^n, not just [q']
+  let w := uniformizerQuotient k v
+  have hw_ne : w ≠ 0 := uniformizerQuotient_ne_zero k v
+  have hw_not_mem : w ∉ v.asIdeal := uniformizerQuotient_not_mem_asIdeal k v
+
+  -- [w] in κ(v) is nonzero (hence invertible since κ(v) is a field)
+  let w_res : Polynomial k ⧸ v.asIdeal := Ideal.Quotient.mk v.asIdeal w
+  have hw_res_ne : w_res ≠ 0 := uniformizerQuotient_residue_ne_zero k v
+
+  -- Step 2: Adjust c by [w]^{-n} to compensate for the evaluation formula
+  -- We need c_adj such that c_adj * [w]^n = c, i.e., c_adj = c * [w]^{-n}
+  -- Work in k[X]/⟨gen⟩ which is a field
+  haveI : v.asIdeal.IsMaximal := v.isMaximal
+  let w_res_field := (residueFieldAtPrime.linearEquiv v).symm
+      ((residueFieldAtPrime.linearEquiv v) (w_res))
+  -- c as element of quotient
+  let c_quot := (residueFieldAtPrime.linearEquiv v).symm c
+  -- [w]^n in the quotient
+  let w_pow_n := w_res ^ n.toNat
+  have hw_pow_ne : w_pow_n ≠ 0 := pow_ne_zero n.toNat hw_res_ne
+  -- Inverse [w]^{-n} in the quotient (exists since quotient is a field)
+  -- The quotient by a maximal ideal is a field, so we can invert nonzero elements
+  letI : Field (Polynomial k ⧸ v.asIdeal) := Ideal.Quotient.field v.asIdeal
+  let w_pow_inv := w_pow_n⁻¹
+  have hw_pow_inv_spec : w_pow_n * w_pow_inv = 1 := mul_inv_cancel₀ hw_pow_ne
+  -- c_adj = c * [w]^{-n}
+  let c_adj := c_quot * w_pow_inv
+
+  -- Step 3: Lift c_adj to a polynomial q
+  obtain ⟨q, hq⟩ := Ideal.Quotient.mk_surjective c_adj
 
   -- q' = q %ₘ gen has deg(q') < deg(gen)
   let q' := q %ₘ gen
@@ -131,26 +159,26 @@ theorem evaluationMapAt_surj (v : HeightOneSpectrum (Polynomial k))
   -- Key: q and q' give the same element in the quotient κ(v) = k[X]/⟨gen⟩
   have hq'_quot : Ideal.Quotient.mk v.asIdeal q' = Ideal.Quotient.mk v.asIdeal q := by
     rw [Ideal.Quotient.eq]
-    -- q' - q = -(q - q') = -gen * (q /ₘ gen) ∈ ⟨gen⟩
-    -- From modByMonic_add_div: q %ₘ gen + gen * (q /ₘ gen) = q
     have hdiv : q' - q = -(gen * (q /ₘ gen)) := by
       have h := Polynomial.modByMonic_add_div q hgen_monic
-      -- h : q %ₘ gen + gen * (q /ₘ gen) = q
       calc q' - q = q %ₘ gen - q := rfl
         _ = q %ₘ gen - (q %ₘ gen + gen * (q /ₘ gen)) := by rw [h]
         _ = -(gen * (q /ₘ gen)) := by ring
     rw [hdiv, asIdeal_eq_span_generator k v, Ideal.neg_mem_iff]
-    -- Need to show gen * (q /ₘ gen) ∈ span{gen}
-    -- Use Ideal.mul_mem_right: a * c ∈ I if c ∈ I
     exact Ideal.mul_mem_right _ _ (Ideal.mem_span_singleton_self (generator k v))
 
-  -- Handle case where q' = 0 (which means gen | q, so c = 0)
+  -- Handle case where q' = 0
   by_cases hq'_zero : q' = 0
-  · -- If q' = 0, then gen | q, so q ∈ ideal, so c = 0
+  · -- If q' = 0, then c_adj = 0, so c * [w]^{-n} = 0, so c = 0
     use ⟨0, by simp [satisfiesValuationCondition, RRModuleV2_real]⟩
-    -- q' = 0 implies q ∈ ideal implies c_quot = 0
-    have hc_quot_zero : c_quot = 0 := by
+    have hc_adj_zero : c_adj = 0 := by
       rw [← hq, ← hq'_quot, hq'_zero, map_zero]
+    -- c_adj = c_quot * [w]^{-n} = 0 and [w]^{-n} ≠ 0, so c_quot = 0
+    have hc_quot_zero : c_quot = 0 := by
+      by_contra hne
+      have hinv_ne : w_pow_inv ≠ 0 := inv_ne_zero hw_pow_ne
+      have : c_adj ≠ 0 := mul_ne_zero hne hinv_ne
+      exact this hc_adj_zero
     have hc_zero : c = 0 := by
       rw [← (residueFieldAtPrime.linearEquiv v).apply_symm_apply c]
       simp only [c_quot, hc_quot_zero, map_zero]
@@ -302,9 +330,102 @@ theorem evaluationMapAt_surj (v : HeightOneSpectrum (Polynomial k))
     -- Step 6: Show evaluationMapAt_complete maps f to c
     use ⟨f, hf_affine⟩
     -- The evaluation is: f ↦ (f * π^n).residue → κ(v)
-    -- Since f = q/gen^n and π is a uniformizer, f*π^n = q * (π/gen)^n
-    -- The residue of this should give back [q] = c
-    sorry
+    -- Key: uniformizerAt = gen * w, so shiftedElement(f) = q' * w^n (a polynomial)
+    -- Then bridge_residue_algebraMap_clean gives [q' * w^n mod gen]
+    -- Which equals c_adj * w_pow_n = c * w_pow_inv * w_pow_n = c
+
+    -- Step 6.1: Compute shiftedElement(f) = q' * w^n as a polynomial
+    have hf_eq : f = q'_K / gen_K ^ n.toNat := rfl
+    let w_K := algebraMap (Polynomial k) (RatFunc k) w
+    have hw_K_ne : w_K ≠ 0 := RatFunc.algebraMap_ne_zero hw_ne
+
+    -- π = gen * w in k[X], so π_K = gen_K * w_K
+    have hpi_eq : algebraMap (Polynomial k) (RatFunc k) (uniformizerAt v) = gen_K * w_K := by
+      rw [uniformizerAt_eq_generator_mul_quotient k v, map_mul]
+
+    -- n = D v + 1 ≥ 1 (since D effective), so zpow = npow
+    have hn_pos : 0 < n := by
+      have : 0 ≤ D v := hD v
+      omega
+    have hn_toNat : n.toNat = n := Int.toNat_of_nonneg (le_of_lt hn_pos)
+
+    -- shiftedElement(f) = f * π^n = (q'/gen^n) * (gen * w)^n = q' * w^n
+    have hshift_eq : shiftedElement v D f = algebraMap (Polynomial k) (RatFunc k) (q' * w ^ n.toNat) := by
+      unfold shiftedElement
+      rw [hf_eq, hpi_eq]
+      have hgen_pow_ne : gen_K ^ n.toNat ≠ 0 := pow_ne_zero _ hgen_K_ne
+      -- Convert zpow to npow: (gen_K * w_K) ^ n = (gen_K * w_K) ^ n.toNat (since n > 0)
+      have hzpow_eq : (gen_K * w_K) ^ n = (gen_K * w_K) ^ n.toNat := by
+        conv_lhs => rw [← hn_toNat]
+        rfl
+      rw [hzpow_eq, mul_pow]
+      -- (q'_K / gen_K^n.toNat) * gen_K^n.toNat * w_K^n.toNat = q'_K * w_K^n.toNat
+      rw [← mul_assoc, div_mul_eq_mul_div, mul_div_assoc]
+      rw [div_self hgen_pow_ne, mul_one]
+      rw [map_mul, map_pow]
+
+    -- Step 6.2: Unfold evaluation map definition
+    -- evaluationMapAt_complete = evaluationMapAt_complete_clean
+    -- evaluationMapAt_complete_clean.toFun = evaluationFun_via_bridge_clean
+    -- evaluationFun_via_bridge_clean = bridge (residue (shiftedElement))
+    unfold evaluationMapAt_complete evaluationMapAt_complete_clean
+    simp only [LinearMap.coe_mk, AddHom.coe_mk]
+    unfold evaluationFun_via_bridge_clean
+
+    -- Step 6.3: Use bridge_residue_algebraMap_clean
+    -- The shifted element is algebraMap (q' * w^n), so residue+bridge gives [q' * w^n]
+    -- First, show that the subtype element equals the algebraMap form
+    have helem_eq : (⟨shiftedElement v D f, shiftedElement_mem_valuationRingAt v D ⟨f, hf_affine⟩⟩ :
+        valuationRingAt (R := Polynomial k) (K := RatFunc k) v) =
+        ⟨algebraMap (Polynomial k) (RatFunc k) (q' * w ^ n.toNat),
+          algebraMap_mem_valuationRingAt v (q' * w ^ n.toNat)⟩ := by
+      ext
+      exact hshift_eq
+
+    -- Now apply bridge_residue_algebraMap_clean with the polynomial
+    have heval : (residueFieldBridge_explicit_clean (R := Polynomial k) (K := RatFunc k) v)
+        ((valuationRingAt.residue (R := Polynomial k) (K := RatFunc k) v)
+          ⟨shiftedElement v D f, shiftedElement_mem_valuationRingAt v D ⟨f, hf_affine⟩⟩) =
+        algebraMap (Polynomial k) (residueFieldAtPrime (Polynomial k) v) (q' * w ^ n.toNat) := by
+      rw [helem_eq]
+      exact bridge_residue_algebraMap_clean v (q' * w ^ n.toNat)
+
+    simp only at heval ⊢
+    rw [heval]
+
+    -- Step 6.4: Simplify [q' * w^n] = [q'] * [w]^n = c_adj * w_pow_n
+    -- algebraMap p = linearEquiv [p] for polynomials
+    have hmap_eq : algebraMap (Polynomial k) (residueFieldAtPrime (Polynomial k) v) (q' * w ^ n.toNat) =
+        (residueFieldAtPrime.linearEquiv v) (Ideal.Quotient.mk v.asIdeal (q' * w ^ n.toNat)) := by
+      rfl
+
+    rw [hmap_eq]
+
+    -- [q' * w^n] = [q'] * [w]^n in k[X]/⟨gen⟩
+    have hquot_mul : Ideal.Quotient.mk v.asIdeal (q' * w ^ n.toNat) =
+        Ideal.Quotient.mk v.asIdeal q' * (Ideal.Quotient.mk v.asIdeal w) ^ n.toNat := by
+      rw [map_mul, map_pow]
+
+    rw [hquot_mul]
+
+    -- [q'] = c_adj and [w] = w_res, so [q'] * [w]^n = c_adj * w_pow_n
+    have hq'_eq : Ideal.Quotient.mk v.asIdeal q' = c_adj := by
+      rw [hq'_quot, hq]
+
+    have hw_eq : Ideal.Quotient.mk v.asIdeal w = w_res := rfl
+
+    rw [hq'_eq, hw_eq]
+
+    -- c_adj * w_pow_n = c_quot * w_pow_inv * w_pow_n = c_quot
+    have hprod : c_adj * w_pow_n = c_quot := by
+      unfold c_adj w_pow_n
+      rw [mul_assoc, mul_comm w_pow_inv _, hw_pow_inv_spec, mul_one]
+
+    rw [hprod]
+
+    -- c = linearEquiv c_quot = linearEquiv (linearEquiv.symm c)
+    -- This is apply_symm_apply
+    exact (residueFieldAtPrime.linearEquiv v).apply_symm_apply c
 
 /-! ## Tight Gap Bound
 

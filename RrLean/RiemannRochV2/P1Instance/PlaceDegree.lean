@@ -236,19 +236,96 @@ lemma generator_intValuation_at_self (v : HeightOneSpectrum (Polynomial k)) :
   have hspan := asIdeal_eq_span_generator k v
   exact v.intValuation_singleton hgen_ne hspan
 
-/-! ## Note on Abstract Uniformizers
+/-! ## Uniformizer-Generator Relationship
 
 The abstract `uniformizerAt v` from Infrastructure.lean is defined as ANY element with
-v.intValuation = exp(-1). In k[X], this could be `generator(v) * other_irreducible`,
-which has the correct v-valuation but may also belong to other primes w ≠ v.
+v.intValuation = exp(-1). In k[X], this could be `generator(v) * w` for some polynomial w
+coprime to gen. The following lemmas establish the relationship needed for the
+evaluation map surjectivity proof. -/
 
-Therefore, we CANNOT prove `uniformizerAt v ∉ w.asIdeal` for arbitrary w ≠ v.
-Instead, use the generator-based lemmas `generator_not_mem_other_prime` and
-`generator_intValuation_at_other_prime` which ARE proved above.
+/-- The uniformizer is in v.asIdeal (has valuation < 1). -/
+lemma uniformizerAt_mem_asIdeal (v : HeightOneSpectrum (Polynomial k)) :
+    uniformizerAt v ∈ v.asIdeal := by
+  rw [← v.intValuation_lt_one_iff_mem, uniformizerAt_val]
+  -- exp(-1) < exp(0) = 1
+  exact WithZero.exp_lt_exp.mpr (by norm_num : (-1 : ℤ) < 0)
 
-For the dimension formula in DimensionGeneral.lean, the surjectivity proof should
-construct preimages using generator directly, not the abstract uniformizer.
--/
+/-- The uniformizer is not in v.asIdeal² (has valuation exactly exp(-1), not exp(-2)). -/
+lemma uniformizerAt_not_mem_asIdeal_sq (v : HeightOneSpectrum (Polynomial k)) :
+    uniformizerAt v ∉ v.asIdeal ^ 2 := by
+  intro h
+  have hval := uniformizerAt_val v
+  -- If π ∈ v.asIdeal², then v(π) ≤ exp(-2)
+  have hval_le : v.intValuation (uniformizerAt v) ≤ WithZero.exp (-2 : ℤ) :=
+    (v.intValuation_le_pow_iff_mem (uniformizerAt v) 2).mpr h
+  rw [hval] at hval_le
+  -- exp(-1) ≤ exp(-2) is false since -1 > -2
+  have hcontra : (-1 : ℤ) ≤ -2 := WithZero.exp_le_exp.mp hval_le
+  omega
+
+/-- The generator divides the uniformizer in k[X]. -/
+lemma generator_dvd_uniformizerAt (v : HeightOneSpectrum (Polynomial k)) :
+    generator k v ∣ uniformizerAt v := by
+  have hmem := uniformizerAt_mem_asIdeal k v
+  rw [asIdeal_eq_span_generator k v, Ideal.mem_span_singleton] at hmem
+  exact hmem
+
+/-- The quotient w = uniformizerAt / generator (using polynomial division). -/
+noncomputable def uniformizerQuotient (v : HeightOneSpectrum (Polynomial k)) : Polynomial k :=
+  uniformizerAt v /ₘ generator k v
+
+/-- Key: uniformizerAt = generator * uniformizerQuotient. -/
+lemma uniformizerAt_eq_generator_mul_quotient (v : HeightOneSpectrum (Polynomial k)) :
+    uniformizerAt v = generator k v * uniformizerQuotient k v := by
+  have hmonic := generator_monic k v
+  have hdvd := generator_dvd_uniformizerAt k v
+  rw [uniformizerQuotient]
+  -- For monic divisor, p %ₘ d + d * (p /ₘ d) = p, and when d | p, p %ₘ d = 0
+  have hmod_zero : uniformizerAt v %ₘ generator k v = 0 := by
+    rw [Polynomial.modByMonic_eq_zero_iff_dvd hmonic]
+    exact hdvd
+  have hdiv := Polynomial.modByMonic_add_div (uniformizerAt v) hmonic
+  -- hdiv : uniformizerAt v %ₘ gen + gen * (uniformizerAt v /ₘ gen) = uniformizerAt v
+  rw [hmod_zero, zero_add] at hdiv
+  exact hdiv.symm
+
+/-- The quotient w is not in v.asIdeal (equivalently, gcd(w, gen) = 1). -/
+lemma uniformizerQuotient_not_mem_asIdeal (v : HeightOneSpectrum (Polynomial k)) :
+    uniformizerQuotient k v ∉ v.asIdeal := by
+  intro hw_mem
+  apply uniformizerAt_not_mem_asIdeal_sq k v
+  rw [uniformizerAt_eq_generator_mul_quotient k v]
+  -- gen * w ∈ v.asIdeal² when w ∈ v.asIdeal
+  rw [pow_two]
+  apply Ideal.mul_mem_mul
+  · rw [asIdeal_eq_span_generator k v]
+    exact Ideal.mem_span_singleton_self _
+  · exact hw_mem
+
+/-- The quotient w is nonzero. -/
+lemma uniformizerQuotient_ne_zero (v : HeightOneSpectrum (Polynomial k)) :
+    uniformizerQuotient k v ≠ 0 := by
+  intro hw_zero
+  have heq := uniformizerAt_eq_generator_mul_quotient k v
+  rw [hw_zero, mul_zero] at heq
+  exact uniformizerAt_ne_zero v heq
+
+/-- In K = RatFunc k, uniformizerAt / generator = uniformizerQuotient. -/
+lemma uniformizerAt_div_generator_eq_quotient (v : HeightOneSpectrum (Polynomial k)) :
+    algebraMap (Polynomial k) (RatFunc k) (uniformizerAt v) /
+    algebraMap (Polynomial k) (RatFunc k) (generator k v) =
+    algebraMap (Polynomial k) (RatFunc k) (uniformizerQuotient k v) := by
+  have hgen_ne : (generator k v) ≠ 0 := (generator_irreducible k v).ne_zero
+  have hgen_K_ne : algebraMap (Polynomial k) (RatFunc k) (generator k v) ≠ 0 :=
+    RatFunc.algebraMap_ne_zero hgen_ne
+  rw [uniformizerAt_eq_generator_mul_quotient k v, map_mul]
+  field_simp
+
+/-- The residue of uniformizerQuotient in κ(v) is nonzero (hence invertible). -/
+lemma uniformizerQuotient_residue_ne_zero (v : HeightOneSpectrum (Polynomial k)) :
+    Ideal.Quotient.mk v.asIdeal (uniformizerQuotient k v) ≠ 0 := by
+  rw [ne_eq, Ideal.Quotient.eq_zero_iff_mem]
+  exact uniformizerQuotient_not_mem_asIdeal k v
 
 end PlaceDegree
 
