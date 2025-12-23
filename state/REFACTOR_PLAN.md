@@ -372,19 +372,26 @@ Skipping for now - Phase 3 is more urgent due to Affine Trap discovery.
 | 253 | Define canonical divisor K = -2[∞] for P¹ | ✅ Done |
 | 254-255 | Prove L(K-D) = 0 for effective D (sorry-free!) | ✅ Done |
 
+### Phase 3.5: Surjectivity for Dimension Formula (Current)
+| Cycle | Task | Status |
+|-------|------|--------|
+| 256-261 | PlaceDegree + GapBoundGeneral + finiteness | ✅ Done |
+| 262 | PlaceDegree cleanup + evaluationMapAt_surj skeleton | ✅ Done |
+| 263+ | Fill surjectivity sorries (hf_affine, hf_infty, eval=c) | Pending |
+
 ### Phase 4: Residue Theorem
 | Cycle | Task |
 |-------|------|
-| 256-258 | Trace-compatible residues at higher-degree places |
-| 259-261 | Prove `residue_sum_eq_zero` for all places |
-| 262-264 | Wire residue pairing into Abstract.lean |
+| TBD | Trace-compatible residues at higher-degree places |
+| TBD | Prove `residue_sum_eq_zero` for all places |
+| TBD | Wire residue pairing into Abstract.lean |
 
 ### Phase 5: Cleanup
 | Cycle | Task |
 |-------|------|
-| 265 | Move remaining P¹ files to archive, update all imports |
+| TBD | Move remaining P¹ files to archive, update all imports |
 
-**Revised Total**: ~9 cycles remaining (Phase 4 + cleanup)
+**Current focus**: Fill `evaluationMapAt_surj` sorries to complete dimension formula
 
 ---
 
@@ -400,4 +407,4 @@ The refactor is complete when:
 
 ---
 
-*Plan created Cycle 241+. Updated Cycle 255: Phase 3 COMPLETE - P¹ projective infrastructure including L(K-D) vanishing now sorry-free.*
+*Plan created Cycle 241+. Updated Cycle 262: Phase 3 COMPLETE, Phase 3.5 (surjectivity) in progress.*

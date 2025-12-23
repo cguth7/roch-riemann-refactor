@@ -1,6 +1,6 @@
 # Playbook
 
-Strategic guide for formalizing Riemann-Roch. Updated Cycle 255.
+Strategic guide for formalizing Riemann-Roch. Updated Cycle 262.
 
 ---
 
@@ -303,6 +303,15 @@ Example: To show "v(f) ≤ 1 at all finite places ⟹ f is polynomial":
 
 The valuation API is designed for membership tests (`< 1 ↔ ∈ ideal`), not arithmetic.
 
+### Abstract Uniformizer vs Generator (Cycle 262 Lesson)
+In k[X], the abstract `uniformizerAt v` (from Infrastructure.lean) is ANY element with
+v.intValuation = exp(-1). This could be `generator(v) * other_irreducible`, which belongs
+to multiple prime ideals!
+
+- ❌ `uniformizerAt_not_mem_other_prime` is FALSE in general (unprovable)
+- ✅ `generator_not_mem_other_prime` is TRUE (monic irreducible)
+- **Rule**: Always use `generator` for coprimality arguments in k[X], not abstract uniformizer
+
 ---
 
 ## What's Proved (Milestones)
@@ -378,35 +387,31 @@ What was actually true:
 
 ---
 
-## Honest Sorry Audit (Cycle 255)
+## Honest Sorry Audit (Cycle 262)
 
-### Total: 3 sorries in non-archived code
+### Total: 8 sorries in non-archived code
+
+**DimensionGeneral.lean** (5 sorries) - surjectivity proof skeleton:
+| Line | What's needed |
+|------|---------------|
+| 132 | Zero case: q=0 ⟹ c=0 |
+| 145 | hf_affine: valuation bounds for f=q/gen^n |
+| 149 | hf_infty: no pole at infinity |
+| 159 | evaluation = c: trace through shiftedElement |
+| 182 | ell_ratfunc_projective_gap_eq (depends on surjectivity) |
 
 **Abstract.lean** (3 sorries) - placeholder `AdelicRRData` instance:
 | Line | Field | What's needed |
 |------|-------|---------------|
-| 199 | `h1_finite` | H¹ finiteness from compactness argument |
-| 200 | `ell_finite` | L(D) finiteness from RRSpace theory |
-| 202 | `h1_vanishing` | H¹ vanishing from strong approximation |
-
-**Note**: These sorries require connecting P¹ projective infrastructure to Abstract.lean.
-Phase 3 is now complete - next step is wiring the pieces together.
+| 199 | `h1_finite` | H¹ finiteness from compactness |
+| 200 | `ell_finite` | L(D) finiteness |
+| 202 | `h1_vanishing` | H¹ vanishing |
 
 ### Sorry-Free Files ✅
 
-| File | Status |
-|------|--------|
-| P1VanishingLKD.lean | ✅ Sorry-free (Cycle 255) - NEW! |
-| P1Canonical.lean | ✅ Sorry-free (Cycle 253) |
-| P1Place.lean | ✅ Sorry-free (Cycle 252) |
-| Place.lean | ✅ Sorry-free (Cycle 249) |
-| DivisorV3.lean | ✅ Sorry-free (Cycle 250) |
-| RRSpaceV3.lean | ✅ Sorry-free (Cycle 251) |
-| DimensionCore.lean | ✅ Sorry-free |
-| DimensionScratch.lean | ✅ Sorry-free |
-| AdelicH1Full.lean | ✅ Sorry-free |
-| All Core/ files | ✅ Sorry-free |
-| All Adelic/ files | ✅ Sorry-free |
+PlaceDegree, GapBoundGeneral, P1RiemannRoch, P1VanishingLKD, P1Canonical, P1Place,
+Place, DivisorV3, RRSpaceV3, DimensionCore, DimensionScratch, AdelicH1Full,
+all Core/ files, all Adelic/ files
 
 ### What's Actually Proved (no sorryAx)
 
