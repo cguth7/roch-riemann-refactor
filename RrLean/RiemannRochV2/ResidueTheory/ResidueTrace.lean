@@ -106,7 +106,28 @@ theorem trace_degree_one_eq (v : HeightOneSpectrum (Polynomial Fq))
     (hv : residueFieldDegree (k := Fq) v = 1) (x : Polynomial Fq ⧸ v.asIdeal) :
     ∃ (e : (Polynomial Fq ⧸ v.asIdeal) ≃ₐ[Fq] Fq),
       Algebra.trace Fq (Polynomial Fq ⧸ v.asIdeal) x = e x := by
-  sorry
+  -- v.asIdeal is prime and nonzero, hence maximal in a Dedekind domain
+  haveI hmax : v.asIdeal.IsMaximal := Ideal.IsPrime.isMaximal v.isPrime v.ne_bot
+  -- κ(v) is a field (since v.asIdeal is maximal)
+  letI : Field (Polynomial Fq ⧸ v.asIdeal) := Ideal.Quotient.field v.asIdeal
+  -- Any vector space over a field is free
+  haveI : Module.Free Fq (Polynomial Fq ⧸ v.asIdeal) := inferInstance
+  -- finrank = 1 implies ⊥ = ⊤ as subalgebras
+  have hbot_eq_top : (⊥ : Subalgebra Fq (Polynomial Fq ⧸ v.asIdeal)) = ⊤ :=
+    Subalgebra.bot_eq_top_of_finrank_eq_one hv
+  -- Build the isomorphism κ(v) ≃ₐ Fq by composing: κ(v) ≃ ⊤ ≃ ⊥ ≃ Fq
+  let e₁ : (Polynomial Fq ⧸ v.asIdeal) ≃ₐ[Fq] (⊤ : Subalgebra Fq (Polynomial Fq ⧸ v.asIdeal)) :=
+    Subalgebra.topEquiv.symm
+  let e₂ : (⊤ : Subalgebra Fq (Polynomial Fq ⧸ v.asIdeal)) ≃ₐ[Fq]
+           (⊥ : Subalgebra Fq (Polynomial Fq ⧸ v.asIdeal)) :=
+    Subalgebra.equivOfEq _ _ hbot_eq_top.symm
+  let e₃ : (⊥ : Subalgebra Fq (Polynomial Fq ⧸ v.asIdeal)) ≃ₐ[Fq] Fq :=
+    Algebra.botEquiv Fq (Polynomial Fq ⧸ v.asIdeal)
+  let e := e₁.trans (e₂.trans e₃)
+  -- Show trace = e via trace_eq_of_algEquiv and trace_self
+  refine ⟨e, ?_⟩
+  -- trace Fq κ(v) x = trace Fq Fq (e x) = e x
+  rw [← Algebra.trace_eq_of_algEquiv e x, Algebra.trace_self_apply]
 
 /-! ## P¹-Specific: Linear Places
 
