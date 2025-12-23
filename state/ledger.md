@@ -481,25 +481,28 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ### Removing `IsLinearPlaceSupport` - In Progress
 
-**Cycle 260 complete**: Finiteness instance filled, 2 sorries remain.
+**Cycle 261 in progress**: 3 sorries remain (1 in PlaceDegree, 2 in DimensionGeneral)
 
-**What's been done**:
-- ✅ PlaceDegree.degree - place degree infrastructure
-- ✅ PlaceDegree.degWeighted_neg, degWeighted_sub - arithmetic lemmas
-- ✅ GapBoundGeneral - gap ≤ deg(v) for arbitrary places
-- ✅ DimensionGeneral skeleton - induction structure
-- ✅ Helper lemmas: degWeighted_nonneg, effective_zero, exists_pos
-- ✅ **RRSpace_ratfunc_projective_effective_finite** - finiteness for all effective D
+**Key insight (Cycle 261)**:
+The abstract `uniformizerAt` (from Infrastructure.lean) is just "some element with v-valuation exp(-1)" - it might have other prime factors! For k[X] specifically, `generator` is cleaner because it's monic irreducible with known properties.
 
-**Immediate (Cycle 261)**: Fill remaining 2 sorries
+**Recommended approaches for `evaluationMapAt_surj`**:
 
-1. `evaluationMapAt_surj` (line 114) - construct q/generator(v)^{D(v)+1} preimages
-   - For any c ∈ κ(v), represented by polynomial q with deg(q) < deg(generator)
-   - The element q/generator(v)^{D(v)+1} ∈ L(D+[v]) and maps to c
+**Option A**: Fill the PlaceDegree sorry first
+- Prove `uniformizerAt | generator` using UFD/degree arguments
+- Both have v-valuation exp(-1), so π = u * generator for unit u
+- Then use the existing uniformizer lemmas
 
-2. `ell_ratfunc_projective_gap_eq` (line 137) - tight gap bound
-   - Upper bound: already have gap ≤ deg(v) from GapBoundGeneral
-   - Lower bound: surjectivity implies quotient ≅ κ(v), so gap = deg(v)
+**Option B**: Use `generator` directly (cleaner)
+- For surjectivity, construct preimages as `q / generator^{D(v)+1}`
+- Where q is a polynomial representative of c ∈ κ(v)
+- Generator has known properties: `generator_not_mem_other_prime`, `generator_intValuation_at_other_prime`
+- Avoids the tricky uniformizer-generator equivalence proof
+
+**Remaining sorries**:
+1. `PlaceDegree.lean:254` - `uniformizerAt_not_mem_other_prime` (π | generator in UFD)
+2. `DimensionGeneral.lean:114` - `evaluationMapAt_surj`
+3. `DimensionGeneral.lean:126` - `ell_ratfunc_projective_gap_eq`
 
 **After**: Update `riemann_roch_p1` to use degWeighted instead of deg
 
