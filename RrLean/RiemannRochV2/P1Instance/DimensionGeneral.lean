@@ -117,45 +117,64 @@ theorem evaluationMapAt_surj (v : HeightOneSpectrum (Polynomial k))
   let c_quot := (residueFieldAtPrime.linearEquiv v).symm c
   obtain ⟨q, hq⟩ := Ideal.Quotient.mk_surjective c_quot
 
-  -- Step 2: Construct candidate preimage f = q / generator(v)^{D(v)+1}
+  -- Step 2: Construct candidate preimage f = q' / generator(v)^{D(v)+1}
+  -- Use q' = q %ₘ gen to ensure deg(q') < deg(gen), so noPoleAtInfinity holds
   let gen := generator k v
   let n := D v + 1  -- The exponent
-  let q_K := algebraMap (Polynomial k) (RatFunc k) q
-  let gen_K := algebraMap (Polynomial k) (RatFunc k) gen
+  have hgen_monic : gen.Monic := generator_monic k v
+  have hgen_ne : gen ≠ 0 := (generator_irreducible k v).ne_zero
+  have hgen_ne_one : gen ≠ 1 := (generator_irreducible k v).ne_one
 
-  -- Handle case where q = 0
-  by_cases hq_zero : q = 0
-  · -- If q = 0, then c = 0, and evaluation of 0 is 0
+  -- q' = q %ₘ gen has deg(q') < deg(gen)
+  let q' := q %ₘ gen
+
+  -- Key: q and q' give the same element in the quotient κ(v) = k[X]/⟨gen⟩
+  have hq'_quot : Ideal.Quotient.mk v.asIdeal q' = Ideal.Quotient.mk v.asIdeal q := by
+    rw [Ideal.Quotient.eq]
+    -- q' - q = -(q - q') = -gen * (q /ₘ gen) ∈ ⟨gen⟩
+    -- From modByMonic_add_div: q %ₘ gen + gen * (q /ₘ gen) = q
+    have hdiv : q' - q = -(gen * (q /ₘ gen)) := by
+      have h := Polynomial.modByMonic_add_div q hgen_monic
+      -- h : q %ₘ gen + gen * (q /ₘ gen) = q
+      calc q' - q = q %ₘ gen - q := rfl
+        _ = q %ₘ gen - (q %ₘ gen + gen * (q /ₘ gen)) := by rw [h]
+        _ = -(gen * (q /ₘ gen)) := by ring
+    rw [hdiv, asIdeal_eq_span_generator k v, Ideal.neg_mem_iff]
+    -- Need to show gen * (q /ₘ gen) ∈ span{gen}
+    -- Use Ideal.mul_mem_right: a * c ∈ I if c ∈ I
+    exact Ideal.mul_mem_right _ _ (Ideal.mem_span_singleton_self (generator k v))
+
+  -- Handle case where q' = 0 (which means gen | q, so c = 0)
+  by_cases hq'_zero : q' = 0
+  · -- If q' = 0, then gen | q, so q ∈ ideal, so c = 0
     use ⟨0, by simp [satisfiesValuationCondition, RRModuleV2_real]⟩
-    -- q = 0 implies c_quot = 0 implies c = 0
-    -- evaluationMapAt_complete 0 = 0 = c
-    -- c_quot = Ideal.Quotient.mk v.asIdeal q = Ideal.Quotient.mk v.asIdeal 0 = 0
-    have hc_quot_zero : c_quot = 0 := by rw [← hq, hq_zero, map_zero]
-    -- c = residueFieldAtPrime.linearEquiv v c_quot = ... 0 = 0
+    -- q' = 0 implies q ∈ ideal implies c_quot = 0
+    have hc_quot_zero : c_quot = 0 := by
+      rw [← hq, ← hq'_quot, hq'_zero, map_zero]
     have hc_zero : c = 0 := by
       rw [← (residueFieldAtPrime.linearEquiv v).apply_symm_apply c]
       simp only [c_quot, hc_quot_zero, map_zero]
     rw [hc_zero]
-    -- evaluationMapAt_complete is linear, so map of 0 is 0
     exact (evaluationMapAt_complete v D).map_zero
 
-  -- Case q ≠ 0: construct f = q / gen^n
-  · have hgen_ne : gen ≠ 0 := (generator_irreducible k v).ne_zero
+  -- Case q' ≠ 0: construct f = q' / gen^n
+  · let q'_K := algebraMap (Polynomial k) (RatFunc k) q'
+    let gen_K := algebraMap (Polynomial k) (RatFunc k) gen
     have hgen_K_ne : gen_K ≠ 0 := RatFunc.algebraMap_ne_zero hgen_ne
 
-    -- f = q_K / gen_K^n
-    let f : RatFunc k := q_K / gen_K ^ n.toNat
+    -- f = q'_K / gen_K^n
+    let f : RatFunc k := q'_K / gen_K ^ n.toNat
 
     -- Step 3: Show f ∈ L(D+[v]) - the affine part (valuation conditions)
-    -- At v: v(f) = v(q)/v(gen^n) = 1/exp(-n) = exp(n) = exp(D(v)+1) ≤ exp((D+[v])(v)) ✓
-    -- At w ≠ v: w(f) = w(q)/w(gen^n) ≤ 1/1 = 1 ≤ exp(D(w)) for effective D ✓
+    -- At v: v(f) = v(q')/v(gen^n) = 1/exp(-n) = exp(n) = exp(D(v)+1) ≤ exp((D+[v])(v)) ✓
+    -- At w ≠ v: w(f) = w(q')/w(gen^n) ≤ 1/1 = 1 ≤ exp(D(w)) for effective D ✓
     have hf_affine : f ∈ RRModuleV2_real (Polynomial k) (RatFunc k) (D + DivisorV2.single v 1) := by
-      -- f ≠ 0 since q ≠ 0
+      -- f ≠ 0 since q' ≠ 0
       right
       intro w
-      -- Compute f = q_K / gen_K^n
+      -- Compute f = q'_K / gen_K^n
       have hgen_pow_ne : gen_K ^ n.toNat ≠ 0 := pow_ne_zero _ hgen_K_ne
-      -- val(f) = val(q) / val(gen^n)
+      -- val(f) = val(q') / val(gen^n)
       rw [map_div₀]
 
       by_cases hw : w = v
@@ -170,11 +189,11 @@ theorem evaluationMapAt_surj (v : HeightOneSpectrum (Polynomial k))
             WithZero.exp (-(n.toNat : ℤ)) := by
           rw [map_pow, hgen_val, ← WithZero.exp_nsmul]
           simp only [smul_neg, nsmul_eq_mul, mul_one]
-        -- v.val(q) ≤ 1 (q is a polynomial)
-        have hq_val_le : v.valuation (RatFunc k) q_K ≤ 1 := by
+        -- v.val(q') ≤ 1 (q' is a polynomial)
+        have hq'_val_le : v.valuation (RatFunc k) q'_K ≤ 1 := by
           rw [HeightOneSpectrum.valuation_of_algebraMap]
-          exact v.intValuation_le_one q
-        -- Goal: v.val(q)/v.val(gen^n) ≤ exp((D + [v])(v)) = exp(D(v) + 1) = exp(n)
+          exact v.intValuation_le_one q'
+        -- Goal: v.val(q')/v.val(gen^n) ≤ exp((D + [v])(v)) = exp(D(v) + 1) = exp(n)
         have hDv_eq : (D + DivisorV2.single v 1) v = n := by
           simp only [Finsupp.add_apply, DivisorV2.single, Finsupp.single_eq_same]
           ring
@@ -187,11 +206,11 @@ theorem evaluationMapAt_surj (v : HeightOneSpectrum (Polynomial k))
           congr 1
           rw [Int.toNat_of_nonneg hn_nn]
         rw [hexp_neg]
-        -- val(q)/exp(-n) ≤ exp(n) ↔ val(q) ≤ exp(n) * exp(-n) = exp(0) = 1
+        -- val(q')/exp(-n) ≤ exp(n) ↔ val(q') ≤ exp(n) * exp(-n) = exp(0) = 1
         have hexp_pos : 0 < WithZero.exp (-n) := WithZero.exp_pos
         rw [div_le_iff₀ hexp_pos]
-        calc v.valuation (RatFunc k) q_K
-            ≤ 1 := hq_val_le
+        calc v.valuation (RatFunc k) q'_K
+            ≤ 1 := hq'_val_le
           _ = WithZero.exp (0 : ℤ) := WithZero.exp_zero.symm
           _ = WithZero.exp (n + -n) := by ring_nf
           _ = WithZero.exp n * WithZero.exp (-n) := WithZero.exp_add n (-n)
@@ -204,11 +223,11 @@ theorem evaluationMapAt_surj (v : HeightOneSpectrum (Polynomial k))
         -- w.val(gen^n) = 1
         have hgen_pow_val_w : w.valuation (RatFunc k) (gen_K ^ n.toNat) = 1 := by
           rw [map_pow, hgen_val_w, one_pow]
-        -- w.val(q) ≤ 1
-        have hq_val_le_w : w.valuation (RatFunc k) q_K ≤ 1 := by
+        -- w.val(q') ≤ 1
+        have hq'_val_le_w : w.valuation (RatFunc k) q'_K ≤ 1 := by
           rw [HeightOneSpectrum.valuation_of_algebraMap]
-          exact w.intValuation_le_one q
-        -- Goal: w.val(q)/1 ≤ exp((D+[v])(w))
+          exact w.intValuation_le_one q'
+        -- Goal: w.val(q')/1 ≤ exp((D+[v])(w))
         have hDw_eq : (D + DivisorV2.single v 1) w = D w := by
           simp only [Finsupp.add_apply, DivisorV2.single, Finsupp.single_apply]
           rw [if_neg (Ne.symm hw)]
@@ -216,14 +235,66 @@ theorem evaluationMapAt_surj (v : HeightOneSpectrum (Polynomial k))
         rw [hDw_eq, hgen_pow_val_w, div_one]
         -- D w ≥ 0 since D is effective, so exp(D w) ≥ 1
         have hDw_nn : 0 ≤ D w := hD w
-        calc w.valuation (RatFunc k) q_K
-            ≤ 1 := hq_val_le_w
+        calc w.valuation (RatFunc k) q'_K
+            ≤ 1 := hq'_val_le_w
           _ = WithZero.exp (0 : ℤ) := WithZero.exp_zero.symm
           _ ≤ WithZero.exp (D w) := WithZero.exp_le_exp.mpr hDw_nn
 
     -- Step 4: Show f satisfies no pole at infinity (projective condition)
+    -- Key: deg(q') < deg(gen) ≤ deg(gen^n) for n ≥ 1, so intDegree(f) ≤ 0
     have hf_infty : f = 0 ∨ noPoleAtInfinity f := by
-      sorry
+      right
+      -- noPoleAtInfinity means intDegree ≤ 0
+      rw [noPoleAtInfinity_iff_intDegree_le_zero]
+      -- f = q'_K / gen_K^n
+      -- intDegree(f) = intDegree(q') - intDegree(gen^n)
+      have hq'_K_ne : q'_K ≠ 0 := RatFunc.algebraMap_ne_zero hq'_zero
+      have hgen_pow_K_ne : gen_K ^ n.toNat ≠ 0 := pow_ne_zero _ hgen_K_ne
+
+      -- intDegree(q') = natDegree(q') (polynomial)
+      have h_q'_deg : q'_K.intDegree = (q'.natDegree : ℤ) := RatFunc.intDegree_polynomial
+
+      -- intDegree(gen^n) = n.toNat * natDegree(gen)
+      have h_gen_pow_deg : (gen_K ^ n.toNat).intDegree = n.toNat * (gen.natDegree : ℤ) := by
+        induction n.toNat with
+        | zero => simp [RatFunc.intDegree_one]
+        | succ m ih =>
+          rw [pow_succ, RatFunc.intDegree_mul (pow_ne_zero m hgen_K_ne) hgen_K_ne,
+              ih, RatFunc.intDegree_polynomial]
+          simp only [Nat.cast_succ]
+          ring
+
+      -- intDegree(f) = intDegree(q' / gen^n) = intDegree(q') + intDegree((gen^n)⁻¹)
+      --             = intDegree(q') - intDegree(gen^n)
+      have h_f_deg : f.intDegree = q'_K.intDegree - (gen_K ^ n.toNat).intDegree := by
+        show (q'_K / gen_K ^ n.toNat).intDegree = _
+        rw [div_eq_mul_inv, RatFunc.intDegree_mul hq'_K_ne (inv_ne_zero hgen_pow_K_ne),
+            RatFunc.intDegree_inv]
+        ring
+
+      rw [h_f_deg, h_q'_deg, h_gen_pow_deg]
+      -- Goal: natDegree(q') - n.toNat * natDegree(gen) ≤ 0
+      -- i.e., natDegree(q') ≤ n.toNat * natDegree(gen)
+
+      -- natDegree(q') < natDegree(gen) since q' = q %ₘ gen with monic gen
+      have h_q'_lt : q'.natDegree < gen.natDegree :=
+        Polynomial.natDegree_modByMonic_lt q hgen_monic hgen_ne_one
+
+      -- n.toNat ≥ 1 since n = D v + 1 ≥ 1 (D effective means D v ≥ 0)
+      have hn_pos : 0 < n.toNat := by
+        have hDv_nn : 0 ≤ D v := hD v
+        -- n = D v + 1 ≥ 1 > 0, so n.toNat > 0
+        simp only [n, Int.lt_toNat, Int.ofNat_zero]
+        omega
+
+      -- n.toNat * natDegree(gen) ≥ natDegree(gen) ≥ natDegree(q') + 1 > natDegree(q')
+      have h_bound : q'.natDegree < n.toNat * gen.natDegree := by
+        calc q'.natDegree
+            < gen.natDegree := h_q'_lt
+          _ = 1 * gen.natDegree := (one_mul _).symm
+          _ ≤ n.toNat * gen.natDegree := Nat.mul_le_mul_right _ hn_pos
+
+      omega
 
     -- Step 5: Combine to get f ∈ RRSpace_ratfunc_projective
     let f_mem : RRSpace_ratfunc_projective (D + DivisorV2.single v 1) := ⟨f, hf_affine, hf_infty⟩

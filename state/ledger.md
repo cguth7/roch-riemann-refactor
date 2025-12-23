@@ -6,9 +6,9 @@ Tactical tracking for Riemann-Roch formalization.
 
 ## Current State
 
-**Build**: ✅ Compiles (3 sorries in DimensionGeneral.lean)
+**Build**: ✅ Compiles (2 sorries in DimensionGeneral.lean)
 **Result**: Riemann-Roch for P¹ (linear places) + Generalized gap bound + Finiteness for all effective D
-**Cycle**: 263 (In Progress)
+**Cycle**: 264 (In Progress)
 
 ---
 
@@ -49,29 +49,41 @@ Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more in
 
 ---
 
-## Cycle 263 Progress
+## Cycle 264 Progress
 
-**Task**: Prove `generator_intValuation_at_self` + fill remaining evaluationMapAt_surj sorries
+**Task**: Fill `hf_infty` sorry in evaluationMapAt_surj
 
-**Status**: ✅ Partial Success (4 → 3 sorries)
+**Status**: ✅ Complete (3 → 2 sorries)
+
+**Completed**:
+1. ✅ `hf_infty` - PROVED! (noPoleAtInfinity for f = q'/gen^n)
+   - Key insight: Use `q' = q %ₘ gen` (modByMonic) instead of original `q`
+   - Then `deg(q') < deg(gen) ≤ deg(gen^n)` for n ≥ 1
+   - This gives `intDegree(f) = deg(q') - deg(gen^n) < 0`, hence `noPoleAtInfinity f`
+   - Added proof that `q'` and `q` give same element in κ(v) (since `q - q' ∈ ⟨gen⟩`)
+
+**Remaining Sorries** (2):
+- Line 307: `evaluation = c` - Trace evaluation through residue field bridge
+- Line 330: `gap_eq` - Dimension equality from surjectivity
+
+**Technical details**:
+- `Polynomial.natDegree_modByMonic_lt` gives `q'.natDegree < gen.natDegree`
+- `RatFunc.intDegree_polynomial`, `RatFunc.intDegree_mul`, `RatFunc.intDegree_inv` for intDegree computation
+- `noPoleAtInfinity_iff_intDegree_le_zero` to convert condition
+
+---
+
+## Cycle 263 Summary
+
+**Task**: Prove `generator_intValuation_at_self` + `hf_affine`
+
+**Status**: ✅ Complete (4 → 3 sorries)
 
 **Completed**:
 1. ✅ `generator_intValuation_at_self` - PROVED using Mathlib's `intValuation_singleton`
 2. ✅ `hf_affine` - PROVED (valuation bounds for f = q/gen^n at all finite places)
-   - Key: Used `generator_intValuation_at_self` for v, `generator_intValuation_at_other_prime` for w≠v
-   - Technique: `map_div₀`, `WithZero.exp_nsmul`, `WithZero.exp_le_exp.mpr`
 
-**Remaining Sorries** (3):
-- Line 226: `hf_infty` - Need deg(q) ≤ deg(gen^n) via polynomial remainder
-- Line 236: `evaluation = c` - Trace evaluation through residue field bridge
-- Line 259: `gap_eq` - Dimension equality from surjectivity
-
-**Key Discovery**: The proof of `generator_intValuation_at_self` was much simpler than expected!
-Mathlib's `HeightOneSpectrum.intValuation_singleton` directly gives:
-```lean
-v.intValuation_singleton hgen_ne hspan  -- where hspan : v.asIdeal = span{gen}
-```
-No type-peeling required.
+**Key Discovery**: `HeightOneSpectrum.intValuation_singleton` directly gives valuation = exp(-1).
 
 ---
 
@@ -169,17 +181,17 @@ No type-peeling required.
 
 ## Sorries
 
-**6 sorries total** in non-archived code:
+**5 sorries total** in non-archived code:
 - `Abstract.lean`: 3 (placeholder `AdelicRRData` instance fields)
-- `DimensionGeneral.lean`: 3 (see breakdown below)
+- `DimensionGeneral.lean`: 2 (see breakdown below)
 
-**Files with sorries** (Cycle 263):
-- DimensionGeneral.lean: ⚠️ 3 sorries
+**Files with sorries** (Cycle 264):
+- DimensionGeneral.lean: ⚠️ 2 sorries
   - ~~Line 132: zero case~~ ✅ DONE (Cycle 262)
   - ~~Line 153: hf_affine~~ ✅ DONE (Cycle 263)
-  - Line 226: hf_infty (no pole at infinity - needs modByMonic)
-  - Line 236: evaluation equals c
-  - Line 259: ell_ratfunc_projective_gap_eq (follows from surjectivity)
+  - ~~Line 226: hf_infty~~ ✅ DONE (Cycle 264) - used modByMonic
+  - Line 307: evaluation equals c (residue field bridge)
+  - Line 330: ell_ratfunc_projective_gap_eq (follows from surjectivity)
 
 **Sorry-free files** (confirmed Cycle 262):
 - PlaceDegree.lean ✅ (Cycle 262 - removed unprovable uniformizer lemmas)
@@ -213,22 +225,23 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ## Next Steps
 
-### Immediate: Fill remaining 3 sorries in evaluationMapAt_surj
+### Immediate: Fill remaining 2 sorries in DimensionGeneral.lean
 
-**Blockers for remaining sorries**:
+**Remaining sorries**:
 
-1. **hf_infty** (Line 226) - Need to control polynomial degree
-   - Current `q` from `Ideal.Quotient.mk_surjective` has arbitrary degree
-   - Solution: Replace `q` with `q %ₘ gen` using `Polynomial.modByMonic`
-   - Then deg(q') < deg(gen) ≤ deg(gen^n), giving `noPoleAtInfinity`
+1. ~~**hf_infty** (Line 226)~~ ✅ DONE (Cycle 264) - Used modByMonic approach
 
-2. **evaluation = c** (Line 236) - Complex residue field mechanics
-   - Need to trace: `f ↦ (f * π^n).residue → κ(v) ↦ c`
-   - Key: Show that q/gen^n * (something with gen factors) gives back [q] in κ(v)
+2. **evaluation = c** (Line 307) - Complex residue field mechanics
+   - Need to trace: `f ↦ shiftedElement(f) → residue → bridge → c`
+   - f = q'_K / gen_K^n where q' = q %ₘ gen
+   - shiftedElement multiplies by uniformizer^{D(v)+1}
+   - Key insight: uniformizer and generator both have v-valuation exp(-1)
+   - May need lemma showing `uniformizerAt v` and `generator k v` differ by unit in valuation ring
 
-3. **gap_eq** (Line 259) - Standard dimension argument
+3. **gap_eq** (Line 330) - Standard dimension argument
    - Surjectivity of ψ implies quotient ≅ κ(v)
-   - Combined with injectivity gives dimension = deg(v)
+   - Use first isomorphism theorem: L(D+v)/ker(ψ) ≅ im(ψ) = κ(v)
+   - Combined with kernel = L(D) gives dim(quotient) = deg(v)
 
 ### Key Technical Insight (Confirmed)
 
