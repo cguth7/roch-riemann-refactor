@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization.
 
 **Build**: ✅ Compiles (0 sorries in main path)
 **Result**: Restricted P¹ Riemann-Roch (linear places only)
-**Cycle**: 254
+**Cycle**: 255
 
 ---
 
@@ -43,7 +43,53 @@ Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more in
 
 ---
 
-## Cycle 254 Summary
+## Cycle 255 Summary
+
+**Task**: Complete L(K-D) vanishing proof by filling the sorry in P1VanishingLKD.lean
+
+**Key insight**: The bottleneck was proving "v(f) ≤ 1 at all finite places ⟹ f is a polynomial".
+
+**Strategy** (suggested by Gemini):
+Instead of fighting `WithZero (Multiplicative ℤ)` arithmetic, work with polynomial structure:
+1. For f = num/denom (coprime, monic denom), if denom ≠ 1:
+2. Some irreducible q divides denom (UFD property)
+3. At the HeightOneSpectrum for q: v(denom) < 1 but v(num) = 1 (coprimality)
+4. So v(num) > v(denom), which means ¬(v(f) ≤ 1), contradiction
+
+**New lemmas added to P1VanishingLKD.lean**:
+```lean
+def heightOneSpectrum_of_prime (q : Polynomial K) (hprime : Prime q) :
+    HeightOneSpectrum (Polynomial K)
+
+theorem exists_valuation_not_le_one_of_denom_ne_one (f : RatFunc K) (hdenom : f.denom ≠ 1) :
+    ∃ v : HeightOneSpectrum (Polynomial K), ¬(v.valuation (RatFunc K) f ≤ 1)
+
+theorem denom_eq_one_of_valuation_le_one_forall (f : RatFunc K)
+    (hf : ∀ v : HeightOneSpectrum (Polynomial K), v.valuation (RatFunc K) f ≤ 1) :
+    f.denom = 1
+
+theorem eq_algebraMap_of_valuation_le_one_forall (f : RatFunc K)
+    (hf : ∀ v : HeightOneSpectrum (Polynomial K), v.valuation (RatFunc K) f ≤ 1) :
+    f = algebraMap (Polynomial K) (RatFunc K) f.num
+```
+
+**Main theorem now sorry-free**:
+```lean
+theorem RRSpaceV3_p1Canonical_sub_ofAffine_eq_zero
+    {D : DivisorV2 (Polynomial Fq)} (hD : D.Effective) :
+    RRSpaceV3 (Polynomial Fq) (RatFunc Fq) (p1Canonical Fq - DivisorV3.ofAffine D) = {0}
+```
+
+**Verification**:
+```bash
+lake build RrLean.RiemannRochV2.P1Instance.P1VanishingLKD  # ✅
+lake build RrLean.RiemannRochV2.SerreDuality.Smoke  # ✅ Still passes
+grep -n "sorry" RrLean/RiemannRochV2/P1Instance/P1VanishingLKD.lean  # (no output)
+```
+
+---
+
+## Cycle 254 Summary (Previous)
 
 **Task**: Prove L(K-D) vanishing for effective D on P¹
 
@@ -64,22 +110,6 @@ lemma p1InftyValuation_polynomial (p : Polynomial Fq) (hp : p ≠ 0) :
 lemma p1InftyValuation_polynomial_not_le_exp_neg2 (p : Polynomial Fq) (hp : p ≠ 0) :
     ¬ (p1InftyPlace Fq).valuation (algebraMap (Polynomial Fq) (RatFunc Fq) p) ≤
       WithZero.exp (-2 : ℤ)
-```
-
-**Main theorem structure** (1 sorry remaining):
-```lean
-theorem RRSpaceV3_p1Canonical_sub_ofAffine_eq_zero
-    {D : DivisorV2 (Polynomial Fq)} (hD : D.Effective) :
-    RRSpaceV3 (Polynomial Fq) (RatFunc Fq) (p1Canonical Fq - DivisorV3.ofAffine D) = {0}
-```
-
-The remaining sorry needs to show that elements with no finite poles are polynomials,
-which then contradicts the infinity condition v_∞(f) ≤ exp(-2).
-
-**Verification**:
-```bash
-lake build RrLean.RiemannRochV2.P1Instance.P1VanishingLKD  # ✅
-lake build RrLean.RiemannRochV2.SerreDuality.Smoke  # ✅ Still passes
 ```
 
 ---
@@ -453,11 +483,11 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "sorryAx"
 
 ## Sorries
 
-**4 sorries total** in non-archived code:
+**3 sorries total** in non-archived code:
 - `Abstract.lean`: 3 (placeholder `AdelicRRData` instance fields)
-- `P1VanishingLKD.lean`: 1 (polynomial characterization for vanishing proof)
 
-**Sorry-free files** (confirmed Cycle 254):
+**Sorry-free files** (confirmed Cycle 255):
+- P1VanishingLKD.lean ✅ (newly sorry-free!)
 - DimensionCore.lean ✅
 - AdelicH1Full.lean ✅
 - DimensionScratch.lean ✅
@@ -485,24 +515,28 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ## Next Steps
 
-### Immediate: Complete L(K-D) Vanishing Proof
+### L(K-D) Vanishing Complete! ✅
 
-**Cycle 254 complete**: Infrastructure for L(K-D) vanishing created.
+**Cycle 255 complete**: The L(K-D) vanishing proof is now sorry-free.
 
-**Cycle 255**: Fill the remaining sorry in `P1VanishingLKD.lean`
-- Need to prove: "elements with v(f) ≤ 1 at all finite places are polynomials"
-- This is a characterization of the image of Polynomial Fq → RatFunc Fq
-- Once proven, the contradiction v_∞(polynomial) ≥ 1 > exp(-2) completes the proof
+**What's proved**:
+```lean
+theorem ellV3_p1Canonical_sub_ofAffine_eq_zero
+    {D : DivisorV2 (Polynomial Fq)} (hD : D.Effective) :
+    ellV3 (k := Fq) (R := Polynomial Fq) (K := RatFunc Fq)
+      (p1Canonical Fq - DivisorV3.ofAffine D) = 0
+```
 
-**Key Mathlib API to investigate**:
-- `RatFunc.num_div_denom` - representation as num/denom
-- `HeightOneSpectrum.valuation_le_one` - elements in valuation ring
-- Localization properties for Dedekind domains
+This gives ℓ(K-D) = 0 for effective divisors D on P¹ - the Serre duality ingredient.
 
-**Context**: Completing this proof gives ℓ(K-D) = 0 for effective D on P¹,
-which is the last ingredient for Riemann-Roch via Serre duality.
+### Next: Full Riemann-Roch Assembly
 
-**After Phase 3**: Abstract.lean sorries become fillable for all projective curves.
+**Cycle 256**: Connect the pieces into Riemann-Roch for P¹
+- Have: ℓ(D) = deg(D) + 1 for effective D with linear support
+- Have: ℓ(K-D) = 0 for effective D
+- Need: Assemble into ℓ(D) - ℓ(K-D) = deg(D) + 1 - g for all D (with g = 0)
+
+**After**: Abstract.lean sorries become fillable once we connect P¹ to projective infrastructure.
 
 ---
 

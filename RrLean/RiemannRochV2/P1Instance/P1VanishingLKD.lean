@@ -45,6 +45,7 @@ So for K-D with K = -2[∞]:
 import RrLean.RiemannRochV2.P1Instance.P1Canonical
 import RrLean.RiemannRochV2.Core.RRSpaceV3
 import Mathlib.NumberTheory.FunctionField
+import Mathlib.RingTheory.UniqueFactorizationDomain.Basic
 
 noncomputable section
 
@@ -52,6 +53,87 @@ open IsDedekindDomain
 open scoped Polynomial
 
 namespace RiemannRochV2
+
+/-! ## Polynomial Characterization via Valuations
+
+Key lemma: if f ∈ RatFunc K has v(f) ≤ 1 at all finite places, then f is a polynomial.
+
+The proof uses:
+1. f = num/denom with coprime monic denom
+2. If denom ≠ 1, some irreducible q divides denom
+3. At the HeightOneSpectrum for q: v(denom) < 1 but v(num) = 1 (coprimality)
+4. So v(f) = v(num)/v(denom) > 1, contradiction
+-/
+
+variable {K : Type*} [Field K]
+
+/-- Construct a HeightOneSpectrum from a prime polynomial. -/
+def heightOneSpectrum_of_prime (q : Polynomial K) (hprime : Prime q) :
+    HeightOneSpectrum (Polynomial K) :=
+  { asIdeal := Ideal.span {q}
+    isPrime := (Ideal.span_singleton_prime hprime.ne_zero).mpr hprime
+    ne_bot := by rw [ne_eq, Ideal.span_singleton_eq_bot]; exact hprime.ne_zero }
+
+/-- v(f) ≤ 1 iff v(num) ≤ v(denom) for f = num/denom. -/
+lemma valuation_le_one_iff_intValuation_le (f : RatFunc K)
+    (v : HeightOneSpectrum (Polynomial K)) :
+    v.valuation (RatFunc K) f ≤ 1 ↔ v.intValuation f.num ≤ v.intValuation f.denom := by
+  conv_lhs => rw [(RatFunc.num_div_denom f).symm]
+  rw [Valuation.map_div]
+  simp only [HeightOneSpectrum.valuation_of_algebraMap]
+  have hpos : 0 < v.intValuation f.denom := by
+    rw [WithZero.pos_iff_ne_zero]
+    exact HeightOneSpectrum.intValuation_ne_zero v f.denom (RatFunc.denom_ne_zero f)
+  exact div_le_one₀ hpos
+
+/-- If denom ≠ 1, there exists a finite place where v(f) > 1. -/
+theorem exists_valuation_not_le_one_of_denom_ne_one (f : RatFunc K) (hdenom : f.denom ≠ 1) :
+    ∃ v : HeightOneSpectrum (Polynomial K), ¬(v.valuation (RatFunc K) f ≤ 1) := by
+  have hmonic : f.denom.Monic := RatFunc.monic_denom f
+  have hne_zero : f.denom ≠ 0 := RatFunc.denom_ne_zero f
+  have h_not_unit : ¬IsUnit f.denom := fun hu => hdenom (hmonic.eq_one_of_isUnit hu)
+  obtain ⟨q, hq_irr, hq_dvd⟩ := WfDvdMonoid.exists_irreducible_factor h_not_unit hne_zero
+  have hq_prime : Prime q := UniqueFactorizationMonoid.irreducible_iff_prime.mp hq_irr
+  let v := heightOneSpectrum_of_prime q hq_prime
+  use v
+  rw [valuation_le_one_iff_intValuation_le]
+  have hdenom_lt : v.intValuation f.denom < 1 := by
+    rw [HeightOneSpectrum.intValuation_lt_one_iff_mem]
+    show f.denom ∈ (heightOneSpectrum_of_prime q hq_prime).asIdeal
+    simp only [heightOneSpectrum_of_prime, Ideal.mem_span_singleton]
+    exact hq_dvd
+  have hcop : IsCoprime f.num f.denom := RatFunc.isCoprime_num_denom f
+  have hnum_not_mem : f.num ∉ v.asIdeal := by
+    show f.num ∉ (heightOneSpectrum_of_prime q hq_prime).asIdeal
+    simp only [heightOneSpectrum_of_prime, Ideal.mem_span_singleton]
+    intro hq_dvd_num
+    exact hq_prime.not_unit (hcop.isUnit_of_dvd' hq_dvd_num hq_dvd)
+  have hnum_eq : v.intValuation f.num = 1 := by
+    have hle := HeightOneSpectrum.intValuation_le_one v f.num
+    have hlt_iff := HeightOneSpectrum.intValuation_lt_one_iff_mem v f.num
+    exact le_antisymm hle (le_of_not_lt (fun hlt => hnum_not_mem (hlt_iff.mp hlt)))
+  rw [hnum_eq]
+  exact not_le_of_gt hdenom_lt
+
+/-- If v(f) ≤ 1 at all finite places, then f.denom = 1. -/
+theorem denom_eq_one_of_valuation_le_one_forall (f : RatFunc K)
+    (hf : ∀ v : HeightOneSpectrum (Polynomial K), v.valuation (RatFunc K) f ≤ 1) :
+    f.denom = 1 := by
+  by_contra hdenom
+  obtain ⟨v, hv⟩ := exists_valuation_not_le_one_of_denom_ne_one f hdenom
+  exact hv (hf v)
+
+/-- If v(f) ≤ 1 at all finite places, then f = algebraMap(f.num). -/
+theorem eq_algebraMap_of_valuation_le_one_forall (f : RatFunc K)
+    (hf : ∀ v : HeightOneSpectrum (Polynomial K), v.valuation (RatFunc K) f ≤ 1) :
+    f = algebraMap (Polynomial K) (RatFunc K) f.num := by
+  have hdenom : f.denom = 1 := denom_eq_one_of_valuation_le_one_forall f hf
+  have := RatFunc.num_div_denom f
+  rw [hdenom] at this
+  simp only [map_one, div_one] at this
+  exact this.symm
+
+/-! ## P¹-Specific Lemmas -/
 
 variable (Fq : Type*) [Field Fq] [Fintype Fq] [DecidableEq Fq]
 
@@ -183,16 +265,40 @@ theorem RRSpaceV3_p1Canonical_sub_ofAffine_eq_zero
     rw [h_coeff] at hf_inf
     -- So (p1InftyPlace Fq).valuation f ≤ exp(-2)
 
-    -- The finite conditions: at each v, v(f) ≤ exp(-D(v)) ≤ exp(0) = 1
-    -- since D is effective means D(v) ≥ 0 at finite places
+    -- Step 1: Show v(f) ≤ 1 at all finite places
+    -- At finite v: v(f) ≤ exp((K-D)(v)) = exp(-D(v)) ≤ exp(0) = 1 since D effective
+    have hf_fin_le_one : ∀ v : HeightOneSpectrum (Polynomial Fq),
+        v.valuation (RatFunc Fq) f ≤ 1 := by
+      intro v
+      have hfv := hf_fin v
+      -- (K-D)(finite v) = 0 - D(v) = -D(v)
+      have h_coeff_fin : (p1Canonical Fq - DivisorV3.ofAffine (K := RatFunc Fq) D)
+          (Place.finite v) = -D v := by
+        simp only [Finsupp.coe_sub, Pi.sub_apply]
+        rw [p1Canonical_at_finite]
+        simp only [DivisorV3.ofAffine, Finsupp.mapDomain_apply Place.finite_injective, zero_sub]
+      rw [h_coeff_fin] at hfv
+      -- D(v) ≥ 0 since D effective
+      have hDv_nonneg : 0 ≤ D v := hD v
+      -- exp(-D(v)) ≤ exp(0) = 1
+      have h_exp_le : WithZero.exp (-D v) ≤ 1 := by
+        have h1 : (1 : WithZero (Multiplicative ℤ)) = WithZero.exp 0 := by
+          simp only [WithZero.exp, ofAdd_zero]; rfl
+        rw [h1, WithZero.exp_le_exp]
+        omega
+      exact le_trans hfv h_exp_le
 
-    -- This proof requires showing that:
-    -- 1. f having v(f) ≤ 1 at all finite places means f is a "polynomial"
-    -- 2. A "polynomial" cannot have v_∞(f) ≤ exp(-2) (ord_∞ ≥ 2)
+    -- Step 2: f is a polynomial (f = algebraMap(f.num))
+    have hf_poly : f = algebraMap (Polynomial Fq) (RatFunc Fq) f.num :=
+      eq_algebraMap_of_valuation_le_one_forall f hf_fin_le_one
 
-    -- For now, we leave this as sorry - it requires the characterization
-    -- that elements with no finite poles are exactly the polynomials
-    sorry
+    -- Step 3: Polynomials cannot satisfy v_∞(f) ≤ exp(-2)
+    have hf_num_ne : f.num ≠ 0 := by
+      intro h
+      apply hf_ne
+      rw [hf_poly, h, map_zero]
+    rw [hf_poly] at hf_inf
+    exact p1InftyValuation_polynomial_not_le_exp_neg2 Fq f.num hf_num_ne hf_inf
 
   · -- If f = 0, then f ∈ L(K-D)
     intro hf

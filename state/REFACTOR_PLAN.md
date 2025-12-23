@@ -196,16 +196,28 @@ def RRModuleV3 [ConstantsValuationBound k R K] (D : DivisorV3 R K) : Submodule k
 **Key insight**: Elements of R have valuation > 1 at infinity, so projective L(D)
 is a k-module, not an R-module.
 
-### 3.4 Connect to P¹ Instance - TODO (Cycle 252)
+### 3.4 Connect to P¹ Instance - ✅ DONE (Cycle 252)
 
-- Define `inftyPlace : InfinitePlace (RatFunc Fq)` using `FunctionField.inftyValuation`
-- Create `HasInfinitePlaces` instance for P¹
-- Prove `ConstantsValuationBound Fq (Polynomial Fq) (RatFunc Fq)`
+**File**: `RrLean/RiemannRochV2/P1Instance/P1Place.lean`
 
-### 3.5 Define Canonical Divisor - TODO (Cycle 253)
+- `p1InftyPlace : InfinitePlace (RatFunc Fq)` using `FunctionField.inftyValuation`
+- `instHasInfinitePlacesP1` instance for P¹
+- `instConstantsValuationBoundP1` for Fq constants
 
-- Define `canonical : DivisorV3 (Polynomial Fq) (RatFunc Fq)` as `-2 • singleInfinite inftyPlace 1`
-- Connect to existing `differentIdeal` if applicable
+### 3.5 Define Canonical Divisor - ✅ DONE (Cycle 253)
+
+**File**: `RrLean/RiemannRochV2/P1Instance/P1Canonical.lean`
+
+- `p1Canonical : DivisorV3 Fq[X] (RatFunc Fq)` = -2[∞]
+- Key lemmas: `deg_p1Canonical = -2`, `p1_genus_formula`
+
+### 3.6 L(K-D) Vanishing - ✅ DONE (Cycles 254-255)
+
+**File**: `RrLean/RiemannRochV2/P1Instance/P1VanishingLKD.lean`
+
+- `RRSpaceV3_p1Canonical_sub_ofAffine_eq_zero`: L(K-D) = {0} for effective D
+- `ellV3_p1Canonical_sub_ofAffine_eq_zero`: ℓ(K-D) = 0 for effective D
+- Key helper: `eq_algebraMap_of_valuation_le_one_forall` - characterizes polynomials via valuations
 
 ---
 
@@ -350,15 +362,15 @@ lake build RrLean.RiemannRochV2.SerreDuality.Abstract 2>&1 | grep "sorryAx"
 ### Phase 2: Extract P¹ Instances - DEFERRED
 Skipping for now - Phase 3 is more urgent due to Affine Trap discovery.
 
-### Phase 3: Place Type - 🔴 IN PROGRESS
+### Phase 3: Place Type - ✅ COMPLETE (Cycles 249-255)
 | Cycle | Task | Status |
 |-------|------|--------|
 | 249 | Define `Place` inductive type + basic API | ✅ Done |
 | 250 | Create `DivisorV3` with Place-based divisors | ✅ Done |
 | 251 | Create `RRSpaceV3` with projective L(D) | ✅ Done |
-| 252 | Connect to P¹: `inftyPlace`, `ConstantsValuationBound` instance | |
-| 253 | Define canonical divisor -2[∞] for P¹ | |
-| 254-255 | Update Abstract.lean to use new Place-based types | |
+| 252 | Connect to P¹: `inftyPlace`, `ConstantsValuationBound` instance | ✅ Done |
+| 253 | Define canonical divisor K = -2[∞] for P¹ | ✅ Done |
+| 254-255 | Prove L(K-D) = 0 for effective D (sorry-free!) | ✅ Done |
 
 ### Phase 4: Residue Theorem
 | Cycle | Task |
@@ -372,7 +384,7 @@ Skipping for now - Phase 3 is more urgent due to Affine Trap discovery.
 |-------|------|
 | 265 | Move remaining P¹ files to archive, update all imports |
 
-**Revised Total**: ~13 cycles remaining (from 252)
+**Revised Total**: ~9 cycles remaining (Phase 4 + cleanup)
 
 ---
 
@@ -388,4 +400,4 @@ The refactor is complete when:
 
 ---
 
-*Plan created Cycle 241+. Updated Cycle 251 with Phase 3 progress (Place, DivisorV3, RRSpaceV3 complete).*
+*Plan created Cycle 241+. Updated Cycle 255: Phase 3 COMPLETE - P¹ projective infrastructure including L(K-D) vanishing now sorry-free.*

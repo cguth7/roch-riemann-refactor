@@ -1,6 +1,6 @@
 # Playbook
 
-Strategic guide for formalizing Riemann-Roch. Updated Cycle 251.
+Strategic guide for formalizing Riemann-Roch. Updated Cycle 255.
 
 ---
 
@@ -292,6 +292,17 @@ Avoid constructing uniformizers manually. The moment you say "find π with v(π)
 ### Reframing Rule
 If a "converse" lemma is hard, check if there's a higher-level equivalence giving both directions for free.
 
+### WithZero Valuation Anti-Pattern (Cycle 255 Lesson)
+When proving properties about valuations in `WithZero (Multiplicative ℤ)`:
+- **DON'T**: Try to compute with valuation outputs (division, inverse inequalities)
+- **DO**: Work with polynomial structure (num/denom, coprimality, divisibility)
+
+Example: To show "v(f) ≤ 1 at all finite places ⟹ f is polynomial":
+- Bad: Try to prove `1/v(denom) > 1` when `v(denom) < 1` using WithZero lemmas
+- Good: Use `IsCoprime`, `WfDvdMonoid.exists_irreducible_factor`, and `intValuation_lt_one_iff_mem`
+
+The valuation API is designed for membership tests (`< 1 ↔ ∈ ideal`), not arithmetic.
+
 ---
 
 ## What's Proved (Milestones)
@@ -312,23 +323,22 @@ lemma riemann_inequality_affine [BaseDim R K] {D : DivisorV2 R} (hD : D.Effectiv
 - Weak approximation
 - Cycles 76-155
 
-### Phase 3: Projective Framework - IN PROGRESS (Cycle 251)
+### Phase 3: Projective Framework - ✅ COMPLETE (Cycle 255)
 
-**Status**: Building infrastructure for projective Riemann-Roch (all places, not just finite).
+**Status**: P¹ projective infrastructure complete and sorry-free.
 
-**Completed** (Cycles 249-251):
+**Completed** (Cycles 249-255):
 - `Place.lean` ✅ - Unified Place type (finite + infinite)
 - `DivisorV3.lean` ✅ - Projective divisors over all places
 - `RRSpaceV3.lean` ✅ - Projective L(D) as k-module
-- P¹ files: DimensionCore, DimensionScratch, AdelicH1Full all sorry-free
+- `P1Place.lean` ✅ - P¹ infinite place and ConstantsValuationBound
+- `P1Canonical.lean` ✅ - Canonical divisor K = -2[∞]
+- `P1VanishingLKD.lean` ✅ - L(K-D) = 0 for effective D
 
 **Key Discovery** (Cycle 248): The "Affine Trap" - `HeightOneSpectrum R` only gives
 finite places. Projective RR requires adding infinite places. See REFACTOR_PLAN.md.
 
-**Remaining** (Cycles 252+):
-- Connect P¹ to new Place-based infrastructure
-- Define canonical divisor K = -2[∞] for P¹
-- Fill Abstract.lean sorries with projective types
+**Next**: Wire P¹ projective infrastructure into Abstract.lean to fill remaining sorries.
 
 ---
 
@@ -368,7 +378,7 @@ What was actually true:
 
 ---
 
-## Honest Sorry Audit (Cycle 251)
+## Honest Sorry Audit (Cycle 255)
 
 ### Total: 3 sorries in non-archived code
 
@@ -379,13 +389,16 @@ What was actually true:
 | 200 | `ell_finite` | L(D) finiteness from RRSpace theory |
 | 202 | `h1_vanishing` | H¹ vanishing from strong approximation |
 
-**Note**: These sorries CANNOT be filled with current affine-only infrastructure.
-Requires Phase 3 completion (Place type + projective L(D)).
+**Note**: These sorries require connecting P¹ projective infrastructure to Abstract.lean.
+Phase 3 is now complete - next step is wiring the pieces together.
 
 ### Sorry-Free Files ✅
 
 | File | Status |
 |------|--------|
+| P1VanishingLKD.lean | ✅ Sorry-free (Cycle 255) - NEW! |
+| P1Canonical.lean | ✅ Sorry-free (Cycle 253) |
+| P1Place.lean | ✅ Sorry-free (Cycle 252) |
 | Place.lean | ✅ Sorry-free (Cycle 249) |
 | DivisorV3.lean | ✅ Sorry-free (Cycle 250) |
 | RRSpaceV3.lean | ✅ Sorry-free (Cycle 251) |
@@ -402,7 +415,8 @@ Requires Phase 3 completion (Place type + projective L(D)).
 - ✅ `ell_ratfunc_projective_gap_le` - ℓ(D+[v]) ≤ ℓ(D) + 1
 - ✅ `inv_X_sub_C_pow_mem_projective` - explicit elements in L(D)
 - ✅ `inv_X_sub_C_pow_not_mem_projective_smaller` - strict inclusion
-- ✅ `ell_canonical_sub_zero` - ℓ(K-D) = 0 for deg(D) ≥ -1
+- ✅ `ellV3_p1Canonical_sub_ofAffine_eq_zero` - ℓ(K-D) = 0 for effective D on P¹ (NEW Cycle 255!)
+- ✅ `eq_algebraMap_of_valuation_le_one_forall` - polynomial characterization via valuations
 
 ### What's Proved Modulo DimensionCore Sorries
 
