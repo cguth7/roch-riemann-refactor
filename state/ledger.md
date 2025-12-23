@@ -38,20 +38,23 @@ Key results:
 
 **Task**: Fill `tracedResidueAtPlace_eq_residueAt_linear` sorry
 
-**Status**: 🔄 Partial progress
+**Status**: 🔄 Major progress - LHS complete, RHS has 1 sorry
 
 **Key Achievements**:
-1. **Proved no-pole case** - When f has no pole at α, both sides are 0
+1. **Proved no-pole case** ✅ - When f has no pole at α, both sides are 0
    - Uses `tracedResidueAtPlace_eq_zero_of_no_pole` for LHS
    - Shows translateBy α f has unit denominator → PowerSeries → no X⁻¹ coeff
 
-**Remaining sorry** (1 in ResidueTrace.lean:552):
-- Simple pole case: When f has a simple pole at α, need to show both sides equal num(α)/cofactor(α)
-- **Blockers identified**:
-  - `simp only [linearPlace_residueField_equiv]` makes no progress (definition not simp lemma)
-  - Need Field instance on quotient for `map_inv` on units
-  - Goal/hypothesis mismatch with `map_div₀` and `map_mul` at different algebraMap levels
-  - The commented proof sketch (lines 553-783) has the right structure but needs fixing
+2. **Proved simple pole case LHS** ✅ - Traced residue = num(α) / cofactor(α)
+   - Established Field instance on quotient ring for inverse operations
+   - Proved `he'_eval`: any AlgEquiv from 1-dim quotient acts as evaluation at α
+   - Key insight: `p mod (X - C α) ≡ C(p(α))`, so `e'(mk p) = p.eval α`
+   - Showed `e'(num_res * cofactor_res⁻¹) = num(α) * cofactor(α)⁻¹`
+
+**Remaining sorry** (1 in ResidueTrace.lean:693):
+- RHS computation: `residueAt α f = num(α) / cofactor(α)` via Laurent series
+- This is a straightforward but lengthy calculation showing the X⁻¹ coefficient equals num(α)/cofactor(α)
+- The mathematical structure is correct; just needs cleanup of rewrite chains
 
 **Build**: ✅ Passes with 1 sorry in ResidueTrace.lean
 
@@ -168,9 +171,11 @@ Key results:
 
 **0 sorries in P1Instance/** - All P¹ Riemann-Roch proofs complete!
 
-**1 sorry in ResidueTrace.lean:471** (new higher-degree residue code):
-- `tracedResidueAtPlace_eq_residueAt_linear`: Connect new definition to standard residue at linear places
-  (Mathematical equivalence of two computational approaches - proof sketch in docstring)
+**1 sorry in ResidueTrace.lean:693** (higher-degree residue code):
+- `tracedResidueAtPlace_eq_residueAt_linear`: RHS Laurent series computation
+  - LHS (traced residue = num(α)/cofactor(α)) is fully proved ✅
+  - RHS (residueAt = num(α)/cofactor(α)) needs Laurent series cleanup
+  - The mathematical structure is complete; sorry is a technical cleanup
 
 **Abstract.lean**: 3 sorries (placeholder `AdelicRRData` instance fields - not blocking)
 
@@ -196,21 +201,18 @@ grep -n "sorry" RrLean/RiemannRochV2/P1Instance/DimensionGeneral.lean
 
 ## Next Steps
 
-### Cycle 269 (continued): Fill simple pole case
+### Cycle 269 (continued): Clean up RHS computation
 
 **Immediate**:
-- Fill `tracedResidueAtPlace_eq_residueAt_linear` simple pole case (ResidueTrace.lean:552)
-- **No-pole case is DONE** ✅
-- Simple pole case strategy:
-  1. Show `e' = e` where `e = linearPlace_residueField_equiv` (both are AlgEquivs κ(v) → Fq)
-  2. Show `e'(num_res * cofactor_res⁻¹) = num(α) / cofactor(α)`
-  3. Show `residueAt α f = num(α) / cofactor(α)` via Laurent series computation
+- Clean up the Laurent series computation for `residueAt α f = num(α) / cofactor(α)`
+- This is a technical cleanup - the mathematical structure is complete
+- The sorry at line 693 just needs careful handling of rewrite chains
 
-**Blockers for simple pole case**:
-- `simp only [linearPlace_residueField_equiv]` doesn't work (need explicit unfolding or @[simp] lemma)
-- Need Field instance on quotient for `map_inv`
-- Goal/hypothesis mismatch: `map (a / b)` vs `(map a) / (map b)` at nested algebraMap levels
-- Commented proof sketch (lines 553-783) has right structure but many tactical errors
+**Completed in this cycle**:
+- ✅ No-pole case proved
+- ✅ Simple pole LHS: `trace(local_res) = num(α) / cofactor(α)`
+- ✅ Key lemma `he'_eval`: any AlgEquiv from 1-dim quotient acts as evaluation at α
+- ✅ Field instance and unit inverse handling
 
 ### Cycle 270+ Options:
 
