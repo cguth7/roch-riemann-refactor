@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization.
 
 **Build**: ✅ Compiles (0 sorries in P1Instance)
 **Result**: Riemann-Roch for P¹ (all effective divisors) + General dimension formula ℓ(D) = degWeighted(D) + 1
-**Cycle**: 266 (Complete)
+**Cycle**: 267 (In Progress)
 
 ---
 
@@ -31,6 +31,38 @@ Key results:
 - **ℓ(D) = degWeighted(D) + 1** for ALL effective D (any places, any degrees)
 - **ℓ(K-D) = 0** for effective D on P¹
 - **g = 0** (genus of P¹)
+
+---
+
+## Cycle 267 Summary
+
+**Task**: Implement Trace Maps for Higher-Degree Places
+
+**Status**: 🔄 In Progress (framework established)
+
+**Key Achievement**: Created `ResidueTheory/ResidueTrace.lean` with traced residue infrastructure
+
+**New definitions**:
+- `residueField_algebra`: κ(v) = R/v as a k-algebra
+- `residueFieldDegree`: The degree [κ(v) : k] of a finite place
+- `isRationalPlace`: Predicate for degree-1 places
+- `linearPlace`: HeightOneSpectrum for (X - α)
+- `linearPlace_residueField_equiv`: κ(linear place) ≅ Fq
+- `linearPlace_degree_eq_one`: Linear places have degree 1
+- `traceToBase`: Algebra.trace κ(v) k
+- `residueAtLinearTraced`: Traced residue at linear place
+- `tracedResidueSum`: Sum of traced residues over a subset
+
+**Key theorems proved**:
+- `linearPlace_isRational`: Linear places are rational (degree 1)
+- `linearPlace_finiteDimensional`: κ(linear place) is finite-dimensional
+- `residueAtLinearTraced_add/smul`: Linearity of traced residue
+- `residue_sum_traced_eq_zero_P1`: Global residue theorem with traces (uses split denominator hypothesis)
+
+**Remaining sorries (1)**:
+- `trace_degree_one_eq`: For degree-1 places, trace = identity (deferred, not blocking)
+
+**Build**: ✅ Passes with 1 minor sorry
 
 ---
 
@@ -97,28 +129,21 @@ grep -n "sorry" RrLean/RiemannRochV2/P1Instance/DimensionGeneral.lean
 
 ## Next Steps
 
-### Cycle 267: Implement Trace Maps for Higher-Degree Places
+### Continue Cycle 267: Complete Trace Infrastructure
 
-**Goal**: Extend residue theory from linear places (deg 1) to all finite places (any degree).
+**Goal**: Finish traced residue theory and wire into Abstract.lean
 
-**Why**: P¹ only has linear places, but elliptic/hyperelliptic curves have higher-degree places.
-The current `residueAtLinear` only works for (X - α). For irreducible p(X) of degree d > 1,
-we need `Tr_{κ(v)/k}(local residue)` to get a value in the base field k.
+**Completed**:
+- ✅ Created `ResidueTrace.lean` with trace infrastructure
+- ✅ Proved `linearPlace_degree_eq_one` and `linearPlace_residueField_equiv`
+- ✅ Proved `residue_sum_traced_eq_zero_P1` (global residue theorem with traces)
 
-**Immediate task**: Create `ResidueTrace.lean` with:
-```lean
-/-- Residue at finite place v, traced to base field k. -/
-def residueAtFiniteTraced (k : Type*) [Field k] (v : HeightOneSpectrum R) (f : K) : k :=
-  Algebra.trace (κ v) k (localResidue v f)
-```
+**Remaining tasks**:
+1. Fill `trace_degree_one_eq` sorry (prove trace is identity for degree-1 extensions)
+2. Define residue for higher-degree places (p-adic Laurent expansion + trace)
+3. Wire into `Abstract.lean` to fill the 3 remaining AdelicRRData sorries
 
-**Key Mathlib imports**:
-- `Algebra.Trace` - trace map
-- `RingTheory.DedekindDomain.Ideal` - residue field κ(v) = R/v
-
-**Success criteria**: `residue_sum_eq_zero` proved for ALL finite places (not just linear).
-
-**After**: Wire into `Abstract.lean` to fill the 3 remaining sorries.
+**Key insight**: For P¹ over Fq, ALL finite places are linear (degree 1), so traced residue = regular residue. The trace infrastructure becomes essential only for elliptic/hyperelliptic curves.
 
 ---
 
