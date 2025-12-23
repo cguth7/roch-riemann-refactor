@@ -5359,3 +5359,54 @@ theorem exists_translate_in_integralFullAdeles : ...
 ### Cycle 181-178 - Residue theorem & partial fractions
 - residueSumTotal_splits ✅, isCoprime_X_sub_of_ne ✅
 
+
+---
+
+## Cycles 241-252 (Phase 3: Projective Infrastructure)
+
+### Cycle 252 - P1Place.lean created ✅
+- Connected P¹ to Place infrastructure with `p1InftyPlace`, `instHasInfinitePlacesP1`
+- Refactored `ConstantsValuationBound` to only check registered infinite places
+
+### Cycle 251 - RRSpaceV3.lean created ✅
+- Projective L(D) as `Submodule k K` (over base field, not coordinate ring)
+- Key: `satisfiesValuationConditionV3`, `RRModuleV3`, `ellV3`
+
+### Cycle 250 - DivisorV3.lean created ✅
+- Projective divisors: `abbrev DivisorV3 := Place R K →₀ ℤ`
+- `ofAffine` embedding from DivisorV2 to DivisorV3
+
+### Cycle 249 - Place.lean created ✅
+- Unified Place type: `inductive Place | finite | infinite`
+- `InfinitePlace` structure with valuation and degree
+
+### Cycle 248 - "Affine Trap" discovery 🔍
+- Abstract.lean sorries are in docstring template, not actual code
+- Critical insight: `HeightOneSpectrum R` = finite places only
+- Phase 3 (Place type) required for projective RR
+
+### Cycle 247 - AdelicH1Full.lean sorry-free ✅
+- Fixed `RRSpace_proj_ext` degree sorries
+- `intDegree_add_le`, `intDegree_mul` used
+
+### Cycle 246 - RRSpace_proj_ext carrier fixed ✅
+- Wrong inequality direction fixed: `v(f) ≤ exp(D(v))`
+- Added `f = 0 ∨ ...` pattern for zero handling
+
+### Cycle 245 - SerreDuality reorganization 🔧
+- Created `General/` subfolder (Abstract.lean, AdelicH1Full.lean)
+- Moved `DimensionCore.lean` → `P1Specific/`
+
+### Cycle 244 - Major folder reorganization 🔧
+- Created Core/, Adelic/, Definitions/, Dimension/, ResidueTheory/, Support/, P1Instance/
+- 28 files moved to 7 subfolders
+
+### Cycle 243 - AdelicH1Full scalar mult sorries fixed ✅
+- `smul_mem_boundedSubset_full`, `smul_mem_globalSubset_full`
+
+### Cycle 242 - SerreDuality P1Specific subfolder 🔧
+- Moved RatFuncPairing.lean, DimensionScratch.lean, RatFuncFullRR.lean
+
+### Cycle 241 - Dead-code cleanup ✅
+- Moved 6 sorried lemmas to Archive/SorriedLemmas.lean
+- Build fully clean
