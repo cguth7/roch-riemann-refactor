@@ -111,7 +111,52 @@ This is the key lemma for proving the tight gap bound.
 theorem evaluationMapAt_surj (v : HeightOneSpectrum (Polynomial k))
     (D : DivisorV2 (Polynomial k)) (hD : D.Effective) :
     Function.Surjective (evaluationMapAt_complete (R := Polynomial k) (K := RatFunc k) v D) := by
-  sorry
+  intro c
+  -- Step 1: Lift c ∈ κ(v) to a polynomial representative q
+  -- κ(v) ≅ k[X]/v.asIdeal via residueFieldAtPrime.linearEquiv
+  let c_quot := (residueFieldAtPrime.linearEquiv v).symm c
+  obtain ⟨q, hq⟩ := Ideal.Quotient.mk_surjective c_quot
+
+  -- Step 2: Construct candidate preimage f = q / generator(v)^{D(v)+1}
+  let gen := generator k v
+  let n := D v + 1  -- The exponent
+  let q_K := algebraMap (Polynomial k) (RatFunc k) q
+  let gen_K := algebraMap (Polynomial k) (RatFunc k) gen
+
+  -- Handle case where q = 0
+  by_cases hq_zero : q = 0
+  · -- If q = 0, then c = 0, and evaluation of 0 is 0
+    use ⟨0, by simp [satisfiesValuationCondition, RRModuleV2_real]⟩
+    -- q = 0 implies c_quot = 0 implies c = 0
+    -- evaluationMapAt_complete 0 = 0 = c
+    sorry
+
+  -- Case q ≠ 0: construct f = q / gen^n
+  · have hgen_ne : gen ≠ 0 := (generator_irreducible k v).ne_zero
+    have hgen_K_ne : gen_K ≠ 0 := RatFunc.algebraMap_ne_zero hgen_ne
+
+    -- f = q_K / gen_K^n
+    let f : RatFunc k := q_K / gen_K ^ n.toNat
+
+    -- Step 3: Show f ∈ L(D+[v]) - the affine part (valuation conditions)
+    -- At v: v(f) = v(q)/v(gen^n) = 1/exp(-n) = exp(n) = exp(D(v)+1) ≤ exp((D+[v])(v)) ✓
+    -- At w ≠ v: w(f) = w(q)/w(gen^n) ≤ 1/1 = 1 ≤ exp(D(w)) for effective D ✓
+    have hf_affine : f ∈ RRModuleV2_real (Polynomial k) (RatFunc k) (D + DivisorV2.single v 1) := by
+      sorry
+
+    -- Step 4: Show f satisfies no pole at infinity (projective condition)
+    have hf_infty : f = 0 ∨ noPoleAtInfinity f := by
+      sorry
+
+    -- Step 5: Combine to get f ∈ RRSpace_ratfunc_projective
+    let f_mem : RRSpace_ratfunc_projective (D + DivisorV2.single v 1) := ⟨f, hf_affine, hf_infty⟩
+
+    -- Step 6: Show evaluationMapAt_complete maps f to c
+    use ⟨f, hf_affine⟩
+    -- The evaluation is: f ↦ (f * π^n).residue → κ(v)
+    -- Since f = q/gen^n and π is a uniformizer, f*π^n = q * (π/gen)^n
+    -- The residue of this should give back [q] = c
+    sorry
 
 /-! ## Tight Gap Bound
 

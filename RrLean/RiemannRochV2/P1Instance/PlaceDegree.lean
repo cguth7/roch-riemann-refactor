@@ -225,50 +225,19 @@ lemma generator_intValuation_at_other_prime (v w : HeightOneSpectrum (Polynomial
   rw [HeightOneSpectrum.intValuation_eq_one_iff]
   exact generator_not_mem_other_prime k v w hw
 
-/-- The uniformizer at v is not in w.asIdeal for w ≠ v.
+/-! ## Note on Abstract Uniformizers
 
-Key insight: uniformizer π has intValuation = exp(-1) at v, meaning π ∈ v.asIdeal \ v.asIdeal².
-Since π and generator(v) both have v-valuation exp(-1), they're associates.
-Associates have the same ideal membership, so π ∈ w.asIdeal iff generator(v) ∈ w.asIdeal.
-But generator(v) ∉ w.asIdeal for w ≠ v (by generator_not_mem_other_prime). -/
-lemma uniformizerAt_not_mem_other_prime (v w : HeightOneSpectrum (Polynomial k))
-    (hw : w ≠ v) : uniformizerAt v ∉ w.asIdeal := by
-  intro hπ_mem_w
-  -- π ∈ v.asIdeal (with valuation exp(-1))
-  have hπ_mem_v : uniformizerAt v ∈ v.asIdeal := by
-    have hval := uniformizerAt_val v
-    rw [← v.intValuation_lt_one_iff_mem, hval]
-    exact WithZero.exp_lt_exp.mpr (by omega : (-1 : ℤ) < 0)
+The abstract `uniformizerAt v` from Infrastructure.lean is defined as ANY element with
+v.intValuation = exp(-1). In k[X], this could be `generator(v) * other_irreducible`,
+which has the correct v-valuation but may also belong to other primes w ≠ v.
 
-  -- Both π and generator(v) have v-valuation exp(-1), so they generate the same ideal
-  -- In a PID, this means they're associates
-  have hspan_π : Ideal.span {uniformizerAt v} = v.asIdeal := by
-    apply le_antisymm
-    · exact Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hπ_mem_v)
-    · -- Use that both have the same v-valuation
-      rw [asIdeal_eq_span_generator k v, Ideal.span_singleton_le_span_singleton]
-      -- Need: π | generator(v)
-      -- This follows from both having v-val exp(-1) in a UFD
-      -- In k[X], valuation exp(-1) means exactly one factor of the prime
-      -- So π = u * generator(v) for some unit u, hence generator(v) | π and π | generator(v)
-      sorry
+Therefore, we CANNOT prove `uniformizerAt v ∉ w.asIdeal` for arbitrary w ≠ v.
+Instead, use the generator-based lemmas `generator_not_mem_other_prime` and
+`generator_intValuation_at_other_prime` which ARE proved above.
 
-  have hassoc : Associated (uniformizerAt v) (generator k v) := by
-    rw [← Ideal.span_singleton_eq_span_singleton, hspan_π, asIdeal_eq_span_generator k v]
-
-  -- hu : uniformizerAt v * u = generator k v for some unit u
-  obtain ⟨u, hu⟩ := hassoc
-  have hgen_mem_w : generator k v ∈ w.asIdeal := by
-    rw [← hu]
-    exact w.asIdeal.mul_mem_right (u : Polynomial k) hπ_mem_w
-
-  exact generator_not_mem_other_prime k v w hw hgen_mem_w
-
-/-- The uniformizer at v has intValuation 1 at primes w ≠ v. -/
-lemma uniformizerAt_intValuation_at_other_prime (v w : HeightOneSpectrum (Polynomial k))
-    (hw : w ≠ v) : w.intValuation (uniformizerAt v) = 1 := by
-  rw [HeightOneSpectrum.intValuation_eq_one_iff]
-  exact uniformizerAt_not_mem_other_prime k v w hw
+For the dimension formula in DimensionGeneral.lean, the surjectivity proof should
+construct preimages using generator directly, not the abstract uniformizer.
+-/
 
 end PlaceDegree
 
