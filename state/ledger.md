@@ -6,9 +6,9 @@ Tactical tracking for Riemann-Roch formalization.
 
 ## Current State
 
-**Build**: ✅ Compiles (0 sorries in P1Instance, 0 sorries in ResidueTheory)
-**Result**: Riemann-Roch for P¹ (all effective divisors) + General dimension formula ℓ(D) = degWeighted(D) + 1
-**Cycle**: 267 (Complete)
+**Build**: ✅ Compiles (0 sorries in P1Instance, 1 sorry in ResidueTrace.lean)
+**Result**: Riemann-Roch for P¹ (all effective divisors) + Higher-degree residue infrastructure
+**Cycle**: 268 (In Progress)
 
 ---
 
@@ -31,6 +31,44 @@ Key results:
 - **ℓ(D) = degWeighted(D) + 1** for ALL effective D (any places, any degrees)
 - **ℓ(K-D) = 0** for effective D on P¹
 - **g = 0** (genus of P¹)
+
+---
+
+## Cycle 268 Summary
+
+**Task**: Define Local & Traced Residues at Arbitrary Places (Phase 4)
+
+**Status**: 🔄 In Progress
+
+**Key Achievements**:
+1. Extended `ResidueTrace.lean` with higher-degree place residue infrastructure
+2. Defined `localResidueAtPlace` - local residue in κ(v) for simple poles
+3. Defined `tracedResidueAtPlace` - traced residue Tr_{κ(v)/k}(local_res) ∈ k
+
+**New definitions**:
+- `hasPoleAt v f`: Whether f has a pole at place v
+- `hasSimplePoleAt v f`: Whether f has a simple pole (p | denom, p² ∤ denom)
+- `denomCofactor v f`: The coprime cofactor q where denom = gen · q
+- `localResidueAtPlace v f`: Local residue in κ(v) = (num · q⁻¹) mod gen
+- `tracedResidueAtPlace v f`: Tr_{κ(v)/k}(localResidueAtPlace v f)
+
+**Key lemmas proved**:
+- `residueField_finiteDimensional`: κ(v) is finite-dimensional over k
+- `finrank_residueField_eq_placeDegree`: dim κ(v) = deg(v)
+- `denomCofactor_ne_zero`: Cofactor is nonzero for poles
+- `denomCofactor_not_mem_asIdeal`: Cofactor residue is nonzero in κ(v)
+- `denomCofactor_residue_isUnit`: Cofactor residue is invertible in κ(v)
+- `localResidueAtPlace_eq_zero_of_no_pole`: No pole → residue = 0
+- `tracedResidueAtPlace_eq_zero_of_no_pole`: No pole → traced residue = 0
+
+**Remaining sorry** (1 in ResidueTrace.lean):
+- `tracedResidueAtPlace_eq_residueAt_linear`: Connect new definition to existing linear place residue
+  (Mathematical fact - proof connects two equivalent computational approaches)
+
+**Filled this cycle**:
+- `denomCofactor_coprime`: Proved gcd(gen, cofactor) = 1 for simple poles
+
+**Build**: ✅ Passes with 1 sorry in new code
 
 ---
 
@@ -110,12 +148,13 @@ Key results:
 
 **0 sorries in P1Instance/** - All P¹ Riemann-Roch proofs complete!
 
-**0 sorries in ResidueTheory/** - All residue theory proofs complete!
+**1 sorry in ResidueTrace.lean:471** (new higher-degree residue code):
+- `tracedResidueAtPlace_eq_residueAt_linear`: Connect new definition to standard residue at linear places
+  (Mathematical equivalence of two computational approaches - proof sketch in docstring)
 
 **Abstract.lean**: 3 sorries (placeholder `AdelicRRData` instance fields - not blocking)
 
 **Sorry-free files**:
-- ResidueTrace.lean ✅ (includes `trace_degree_one_eq`)
 - DimensionGeneral.lean ✅ (includes `evaluationMapAt_surj_projective`, `ell_ratfunc_projective_gap_eq`)
 - PlaceDegree.lean ✅ (includes uniformizer-generator relationship lemmas)
 - GapBoundGeneral.lean ✅
@@ -137,14 +176,18 @@ grep -n "sorry" RrLean/RiemannRochV2/P1Instance/DimensionGeneral.lean
 
 ## Next Steps
 
-### Cycle 268: Higher-Degree Residues or New Curve Instances
+### Cycle 268 Remaining: Fill Last Sorry
 
-**Options for next cycle**:
+**Immediate**:
+- Fill `tracedResidueAtPlace_eq_residueAt_linear`: Prove equivalence of computational approaches
+  (May require careful proof connecting Laurent coefficients to partial fraction formula)
 
-1. **Define residue for higher-degree places** (Phase 4)
-   - p-adic Laurent expansion at degree-d places
-   - Trace Tr_{κ(v)/k} to get values in base field k
-   - Extend `residue_sum_traced_eq_zero_P1` to all places
+### Cycle 269 Options:
+
+1. **Extend to higher-order poles** (Phase 4 continuation)
+   - Current code only handles simple poles
+   - Need partial fraction expansion for arbitrary pole orders
+   - Prove global residue theorem for all places
 
 2. **Wire residue pairing into Abstract.lean**
    - Replace placeholder `serrePairing := 0` with actual residue sum
