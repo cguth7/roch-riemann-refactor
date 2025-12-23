@@ -1,6 +1,6 @@
 # Playbook
 
-Strategic guide for formalizing Riemann-Roch. Updated Cycle 247.
+Strategic guide for formalizing Riemann-Roch. Updated Cycle 251.
 
 ---
 
@@ -312,18 +312,23 @@ lemma riemann_inequality_affine [BaseDim R K] {D : DivisorV2 R} (hD : D.Effectiv
 - Weak approximation
 - Cycles 76-155
 
-### Phase 3: P¹ Instance - NEARLY COMPLETE (Cycle 247)
+### Phase 3: Projective Framework - IN PROGRESS (Cycle 251)
 
-**Status**: Build compiles. All P¹-specific files are **sorry-free**!
+**Status**: Building infrastructure for projective Riemann-Roch (all places, not just finite).
 
-**Completed**:
-- DimensionCore.lean ✅ sorry-free
-- DimensionScratch.lean ✅ sorry-free
-- AdelicH1Full.lean ✅ sorry-free (Cycle 247)
-- Strong approximation for RatFunc Fq
-- Residue computations at linear places
+**Completed** (Cycles 249-251):
+- `Place.lean` ✅ - Unified Place type (finite + infinite)
+- `DivisorV3.lean` ✅ - Projective divisors over all places
+- `RRSpaceV3.lean` ✅ - Projective L(D) as k-module
+- P¹ files: DimensionCore, DimensionScratch, AdelicH1Full all sorry-free
 
-**Remaining**: 3 sorries in Abstract.lean (curve-agnostic `AdelicRRData` placeholders)
+**Key Discovery** (Cycle 248): The "Affine Trap" - `HeightOneSpectrum R` only gives
+finite places. Projective RR requires adding infinite places. See REFACTOR_PLAN.md.
+
+**Remaining** (Cycles 252+):
+- Connect P¹ to new Place-based infrastructure
+- Define canonical divisor K = -2[∞] for P¹
+- Fill Abstract.lean sorries with projective types
 
 ---
 
@@ -363,7 +368,7 @@ What was actually true:
 
 ---
 
-## Honest Sorry Audit (Cycle 247)
+## Honest Sorry Audit (Cycle 251)
 
 ### Total: 3 sorries in non-archived code
 
@@ -374,15 +379,19 @@ What was actually true:
 | 200 | `ell_finite` | L(D) finiteness from RRSpace theory |
 | 202 | `h1_vanishing` | H¹ vanishing from strong approximation |
 
+**Note**: These sorries CANNOT be filled with current affine-only infrastructure.
+Requires Phase 3 completion (Place type + projective L(D)).
+
 ### Sorry-Free Files ✅
 
 | File | Status |
 |------|--------|
+| Place.lean | ✅ Sorry-free (Cycle 249) |
+| DivisorV3.lean | ✅ Sorry-free (Cycle 250) |
+| RRSpaceV3.lean | ✅ Sorry-free (Cycle 251) |
 | DimensionCore.lean | ✅ Sorry-free |
 | DimensionScratch.lean | ✅ Sorry-free |
-| AdelicH1Full.lean | ✅ Sorry-free (Cycle 247) |
-| RatFuncPairing.lean | ✅ Sorry-free |
-| RatFuncResidues.lean | ✅ Sorry-free |
+| AdelicH1Full.lean | ✅ Sorry-free |
 | All Core/ files | ✅ Sorry-free |
 | All Adelic/ files | ✅ Sorry-free |
 

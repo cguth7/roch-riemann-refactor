@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization.
 
 **Build**: ✅ Compiles (0 sorries in main path)
 **Result**: Restricted P¹ Riemann-Roch (linear places only)
-**Cycle**: 250
+**Cycle**: 251
 
 ---
 
@@ -43,7 +43,44 @@ Full P¹ RR is mathematically trivial - the "vibe coding" methodology is more in
 
 ---
 
-## Cycle 250 Summary
+## Cycle 251 Summary
+
+**Task**: Create `RRSpaceV3.lean` - projective Riemann-Roch space using DivisorV3
+
+**New File**: `RrLean/RiemannRochV2/Core/RRSpaceV3.lean`
+
+Created the projective L(D) for divisors that include both finite and infinite places:
+
+```lean
+/-- Membership condition for L(D) using all places. -/
+def satisfiesValuationConditionV3 (D : DivisorV3 R K) (f : K) : Prop :=
+  f = 0 ∨ ∀ p : Place R K, p.valuation f ≤ WithZero.exp (D p)
+
+/-- L(D) as a submodule over base field k. -/
+def RRModuleV3 [ConstantsValuationBound k R K] (D : DivisorV3 R K) : Submodule k K
+```
+
+**Key definitions**:
+- `satisfiesValuationConditionV3`: Membership condition for projective L(D)
+- `RRSpaceV3`: The carrier set {f ∈ K : f ∈ L(D)}
+- `ConstantsValuationBound`: Typeclass for base fields where constants have valuation ≤ 1
+- `RRModuleV3`: L(D) as Submodule k K (over base field, not coordinate ring)
+- `ellV3_extended`, `ellV3`: Dimension ℓ(D) as ℕ∞ and ℕ
+- `satisfiesValuationConditionV3_of_affine`: Connection to affine L(D)
+
+**Key insight**: The projective L(D) must be a `Submodule k K` (over base field k),
+not `Submodule R K` (over coordinate ring R), because elements of R may have
+valuation > 1 at infinite places.
+
+**Verification**:
+```bash
+lake build RrLean.RiemannRochV2.Core.RRSpaceV3  # ✅
+lake build RrLean.RiemannRochV2.SerreDuality.Smoke  # ✅ Still passes
+```
+
+---
+
+## Cycle 250 Summary (Previous)
 
 **Task**: Create `DivisorV3.lean` - projective divisors using unified Place type
 
@@ -300,12 +337,13 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "sorryAx"
 **3 sorries total** in non-archived code:
 - `Abstract.lean`: 3 (placeholder `AdelicRRData` instance fields)
 
-**Sorry-free files** (confirmed Cycle 250):
+**Sorry-free files** (confirmed Cycle 251):
 - DimensionCore.lean ✅
 - AdelicH1Full.lean ✅
 - DimensionScratch.lean ✅
-- Place.lean ✅ (new)
-- DivisorV3.lean ✅ (new)
+- Place.lean ✅
+- DivisorV3.lean ✅
+- RRSpaceV3.lean ✅ (new)
 - All other SerreDuality files ✅
 
 6 dead-code lemmas in `RrLean/Archive/SorriedLemmas.lean`.
@@ -325,19 +363,19 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axiom
 
 ## Next Steps
 
-### Immediate: Continue Phase 3 - RRSpaceV3
+### Immediate: Continue Phase 3 - P¹ Instance Connection
 
-**Cycle 250 complete**: `DivisorV3.lean` created with projective divisors over unified Place type.
-
-**Cycle 251**: Create `RRSpaceV3.lean` (or extend RRSpace)
-- Define `L(D)` using `DivisorV3` and `Place.valuation`
-- Port existing RRSpace lemmas (membership conditions, module structure)
-- Handle both finite and infinite valuation constraints
+**Cycle 251 complete**: `RRSpaceV3.lean` created with projective L(D) over base field.
 
 **Cycle 252**: Connect to P¹ Instance
 - Define `inftyPlace` for P¹ (using `FunctionField.inftyValuation`)
 - Create `HasInfinitePlaces` instance for `Polynomial Fq / RatFunc Fq`
 - Prove `inftyPlace.deg = 1` (degree 1 place)
+- Prove `ConstantsValuationBound Fq (Polynomial Fq) (RatFunc Fq)`
+
+**Cycle 253**: Prove P¹ canonical divisor
+- Define `canonical : DivisorV3 (Polynomial Fq) (RatFunc Fq)` as -2[∞]
+- Connect to `differentIdeal` (if available)
 
 **After Phase 3**: Abstract.lean sorries become fillable for all projective curves.
 

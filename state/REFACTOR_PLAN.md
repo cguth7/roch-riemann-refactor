@@ -148,42 +148,64 @@ FullAdelesFqWeakApproximation.lean (lines 436+)   → EXTRACT to new file
 ## Phase 3: Generalize Place Type
 
 **Priority**: 🔴 CRITICAL - Blocks all projective curve work (see Affine Trap above)
-**Status**: Starting Cycle 249
+**Status**: IN PROGRESS (Cycles 249-251 complete, ~3 cycles remaining)
 
-### 3.1 Define Unified Place Type
+### 3.1 Define Unified Place Type - ✅ DONE (Cycle 249)
 
-**New File**: `RrLean/RiemannRochV2/Place.lean`
+**File**: `RrLean/RiemannRochV2/Core/Place.lean`
 
 ```lean
-/-- A place on a function field K/k is either finite (HeightOneSpectrum R)
-    or infinite (archimedean valuation). -/
-inductive Place (R : Type*) (K : Type*) [CommRing R] [Field K] [Algebra R K]
+/-- A place on a curve is either finite or infinite. -/
+inductive Place (R : Type*) (K : Type*) ...
   | finite : HeightOneSpectrum R → Place R K
   | infinite : InfinitePlace K → Place R K
 
-/-- Infinite places for function fields. For now, just the degree valuation. -/
+/-- An infinite place with valuation and degree. -/
 structure InfinitePlace (K : Type*) [Field K] where
-  valuation : K → ℤ∞
-  is_valuation : Valuation.IsValuation valuation
+  val : Valuation K (WithZero (Multiplicative ℤ))
+  deg : ℕ
+  deg_pos : 0 < deg
 ```
 
-### 3.2 Refactor RRDefinitions.lean
+Key definitions: `Place.valuation`, `Place.isFinite`, `HasInfinitePlaces` typeclass.
 
-**Current**: All definitions use `HeightOneSpectrum R`
+### 3.2 Define Projective Divisors - ✅ DONE (Cycle 250)
 
-**Changes**:
-1. Keep existing code as `valuationRingAt_finite`, `evaluationMapAt_finite`, etc.
-2. Add parallel definitions for infinite places
-3. Create unified wrappers that dispatch on `Place R K`
+**File**: `RrLean/RiemannRochV2/Core/DivisorV3.lean`
 
-**Outcome**: `DivisorV2` becomes `Place R K →₀ ℤ` (not just `HeightOneSpectrum R →₀ ℤ`)
+```lean
+/-- Projective divisor = finitely supported map from ALL places to ℤ. -/
+abbrev DivisorV3 := Place R K →₀ ℤ
+```
 
-### 3.3 Update Divisor.lean
+Key definitions: `DivisorV3.deg`, `DivisorV3.degFinite`, `DivisorV3.degInfinite`,
+`DivisorV3.ofAffine` (embed affine divisor into projective).
 
-**Minimal Changes**:
-- Extend `DivisorV2` to include infinite places
-- Add `deg_finite`, `deg_infinite` for separate degree contributions
-- Prove `deg = deg_finite + deg_infinite`
+### 3.3 Define Projective L(D) - ✅ DONE (Cycle 251)
+
+**File**: `RrLean/RiemannRochV2/Core/RRSpaceV3.lean`
+
+```lean
+/-- Projective L(D) must use base field k as scalars (not R). -/
+class ConstantsValuationBound (k R K) where
+  valuation_le_one : ∀ c p, p.valuation (algebraMap k K c) ≤ 1
+
+def RRModuleV3 [ConstantsValuationBound k R K] (D : DivisorV3 R K) : Submodule k K
+```
+
+**Key insight**: Elements of R have valuation > 1 at infinity, so projective L(D)
+is a k-module, not an R-module.
+
+### 3.4 Connect to P¹ Instance - TODO (Cycle 252)
+
+- Define `inftyPlace : InfinitePlace (RatFunc Fq)` using `FunctionField.inftyValuation`
+- Create `HasInfinitePlaces` instance for P¹
+- Prove `ConstantsValuationBound Fq (Polynomial Fq) (RatFunc Fq)`
+
+### 3.5 Define Canonical Divisor - TODO (Cycle 253)
+
+- Define `canonical : DivisorV3 (Polynomial Fq) (RatFunc Fq)` as `-2 • singleInfinite inftyPlace 1`
+- Connect to existing `differentIdeal` if applicable
 
 ---
 
@@ -332,23 +354,25 @@ Skipping for now - Phase 3 is more urgent due to Affine Trap discovery.
 | Cycle | Task | Status |
 |-------|------|--------|
 | 249 | Define `Place` inductive type + basic API | ✅ Done |
-| 250 | Create `DivisorV3` with Place-based divisors | |
-| 251-252 | Extend `DivisorV2` to include infinite places | |
-| 253-255 | Update `RRDefinitions.lean` to dispatch on Place | |
+| 250 | Create `DivisorV3` with Place-based divisors | ✅ Done |
+| 251 | Create `RRSpaceV3` with projective L(D) | ✅ Done |
+| 252 | Connect to P¹: `inftyPlace`, `ConstantsValuationBound` instance | |
+| 253 | Define canonical divisor -2[∞] for P¹ | |
+| 254-255 | Update Abstract.lean to use new Place-based types | |
 
 ### Phase 4: Residue Theorem
 | Cycle | Task |
 |-------|------|
 | 256-258 | Trace-compatible residues at higher-degree places |
 | 259-261 | Prove `residue_sum_eq_zero` for all places |
-| 262-263 | Wire residue pairing into Abstract.lean |
+| 262-264 | Wire residue pairing into Abstract.lean |
 
 ### Phase 5: Cleanup
 | Cycle | Task |
 |-------|------|
-| 264 | Move remaining P¹ files to archive, update all imports |
+| 265 | Move remaining P¹ files to archive, update all imports |
 
-**Revised Total**: ~16 cycles remaining (from 249)
+**Revised Total**: ~13 cycles remaining (from 252)
 
 ---
 
@@ -364,4 +388,4 @@ The refactor is complete when:
 
 ---
 
-*Plan created Cycle 241+. Updated Cycle 248 with Affine Trap discovery and revised timeline.*
+*Plan created Cycle 241+. Updated Cycle 251 with Phase 3 progress (Place, DivisorV3, RRSpaceV3 complete).*

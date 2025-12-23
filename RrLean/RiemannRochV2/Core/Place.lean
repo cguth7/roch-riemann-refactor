@@ -214,6 +214,14 @@ lemma valuation_finite (v : HeightOneSpectrum R) (x : K) :
 lemma valuation_infinite (v : InfinitePlace K) (x : K) :
     (infinite v : Place R K).valuation x = v.valuation x := rfl
 
+/-- The finite place constructor is injective. -/
+lemma finite_injective : Function.Injective (finite : HeightOneSpectrum R → Place R K) :=
+  fun _ _ h => by injection h
+
+/-- The infinite place constructor is injective. -/
+lemma infinite_injective : Function.Injective (infinite : InfinitePlace K → Place R K) :=
+  fun _ _ h => by injection h
+
 end Place
 
 /-! ## Place Collection Typeclass -/
