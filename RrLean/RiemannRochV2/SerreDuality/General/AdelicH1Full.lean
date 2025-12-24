@@ -914,36 +914,24 @@ instance RRSpace_proj_ext_finite (D : ExtendedDivisor (Polynomial Fq)) :
   -- q.natDegree = clearingPoly_natDegree
   -- So (f·q).intDegree = f.intDegree + q.intDegree ≤ D.inftyCoeff + q.natDegree
 
-  -- Degree bound for the polynomial f·q
-  have h_deg_bound : ∀ f ∈ RRSpace_proj_ext Fq D,
+  -- Degree bound for the polynomial f·q (only for nonzero f)
+  have h_deg_bound : ∀ f ∈ RRSpace_proj_ext Fq D, f ≠ 0 →
       ∀ p : Polynomial Fq, f * q_K = algebraMap (Polynomial Fq) (RatFunc Fq) p →
       (p.natDegree : ℤ) ≤ D.inftyCoeff + (q.natDegree : ℤ) := by
-    intro f hf p hp
-    -- Handle f = 0 case
-    by_cases hf_zero : f = 0
-    · subst hf_zero
-      simp only [zero_mul] at hp
-      -- hp : 0 = algebraMap p, which means p = 0 by injectivity
-      have hp_zero : p = 0 := by
-        have hp' : algebraMap (Polynomial Fq) (RatFunc Fq) p = algebraMap (Polynomial Fq) (RatFunc Fq) 0 := by
-          simp only [map_zero]; exact hp.symm
-        exact RatFunc.algebraMap_injective (Polynomial Fq) hp'
-      simp only [hp_zero, Polynomial.natDegree_zero, Nat.cast_zero]
-      have hq_deg_nn : (0 : ℤ) ≤ q.natDegree := Nat.cast_nonneg _
-      linarith
-    -- f ≠ 0 case
+    intro f hf hf_ne p hp
+    -- f ≠ 0, so extract the degree bound from hf
     rcases hf with rfl | ⟨_, hf_deg⟩
-    · exact absurd rfl hf_zero
+    · exact absurd rfl hf_ne
     -- f.intDegree ≤ D.inftyCoeff from hf_deg
     have hf_int : f.intDegree ≤ D.inftyCoeff := by
       simp only [RatFunc.intDegree] at hf_deg ⊢; omega
     -- q.intDegree = q.natDegree (polynomial)
     have hq_int : q_K.intDegree = (q.natDegree : ℤ) := RatFunc.intDegree_polynomial
     -- f·q is nonzero since f ≠ 0 and q ≠ 0
-    have hfq_ne : f * q_K ≠ 0 := mul_ne_zero hf_zero hq_K_ne
+    have hfq_ne : f * q_K ≠ 0 := mul_ne_zero hf_ne hq_K_ne
     -- (f·q).intDegree = f.intDegree + q.intDegree
     have hfq_int : (f * q_K).intDegree = f.intDegree + q_K.intDegree :=
-      RatFunc.intDegree_mul hf_zero hq_K_ne
+      RatFunc.intDegree_mul hf_ne hq_K_ne
     -- p.intDegree = (f·q).intDegree since p = f·q as RatFunc
     have hp_int : (algebraMap (Polynomial Fq) (RatFunc Fq) p).intDegree = (p.natDegree : ℤ) :=
       RatFunc.intDegree_polynomial
@@ -971,7 +959,7 @@ instance RRSpace_proj_ext_finite (D : ExtendedDivisor (Polynomial Fq)) :
       · intro hf
         by_contra hf_ne
         obtain ⟨p, hp⟩ := h_is_poly f hf
-        have hp_deg := h_deg_bound f hf p hp
+        have hp_deg := h_deg_bound f hf hf_ne p hp
         -- p ≠ 0 since f ≠ 0 and f·q = p
         have hp_ne : p ≠ 0 := by
           intro hp_zero
@@ -1019,20 +1007,34 @@ instance RRSpace_proj_ext_finite (D : ExtendedDivisor (Polynomial Fq)) :
     have hφ_range : ∀ f : RRSpace_proj_ext Fq D,
         ∃ p : Polynomial Fq, φ f = algebraMap (Polynomial Fq) (RatFunc Fq) p ∧ p.natDegree < n := by
       intro f
-      obtain ⟨p, hp⟩ := h_is_poly f.val f.property
-      refine ⟨p, ?_, ?_⟩
-      · exact hp
-      · have hp_deg := h_deg_bound f.val f.property p hp
-        -- p.natDegree ≤ bound, so p.natDegree < bound.toNat + 1 = n
-        have h1 : (p.natDegree : ℤ) ≤ bound := hp_deg
-        have h2 : p.natDegree ≤ bound.toNat := by
-          have := Int.toNat_le_toNat h1 hbound_neg
-          simp only [Int.toNat_natCast] at this
-          exact this
-        omega
+      by_cases hf_zero : f.val = 0
+      · -- f = 0 case: p = 0, natDegree = 0 < n since n ≥ 1
+        use 0
+        constructor
+        · -- Goal: φ f = algebraMap 0 = 0
+          -- φ f = f.val * q_K = 0 * q_K = 0 (since hf_zero : f.val = 0)
+          show f.val * q_K = algebraMap (Polynomial Fq) (RatFunc Fq) 0
+          simp only [hf_zero, zero_mul, map_zero]
+        · simp only [Polynomial.natDegree_zero]
+          exact Nat.succ_pos _  -- 0 < bound.toNat + 1
+      · -- f ≠ 0 case
+        obtain ⟨p, hp⟩ := h_is_poly f.val f.property
+        refine ⟨p, ?_, ?_⟩
+        · exact hp
+        · have hp_deg := h_deg_bound f.val f.property hf_zero p hp
+          -- p.natDegree ≤ bound, so p.natDegree < bound.toNat + 1 = n
+          have h1 : (p.natDegree : ℤ) ≤ bound := hp_deg
+          have h2 : p.natDegree ≤ bound.toNat := by
+            have := Int.toNat_le_toNat h1
+            simp only [Int.toNat_natCast] at this
+            exact this
+          omega
 
     -- Polynomial.degreeLT Fq n is finite-dimensional
-    haveI hdegreeLT_fin : Module.Finite Fq (Polynomial.degreeLT Fq n) := inferInstance
+    -- Use the linear equivalence: degreeLT Fq n ≃ₗ[Fq] Fin n → Fq
+    -- Since Fin n → Fq is Module.Finite (finite pi instance), we transport via equiv
+    haveI hdegreeLT_fin : Module.Finite Fq (Polynomial.degreeLT Fq n) :=
+      Module.Finite.equiv (Polynomial.degreeLTEquiv Fq n).symm
 
     -- Define a linear map ψ : L(D) → Polynomial.degreeLT Fq n
     -- For f ∈ L(D), we have f·q is a polynomial of degree < n, so (f·q).num ∈ degreeLT n
@@ -1068,10 +1070,63 @@ instance RRSpace_proj_ext_finite (D : ExtendedDivisor (Polynomial Fq)) :
       map_add' := fun f g => by
         -- Both f·q and g·q are polynomials (in image of algebraMap)
         -- So num(f·q + g·q) = num(f·q) + num(g·q)
-        sorry
+        -- Get polynomials for f·q and g·q
+        obtain ⟨pf, hpf, _⟩ := hφ_range f
+        obtain ⟨pg, hpg, _⟩ := hφ_range g
+        -- hpf : φ f = algebraMap pf, i.e., f.val * q_K = algebraMap pf
+        have hf_eq : f.val * q_K = algebraMap (Polynomial Fq) (RatFunc Fq) pf := hpf
+        have hg_eq : g.val * q_K = algebraMap (Polynomial Fq) (RatFunc Fq) pg := hpg
+        have hf_num : (f.val * q_K).num = pf := by rw [hf_eq]; exact RatFunc.num_algebraMap pf
+        have hg_num : (g.val * q_K).num = pg := by rw [hg_eq]; exact RatFunc.num_algebraMap pg
+        -- (f + g).val * q_K = f.val * q_K + g.val * q_K = algebraMap(pf + pg)
+        have h_sum_eq : (f + g).val * q_K = algebraMap (Polynomial Fq) (RatFunc Fq) (pf + pg) := by
+          calc (f + g).val * q_K = (f.val + g.val) * q_K := rfl
+            _ = f.val * q_K + g.val * q_K := add_mul _ _ _
+            _ = algebraMap _ _ pf + algebraMap _ _ pg := by rw [hf_eq, hg_eq]
+            _ = algebraMap _ _ (pf + pg) := (map_add _ _ _).symm
+        have hfg_num : ((f + g).val * q_K).num = pf + pg := by
+          rw [h_sum_eq]; exact RatFunc.num_algebraMap (pf + pg)
+        -- Goal: ⟨((f+g).val * q_K).num, _⟩ = ⟨(f.val * q_K).num, _⟩ + ⟨(g.val * q_K).num, _⟩
+        -- For Polynomial.degreeLT, addition is defined as ⟨p, _⟩ + ⟨q, _⟩ = ⟨p + q, _⟩
+        -- So we need: ((f+g).val * q_K).num = (f.val * q_K).num + (g.val * q_K).num
+        apply Subtype.ext
+        -- Goal after Subtype.ext: (↑(f+g) * q_K).num = (↑f * q_K).num + (↑g * q_K).num
+        -- Note: (f+g).val = f.val + g.val (by Submodule addition)
+        show ((f + g).val * q_K).num = (f.val * q_K).num + (g.val * q_K).num
+        rw [hfg_num, hf_num, hg_num]
       map_smul' := fun c f => by
         -- f·q is a polynomial, so num(c·f·q) = C(c) * num(f·q)
-        sorry
+        obtain ⟨pf, hpf, _⟩ := hφ_range f
+        have hf_eq : f.val * q_K = algebraMap (Polynomial Fq) (RatFunc Fq) pf := hpf
+        have hf_num : (f.val * q_K).num = pf := by rw [hf_eq]; exact RatFunc.num_algebraMap pf
+        -- (c • f).val * q_K = algebraMap(C c * pf)
+        have hcf_eq : (c • f).val * q_K = algebraMap (Polynomial Fq) (RatFunc Fq) (Polynomial.C c * pf) := by
+          calc (c • f).val * q_K = (c • f.val) * q_K := rfl
+            _ = (algebraMap Fq (RatFunc Fq) c * f.val) * q_K := by rw [Algebra.smul_def]
+            _ = algebraMap Fq (RatFunc Fq) c * (f.val * q_K) := by ring
+            _ = algebraMap Fq (RatFunc Fq) c * algebraMap _ _ pf := by rw [hf_eq]
+            _ = algebraMap _ _ (Polynomial.C c) * algebraMap _ _ pf := by
+                -- algebraMap Fq (RatFunc Fq) c = algebraMap (Polynomial Fq) (RatFunc Fq) (algebraMap Fq (Polynomial Fq) c)
+                -- = algebraMap (Polynomial Fq) (RatFunc Fq) (Polynomial.C c) by definition of algebraMap for polynomials
+                simp only [IsScalarTower.algebraMap_apply Fq (Polynomial Fq) (RatFunc Fq),
+                           Polynomial.algebraMap_eq]
+            _ = algebraMap _ _ (Polynomial.C c * pf) := (map_mul _ _ _).symm
+        have hcf_num : ((c • f).val * q_K).num = Polynomial.C c * pf := by
+          rw [hcf_eq]; exact RatFunc.num_algebraMap _
+        -- c • pf = C c * pf for polynomials
+        have hsmul_eq : c • pf = Polynomial.C c * pf := Algebra.smul_def c pf
+        -- Goal: ⟨((c • f).val * q_K).num, _⟩ = c • ⟨(f.val * q_K).num, _⟩
+        -- For Polynomial.degreeLT, scalar mult is c • ⟨p, _⟩ = ⟨c • p, _⟩ = ⟨C c * p, _⟩
+        apply Subtype.ext
+        -- Goal after Subtype.ext: (c • ↑f * q_K).num = c • (↑f * q_K).num
+        -- Note: (c • f).val = c • f.val (by Submodule scalar mult definition)
+        -- And c • (polynomial) = C(c) * (polynomial) for degreeLT
+        -- Convert goal to use (c • f).val instead of c • f.val
+        have h_coe : (c • f).val = c • f.val := rfl
+        calc (c • f.val * q_K).num = ((c • f).val * q_K).num := by rw [← h_coe]
+          _ = Polynomial.C c * pf := hcf_num
+          _ = c • pf := hsmul_eq.symm
+          _ = c • (f.val * q_K).num := by rw [hf_num]
     }
 
     -- ψ is injective

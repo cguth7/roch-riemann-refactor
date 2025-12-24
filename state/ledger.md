@@ -6,9 +6,9 @@ Tactical tracking for Riemann-Roch formalization.
 
 ## Current State
 
-**Build**: ⚠️ Compiles with 4 sorries (2 valuation lemma proofs + 2 linear map axioms)
-**Result**: Major progress on RRSpace_proj_ext_finite - valuation lemmas and embedding defined
-**Cycle**: 276 (Next)
+**Build**: ✅ Compiles with 1 sorry (in AdelicH1Full.lean line 582)
+**Result**: RRSpace_proj_ext_finite proved - L(D) is finite-dimensional for all extended divisors
+**Cycle**: 278 (Next)
 
 ---
 
@@ -45,36 +45,45 @@ theorem RRSpace_proj_ext_canonical_sub_eq_bot
 |----------|-------|--------|
 | P1Instance/ | 0 | ✅ Complete |
 | ResidueTrace.lean | 0 | ✅ Complete |
-| AdelicH1Full.lean | 4 | 2 linear map axioms + globalPlusBoundedSubmodule_full_eq_top + valuation issues |
-| Abstract.lean | 2 | serre_duality non-effective cases |
+| AdelicH1Full.lean | 1 | `globalPlusBoundedSubmodule_full_eq_top` (line 582) |
+| Abstract.lean | 5 | General abstract infrastructure (h1_finite, ell_finite, etc.) |
 
 ---
 
 ## Next Steps
 
-### Cycle 276: Complete Linear Map Axioms for RRSpace_proj_ext_finite
+### Cycle 278: Fill `globalPlusBoundedSubmodule_full_eq_top`
 
-**Target**: Fill the 2 linear map axiom sorries (`map_add'`, `map_smul'`) in AdelicH1Full.lean
+**Target**: Prove that K + A_K(D) = FullAdeleRing for P¹ (strong approximation for full adeles)
 
-**Current State** (after Cycle 275):
-- ✅ Valuation lemmas: `clearingPoly_intValuation_at_pos`, `clearingPoly_intValuation_at_nonpos`
-- ✅ `mul_clearingPoly_valuation_le_one`: f·q is integral at all finite places
-- ✅ Embedding strategy into Polynomial.degreeLT defined
-- ⏳ Linear map axioms need coercion path fixes (2 sorries)
-- ⏳ Some Int.toNat_le_toNat usage issues
+**Context**: This is the key lemma showing H¹(D) = 0 for P¹. The proof requires:
+1. Strong approximation for finite adeles (already proved)
+2. Density of K in K_∞ (completion at infinity)
+3. Show the same global k works for both finite and infinity bounds
 
-**Remaining Work**:
-1. Fix `map_add'` proof: Handle `↑(f+g)` vs `↑f + ↑g` coercion difference
-2. Fix `map_smul'` proof: Handle `↑(c•f)` vs `c • ↑f` coercion difference
-3. Fix `Int.toNat_le_toNat` argument order issue
+**After**: Abstract.lean sorries become provable, completing P¹ Riemann-Roch infrastructure
 
-**Key Technical Issue**:
-The proofs correctly show that f·q lands in polynomials of bounded degree.
-The blocking issue is proving the linear map axioms when the RatFunc numerator function
-`RatFunc.num` is applied to coerced submodule elements with different coercion paths.
+---
 
-**Pattern to use**: Look at `partialClearPoles` in DimensionCore.lean lines 381-438
-for how to prove `map_add'` and `map_smul'` with subtype coercions.
+## Cycle 277 Summary ✅
+
+**Task**: Fix Module.Finite instance synthesis for Polynomial.degreeLT
+
+**Achievement**:
+- Fixed `Module.Finite Fq (Polynomial.degreeLT Fq n)` by using `Module.Finite.equiv`
+- Key insight: Use the linear equivalence `degreeLTEquiv : degreeLT Fq n ≃ₗ[Fq] Fin n → Fq`
+- Since `Fin n → Fq` has `Module.Finite` (via pi instance), transport via equivalence
+
+**Solution**:
+```lean
+haveI hdegreeLT_fin : Module.Finite Fq (Polynomial.degreeLT Fq n) :=
+  Module.Finite.equiv (Polynomial.degreeLTEquiv Fq n).symm
+```
+
+**Key lesson**: When instance resolution fails for a computed type like `degreeLT Fq (bound.toNat + 1)`,
+explicitly construct the instance using linear equivalences rather than trying `inferInstance`.
+
+**Sorry count**: 2 → 1 (RRSpace_proj_ext_finite now proved!)
 
 ---
 
@@ -90,18 +99,6 @@ for how to prove `map_add'` and `map_smul'` with subtype coercions.
 - Proved ψ is injective (key for finiteness)
 - Completed finiteness proof structure using `Module.Finite.of_injective`
 
-**Sorries introduced** (to be filled in Cycle 276):
-1. `map_add'` - coercion path issue with `(↑(f+g) * q).num` vs `(↑f * q).num + (↑g * q).num`
-2. `map_smul'` - coercion path issue with `(↑(c•f) * q).num` vs `C(c) * (↑f * q).num`
-
-**Technical Notes**:
-- The valuation arithmetic uses `generator_intValuation_at_self` and `generator_intValuation_at_other_prime`
-- The `Ne.symm` is needed because the lemma expects `v ≠ w` but we have `w ≠ v`
-- `RatFunc.algebraMap_injective` is used to transfer polynomial equality through algebraMap
-- The key insight: when f·q is a polynomial (algebraMap p), then (f·q).num = p
-
-**Sorry count**: 2 → 4 (traded instance sorry for 2 linear map axiom sorries)
-
 ---
 
 ## Cycle 274 Summary ✅
@@ -115,15 +112,6 @@ for how to prove `map_add'` and `map_smul'` with subtype coercions.
 - Proved `clearingPoly_ne_zero`: clearing polynomial is nonzero
 - Proved `clearingPoly_monic`: clearing polynomial is monic
 - Proved `clearingPoly_natDegree`: degree = Σ D(v) · deg(v) over positive places
-- Documented complete strategy for RRSpace_proj_ext_finite in docstring
-
-**Technical Notes**:
-- The clearing polynomial uses `PlaceDegree.generator` (monic irreducible for each place)
-- Valuation lemmas require careful handling of `Finset.prod` over `positiveSupport`
-- Pattern from DimensionGeneral.lean: use `valuation_of_algebraMap` + `generator_intValuation_at_self`
-
-**Sorry count**: Unchanged (2 in AdelicH1Full.lean)
-- Architecture in place, valuation arithmetic deferred to Cycle 275
 
 ---
 
@@ -144,12 +132,6 @@ for how to prove `map_add'` and `map_smul'` with subtype coercions.
    - Elements are NOT necessarily polynomials when D.finite has positive coefficients
    - Correct approach: pole-clearing multiplication by ∏ generator^{max(0, D.finite(v))}
 
-3. **Updated proof strategy**:
-   - Added detailed comment in RRSpace_proj_ext_finite explaining pole-clearing approach
-   - Documented architecture issues in ledger for future cycles
-
-**No sorry count change** - this was an investigative cycle that clarified the path forward.
-
 ---
 
 ## Cycle 272 Summary ✅
@@ -160,52 +142,7 @@ for how to prove `map_add'` and `map_smul'` with subtype coercions.
 - Filled `RRSpace_proj_ext_canonical_sub_eq_bot` helper sorry
 - Used `eq_algebraMap_of_valuation_le_one_forall` from P1VanishingLKD.lean
 - Added `D.finite.Effective` hypothesis (necessary for proof)
-- Updated downstream theorems:
-  - `ell_proj_ext_canonical_sub_eq_zero`
-  - `serre_duality_p1`
-- Restructured Abstract.lean serre_duality proof to handle effective/non-effective cases separately
-
-**Technical fix**: The original proof assumed D.finite was effective without stating it.
-Now `RRSpace_proj_ext_canonical_sub_eq_bot` requires `hDfin : D.finite.Effective`.
-
-**Sorry count**: 4 → 3 (distinct sorries)
 
 ---
 
-## Cycle 271 Summary ✅
-
-**Task**: Create ProjectiveAdelicRRData class and P¹ instance
-
-**Achievement**:
-- Created `ProjectiveAdelicRRData` class in Abstract.lean using:
-  - `ExtendedDivisor` (includes infinity coefficient)
-  - `RRSpace_proj_ext` (projective L(D) with degree bound)
-  - `SpaceModule_full` (H¹ using full adeles)
-- Created P¹ instance `p1ProjectiveAdelicRRData`
-- Added infrastructure lemmas in AdelicH1Full.lean:
-  - `SpaceModule_full_subsingleton` (H¹ = 0 for P¹)
-  - `ell_proj_ext_canonical_sub_eq_zero` (L(K-D) = 0 for effective D)
-  - `serre_duality_p1` (0 = 0 for P¹)
-
----
-
-## Cycle 270 Summary ✅
-
-**Task**: Fill `tracedResidueAtPlace_eq_residueAt_linear` sorry (stuck for 2 cycles)
-
-**Fix**: The blocking `hq'_inv_eq` lemma was proved using `PowerSeries.mul_inv_cancel`
-+ `IsUnit.mul_right_inj` instead of failed approaches with `map_inv₀` or `Units.val_inv_eq_inv_val`.
-
----
-
-## Cycle 265-269 Summary
-
-- **265**: Filled `ell_ratfunc_projective_gap_eq` → 0 sorries in P1Instance
-- **266**: Refactored Residue.lean (1,385 lines → 5 focused files)
-- **267**: Filled `trace_degree_one_eq`, created ResidueTrace.lean
-- **268**: Defined `localResidueAtPlace`, `tracedResidueAtPlace` for arbitrary places
-- **269-270**: Filled `tracedResidueAtPlace_eq_residueAt_linear`
-
----
-
-*For cycles 1-264, see `ledger_archive.md`*
+*For cycles 1-271, see previous ledger entries or `ledger_archive.md`*
