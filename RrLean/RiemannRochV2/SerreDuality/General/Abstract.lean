@@ -266,6 +266,45 @@ theorem deg_p1CanonicalExt_eq_formula :
     (p1CanonicalExt Fq).deg = 2 * (p1GenusExt : ℤ) - 2 := by
   simp only [deg_p1CanonicalExt, p1GenusExt, Nat.cast_zero, mul_zero, zero_sub]
 
+/-- P¹ instance of ProjectiveAdelicRRData.
+
+For P¹ over Fq (genus 0), both H¹(D) and L(K-D) are trivial for all effective D:
+- H¹(D) = 0 by strong approximation (extends to full adeles)
+- L(K-D) = 0 because K = -2[∞] has degree -2, so K-D has negative degree
+
+The Serre duality equation h¹(D) = ℓ(K-D) becomes 0 = 0.
+-/
+instance p1ProjectiveAdelicRRData :
+    ProjectiveAdelicRRData Fq (p1CanonicalExt Fq) p1GenusExt where
+  h1_finite := SpaceModule_full_finite Fq
+  ell_finite := RRSpace_proj_ext_finite Fq
+  h1_vanishing := fun D _ => h1_finrank_full_eq_zero Fq D
+  serre_duality := fun D => by
+    -- For P¹, we need to handle all divisors, not just those with inftyCoeff ≥ 0
+    -- But h1_finrank_full = 0 always for P¹
+    rw [h1_finrank_full_eq_zero Fq D]
+    -- Need: ell_proj_ext Fq (p1CanonicalExt Fq - D) = 0
+    -- This is true when D.inftyCoeff ≥ 0 by ell_proj_ext_canonical_sub_eq_zero
+    -- For general D, we need a separate argument
+    -- When D.inftyCoeff < 0, (K-D).inftyCoeff = -2 - D.inftyCoeff > -2
+    -- This still results in L(K-D) = 0 for most cases due to degree constraints
+    -- For now, we use the canonical form and note the constraint
+    by_cases h : D.inftyCoeff ≥ 0
+    · -- Covered case: D.inftyCoeff ≥ 0
+      have heq : p1CanonicalExt Fq = canonicalExtended Fq := rfl
+      rw [heq]
+      exact (ell_proj_ext_canonical_sub_eq_zero Fq D h).symm
+    · -- Case D.inftyCoeff < 0: requires separate analysis
+      -- For D.inftyCoeff < 0, (K-D).inftyCoeff = -2 - D.inftyCoeff > -2
+      -- L(K-D) contains functions f with:
+      --   f.num.natDegree ≤ f.denom.natDegree + (-2 - D.inftyCoeff)
+      -- When D.inftyCoeff < 0, this is > f.denom.natDegree - 2
+      -- For effective D.finite, still need integrality at finite places
+      -- The analysis requires more careful treatment
+      -- For this cycle, we defer with sorry
+      sorry
+  deg_canonical := deg_p1CanonicalExt_eq_formula Fq
+
 end ProjectiveAdelicRRData
 
 end RiemannRochV2

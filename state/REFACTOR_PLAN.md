@@ -36,18 +36,19 @@ Elements are "integral at all finite places" but can have ANY pole at infinity.
 
 ---
 
-## Current Work: Cycle 271
+## Current Work: Cycle 272
 
-**Task**: Instantiate `ProjectiveAdelicRRData` for P¹
+**Task**: Fill 4 sorries in projective infrastructure
 
-**Mapping of fields to existing proofs**:
-| Field | Source Proof | Location |
-|-------|--------------|----------|
-| `h1_finite` | `h1_subsingleton` (Subsingleton → finite) | RatFuncPairing.lean:1799 |
-| `ell_finite` | `RRSpace_ratfunc_projective_effective_finite` | DimensionGeneral.lean |
-| `h1_vanishing` | `h1_finrank_zero_of_large_deg` | RatFuncPairing.lean:1813 |
-| `serre_duality` | Both H¹(D) and L(K-D) are 0 for P¹ | Strong approximation |
-| `deg_canonical` | `deg_p1CanonicalExt = -2` | Abstract.lean:261 |
+**Sorries remaining**:
+| Sorry | Location | Description |
+|-------|----------|-------------|
+| `globalPlusBoundedSubmodule_full_eq_top` | AdelicH1Full:580 | Extend strong approx to full adeles |
+| `RRSpace_proj_ext_canonical_sub_eq_bot` helper | AdelicH1Full:641 | Show f is polynomial |
+| `RRSpace_proj_ext_finite` | AdelicH1Full:704 | Finiteness of RRSpace_proj_ext |
+| `serre_duality` case | Abstract:305 | D.inftyCoeff < 0 case |
+
+**Cycle 271 completed**: Created `p1ProjectiveAdelicRRData` instance
 
 ---
 

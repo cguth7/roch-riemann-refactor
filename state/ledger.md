@@ -6,9 +6,9 @@ Tactical tracking for Riemann-Roch formalization.
 
 ## Current State
 
-**Build**: ✅ Compiles (0 sorries in P1Instance, 0 sorries in ResidueTrace.lean)
-**Result**: Riemann-Roch for P¹ fully proved for all effective divisors
-**Cycle**: 271 (In Progress)
+**Build**: ✅ Compiles (0 sorries in P1Instance, 0 sorries in ResidueTrace.lean, 4 new sorries in projective infrastructure)
+**Result**: ProjectiveAdelicRRData class + P¹ instance created (sorries for full adele strong approx)
+**Cycle**: 272 (Next)
 
 ---
 
@@ -50,36 +50,54 @@ Created `ProjectiveAdelicRRData` class instead.
 
 ## Next Steps
 
-### Cycle 271: Wire P¹ into Abstract.lean (IN PROGRESS)
+### Cycle 272: Fill projective infrastructure sorries
 
-**Discovery**: The affine `AdelicRRData` **cannot** be instantiated for P¹!
-- `AdelicRRData` requires `ell_finite : ∀ D, Module.Finite k (RRSpace_proj k R K D)`
-- For P¹: `RRSpace_proj(0)` = all polynomials = **infinite dimensional** (affine trap)
-- P1Instance proofs use `ell_ratfunc_projective` (projective) not `ell_proj` (affine)
+**Status**: 4 sorries to fill
 
-**Solution**: Created `ProjectiveAdelicRRData` class in Abstract.lean that uses:
-- `ExtendedDivisor` (includes infinity coefficient) instead of `DivisorV2`
-- `RRSpace_proj_ext` (projective L(D) with degree bound) instead of `RRSpace_proj`
-- `ell_proj_ext` (projective dimension) instead of `ell_proj`
+**Sorries remaining**:
+1. `globalPlusBoundedSubmodule_full_eq_top` (AdelicH1Full.lean:580)
+   - Extends strong approximation to full adeles
+   - Key: show k from strong_approx has bounded infinity valuation
 
-**Progress**:
-- [x] Analyzed affine vs projective mismatch
-- [x] Found projective infrastructure in `AdelicH1Full.lean`
-- [x] Created `ProjectiveAdelicRRData` class in Abstract.lean
-- [ ] Instantiate `ProjectiveAdelicRRData` for P¹
+2. `RRSpace_proj_ext_canonical_sub_eq_bot` helper (AdelicH1Full.lean:641)
+   - Show f with valuation bounds at finite places is polynomial
+   - Uses: f integral at all finite places → f ∈ Polynomial Fq
 
-**Remaining**:
-- Create P¹ instance of `ProjectiveAdelicRRData` using:
-  - `h1_finite`: From `h1_subsingleton` (H¹ is Subsingleton → finite)
-  - `ell_finite`: From `RRSpace_ratfunc_projective_effective_finite`
-  - `h1_vanishing`: From `h1_finrank_zero_of_large_deg`
-  - `serre_duality`: Both H¹(D) and L(K-D) are 0 for P¹
-  - `deg_canonical`: -2 = 2*0 - 2
+3. `RRSpace_proj_ext_finite` (AdelicH1Full.lean:704)
+   - Show RRSpace_proj_ext is finite-dimensional
+   - Bridge to existing RRSpace_ratfunc_projective finiteness
 
-### After Cycle 271:
+4. `serre_duality` D.inftyCoeff < 0 case (Abstract.lean:305)
+   - Handle negative infinity coefficients
+   - May need to analyze L(K-D) for these cases
 
-**Option A**: Start new curve instance (elliptic or hyperelliptic) - ~3-5 cycles
-**Option B**: Extend residues to higher-order poles - ~2-3 cycles
+**After Cycle 272**:
+
+**Option A**: Start new curve instance (elliptic or hyperelliptic)
+**Option B**: Extend residues to higher-order poles
+
+---
+
+## Cycle 271 Summary ✅
+
+**Task**: Create ProjectiveAdelicRRData class and P¹ instance
+
+**Achievement**:
+- Created `ProjectiveAdelicRRData` class in Abstract.lean using:
+  - `ExtendedDivisor` (includes infinity coefficient)
+  - `RRSpace_proj_ext` (projective L(D) with degree bound)
+  - `SpaceModule_full` (H¹ using full adeles)
+- Created P¹ instance `p1ProjectiveAdelicRRData`
+- Added infrastructure lemmas in AdelicH1Full.lean:
+  - `SpaceModule_full_subsingleton` (H¹ = 0 for P¹)
+  - `ell_proj_ext_canonical_sub_eq_zero` (L(K-D) = 0 for effective D)
+  - `serre_duality_p1` (0 = 0 for P¹)
+
+**4 sorries introduced** (structural, for future cycles):
+1. `globalPlusBoundedSubmodule_full_eq_top` - strong approx for full adeles
+2. `RRSpace_proj_ext_canonical_sub_eq_bot` helper - f is polynomial
+3. `RRSpace_proj_ext_finite` - finiteness
+4. `serre_duality` negative inftyCoeff case
 
 ---
 

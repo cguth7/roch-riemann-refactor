@@ -409,18 +409,22 @@ What was actually true:
 
 ---
 
-## Honest Sorry Audit (Cycle 271)
+## Honest Sorry Audit (Cycle 272)
 
-### Total: 0 real sorries (template sorries in comments only)
+### Total: 4 real sorries (in new projective infrastructure)
 
 **P1Instance/** - ✅ SORRY-FREE
 **ResidueTrace.lean** - ✅ SORRY-FREE
-**Abstract.lean** - ✅ No real sorries (template in comments)
+**AdelicH1Full.lean** - 3 sorries (projective infrastructure)
+**Abstract.lean** - 1 sorry (Serre duality negative case)
 
-**Note**: The "3 sorries" previously listed in Abstract.lean were in a **comment block**
-showing a template for `fqAdelicRRData`. That template can't work for P¹ anyway (affine trap).
+**Sorries in projective infrastructure**:
+1. `globalPlusBoundedSubmodule_full_eq_top` - extends strong approx to full adeles
+2. `RRSpace_proj_ext_canonical_sub_eq_bot` helper - f is polynomial lemma
+3. `RRSpace_proj_ext_finite` - finiteness of RRSpace_proj_ext
+4. `p1ProjectiveAdelicRRData.serre_duality` - D.inftyCoeff < 0 case
 
-Cycle 271 added `ProjectiveAdelicRRData` class - needs P¹ instantiation.
+**Cycle 271 achieved**: Created `ProjectiveAdelicRRData` class and P¹ instance.
 
 ### What's Proved (no sorryAx)
 
