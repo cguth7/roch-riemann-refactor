@@ -280,28 +280,27 @@ instance p1ProjectiveAdelicRRData :
   ell_finite := RRSpace_proj_ext_finite Fq
   h1_vanishing := fun D _ => h1_finrank_full_eq_zero Fq D
   serre_duality := fun D => by
-    -- For P¹, we need to handle all divisors, not just those with inftyCoeff ≥ 0
-    -- But h1_finrank_full = 0 always for P¹
+    -- For P¹, we need to handle all divisors, not just effective ones
+    -- But h1_finrank_full = 0 always for P¹ (strong approximation)
     rw [h1_finrank_full_eq_zero Fq D]
     -- Need: ell_proj_ext Fq (p1CanonicalExt Fq - D) = 0
-    -- This is true when D.inftyCoeff ≥ 0 by ell_proj_ext_canonical_sub_eq_zero
-    -- For general D, we need a separate argument
-    -- When D.inftyCoeff < 0, (K-D).inftyCoeff = -2 - D.inftyCoeff > -2
-    -- This still results in L(K-D) = 0 for most cases due to degree constraints
-    -- For now, we use the canonical form and note the constraint
-    by_cases h : D.inftyCoeff ≥ 0
-    · -- Covered case: D.inftyCoeff ≥ 0
-      have heq : p1CanonicalExt Fq = canonicalExtended Fq := rfl
-      rw [heq]
-      exact (ell_proj_ext_canonical_sub_eq_zero Fq D h).symm
-    · -- Case D.inftyCoeff < 0: requires separate analysis
-      -- For D.inftyCoeff < 0, (K-D).inftyCoeff = -2 - D.inftyCoeff > -2
-      -- L(K-D) contains functions f with:
-      --   f.num.natDegree ≤ f.denom.natDegree + (-2 - D.inftyCoeff)
-      -- When D.inftyCoeff < 0, this is > f.denom.natDegree - 2
-      -- For effective D.finite, still need integrality at finite places
-      -- The analysis requires more careful treatment
-      -- For this cycle, we defer with sorry
+    -- This is true when D is effective (D.finite.Effective and D.inftyCoeff ≥ 0)
+    -- For non-effective D, L(K-D) might be nonzero, but h¹(D) = 0 always
+    -- The full Serre duality argument for non-effective D requires more infrastructure
+    by_cases hfin : D.finite.Effective
+    · by_cases h : D.inftyCoeff ≥ 0
+      · -- Fully effective case: D.finite effective and D.inftyCoeff ≥ 0
+        have heq : p1CanonicalExt Fq = canonicalExtended Fq := rfl
+        rw [heq]
+        exact (ell_proj_ext_canonical_sub_eq_zero Fq D hfin h).symm
+      · -- D.finite effective but D.inftyCoeff < 0
+        -- (K-D).inftyCoeff = -2 - D.inftyCoeff > -2
+        -- L(K-D) may be nonzero in principle, but for P¹ it's still 0
+        -- because the degree constraints still force L(K-D) = 0
+        sorry
+    · -- D.finite not effective: L(K-D) may contain nonzero elements
+      -- This case requires showing that even with poles allowed at some places,
+      -- the combined constraints still give L(K-D) = 0 for P¹
       sorry
   deg_canonical := deg_p1CanonicalExt_eq_formula Fq
 

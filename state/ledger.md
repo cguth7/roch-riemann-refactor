@@ -6,9 +6,9 @@ Tactical tracking for Riemann-Roch formalization.
 
 ## Current State
 
-**Build**: ✅ Compiles (0 sorries in P1Instance, 0 sorries in ResidueTrace.lean, 4 new sorries in projective infrastructure)
-**Result**: ProjectiveAdelicRRData class + P¹ instance created (sorries for full adele strong approx)
-**Cycle**: 272 (Next)
+**Build**: ✅ Compiles (3 sorries in projective infrastructure, down from 4)
+**Result**: Filled `RRSpace_proj_ext_canonical_sub_eq_bot` helper sorry
+**Cycle**: 273 (Next)
 
 ---
 
@@ -30,6 +30,11 @@ theorem riemann_roch_p1 (D : DivisorV2 (Polynomial Fq))
 theorem tracedResidueAtPlace_eq_residueAt_linear (α : Fq) (f : RatFunc Fq)
     (hf : hasSimplePoleAt Fq (linearPlace Fq α) f ∨ ¬hasPoleAt Fq (linearPlace Fq α) f) :
     tracedResidueAtPlace Fq (linearPlace Fq α) f = residueAt α f
+
+-- L(K-D) = 0 for effective D on P¹ (Cycle 272 - now with proper hypothesis)
+theorem RRSpace_proj_ext_canonical_sub_eq_bot
+    (D : ExtendedDivisor (Polynomial Fq)) (hDfin : D.finite.Effective) (hD : D.inftyCoeff ≥ 0) :
+    RRSpace_proj_ext Fq (canonicalExtended Fq - D) = ⊥
 ```
 
 ---
@@ -40,41 +45,55 @@ theorem tracedResidueAtPlace_eq_residueAt_linear (α : Fq) (f : RatFunc Fq)
 |----------|-------|--------|
 | P1Instance/ | 0 | ✅ Complete |
 | ResidueTrace.lean | 0 | ✅ Complete |
-| Abstract.lean | 0 | ✅ (template sorries were in comments) |
-
-**Cycle 271 Discovery**: The "3 sorries" were in a **comment block** template.
-That template (`fqAdelicRRData`) can't work for P¹ anyway - affine trap!
-Created `ProjectiveAdelicRRData` class instead.
+| AdelicH1Full.lean | 2 | Strong approx + finiteness |
+| Abstract.lean | 2 | serre_duality non-effective cases |
 
 ---
 
 ## Next Steps
 
-### Cycle 272: Fill projective infrastructure sorries
+### Cycle 273: Continue projective infrastructure
 
-**Status**: 4 sorries to fill
+**Sorries remaining** (3 distinct, 4 total instances):
 
-**Sorries remaining**:
-1. `globalPlusBoundedSubmodule_full_eq_top` (AdelicH1Full.lean:580)
+1. `globalPlusBoundedSubmodule_full_eq_top` (AdelicH1Full.lean:566)
    - Extends strong approximation to full adeles
-   - Key: show k from strong_approx has bounded infinity valuation
+   - Deep: requires showing K dense in K_∞ with controlled degree
 
-2. `RRSpace_proj_ext_canonical_sub_eq_bot` helper (AdelicH1Full.lean:641)
-   - Show f with valuation bounds at finite places is polynomial
-   - Uses: f integral at all finite places → f ∈ Polynomial Fq
-
-3. `RRSpace_proj_ext_finite` (AdelicH1Full.lean:704)
+2. `RRSpace_proj_ext_finite` (AdelicH1Full.lean:704)
    - Show RRSpace_proj_ext is finite-dimensional
-   - Bridge to existing RRSpace_ratfunc_projective finiteness
+   - Should follow RRSpace_ratfunc_projective_effective_finite pattern
 
-4. `serre_duality` D.inftyCoeff < 0 case (Abstract.lean:305)
-   - Handle negative infinity coefficients
-   - May need to analyze L(K-D) for these cases
+3. `serre_duality` non-effective cases (Abstract.lean:277, inside p1ProjectiveAdelicRRData)
+   - Case D.finite effective but D.inftyCoeff < 0
+   - Case D.finite not effective
+   - May be vacuous for P¹ if we only care about effective divisors
 
-**After Cycle 272**:
+**After Cycle 273**:
 
-**Option A**: Start new curve instance (elliptic or hyperelliptic)
-**Option B**: Extend residues to higher-order poles
+**Option A**: Prove remaining sorries are vacuous for P¹ RR
+**Option B**: Start new curve instance (elliptic or hyperelliptic)
+**Option C**: Extend residues to higher-order poles
+
+---
+
+## Cycle 272 Summary ✅
+
+**Task**: Fill projective infrastructure sorries
+
+**Achievement**:
+- Filled `RRSpace_proj_ext_canonical_sub_eq_bot` helper sorry
+- Used `eq_algebraMap_of_valuation_le_one_forall` from P1VanishingLKD.lean
+- Added `D.finite.Effective` hypothesis (necessary for proof)
+- Updated downstream theorems:
+  - `ell_proj_ext_canonical_sub_eq_zero`
+  - `serre_duality_p1`
+- Restructured Abstract.lean serre_duality proof to handle effective/non-effective cases separately
+
+**Technical fix**: The original proof assumed D.finite was effective without stating it.
+Now `RRSpace_proj_ext_canonical_sub_eq_bot` requires `hDfin : D.finite.Effective`.
+
+**Sorry count**: 4 → 3 (distinct sorries)
 
 ---
 
@@ -92,12 +111,6 @@ Created `ProjectiveAdelicRRData` class instead.
   - `SpaceModule_full_subsingleton` (H¹ = 0 for P¹)
   - `ell_proj_ext_canonical_sub_eq_zero` (L(K-D) = 0 for effective D)
   - `serre_duality_p1` (0 = 0 for P¹)
-
-**4 sorries introduced** (structural, for future cycles):
-1. `globalPlusBoundedSubmodule_full_eq_top` - strong approx for full adeles
-2. `RRSpace_proj_ext_canonical_sub_eq_bot` helper - f is polynomial
-3. `RRSpace_proj_ext_finite` - finiteness
-4. `serre_duality` negative inftyCoeff case
 
 ---
 

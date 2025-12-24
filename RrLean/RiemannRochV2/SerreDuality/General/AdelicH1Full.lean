@@ -2,6 +2,7 @@ import RrLean.RiemannRochV2.Adelic.FullAdelesBase
 import RrLean.RiemannRochV2.Adelic.AdelicH1v2
 import RrLean.RiemannRochV2.SerreDuality.RatFuncResidues
 import RrLean.RiemannRochV2.SerreDuality.P1Specific.RatFuncPairing
+import RrLean.RiemannRochV2.P1Instance.P1VanishingLKD
 
 /-!
 # Adelic H¹(D) using Full Adele Ring
@@ -601,13 +602,13 @@ theorem h1_finrank_full_eq_zero (D : ExtendedDivisor (Polynomial Fq)) :
   haveI : Subsingleton (SpaceModule_full Fq D) := SpaceModule_full_subsingleton Fq D
   exact Module.finrank_zero_of_subsingleton
 
-/-- L(K-D) = {0} when D has non-negative infinity coefficient.
+/-- L(K-D) = {0} when D is effective (finite part non-negative, infinity coeff ≥ 0).
 
-For P¹, the canonical divisor K = ⟨0, -2⟩. When D = ⟨D_fin, n⟩ with n ≥ 0:
+For P¹, the canonical divisor K = ⟨0, -2⟩. When D = ⟨D_fin, n⟩ with D_fin effective and n ≥ 0:
 K - D = ⟨-D_fin, -2 - n⟩
 
 Elements f ∈ L(K-D) must satisfy:
-1. At finite places: v(f) ≤ exp((-D_fin)(v)) (so ord_v(f) ≥ D_fin(v) ≥ 0)
+1. At finite places: v(f) ≤ exp((-D_fin)(v)) ≤ exp(0) = 1 (since D_fin(v) ≥ 0)
 2. At infinity: f.num.natDegree ≤ f.denom.natDegree + (-2 - n)
 
 Condition 1 means f has no finite poles, so f is a polynomial.
@@ -617,7 +618,7 @@ f.natDegree ≤ 0 + (-2 - n) = -2 - n < 0
 This is impossible for any nonzero polynomial, hence L(K-D) = {0}.
 -/
 theorem RRSpace_proj_ext_canonical_sub_eq_bot
-    (D : ExtendedDivisor (Polynomial Fq)) (hD : D.inftyCoeff ≥ 0) :
+    (D : ExtendedDivisor (Polynomial Fq)) (hDfin : D.finite.Effective) (hD : D.inftyCoeff ≥ 0) :
     RRSpace_proj_ext Fq (canonicalExtended Fq - D) = ⊥ := by
   ext f
   simp only [Submodule.mem_bot]
@@ -630,15 +631,29 @@ theorem RRSpace_proj_ext_canonical_sub_eq_bot
       -- K - D = ⟨0 - D.finite, -2 - D.inftyCoeff⟩
       have hdeg : (canonicalExtended Fq - D).inftyCoeff = -2 - D.inftyCoeff := rfl
       rw [hdeg] at hf_deg
-      -- f has no poles at finite places (v(f) ≤ exp((-D.finite)(v)) means integral)
+      -- f has no poles at finite places (v(f) ≤ exp((-D.finite)(v)) ≤ 1)
       -- So f is in the image of Polynomial Fq → RatFunc Fq
-      -- For polynomials: num = self, denom = 1
       have hf_poly : ∃ p : Polynomial Fq, f = algebraMap _ (RatFunc Fq) p := by
-        -- This follows from the valuation bounds at all finite places
-        -- When (-D.finite)(v) ≤ 0, we need v(f) ≤ exp((-D.finite)(v)) ≤ 1
-        -- This means f is integral at v, hence a polynomial
-        -- For D.finite effective (all coeffs ≥ 0), -D.finite has all coeffs ≤ 0
-        sorry
+        -- Use eq_algebraMap_of_valuation_le_one_forall from P1VanishingLKD
+        use f.num
+        apply eq_algebraMap_of_valuation_le_one_forall
+        intro v
+        -- hf_val v : v.valuation (RatFunc Fq) f ≤ exp((K-D).finite v)
+        -- (K-D).finite = 0 - D.finite = -D.finite
+        have h_coeff : (canonicalExtended Fq - D).finite v = -D.finite v := by
+          simp only [ExtendedDivisor.sub_finite, canonicalExtended]
+          rw [zero_sub, Finsupp.neg_apply]
+        specialize hf_val v
+        rw [h_coeff] at hf_val
+        -- D.finite v ≥ 0 since D.finite is effective, so -D.finite v ≤ 0
+        have hDv : 0 ≤ D.finite v := hDfin v
+        -- exp(-D.finite v) ≤ exp(0) = 1
+        have h_exp_le_one : WithZero.exp (-D.finite v) ≤ 1 := by
+          have h1 : (1 : WithZero (Multiplicative ℤ)) = WithZero.exp 0 := by
+            simp only [WithZero.exp, ofAdd_zero]; rfl
+          rw [h1, WithZero.exp_le_exp]
+          omega
+        exact le_trans hf_val h_exp_le_one
       obtain ⟨p, rfl⟩ := hf_poly
       -- For polynomial p: num.natDegree = p.natDegree, denom.natDegree = 0
       have hp_ne : p ≠ 0 := by
@@ -666,21 +681,21 @@ theorem RRSpace_proj_ext_canonical_sub_eq_bot
     rw [hf]
     exact Or.inl rfl
 
-/-- ℓ(K-D) = 0 for P¹ when D has non-negative infinity coefficient. -/
+/-- ℓ(K-D) = 0 for P¹ when D is effective (finite part effective, infinity coeff ≥ 0). -/
 theorem ell_proj_ext_canonical_sub_eq_zero
-    (D : ExtendedDivisor (Polynomial Fq)) (hD : D.inftyCoeff ≥ 0) :
+    (D : ExtendedDivisor (Polynomial Fq)) (hDfin : D.finite.Effective) (hD : D.inftyCoeff ≥ 0) :
     ell_proj_ext Fq (canonicalExtended Fq - D) = 0 := by
   unfold ell_proj_ext
-  rw [RRSpace_proj_ext_canonical_sub_eq_bot Fq D hD]
+  rw [RRSpace_proj_ext_canonical_sub_eq_bot Fq D hDfin hD]
   exact finrank_bot Fq (RatFunc Fq)
 
 /-- Serre duality for P¹: h¹(D) = ℓ(K-D).
 
-For P¹, both sides are 0 when D has non-negative infinity coefficient.
+For P¹, both sides are 0 when D is effective.
 -/
-theorem serre_duality_p1 (D : ExtendedDivisor (Polynomial Fq)) (hD : D.inftyCoeff ≥ 0) :
+theorem serre_duality_p1 (D : ExtendedDivisor (Polynomial Fq)) (hDfin : D.finite.Effective) (hD : D.inftyCoeff ≥ 0) :
     h1_finrank_full Fq D = ell_proj_ext Fq (canonicalExtended Fq - D) := by
-  rw [h1_finrank_full_eq_zero Fq D, ell_proj_ext_canonical_sub_eq_zero Fq D hD]
+  rw [h1_finrank_full_eq_zero Fq D, ell_proj_ext_canonical_sub_eq_zero Fq D hDfin hD]
 
 /-- RRSpace_proj_ext is finite-dimensional for P¹.
 

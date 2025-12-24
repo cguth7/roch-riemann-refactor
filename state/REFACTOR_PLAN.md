@@ -36,19 +36,19 @@ Elements are "integral at all finite places" but can have ANY pole at infinity.
 
 ---
 
-## Current Work: Cycle 272
+## Current Work: Cycle 273
 
-**Task**: Fill 4 sorries in projective infrastructure
+**Task**: Fill remaining 3 sorries in projective infrastructure
 
 **Sorries remaining**:
 | Sorry | Location | Description |
 |-------|----------|-------------|
-| `globalPlusBoundedSubmodule_full_eq_top` | AdelicH1Full:580 | Extend strong approx to full adeles |
-| `RRSpace_proj_ext_canonical_sub_eq_bot` helper | AdelicH1Full:641 | Show f is polynomial |
+| `globalPlusBoundedSubmodule_full_eq_top` | AdelicH1Full:566 | Extend strong approx to full adeles (deep) |
 | `RRSpace_proj_ext_finite` | AdelicH1Full:704 | Finiteness of RRSpace_proj_ext |
-| `serre_duality` case | Abstract:305 | D.inftyCoeff < 0 case |
+| `serre_duality` cases | Abstract:277 (inside instance) | D.inftyCoeff < 0 or D.finite not effective |
 
-**Cycle 271 completed**: Created `p1ProjectiveAdelicRRData` instance
+**Cycle 272 completed**: Filled `RRSpace_proj_ext_canonical_sub_eq_bot` helper (f is polynomial).
+Added `D.finite.Effective` hypothesis.
 
 ---
 
