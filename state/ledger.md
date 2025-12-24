@@ -6,9 +6,9 @@ Tactical tracking for Riemann-Roch formalization.
 
 ## Current State
 
-**Build**: ✅ Compiles (3 sorries in projective infrastructure, down from 4)
-**Result**: Filled `RRSpace_proj_ext_canonical_sub_eq_bot` helper sorry
-**Cycle**: 273 (Next)
+**Build**: ✅ Compiles (3 sorries in projective infrastructure)
+**Result**: Architecture analysis - discovered issues with serre_duality approach
+**Cycle**: 274 (Next)
 
 ---
 
@@ -52,28 +52,67 @@ theorem RRSpace_proj_ext_canonical_sub_eq_bot
 
 ## Next Steps
 
-### Cycle 273: Continue projective infrastructure
+### Cycle 274: Address architecture issues
 
-**Sorries remaining** (3 distinct, 4 total instances):
+**Key Discovery (Cycle 273)**: The current serre_duality proof strategy has a flaw:
+- It assumes h¹(D) = 0 for ALL D via `globalPlusBoundedSubmodule_full_eq_top`
+- This is only true when deg(D) > -2 (for P¹)
+- For D = ⟨0, -3⟩: K-D = ⟨0, 1⟩, so L(K-D) = polynomials deg ≤ 1 = dim 2
+- Serre duality h¹(D) = ℓ(K-D) gives h¹(⟨0, -3⟩) = 2, NOT 0!
+
+**Sorries remaining** (3 distinct):
 
 1. `globalPlusBoundedSubmodule_full_eq_top` (AdelicH1Full.lean:566)
-   - Extends strong approximation to full adeles
-   - Deep: requires showing K dense in K_∞ with controlled degree
+   - ⚠️ ARCHITECTURE ISSUE: Claims K + A_K(D) = full adeles for ALL D
+   - Only true for D with deg(D) > 2g-2 = -2 (for P¹)
+   - Needs hypothesis restriction OR different approach
 
-2. `RRSpace_proj_ext_finite` (AdelicH1Full.lean:704)
-   - Show RRSpace_proj_ext is finite-dimensional
-   - Should follow RRSpace_ratfunc_projective_effective_finite pattern
+2. `RRSpace_proj_ext_finite` (AdelicH1Full.lean:724)
+   - Strategy: pole-clearing multiplication then polynomial embedding
+   - When D.finite has positive coefficients, POLES are allowed (not just polynomials)
+   - Requires constructing clearing polynomial q = ∏ (generator)^{-D.finite(v)}
 
-3. `serre_duality` non-effective cases (Abstract.lean:277, inside p1ProjectiveAdelicRRData)
-   - Case D.finite effective but D.inftyCoeff < 0
-   - Case D.finite not effective
-   - May be vacuous for P¹ if we only care about effective divisors
+3. `serre_duality` non-effective cases (Abstract.lean:300, 304)
+   - ⚠️ CANNOT prove as both = 0 for non-effective D
+   - Needs actual Serre duality via residue pairing, not both-sides-zero argument
 
-**After Cycle 273**:
+**Recommended approach for Cycle 274**:
 
-**Option A**: Prove remaining sorries are vacuous for P¹ RR
-**Option B**: Start new curve instance (elliptic or hyperelliptic)
-**Option C**: Extend residues to higher-order poles
+**Option A**: Restrict `ProjectiveAdelicRRData` to effective divisors only
+- Simpler, covers main P¹ RR use case
+- Leave full Serre duality for future work
+
+**Option B**: Implement proper residue pairing for non-effective cases
+- More general, but requires significant infrastructure
+
+**Option C**: Focus on `RRSpace_proj_ext_finite` with pole-clearing approach
+- Independent of serre_duality issues
+- Mechanical proof once clearing polynomial is constructed
+
+---
+
+## Cycle 273 Summary ✅
+
+**Task**: Analyze remaining sorries and attempt to fill one
+
+**Achievement**: Architecture analysis revealed fundamental issues:
+
+1. **Serre duality approach flaw discovered**:
+   - Current code assumes h¹(D) = 0 for ALL D (via `globalPlusBoundedSubmodule_full_eq_top`)
+   - This is FALSE for non-effective D (e.g., D = ⟨0, -3⟩ gives h¹(D) = 2)
+   - The "both sides = 0" proof strategy only works for effective divisors
+   - Full Serre duality requires actual residue pairing, not triviality argument
+
+2. **RRSpace_proj_ext_finite complexity**:
+   - When D.finite(v) > 0, POLES are allowed at place v (exp(D.finite(v)) > 1)
+   - Elements are NOT necessarily polynomials when D.finite has positive coefficients
+   - Correct approach: pole-clearing multiplication by ∏ generator^{max(0, D.finite(v))}
+
+3. **Updated proof strategy**:
+   - Added detailed comment in RRSpace_proj_ext_finite explaining pole-clearing approach
+   - Documented architecture issues in ledger for future cycles
+
+**No sorry count change** - this was an investigative cycle that clarified the path forward.
 
 ---
 

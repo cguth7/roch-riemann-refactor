@@ -703,19 +703,24 @@ This follows from the finiteness of RRSpace_ratfunc_projective via equivalence.
 -/
 instance RRSpace_proj_ext_finite (D : ExtendedDivisor (Polynomial Fq)) :
     Module.Finite Fq (RRSpace_proj_ext Fq D) := by
-  -- The key is that RRSpace_proj_ext D contains only functions with
-  -- bounded poles at finite places AND bounded degree at infinity.
-  -- This means they form a finite-dimensional space over Fq.
+  -- Strategy: Embed into a finite-dimensional polynomial space.
   --
-  -- For D.inftyCoeff ≤ 0: The degree bound num.natDegree ≤ denom.natDegree + D.inftyCoeff
-  --   is quite restrictive. Combined with the pole bounds at finite places,
-  --   this gives a finite-dimensional space.
+  -- The key insight is that RRSpace_proj_ext D has bounded poles:
+  -- 1. At finite places: poles bounded by max(0, D.finite(v))
+  -- 2. At infinity: degree bounded by D.inftyCoeff
   --
-  -- For D.inftyCoeff > 0: The space is larger but still finite-dimensional
-  --   as it's contained in polynomials of bounded degree.
+  -- This gives a finite-dimensional space because:
+  -- - Denominator is bounded (from finite place constraints)
+  -- - Numerator is bounded (from infinity constraint + denominator bound)
   --
-  -- We prove this by embedding into a finite-dimensional polynomial space.
-  -- Since this requires detailed analysis of the structure, we defer for now.
+  -- Implementation: Define a clearing polynomial q that clears all allowed poles,
+  -- then embed f ↦ f·q into Polynomial.degreeLT of appropriate bound.
+  --
+  -- NOTE (Cycle 273 Discovery): When D.finite has positive coefficients,
+  -- poles ARE allowed at those places. The proof requires handling this
+  -- via pole-clearing multiplication, not just the polynomial embedding.
+  --
+  -- Deferred to future cycle for full implementation.
   sorry
 
 end P1Instance

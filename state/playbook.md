@@ -1,6 +1,6 @@
 # Playbook
 
-Strategic guide for formalizing Riemann-Roch. Updated Cycle 270.
+Strategic guide for formalizing Riemann-Roch. Updated Cycle 273.
 
 ---
 
@@ -334,6 +334,22 @@ For P¹, `ell_proj(0)` = ∞ (all polynomials are integral at finite places)!
 
 **Rule**: For projective curves, always use `ProjectiveAdelicRRData` not `AdelicRRData`.
 
+### Serre Duality "Both Zero" Trap (Cycle 273 Lesson)
+The naive approach to Serre duality for P¹:
+- "h¹(D) = 0 by strong approximation"
+- "ℓ(K-D) = 0 because K-D has negative degree"
+- "Therefore 0 = 0, Serre duality proved!"
+
+**Problem**: This is ONLY true for effective D with deg(D) > -2:
+- For D = ⟨0, -3⟩ (non-effective), K-D = ⟨0, 1⟩
+- L(K-D) = polynomials of degree ≤ 1 = dimension 2
+- So ℓ(K-D) = 2 ≠ 0, and h¹(D) = 2 as well!
+
+**Rule**: For Serre duality with arbitrary divisors:
+- Cannot use "both = 0" strategy
+- Must use actual residue pairing: h¹(D) = ℓ(K-D) via perfect pairing
+- OR restrict to effective divisors only (covers main RR use case)
+
 ---
 
 ## What's Proved (Milestones)
@@ -409,7 +425,7 @@ What was actually true:
 
 ---
 
-## Honest Sorry Audit (Cycle 272)
+## Honest Sorry Audit (Cycle 273)
 
 ### Total: 3 real sorries (in projective infrastructure)
 
@@ -419,12 +435,12 @@ What was actually true:
 **Abstract.lean** - 2 sorries (Serre duality non-effective cases)
 
 **Sorries remaining**:
-1. `globalPlusBoundedSubmodule_full_eq_top` - extends strong approx to full adeles (deep)
-2. `RRSpace_proj_ext_finite` - finiteness of RRSpace_proj_ext
-3. `p1ProjectiveAdelicRRData.serre_duality` - two cases: D.inftyCoeff < 0 and D.finite not effective
+1. `globalPlusBoundedSubmodule_full_eq_top` - ⚠️ ARCHITECTURE ISSUE: claims h¹(D)=0 for all D (only true for deg(D) > -2)
+2. `RRSpace_proj_ext_finite` - needs pole-clearing approach, not just polynomial embedding
+3. `p1ProjectiveAdelicRRData.serre_duality` - ⚠️ Cannot prove via "both=0" for non-effective D
 
-**Cycle 272 achieved**: Filled `RRSpace_proj_ext_canonical_sub_eq_bot` helper (f is polynomial).
-Added `D.finite.Effective` hypothesis to make proof work.
+**Cycle 273 discovery**: The serre_duality proof strategy is fundamentally flawed for non-effective D.
+For D = ⟨0, -3⟩: ℓ(K-D) = 2 ≠ 0. True Serre duality requires residue pairing, not triviality.
 
 ### What's Proved (no sorryAx)
 
