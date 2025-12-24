@@ -1,5 +1,6 @@
 import RrLean.RiemannRochV2.Adelic.AdelicH1v2
 import RrLean.RiemannRochV2.ResidueTheory.DifferentIdealBridge
+import RrLean.RiemannRochV2.SerreDuality.General.AdelicH1Full
 import Mathlib.LinearAlgebra.PerfectPairing.Basic
 
 /-!
@@ -204,5 +205,67 @@ def fqAdelicRRData : AdelicH1v2.AdelicRRData k R K canonical genus where
 -/
 
 end InstantiateAdelicRRData
+
+/-! ## Projective AdelicRRData for P¹
+
+The affine `AdelicRRData` uses `RRSpace_proj` which has infinite dimension at D = 0
+for P¹ (all polynomials are integral). Instead, we need a **projective** version
+that uses `RRSpace_proj_ext` from `AdelicH1Full.lean`.
+
+This section defines `ProjectiveAdelicRRData` using `ExtendedDivisor` and
+`ell_proj_ext`, which correctly handles the infinity place.
+-/
+
+section ProjectiveAdelicRRData
+
+-- Import types from AdelicH1Full (ExtendedDivisor, RRSpace_proj_ext, etc.)
+-- These are defined in SerreDuality/General/AdelicH1Full.lean
+
+variable (Fq : Type*) [Field Fq] [Fintype Fq] [DecidableEq Fq]
+
+/-- Projective Adelic Riemann-Roch Data for curves with explicit infinity.
+
+Unlike the affine `AdelicRRData`, this uses:
+- `ExtendedDivisor` instead of `DivisorV2` (includes infinity coefficient)
+- `RRSpace_proj_ext` instead of `RRSpace_proj` (projective L(D) with degree bound)
+- `ell_proj_ext` instead of `ell_proj` (projective dimension)
+
+**Why this works for P¹**:
+- `RRSpace_proj_ext ⟨0, 0⟩` = constants only (degree bound adds infinity constraint)
+- `ell_proj_ext ⟨0, 0⟩` = 1 (finite dimensional!)
+- The P¹ proofs in `P1Instance/` already use projective spaces
+-/
+class ProjectiveAdelicRRData (canonical : ExtendedDivisor (Polynomial Fq)) (genus : ℕ) where
+  /-- H¹(D) is finite-dimensional for all extended divisors D. -/
+  h1_finite : ∀ D : ExtendedDivisor (Polynomial Fq),
+    Module.Finite Fq (SpaceModule_full Fq D)
+  /-- L(D) is finite-dimensional for all extended divisors D. -/
+  ell_finite : ∀ D : ExtendedDivisor (Polynomial Fq),
+    Module.Finite Fq (RRSpace_proj_ext Fq D)
+  /-- h¹(D) = 0 when deg(D) > 2g - 2. -/
+  h1_vanishing : ∀ D : ExtendedDivisor (Polynomial Fq),
+    D.deg > 2 * (genus : ℤ) - 2 → h1_finrank_full Fq D = 0
+  /-- Serre duality: h¹(D) = ℓ(K - D). -/
+  serre_duality : ∀ D : ExtendedDivisor (Polynomial Fq),
+    h1_finrank_full Fq D = ell_proj_ext Fq (canonical - D)
+  /-- deg(K) = 2g - 2. -/
+  deg_canonical : canonical.deg = 2 * (genus : ℤ) - 2
+
+/-- P¹ canonical divisor as ExtendedDivisor: K = ⟨0, -2⟩ (no finite part, -2 at ∞). -/
+def p1CanonicalExt : ExtendedDivisor (Polynomial Fq) := ⟨0, -2⟩
+
+/-- P¹ genus is 0. -/
+def p1GenusExt : ℕ := 0
+
+/-- deg(p1CanonicalExt) = -2. -/
+theorem deg_p1CanonicalExt : (p1CanonicalExt Fq).deg = -2 := by
+  simp only [p1CanonicalExt, ExtendedDivisor.deg, DivisorV2.deg_zero, zero_add]
+
+/-- deg(K) = 2g - 2 for P¹. -/
+theorem deg_p1CanonicalExt_eq_formula :
+    (p1CanonicalExt Fq).deg = 2 * (p1GenusExt : ℤ) - 2 := by
+  simp only [deg_p1CanonicalExt, p1GenusExt, Nat.cast_zero, mul_zero, zero_sub]
+
+end ProjectiveAdelicRRData
 
 end RiemannRochV2

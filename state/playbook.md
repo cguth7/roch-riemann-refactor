@@ -317,6 +317,23 @@ to multiple prime ideals!
 - ✅ `generator_not_mem_other_prime` is TRUE (monic irreducible)
 - **Rule**: Always use `generator` for coprimality arguments in k[X], not abstract uniformizer
 
+### Affine vs Projective Trap (Cycle 271 Lesson)
+The `AdelicRRData` class uses `ell_proj` which is **affine** (HeightOneSpectrum only).
+For P¹, `ell_proj(0)` = ∞ (all polynomials are integral at finite places)!
+
+**Two dimension functions exist**:
+| Function | Type | Dimension at D=0 for P¹ |
+|----------|------|-------------------------|
+| `ell_proj` | Affine | ∞ (unusable!) |
+| `ell_proj_ext` | Projective | 1 (correct) |
+
+**Solution**: Use `ProjectiveAdelicRRData` (in Abstract.lean) which uses:
+- `ExtendedDivisor` - includes infinity coefficient
+- `RRSpace_proj_ext` - projective L(D) with degree bound
+- `ell_proj_ext` - projective dimension
+
+**Rule**: For projective curves, always use `ProjectiveAdelicRRData` not `AdelicRRData`.
+
 ---
 
 ## What's Proved (Milestones)
@@ -392,22 +409,18 @@ What was actually true:
 
 ---
 
-## Honest Sorry Audit (Cycle 270)
+## Honest Sorry Audit (Cycle 271)
 
-### Total: 3 sorries in non-archived code
+### Total: 0 real sorries (template sorries in comments only)
 
-**P1Instance/** - ✅ SORRY-FREE - All P¹ Riemann-Roch complete!
+**P1Instance/** - ✅ SORRY-FREE
+**ResidueTrace.lean** - ✅ SORRY-FREE
+**Abstract.lean** - ✅ No real sorries (template in comments)
 
-**ResidueTrace.lean** - ✅ SORRY-FREE - Traced residue equality proved!
+**Note**: The "3 sorries" previously listed in Abstract.lean were in a **comment block**
+showing a template for `fqAdelicRRData`. That template can't work for P¹ anyway (affine trap).
 
-**Abstract.lean** (3 sorries) - placeholder `AdelicRRData` instance for general curves:
-| Line | Field | What's needed |
-|------|-------|---------------|
-| 199 | `h1_finite` | H¹ finiteness from compactness |
-| 200 | `ell_finite` | L(D) finiteness |
-| 202 | `h1_vanishing` | H¹ vanishing |
-
-**Next step**: Wire P¹ instance into Abstract.lean (Cycle 271)
+Cycle 271 added `ProjectiveAdelicRRData` class - needs P¹ instantiation.
 
 ### What's Proved (no sorryAx)
 

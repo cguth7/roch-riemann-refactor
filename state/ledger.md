@@ -8,7 +8,7 @@ Tactical tracking for Riemann-Roch formalization.
 
 **Build**: ✅ Compiles (0 sorries in P1Instance, 0 sorries in ResidueTrace.lean)
 **Result**: Riemann-Roch for P¹ fully proved for all effective divisors
-**Cycle**: 270 (Complete)
+**Cycle**: 271 (In Progress)
 
 ---
 
@@ -40,28 +40,41 @@ theorem tracedResidueAtPlace_eq_residueAt_linear (α : Fq) (f : RatFunc Fq)
 |----------|-------|--------|
 | P1Instance/ | 0 | ✅ Complete |
 | ResidueTrace.lean | 0 | ✅ Complete |
-| Abstract.lean | 3 | Placeholder for general curves |
+| Abstract.lean | 0 | ✅ (template sorries were in comments) |
 
-The 3 Abstract.lean sorries are `h1_finite`, `ell_finite`, `h1_vanishing` - these are
-placeholders in the curve-agnostic framework. P1Instance proves all these already.
+**Cycle 271 Discovery**: The "3 sorries" were in a **comment block** template.
+That template (`fqAdelicRRData`) can't work for P¹ anyway - affine trap!
+Created `ProjectiveAdelicRRData` class instead.
 
 ---
 
 ## Next Steps
 
-### Cycle 271: Wire P¹ into Abstract.lean
+### Cycle 271: Wire P¹ into Abstract.lean (IN PROGRESS)
 
-**Goal**: Connect P1Instance proofs to the curve-agnostic Abstract.lean framework
+**Discovery**: The affine `AdelicRRData` **cannot** be instantiated for P¹!
+- `AdelicRRData` requires `ell_finite : ∀ D, Module.Finite k (RRSpace_proj k R K D)`
+- For P¹: `RRSpace_proj(0)` = all polynomials = **infinite dimensional** (affine trap)
+- P1Instance proofs use `ell_ratfunc_projective` (projective) not `ell_proj` (affine)
 
-**The 3 sorries to fill**:
-1. `h1_finite` - H¹ finiteness (P1Instance has this)
-2. `ell_finite` - L(D) finiteness (P1Instance has this)
-3. `h1_vanishing` - H¹ vanishing (P1Instance has this)
+**Solution**: Created `ProjectiveAdelicRRData` class in Abstract.lean that uses:
+- `ExtendedDivisor` (includes infinity coefficient) instead of `DivisorV2`
+- `RRSpace_proj_ext` (projective L(D) with degree bound) instead of `RRSpace_proj`
+- `ell_proj_ext` (projective dimension) instead of `ell_proj`
 
-**Why this matters**: Validates that the abstract framework actually works by instantiating
-it with a concrete curve (P¹). Sets up the template for other curves.
+**Progress**:
+- [x] Analyzed affine vs projective mismatch
+- [x] Found projective infrastructure in `AdelicH1Full.lean`
+- [x] Created `ProjectiveAdelicRRData` class in Abstract.lean
+- [ ] Instantiate `ProjectiveAdelicRRData` for P¹
 
-**Success criteria**: Abstract.lean compiles with 0 sorries for P¹ instance.
+**Remaining**:
+- Create P¹ instance of `ProjectiveAdelicRRData` using:
+  - `h1_finite`: From `h1_subsingleton` (H¹ is Subsingleton → finite)
+  - `ell_finite`: From `RRSpace_ratfunc_projective_effective_finite`
+  - `h1_vanishing`: From `h1_finrank_zero_of_large_deg`
+  - `serre_duality`: Both H¹(D) and L(K-D) are 0 for P¹
+  - `deg_canonical`: -2 = 2*0 - 2
 
 ### After Cycle 271:
 
