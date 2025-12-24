@@ -36,19 +36,27 @@ Elements are "integral at all finite places" but can have ANY pole at infinity.
 
 ---
 
-## Current Work: Cycle 273
+## Current Work: Cycle 274
 
-**Task**: Fill remaining 3 sorries in projective infrastructure
+**Task**: Prove `RRSpace_proj_ext_finite` via pole-clearing approach
+
+**Strategic Direction (Post-Cycle 273 Review)**:
+- ⚠️ Option A (restrict to effective divisors) REJECTED - breaks roadmap for general curves
+- **Priority 1**: Finiteness via pole-clearing (Cycle 274)
+- **Priority 2**: Actual residue pairing for Serre duality (after finiteness)
 
 **Sorries remaining**:
 | Sorry | Location | Description |
 |-------|----------|-------------|
-| `globalPlusBoundedSubmodule_full_eq_top` | AdelicH1Full:566 | Extend strong approx to full adeles (deep) |
-| `RRSpace_proj_ext_finite` | AdelicH1Full:704 | Finiteness of RRSpace_proj_ext |
-| `serre_duality` cases | Abstract:277 (inside instance) | D.inftyCoeff < 0 or D.finite not effective |
+| `globalPlusBoundedSubmodule_full_eq_top` | AdelicH1Full:566 | ⚠️ Claims h¹(D)=0 for all D (FALSE for non-effective) |
+| `RRSpace_proj_ext_finite` | AdelicH1Full:724 | **PRIORITY**: Finiteness via pole-clearing |
+| `serre_duality` cases | Abstract:300,304 | Needs actual residue pairing, not "both=0" |
 
-**Cycle 272 completed**: Filled `RRSpace_proj_ext_canonical_sub_eq_bot` helper (f is polynomial).
-Added `D.finite.Effective` hypothesis.
+**Cycle 274 Implementation Plan**:
+1. Construct clearing polynomial `q = ∏ generator^{max(0, D.finite(v))}`
+2. Define embedding L(D) ↪ Polynomial.degreeLT via f ↦ f·q
+3. Prove embedding is injective
+4. Conclude finiteness from finite-dimensional target
 
 ---
 

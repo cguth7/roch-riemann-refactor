@@ -442,6 +442,11 @@ What was actually true:
 **Cycle 273 discovery**: The serre_duality proof strategy is fundamentally flawed for non-effective D.
 For D = ⟨0, -3⟩: ℓ(K-D) = 2 ≠ 0. True Serre duality requires residue pairing, not triviality.
 
+**Strategic Direction (Post-Cycle 273 Review)**:
+- ⚠️ Do NOT restrict to effective divisors - this breaks the roadmap for general curves
+- **Priority 1**: Prove `RRSpace_proj_ext_finite` via pole-clearing (foundational)
+- **Priority 2**: Implement actual residue pairing for Serre duality (uses finiteness)
+
 ### What's Proved (no sorryAx)
 
 - ✅ `ell_ratfunc_projective_eq_degWeighted_plus_one` - ℓ(D) = degWeighted(D) + 1 for all effective D

@@ -76,18 +76,32 @@ theorem RRSpace_proj_ext_canonical_sub_eq_bot
    - ⚠️ CANNOT prove as both = 0 for non-effective D
    - Needs actual Serre duality via residue pairing, not both-sides-zero argument
 
-**Recommended approach for Cycle 274**:
+**Strategic Direction (Gemini Review)**:
 
-**Option A**: Restrict `ProjectiveAdelicRRData` to effective divisors only
-- Simpler, covers main P¹ RR use case
-- Leave full Serre duality for future work
+⚠️ **Option A REJECTED**: Restricting to effective divisors is a retreat that breaks the
+roadmap for general curves (elliptic, hyperelliptic). The duality between positive and
+negative degree divisors IS the point of the theorem.
 
-**Option B**: Implement proper residue pairing for non-effective cases
-- More general, but requires significant infrastructure
+**Cycle 274: Execute Option C (Finiteness via Pole-Clearing)**
 
-**Option C**: Focus on `RRSpace_proj_ext_finite` with pole-clearing approach
-- Independent of serre_duality issues
-- Mechanical proof once clearing polynomial is constructed
+Target: `RRSpace_proj_ext_finite` in AdelicH1Full.lean
+
+Rationale: Cannot count dimensions (ℓ(D)) until the space is proven finite-dimensional.
+
+Implementation plan:
+1. **Pole-Clearing Lemma**: Construct polynomial `q = ∏ generator^{max(0, D.finite(v))}`
+   that clears all allowed poles of any f ∈ L(D)
+2. **Embedding**: Define L(D) ↪ L(0) (or into polynomial ring mod ideal) via f ↦ f·q
+3. **Conclude**: Target is finite-dimensional (already proved), so L(D) is too
+
+**After Cycle 274: Execute Option B (Residue Pairing)**
+
+Target: `serre_duality` in Abstract.lean
+
+Once finiteness is secure:
+1. Abandon "both sides = 0" strategy for non-effective divisors
+2. Implement actual Residue Pairing: ⟨f, α⟩ = ∑ Res(f·α)
+3. Use finiteness to show pairing is perfect → H¹(D) ≅ L(K-D)ᵛ
 
 ---
 
