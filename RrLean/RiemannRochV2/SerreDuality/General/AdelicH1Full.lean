@@ -746,6 +746,127 @@ lemma clearingPoly_natDegree (D : DivisorV2 (Polynomial Fq)) :
   intro v _
   rw [Polynomial.natDegree_pow, PlaceDegree.degree]
 
+/-! ### Valuation Properties of Clearing Polynomial -/
+
+open PlaceDegree in
+/-- At a place v with D(v) > 0, the clearing polynomial has intValuation = exp(-D(v)).
+
+The product ∏_{w : D(w) > 0} generator(w)^{D(w)} has:
+- At v with D(v) > 0: valuation exp(-D(v)) from generator(v)^{D(v)}, times 1 from other factors
+- Uses: generator(v) has v.intValuation = exp(-1)
+- Uses: generator(w) for w ≠ v has v.intValuation = 1 (different primes are coprime)
+-/
+lemma clearingPoly_intValuation_at_pos (D : DivisorV2 (Polynomial Fq))
+    (v : HeightOneSpectrum (Polynomial Fq)) (hv : 0 < D v) :
+    v.intValuation (clearingPoly Fq D) = WithZero.exp (-(D v)) := by
+  unfold clearingPoly
+  -- v ∈ positiveSupport since D(v) > 0
+  have hv_mem : v ∈ D.positiveSupport := by
+    simp only [DivisorV2.positiveSupport, Finset.mem_filter]
+    constructor
+    · exact Finsupp.mem_support_iff.mpr (ne_of_gt hv)
+    · exact hv
+  -- Split the product at v
+  rw [← Finset.mul_prod_erase _ _ hv_mem]
+  rw [map_mul]
+  -- Compute v.intValuation of generator(v)^{D(v).toNat}
+  have hgen_pow_val : v.intValuation ((generator Fq v) ^ (D v).toNat) =
+      WithZero.exp (-(D v).toNat : ℤ) := by
+    rw [map_pow, generator_intValuation_at_self Fq v, ← WithZero.exp_nsmul]
+    simp only [smul_neg, nsmul_eq_mul, mul_one]
+  -- Compute v.intValuation of the rest = 1
+  have hrest_val : v.intValuation (∏ w ∈ (D.positiveSupport.erase v),
+      (generator Fq w) ^ (D w).toNat) = 1 := by
+    rw [map_prod]
+    rw [Finset.prod_eq_one]
+    intro w hw
+    rw [Finset.mem_erase] at hw
+    -- w ≠ v, so v.intValuation(generator(w)) = 1
+    have hgen_w_val : v.intValuation (generator Fq w) = 1 :=
+      generator_intValuation_at_other_prime Fq w v hw.1.symm
+    rw [map_pow, hgen_w_val, one_pow]
+  rw [hgen_pow_val, hrest_val, mul_one]
+  -- D(v) > 0 means D(v).toNat = D(v), so exp(-(D v).toNat) = exp(-D(v))
+  congr 1
+  rw [Int.toNat_of_nonneg (le_of_lt hv)]
+
+open PlaceDegree in
+/-- At a place v with D(v) ≤ 0, the clearing polynomial has intValuation = 1.
+
+The clearing polynomial only includes factors from places w with D(w) > 0.
+If D(v) ≤ 0, then v is not in the positive support, so generator(w) ≠ generator(v) for all w
+in the product, hence v.intValuation(generator(w)) = 1 for all factors.
+-/
+lemma clearingPoly_intValuation_at_nonpos (D : DivisorV2 (Polynomial Fq))
+    (v : HeightOneSpectrum (Polynomial Fq)) (hv : D v ≤ 0) :
+    v.intValuation (clearingPoly Fq D) = 1 := by
+  unfold clearingPoly
+  rw [map_prod]
+  rw [Finset.prod_eq_one]
+  intro w hw
+  simp only [DivisorV2.positiveSupport, Finset.mem_filter] at hw
+  -- w ∈ positiveSupport means D(w) > 0, so w ≠ v (since D(v) ≤ 0)
+  have hwv : w ≠ v := by
+    intro heq
+    subst heq
+    omega
+  -- v.intValuation(generator(w)) = 1 since w ≠ v
+  have hgen_w_val : v.intValuation (generator Fq w) = 1 :=
+    generator_intValuation_at_other_prime Fq w v hwv.symm
+  rw [map_pow, hgen_w_val, one_pow]
+
+open PlaceDegree in
+/-- For f ∈ RRSpace_proj_ext(D), f · clearingPoly has intValuation ≤ 1 at all finite places.
+
+At v with D(v) > 0:
+- f has v.valuation ≤ exp(D(v)) (allowed poles)
+- clearingPoly has v.intValuation = exp(-D(v))
+- Product: v.valuation(f · clearingPoly) = v.valuation(f) · v.intValuation(clearingPoly)
+                                        ≤ exp(D(v)) · exp(-D(v)) = 1
+
+At v with D(v) ≤ 0:
+- f has v.valuation ≤ exp(D(v)) ≤ 1 (no poles allowed)
+- clearingPoly has v.intValuation = 1
+- Product: ≤ 1 · 1 = 1
+-/
+lemma mul_clearingPoly_valuation_le_one (D : ExtendedDivisor (Polynomial Fq))
+    (f : RatFunc Fq) (hf : f ∈ RRSpace_proj_ext Fq D)
+    (v : HeightOneSpectrum (Polynomial Fq)) :
+    v.valuation (RatFunc Fq) (f * algebraMap (Polynomial Fq) (RatFunc Fq) (clearingPoly Fq D.finite)) ≤ 1 := by
+  -- Handle f = 0 case
+  rcases hf with rfl | ⟨hf_val, _⟩
+  · simp only [zero_mul, Valuation.map_zero]; exact WithZero.zero_le _
+  -- f ≠ 0 case
+  rw [map_mul]
+  -- Convert intValuation to valuation for the polynomial
+  have hq_val : v.valuation (RatFunc Fq) (algebraMap (Polynomial Fq) (RatFunc Fq) (clearingPoly Fq D.finite)) =
+      v.intValuation (clearingPoly Fq D.finite) := by
+    exact HeightOneSpectrum.valuation_of_algebraMap v (clearingPoly Fq D.finite)
+  rw [hq_val]
+  -- Split into cases based on sign of D.finite(v)
+  by_cases hv_pos : 0 < D.finite v
+  · -- Case D.finite(v) > 0: allowed poles
+    rw [clearingPoly_intValuation_at_pos Fq D.finite v hv_pos]
+    specialize hf_val v
+    -- v.valuation(f) ≤ exp(D.finite(v))
+    -- v.intValuation(clearingPoly) = exp(-D.finite(v))
+    -- Product ≤ exp(D.finite(v)) · exp(-D.finite(v)) = exp(0) = 1
+    calc v.valuation (RatFunc Fq) f * WithZero.exp (-D.finite v)
+        ≤ WithZero.exp (D.finite v) * WithZero.exp (-D.finite v) := by
+          apply mul_le_mul_of_nonneg_right hf_val (WithZero.zero_le _)
+      _ = WithZero.exp (D.finite v + (-D.finite v)) := (WithZero.exp_add _ _).symm
+      _ = WithZero.exp 0 := by ring_nf
+      _ = 1 := WithZero.exp_zero
+  · -- Case D.finite(v) ≤ 0: no poles allowed, f already integral
+    push_neg at hv_pos
+    rw [clearingPoly_intValuation_at_nonpos Fq D.finite v hv_pos, mul_one]
+    specialize hf_val v
+    -- v.valuation(f) ≤ exp(D.finite(v)) ≤ exp(0) = 1 since D.finite(v) ≤ 0
+    calc v.valuation (RatFunc Fq) f
+        ≤ WithZero.exp (D.finite v) := hf_val
+      _ ≤ WithZero.exp 0 := WithZero.exp_le_exp.mpr hv_pos
+      _ = 1 := WithZero.exp_zero
+
 /-- RRSpace_proj_ext is finite-dimensional for P¹.
 
 **Strategy (Pole-Clearing Embedding)**:
@@ -767,16 +888,216 @@ instance RRSpace_proj_ext_finite (D : ExtendedDivisor (Polynomial Fq)) :
   -- Strategy: The clearing polynomial q clears all allowed poles
   -- Map f ↦ f·q embeds L(D) into bounded-degree polynomials
   -- Bounded-degree polynomials are finite-dimensional
-  --
-  -- Key ingredients needed:
-  -- 1. mul_clearingPoly_integral: f·q is integral at all finite places
-  -- 2. eq_algebraMap_of_valuation_le_one_forall: integral at all finite ⟹ polynomial
-  -- 3. Degree bound from intDegree constraint + clearing poly degree
-  -- 4. Polynomial.degreeLT is finite-dimensional
-  --
-  -- Cycle 274: Architecture established with clearing polynomial infrastructure
-  -- Remaining: Fill valuation arithmetic for mul_clearingPoly_integral
-  sorry
+  let q := clearingPoly Fq D.finite
+  have hq_ne : q ≠ 0 := clearingPoly_ne_zero Fq D.finite
+  let q_K := algebraMap (Polynomial Fq) (RatFunc Fq) q
+  have hq_K_ne : q_K ≠ 0 := RatFunc.algebraMap_ne_zero hq_ne
+
+  -- Step 1: Define the embedding f ↦ f · q
+  -- For f ∈ L(D), f·q is integral at all finite places, hence a polynomial
+  -- The degree of f·q is bounded by D.inftyCoeff + deg(q)
+
+  -- First, show that for any f ∈ L(D), f·q is a polynomial
+  have h_is_poly : ∀ f ∈ RRSpace_proj_ext Fq D,
+      ∃ p : Polynomial Fq, f * q_K = algebraMap (Polynomial Fq) (RatFunc Fq) p := by
+    intro f hf
+    use (f * q_K).num
+    apply eq_algebraMap_of_valuation_le_one_forall
+    intro v
+    exact mul_clearingPoly_valuation_le_one Fq D f hf v
+
+  -- Step 2: The map is injective (multiplication by nonzero q_K)
+  -- This means dim(L(D)) ≤ dim(image of L(D) under f ↦ f·q)
+
+  -- Step 3: Bound the degree of f·q for f ∈ L(D)
+  -- If f ∈ L(D), then f.intDegree ≤ D.inftyCoeff
+  -- q.natDegree = clearingPoly_natDegree
+  -- So (f·q).intDegree = f.intDegree + q.intDegree ≤ D.inftyCoeff + q.natDegree
+
+  -- Degree bound for the polynomial f·q
+  have h_deg_bound : ∀ f ∈ RRSpace_proj_ext Fq D,
+      ∀ p : Polynomial Fq, f * q_K = algebraMap (Polynomial Fq) (RatFunc Fq) p →
+      (p.natDegree : ℤ) ≤ D.inftyCoeff + (q.natDegree : ℤ) := by
+    intro f hf p hp
+    -- Handle f = 0 case
+    by_cases hf_zero : f = 0
+    · subst hf_zero
+      simp only [zero_mul] at hp
+      -- hp : 0 = algebraMap p, which means p = 0 by injectivity
+      have hp_zero : p = 0 := by
+        have hp' : algebraMap (Polynomial Fq) (RatFunc Fq) p = algebraMap (Polynomial Fq) (RatFunc Fq) 0 := by
+          simp only [map_zero]; exact hp.symm
+        exact RatFunc.algebraMap_injective (Polynomial Fq) hp'
+      simp only [hp_zero, Polynomial.natDegree_zero, Nat.cast_zero]
+      have hq_deg_nn : (0 : ℤ) ≤ q.natDegree := Nat.cast_nonneg _
+      linarith
+    -- f ≠ 0 case
+    rcases hf with rfl | ⟨_, hf_deg⟩
+    · exact absurd rfl hf_zero
+    -- f.intDegree ≤ D.inftyCoeff from hf_deg
+    have hf_int : f.intDegree ≤ D.inftyCoeff := by
+      simp only [RatFunc.intDegree] at hf_deg ⊢; omega
+    -- q.intDegree = q.natDegree (polynomial)
+    have hq_int : q_K.intDegree = (q.natDegree : ℤ) := RatFunc.intDegree_polynomial
+    -- f·q is nonzero since f ≠ 0 and q ≠ 0
+    have hfq_ne : f * q_K ≠ 0 := mul_ne_zero hf_zero hq_K_ne
+    -- (f·q).intDegree = f.intDegree + q.intDegree
+    have hfq_int : (f * q_K).intDegree = f.intDegree + q_K.intDegree :=
+      RatFunc.intDegree_mul hf_zero hq_K_ne
+    -- p.intDegree = (f·q).intDegree since p = f·q as RatFunc
+    have hp_int : (algebraMap (Polynomial Fq) (RatFunc Fq) p).intDegree = (p.natDegree : ℤ) :=
+      RatFunc.intDegree_polynomial
+    rw [← hp] at hp_int
+    calc (p.natDegree : ℤ)
+        = (f * q_K).intDegree := hp_int.symm
+      _ = f.intDegree + q_K.intDegree := hfq_int
+      _ ≤ D.inftyCoeff + q_K.intDegree := by linarith
+      _ = D.inftyCoeff + (q.natDegree : ℤ) := by rw [hq_int]
+
+  -- Step 4: Construct the embedding into a finite-dimensional space
+  -- The bound is D.inftyCoeff + q.natDegree
+  -- If this bound is < 0, then L(D) = {0}, which is finite-dimensional
+  -- If this bound is ≥ 0, embed into Polynomial.degreeLT (bound.toNat + 1)
+
+  let bound := D.inftyCoeff + (q.natDegree : ℤ)
+
+  by_cases hbound_neg : bound < 0
+  · -- Case: bound < 0, so L(D) ⊆ {0}
+    -- Any f ∈ L(D) with f ≠ 0 would give polynomial p with natDegree ≤ bound < 0, impossible
+    have h_trivial : RRSpace_proj_ext Fq D = ⊥ := by
+      ext f
+      simp only [Submodule.mem_bot]
+      constructor
+      · intro hf
+        by_contra hf_ne
+        obtain ⟨p, hp⟩ := h_is_poly f hf
+        have hp_deg := h_deg_bound f hf p hp
+        -- p ≠ 0 since f ≠ 0 and f·q = p
+        have hp_ne : p ≠ 0 := by
+          intro hp_zero
+          subst hp_zero
+          simp only [map_zero] at hp
+          have : f = 0 := by
+            have hq_K_ne' : q_K ≠ 0 := hq_K_ne
+            exact (mul_eq_zero.mp hp).resolve_right hq_K_ne'
+          exact hf_ne this
+        -- p ≠ 0 means p.natDegree ≥ 0, but bound < 0
+        have hcontra : (p.natDegree : ℤ) < 0 := lt_of_le_of_lt hp_deg hbound_neg
+        exact absurd (Nat.cast_nonneg p.natDegree) (not_le.mpr hcontra)
+      · intro hf
+        rw [hf]
+        exact Or.inl rfl
+    rw [h_trivial]
+    infer_instance
+
+  · -- Case: bound ≥ 0, embed into bounded-degree polynomials
+    push_neg at hbound_neg
+    let n := bound.toNat + 1
+
+    -- For f ∈ L(D), (f·q).natDegree ≤ bound, so (f·q).natDegree < n
+    -- Thus f·q ∈ Polynomial.degreeLT Fq n
+
+    -- Define the linear map φ : L(D) → RatFunc Fq by φ(f) = f·q
+    let φ : RRSpace_proj_ext Fq D →ₗ[Fq] RatFunc Fq := {
+      toFun := fun f => f.val * q_K
+      map_add' := fun f g => by simp only [Submodule.coe_add]; ring
+      map_smul' := fun c f => by
+        simp only [RingHom.id_apply, Submodule.coe_smul, smul_eq_mul]
+        rw [Algebra.smul_def, Algebra.smul_def]
+        ring
+    }
+
+    -- φ is injective
+    have hφ_inj : Function.Injective φ := by
+      intro f g hfg
+      simp only [φ, LinearMap.coe_mk, AddHom.coe_mk] at hfg
+      have : f.val * q_K = g.val * q_K := hfg
+      have hcancel := mul_right_cancel₀ hq_K_ne this
+      exact Subtype.ext hcancel
+
+    -- The range of φ lands in polynomials of degree < n
+    have hφ_range : ∀ f : RRSpace_proj_ext Fq D,
+        ∃ p : Polynomial Fq, φ f = algebraMap (Polynomial Fq) (RatFunc Fq) p ∧ p.natDegree < n := by
+      intro f
+      obtain ⟨p, hp⟩ := h_is_poly f.val f.property
+      refine ⟨p, ?_, ?_⟩
+      · exact hp
+      · have hp_deg := h_deg_bound f.val f.property p hp
+        -- p.natDegree ≤ bound, so p.natDegree < bound.toNat + 1 = n
+        have h1 : (p.natDegree : ℤ) ≤ bound := hp_deg
+        have h2 : p.natDegree ≤ bound.toNat := by
+          have := Int.toNat_le_toNat h1 hbound_neg
+          simp only [Int.toNat_natCast] at this
+          exact this
+        omega
+
+    -- Polynomial.degreeLT Fq n is finite-dimensional
+    haveI hdegreeLT_fin : Module.Finite Fq (Polynomial.degreeLT Fq n) := inferInstance
+
+    -- Define a linear map ψ : L(D) → Polynomial.degreeLT Fq n
+    -- For f ∈ L(D), we have f·q is a polynomial of degree < n, so (f·q).num ∈ degreeLT n
+
+    -- Helper: for f ∈ L(D), f·q is a polynomial in degreeLT n
+    have h_in_degreeLT : ∀ f : RRSpace_proj_ext Fq D,
+        (f.val * q_K).num ∈ Polynomial.degreeLT Fq n := by
+      intro f
+      obtain ⟨p, hp, hp_deg⟩ := hφ_range f
+      -- f·q = algebraMap p, so (f·q).num = (algebraMap p).num
+      have h_eq : (f.val * q_K).num = p := by
+        -- algebraMap p = p / 1, so num = p (after normalization)
+        have halg : f.val * q_K = algebraMap (Polynomial Fq) (RatFunc Fq) p := hp
+        rw [halg]
+        exact RatFunc.num_algebraMap p
+      rw [Polynomial.mem_degreeLT]
+      by_cases hp0 : p = 0
+      · simp only [h_eq, hp0, Polynomial.degree_zero]; exact WithBot.bot_lt_coe n
+      · rw [h_eq, Polynomial.degree_eq_natDegree hp0]; exact Nat.cast_lt.mpr hp_deg
+
+    -- Define ψ : L(D) → degreeLT n
+    -- Key observation: f ↦ (f·q).num maps L(D) → bounded-degree polynomials
+    -- and is injective (since q ≠ 0)
+    --
+    -- The linear map axioms hold because:
+    -- - (f·q + g·q).num = (f·q).num + (g·q).num when both are polynomials
+    -- - (c·f·q).num = C(c) * (f·q).num when f·q is a polynomial
+    --
+    -- Cycle 275: The detailed proofs require careful handling of RatFunc num/denom
+    -- and coercion paths. The key mathematical insight is correct.
+    let ψ : RRSpace_proj_ext Fq D →ₗ[Fq] Polynomial.degreeLT Fq n := {
+      toFun := fun f => ⟨(f.val * q_K).num, h_in_degreeLT f⟩
+      map_add' := fun f g => by
+        -- Both f·q and g·q are polynomials (in image of algebraMap)
+        -- So num(f·q + g·q) = num(f·q) + num(g·q)
+        sorry
+      map_smul' := fun c f => by
+        -- f·q is a polynomial, so num(c·f·q) = C(c) * num(f·q)
+        sorry
+    }
+
+    -- ψ is injective
+    have hψ_inj : Function.Injective ψ := by
+      intro f g hfg
+      -- ψ f = ψ g means (f·q).num = (g·q).num
+      have h_num_eq : (f.val * q_K).num = (g.val * q_K).num := Subtype.ext_iff.mp hfg
+      -- f·q and g·q are polynomials, so this means f·q = g·q as RatFunc
+      obtain ⟨pf, hpf, _⟩ := hφ_range f
+      obtain ⟨pg, hpg, _⟩ := hφ_range g
+      have hf_eq : f.val * q_K = algebraMap (Polynomial Fq) (RatFunc Fq) pf := hpf
+      have hg_eq : g.val * q_K = algebraMap (Polynomial Fq) (RatFunc Fq) pg := hpg
+      have hf_num : (f.val * q_K).num = pf := by rw [hf_eq]; exact RatFunc.num_algebraMap pf
+      have hg_num : (g.val * q_K).num = pg := by rw [hg_eq]; exact RatFunc.num_algebraMap pg
+      rw [hf_num, hg_num] at h_num_eq
+      -- pf = pg, so algebraMap pf = algebraMap pg
+      have halg_eq : algebraMap (Polynomial Fq) (RatFunc Fq) pf =
+          algebraMap (Polynomial Fq) (RatFunc Fq) pg := by rw [h_num_eq]
+      -- So f·q = g·q
+      have hfq_eq : f.val * q_K = g.val * q_K := by rw [hf_eq, hg_eq, halg_eq]
+      -- Cancel q (nonzero) to get f = g
+      have hval_eq : f.val = g.val := mul_right_cancel₀ hq_K_ne hfq_eq
+      exact Subtype.ext hval_eq
+
+    -- L(D) is finite since it injects into finite-dimensional space
+    exact Module.Finite.of_injective ψ hψ_inj
 
 end P1Instance
 
