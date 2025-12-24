@@ -6,9 +6,9 @@ Tactical tracking for Riemann-Roch formalization.
 
 ## Current State
 
-**Build**: ❌ Compile error (needs small fix in AdelicH1Full.lean line 568)
-**Result**: Added `exists_local_approximant_with_bound_infty` helper lemma (partial)
-**Cycle**: 279 (Next)
+**Build**: ✅ Compiles (with expected sorries)
+**Result**: Corrected mathematical error in H¹(D) vanishing theorem
+**Cycle**: 279 (Complete)
 
 ---
 
@@ -45,32 +45,69 @@ theorem RRSpace_proj_ext_canonical_sub_eq_bot
 |----------|-------|--------|
 | P1Instance/ | 0 | ✅ Complete |
 | ResidueTrace.lean | 0 | ✅ Complete |
-| AdelicH1Full.lean | 1 | `globalPlusBoundedSubmodule_full_eq_top` (line 582) |
-| Abstract.lean | 5 | General abstract infrastructure (h1_finite, ell_finite, etc.) |
+| AdelicH1Full.lean | 1 | `globalPlusBoundedSubmodule_full_eq_top_of_deg_ge_neg_one` (line 614) |
+| Abstract.lean | 5 | General abstract infrastructure (h1_finite low-deg case, serre_duality cases) |
 
 ---
 
 ## Next Steps
 
-### Cycle 279: Fix compile error and complete `globalPlusBoundedSubmodule_full_eq_top`
+### Cycle 280: Complete `globalPlusBoundedSubmodule_full_eq_top_of_deg_ge_neg_one`
 
-**Immediate**: Fix `Valued.isClopen_closedBall` call in AdelicH1Full.lean:568
-- Current error: wrong argument type to `Valued.isClopen_closedBall`
-- Fix: Check the correct Mathlib API for clopen balls in valued rings
+**Goal**: Fill the sorry in `globalPlusBoundedSubmodule_full_eq_top_of_deg_ge_neg_one` (line 614)
 
-**Then complete**: `globalPlusBoundedSubmodule_full_eq_top` (line ~605 after fix)
+**Mathematical context** (corrected from Cycle 278):
+- The theorem now correctly requires `D.deg ≥ -1` hypothesis
+- This matches Serre vanishing: H¹(D) = 0 when deg(D) > 2g-2 = -2 for P¹
+- For deg(D) < -1, H¹(D) ≠ 0 (e.g., H¹(⟨0,-3⟩) = L(1[∞])ᵛ has dimension 2)
 
-**Strategy** (from Cycle 278 analysis):
+**Strategy**:
 1. Use `exists_local_approximant_with_bound_infty` to approximate at infinity first
 2. Apply `strong_approximation_ratfunc` to the adjusted finite adele
-3. The key challenge: ensuring k₂ from finite approx doesn't mess up infinity bound
+3. The degree hypothesis `D.deg ≥ -1` ensures the combined approximation works
 
 **Key infrastructure available**:
 - `exists_local_approximant_with_bound_infty` (lines 561-580): approximation at ∞ with any bound
 - `strong_approximation_ratfunc` (RatFuncPairing.lean): approximation at finite places
 - `denseRange_inftyRingHom` (FullAdelesCompact.lean): K is dense in K_∞
 
-**After**: Abstract.lean sorries become provable, completing P¹ Riemann-Roch infrastructure
+**After**: Complete remaining Abstract.lean sorries for full Serre duality
+
+---
+
+## Cycle 279 Summary ✅
+
+**Task**: Fix compile error and correct mathematical error in H¹(D) vanishing
+
+**Achievement**:
+
+1. **Fixed compile error** at line 568:
+   - Issue: `Valued.isClopen_closedBall` API mismatch
+   - Fix: Pass `(R := FqtInfty Fq)` explicitly and use nonzero proof `h_exp_ne`
+
+2. **Corrected critical mathematical error**:
+   - Old theorem `globalPlusBoundedSubmodule_full_eq_top` claimed H¹(D) = 0 for ALL D
+   - This was **FALSE** - contradicts Riemann-Roch for low-degree divisors
+   - Example: D = ⟨0, -3⟩ gives H¹(D) ≅ L(K-D)ᵛ = L(1[∞])ᵛ which has dimension 2
+
+3. **Refactored to mathematically correct version**:
+   - Renamed to `globalPlusBoundedSubmodule_full_eq_top_of_deg_ge_neg_one`
+   - Added hypothesis: `(hdeg : D.deg ≥ -1)`
+   - Threshold deg ≥ -1 comes from Serre vanishing: H¹(D) = 0 iff deg(D) > 2g-2 = -2
+
+4. **Updated downstream theorems**:
+   - `SpaceModule_full_subsingleton_of_deg_ge_neg_one`
+   - `SpaceModule_full_finite_of_deg_ge_neg_one`
+   - `h1_finrank_full_eq_zero_of_deg_ge_neg_one`
+   - `serre_duality_p1` (now derives degree bound from effectivity hypotheses)
+
+5. **Updated Abstract.lean**:
+   - `p1ProjectiveAdelicRRData` now correctly uses conditional theorems
+   - Added case analysis for degree bounds
+   - Documented remaining sorries for non-vanishing cases
+
+**Key lesson**: The universal vanishing H¹(D) = 0 only holds for deg(D) ≥ -1 on P¹.
+Below this threshold, Serre duality requires the actual residue pairing construction.
 
 ---
 

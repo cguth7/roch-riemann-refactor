@@ -565,7 +565,8 @@ lemma exists_local_approximant_with_bound_infty (a : FqtInfty Fq) (n : ℤ) :
   have hopen : IsOpen {x : FqtInfty Fq | Valued.v (a - x) ≤ WithZero.exp n} := by
     have h_ball_open : IsOpen {x : FqtInfty Fq | Valued.v x ≤ WithZero.exp n} := by
       -- Use the clopen ball property for valued rings
-      exact (Valued.isClopen_closedBall (WithZero.exp n)).isOpen
+      -- isClopen_closedBall takes (R : Type) explicit and (hr : r ≠ 0) explicit
+      exact (Valued.isClopen_closedBall (R := FqtInfty Fq) h_exp_ne).isOpen
     have h_eq : {x : FqtInfty Fq | Valued.v (a - x) ≤ WithZero.exp n} =
         (fun y => a - y) ⁻¹' {y | Valued.v y ≤ WithZero.exp n} := by
       ext x; simp only [Set.mem_preimage, Set.mem_setOf_eq]
@@ -589,10 +590,18 @@ both H¹(D) and L(K-D) are trivial for all effective divisors.
 
 section P1Instance
 
-/-- Strong approximation extends to full adeles for P¹.
+/-- Strong approximation extends to full adeles for P¹ when deg(D) ≥ -1.
 
-Given any full adele (a_fin, a_∞) and extended divisor D, we can write it as
+Given any full adele (a_fin, a_∞) and extended divisor D with deg(D) ≥ -1, we can write it as
 diag(k) + bounded for some global k ∈ RatFunc Fq.
+
+**Mathematical Note**: This theorem is FALSE for arbitrary D. For example, if D = ⟨0, -3⟩
+(deg = -3), then H¹(D) = L(K-D)ᵛ = L(1[∞])ᵛ has dimension 2, not 0.
+
+The threshold deg(D) ≥ -1 comes from:
+- For P¹, K = -2[∞], so 2g-2 = -2
+- Serre vanishing: H¹(D) = 0 when deg(D) > 2g-2 = -2
+- Thus deg(D) ≥ -1 is the threshold for H¹(D) = 0
 
 **Key insight**: The strong approximation for finite adeles gives a global k
 with a_fin - diag(k) bounded at finite places. For the infinity part, we use:
@@ -600,9 +609,10 @@ with a_fin - diag(k) bounded at finite places. For the infinity part, we use:
 2. The strong approximation k has controlled degree, hence controlled infinity valuation
 
 For P¹, the strong approximation result produces polynomials of bounded degree,
-so the infinity condition is automatically satisfied when D.inftyCoeff is not too negative.
+so the infinity condition is automatically satisfied when D.deg ≥ -1.
 -/
-theorem globalPlusBoundedSubmodule_full_eq_top (D : ExtendedDivisor (Polynomial Fq)) :
+theorem globalPlusBoundedSubmodule_full_eq_top_of_deg_ge_neg_one
+    (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1) :
     globalPlusBoundedSubmodule_full Fq D = ⊤ := by
   rw [eq_top_iff]
   intro a _
@@ -615,30 +625,42 @@ theorem globalPlusBoundedSubmodule_full_eq_top (D : ExtendedDivisor (Polynomial 
   -- The main technical challenge is showing the same k works for both bounds.
   -- For P¹, this follows from the fact that strong approximation produces
   -- polynomials with controlled degree, which also bounds their infinity valuation.
+  -- The hypothesis hdeg : D.deg ≥ -1 ensures the degree bound is compatible.
   --
   -- Deferred to a future cycle for full implementation.
   sorry
 
-/-- H¹(D) is a subsingleton for P¹ with full adeles.
+/-- H¹(D) is a subsingleton for P¹ with full adeles when deg(D) ≥ -1.
 
-This follows from globalPlusBoundedSubmodule_full = ⊤.
+This follows from globalPlusBoundedSubmodule_full = ⊤ for such D.
+
+**Note**: This is FALSE for deg(D) < -1. For example, H¹(⟨0, -3⟩) ≅ L(1[∞])ᵛ ≠ 0.
 -/
-instance SpaceModule_full_subsingleton (D : ExtendedDivisor (Polynomial Fq)) :
+theorem SpaceModule_full_subsingleton_of_deg_ge_neg_one
+    (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1) :
     Subsingleton (SpaceModule_full Fq D) := by
   rw [Submodule.Quotient.subsingleton_iff]
-  exact globalPlusBoundedSubmodule_full_eq_top Fq D
+  exact globalPlusBoundedSubmodule_full_eq_top_of_deg_ge_neg_one Fq D hdeg
 
-/-- H¹(D) is finite-dimensional for P¹ (trivially, since it's Subsingleton). -/
-instance SpaceModule_full_finite (D : ExtendedDivisor (Polynomial Fq)) :
+/-- H¹(D) is finite-dimensional for P¹ when deg(D) ≥ -1 (trivially, since it's Subsingleton). -/
+theorem SpaceModule_full_finite_of_deg_ge_neg_one
+    (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1) :
     Module.Finite Fq (SpaceModule_full Fq D) := by
-  haveI : Subsingleton (SpaceModule_full Fq D) := SpaceModule_full_subsingleton Fq D
+  haveI : Subsingleton (SpaceModule_full Fq D) :=
+    SpaceModule_full_subsingleton_of_deg_ge_neg_one Fq D hdeg
   infer_instance
 
-/-- h¹(D) = 0 for P¹ with full adeles. -/
-theorem h1_finrank_full_eq_zero (D : ExtendedDivisor (Polynomial Fq)) :
+/-- h¹(D) = 0 for P¹ with full adeles when deg(D) ≥ -1.
+
+**Mathematical Note**: This is the "Serre vanishing" result for P¹.
+For deg(D) < -1, we have h¹(D) = ℓ(K-D) = ℓ((D.deg + 2)[∞]) > 0.
+-/
+theorem h1_finrank_full_eq_zero_of_deg_ge_neg_one
+    (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1) :
     h1_finrank_full Fq D = 0 := by
   unfold h1_finrank_full
-  haveI : Subsingleton (SpaceModule_full Fq D) := SpaceModule_full_subsingleton Fq D
+  haveI : Subsingleton (SpaceModule_full Fq D) :=
+    SpaceModule_full_subsingleton_of_deg_ge_neg_one Fq D hdeg
   exact Module.finrank_zero_of_subsingleton
 
 /-- L(K-D) = {0} when D is effective (finite part non-negative, infinity coeff ≥ 0).
@@ -730,11 +752,24 @@ theorem ell_proj_ext_canonical_sub_eq_zero
 
 /-- Serre duality for P¹: h¹(D) = ℓ(K-D).
 
-For P¹, both sides are 0 when D is effective.
+For P¹, both sides are 0 when D is effective (finite part effective, inftyCoeff ≥ 0).
+
+**Proof sketch**:
+- D effective implies deg(D) = D.finite.deg + D.inftyCoeff ≥ 0 ≥ -1
+- Hence h¹(D) = 0 by Serre vanishing
+- K-D = ⟨-D.finite, -2 - D.inftyCoeff⟩ has sufficiently negative degree
+- Hence ℓ(K-D) = 0 by the L(K-D) vanishing theorem
+- Both sides = 0, so the equality holds
 -/
 theorem serre_duality_p1 (D : ExtendedDivisor (Polynomial Fq)) (hDfin : D.finite.Effective) (hD : D.inftyCoeff ≥ 0) :
     h1_finrank_full Fq D = ell_proj_ext Fq (canonicalExtended Fq - D) := by
-  rw [h1_finrank_full_eq_zero Fq D, ell_proj_ext_canonical_sub_eq_zero Fq D hDfin hD]
+  -- D effective implies deg(D) ≥ 0 ≥ -1
+  have hdeg : D.deg ≥ -1 := by
+    unfold ExtendedDivisor.deg
+    have hfin_deg : D.finite.deg ≥ 0 := DivisorV2.deg_nonneg_of_effective hDfin
+    linarith
+  rw [h1_finrank_full_eq_zero_of_deg_ge_neg_one Fq D hdeg,
+      ell_proj_ext_canonical_sub_eq_zero Fq D hDfin hD]
 
 /-! ## Clearing Polynomial for Pole-Clearing
 

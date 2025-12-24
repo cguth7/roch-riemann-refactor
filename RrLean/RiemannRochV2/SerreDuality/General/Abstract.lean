@@ -276,31 +276,43 @@ The Serre duality equation h¹(D) = ℓ(K-D) becomes 0 = 0.
 -/
 instance p1ProjectiveAdelicRRData :
     ProjectiveAdelicRRData Fq (p1CanonicalExt Fq) p1GenusExt where
-  h1_finite := SpaceModule_full_finite Fq
+  h1_finite := fun D => by
+    -- H¹(D) is finite-dimensional for all D.
+    -- Two cases:
+    -- 1. If deg(D) ≥ -1: H¹(D) = 0 (subsingleton → finite)
+    -- 2. If deg(D) < -1: H¹(D) ≅ L(K-D)ᵛ which is finite-dimensional
+    --    This requires showing the quotient FullAdeleRing/(K + A_K(D)) is finite-dim
+    --    The proof uses compactness of A_K(D) / (K ∩ A_K(D)) (adelic argument)
+    -- For now, we defer the full proof
+    by_cases hdeg : D.deg ≥ -1
+    · exact SpaceModule_full_finite_of_deg_ge_neg_one Fq D hdeg
+    · -- deg(D) < -1: need compactness/Serre duality argument
+      -- H¹(D) ≅ L(K-D)ᵛ, and L(K-D) is finite-dimensional by RRSpace_proj_ext_finite
+      -- The isomorphism requires the residue pairing infrastructure
+      sorry
   ell_finite := RRSpace_proj_ext_finite Fq
-  h1_vanishing := fun D _ => h1_finrank_full_eq_zero Fq D
+  h1_vanishing := fun D hdeg => by
+    -- hdeg : D.deg > 2 * 0 - 2 = -2, i.e., D.deg ≥ -1
+    have h : D.deg ≥ -1 := by omega
+    exact h1_finrank_full_eq_zero_of_deg_ge_neg_one Fq D h
   serre_duality := fun D => by
-    -- For P¹, we need to handle all divisors, not just effective ones
-    -- But h1_finrank_full = 0 always for P¹ (strong approximation)
-    rw [h1_finrank_full_eq_zero Fq D]
-    -- Need: ell_proj_ext Fq (p1CanonicalExt Fq - D) = 0
-    -- This is true when D is effective (D.finite.Effective and D.inftyCoeff ≥ 0)
-    -- For non-effective D, L(K-D) might be nonzero, but h¹(D) = 0 always
-    -- The full Serre duality argument for non-effective D requires more infrastructure
-    by_cases hfin : D.finite.Effective
-    · by_cases h : D.inftyCoeff ≥ 0
-      · -- Fully effective case: D.finite effective and D.inftyCoeff ≥ 0
-        have heq : p1CanonicalExt Fq = canonicalExtended Fq := rfl
-        rw [heq]
-        exact (ell_proj_ext_canonical_sub_eq_zero Fq D hfin h).symm
-      · -- D.finite effective but D.inftyCoeff < 0
-        -- (K-D).inftyCoeff = -2 - D.inftyCoeff > -2
-        -- L(K-D) may be nonzero in principle, but for P¹ it's still 0
-        -- because the degree constraints still force L(K-D) = 0
-        sorry
-    · -- D.finite not effective: L(K-D) may contain nonzero elements
-      -- This case requires showing that even with poles allowed at some places,
-      -- the combined constraints still give L(K-D) = 0 for P¹
+    -- Serre duality: h¹(D) = ℓ(K-D)
+    -- For deg(D) ≥ -1: both sides = 0 (use vanishing theorems)
+    -- For deg(D) < -1: requires full residue pairing construction
+    by_cases hdeg : D.deg ≥ -1
+    · -- Vanishing case: both sides = 0
+      rw [h1_finrank_full_eq_zero_of_deg_ge_neg_one Fq D hdeg]
+      -- Need: ell_proj_ext (K - D) = 0 when deg(D) ≥ -1, i.e., deg(K-D) ≤ -1
+      -- K-D has degree -2 - D.deg ≤ -2 - (-1) = -1 < 0, but this doesn't directly give 0
+      -- Actually need: deg(K-D) = -2 - D.deg ≤ -1 and analyze L(K-D)
+      by_cases hfin : D.finite.Effective
+      · by_cases h : D.inftyCoeff ≥ 0
+        · have heq : p1CanonicalExt Fq = canonicalExtended Fq := rfl
+          rw [heq]
+          exact (ell_proj_ext_canonical_sub_eq_zero Fq D hfin h).symm
+        · sorry -- D.finite effective, D.inftyCoeff < 0
+      · sorry -- D.finite not effective
+    · -- Non-vanishing case: requires actual Serre duality via residue pairing
       sorry
   deg_canonical := deg_p1CanonicalExt_eq_formula Fq
 
