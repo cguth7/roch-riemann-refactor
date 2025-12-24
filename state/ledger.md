@@ -6,9 +6,9 @@ Tactical tracking for Riemann-Roch formalization.
 
 ## Current State
 
-**Build**: ✅ Compiles (3 sorries in projective infrastructure)
-**Result**: Architecture analysis - discovered issues with serre_duality approach
-**Cycle**: 274 (Next)
+**Build**: ✅ Compiles (2 sorries in AdelicH1Full.lean)
+**Result**: Pole-clearing infrastructure added for RRSpace_proj_ext_finite
+**Cycle**: 275 (Next)
 
 ---
 
@@ -45,36 +45,39 @@ theorem RRSpace_proj_ext_canonical_sub_eq_bot
 |----------|-------|--------|
 | P1Instance/ | 0 | ✅ Complete |
 | ResidueTrace.lean | 0 | ✅ Complete |
-| AdelicH1Full.lean | 2 | Strong approx + finiteness |
+| AdelicH1Full.lean | 2 | globalPlusBoundedSubmodule_full_eq_top + RRSpace_proj_ext_finite |
 | Abstract.lean | 2 | serre_duality non-effective cases |
 
 ---
 
 ## Next Steps
 
-### Cycle 274: Address architecture issues
+### Cycle 275: Complete RRSpace_proj_ext_finite
 
-**Key Discovery (Cycle 273)**: The current serre_duality proof strategy has a flaw:
-- It assumes h¹(D) = 0 for ALL D via `globalPlusBoundedSubmodule_full_eq_top`
-- This is only true when deg(D) > -2 (for P¹)
-- For D = ⟨0, -3⟩: K-D = ⟨0, 1⟩, so L(K-D) = polynomials deg ≤ 1 = dim 2
-- Serre duality h¹(D) = ℓ(K-D) gives h¹(⟨0, -3⟩) = 2, NOT 0!
+**Target**: Fill `RRSpace_proj_ext_finite` sorry using pole-clearing infrastructure
 
-**Sorries remaining** (3 distinct):
+**Current State** (after Cycle 274):
+- ✅ `DivisorV2.positiveSupport` - support of positive D coefficients
+- ✅ `clearingPoly` - product of generator^{D(v)} over positive places
+- ✅ Basic lemmas: `clearingPoly_ne_zero`, `clearingPoly_monic`, `clearingPoly_natDegree`
+- ⏳ Valuation lemmas need filling
 
-1. `globalPlusBoundedSubmodule_full_eq_top` (AdelicH1Full.lean:566)
-   - ⚠️ ARCHITECTURE ISSUE: Claims K + A_K(D) = full adeles for ALL D
-   - Only true for D with deg(D) > 2g-2 = -2 (for P¹)
-   - Needs hypothesis restriction OR different approach
+**Remaining Work**:
+1. Prove valuation lemmas for clearing polynomial:
+   - At v with D(v) > 0: v.valuation(clearingPoly) = exp(-D(v))
+   - At v with D(v) ≤ 0: v.valuation(clearingPoly) = 1
+2. Prove `mul_clearingPoly_integral`: f·clearingPoly is integral at all finite places
+3. Complete embedding into Polynomial.degreeLT
 
-2. `RRSpace_proj_ext_finite` (AdelicH1Full.lean:724)
-   - Strategy: pole-clearing multiplication then polynomial embedding
-   - When D.finite has positive coefficients, POLES are allowed (not just polynomials)
-   - Requires constructing clearing polynomial q = ∏ (generator)^{-D.finite(v)}
+**Sorries remaining** (2 in AdelicH1Full.lean):
 
-3. `serre_duality` non-effective cases (Abstract.lean:300, 304)
-   - ⚠️ CANNOT prove as both = 0 for non-effective D
-   - Needs actual Serre duality via residue pairing, not both-sides-zero argument
+1. `globalPlusBoundedSubmodule_full_eq_top` (line 567)
+   - ⚠️ ARCHITECTURE ISSUE: Claims h¹(D) = 0 for all D (only true for deg(D) > -2)
+   - Lower priority - affects non-effective divisors only
+
+2. `RRSpace_proj_ext_finite` (line 765)
+   - Strategy documented, infrastructure in place
+   - Needs valuation arithmetic to complete
 
 **Strategic Direction (Gemini Review)**:
 
@@ -102,6 +105,29 @@ Once finiteness is secure:
 1. Abandon "both sides = 0" strategy for non-effective divisors
 2. Implement actual Residue Pairing: ⟨f, α⟩ = ∑ Res(f·α)
 3. Use finiteness to show pairing is perfect → H¹(D) ≅ L(K-D)ᵛ
+
+---
+
+## Cycle 274 Summary ✅
+
+**Task**: Implement pole-clearing infrastructure for RRSpace_proj_ext_finite
+
+**Achievement**:
+- Added PlaceDegree import to AdelicH1Full.lean
+- Defined `DivisorV2.positiveSupport`: the set of places where D(v) > 0
+- Defined `clearingPoly`: ∏_{D(v) > 0} generator(v)^{D(v).toNat}
+- Proved `clearingPoly_ne_zero`: clearing polynomial is nonzero
+- Proved `clearingPoly_monic`: clearing polynomial is monic
+- Proved `clearingPoly_natDegree`: degree = Σ D(v) · deg(v) over positive places
+- Documented complete strategy for RRSpace_proj_ext_finite in docstring
+
+**Technical Notes**:
+- The clearing polynomial uses `PlaceDegree.generator` (monic irreducible for each place)
+- Valuation lemmas require careful handling of `Finset.prod` over `positiveSupport`
+- Pattern from DimensionGeneral.lean: use `valuation_of_algebraMap` + `generator_intValuation_at_self`
+
+**Sorry count**: Unchanged (2 in AdelicH1Full.lean)
+- Architecture in place, valuation arithmetic deferred to Cycle 275
 
 ---
 

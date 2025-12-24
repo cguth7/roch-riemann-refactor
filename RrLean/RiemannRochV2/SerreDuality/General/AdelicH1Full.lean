@@ -3,6 +3,7 @@ import RrLean.RiemannRochV2.Adelic.AdelicH1v2
 import RrLean.RiemannRochV2.SerreDuality.RatFuncResidues
 import RrLean.RiemannRochV2.SerreDuality.P1Specific.RatFuncPairing
 import RrLean.RiemannRochV2.P1Instance.P1VanishingLKD
+import RrLean.RiemannRochV2.P1Instance.PlaceDegree
 
 /-!
 # Adelic H¹(D) using Full Adele Ring
@@ -697,30 +698,84 @@ theorem serre_duality_p1 (D : ExtendedDivisor (Polynomial Fq)) (hDfin : D.finite
     h1_finrank_full Fq D = ell_proj_ext Fq (canonicalExtended Fq - D) := by
   rw [h1_finrank_full_eq_zero Fq D, ell_proj_ext_canonical_sub_eq_zero Fq D hDfin hD]
 
+/-! ## Clearing Polynomial for Pole-Clearing
+
+For a divisor D on P¹, the clearing polynomial clears all allowed poles:
+- At places where D.finite(v) > 0, poles up to order D.finite(v) are allowed
+- The clearing polynomial q = ∏_{D.finite(v) > 0} generator(v)^{D.finite(v)}
+- For f ∈ L(D), the product f · q is integral at all finite places (a polynomial)
+-/
+
+open PlaceDegree in
+/-- The support of positive coefficients in a DivisorV2. -/
+def DivisorV2.positiveSupport (D : DivisorV2 (Polynomial Fq)) :
+    Finset (HeightOneSpectrum (Polynomial Fq)) :=
+  D.support.filter (fun v => 0 < D v)
+
+open PlaceDegree in
+/-- The clearing polynomial for a divisor D.
+This is the product of generator(v)^{D(v)} over all places where D(v) > 0. -/
+def clearingPoly (D : DivisorV2 (Polynomial Fq)) : Polynomial Fq :=
+  D.positiveSupport.prod (fun v => (generator Fq v) ^ (D v).toNat)
+
+open PlaceDegree in
+/-- The clearing polynomial is nonzero. -/
+lemma clearingPoly_ne_zero (D : DivisorV2 (Polynomial Fq)) : clearingPoly Fq D ≠ 0 := by
+  unfold clearingPoly
+  rw [Finset.prod_ne_zero_iff]
+  intro v _
+  apply pow_ne_zero
+  exact (generator_irreducible Fq v).ne_zero
+
+open PlaceDegree in
+/-- The clearing polynomial is monic. -/
+lemma clearingPoly_monic (D : DivisorV2 (Polynomial Fq)) : (clearingPoly Fq D).Monic := by
+  unfold clearingPoly
+  apply Polynomial.monic_prod_of_monic
+  intro v _
+  exact (generator_monic Fq v).pow _
+
+open PlaceDegree in
+/-- The degree of the clearing polynomial. -/
+lemma clearingPoly_natDegree (D : DivisorV2 (Polynomial Fq)) :
+    (clearingPoly Fq D).natDegree =
+    D.positiveSupport.sum (fun v => (D v).toNat * degree Fq v) := by
+  unfold clearingPoly
+  rw [Polynomial.natDegree_prod _ _ (by intro v _; exact pow_ne_zero _ (generator_irreducible Fq v).ne_zero)]
+  apply Finset.sum_congr rfl
+  intro v _
+  rw [Polynomial.natDegree_pow, PlaceDegree.degree]
+
 /-- RRSpace_proj_ext is finite-dimensional for P¹.
 
-This follows from the finiteness of RRSpace_ratfunc_projective via equivalence.
+**Strategy (Pole-Clearing Embedding)**:
+
+1. Define clearing polynomial q = ∏_{D.finite(v) > 0} generator(v)^{D.finite(v)}
+2. For f ∈ L(D), show f·q is integral at all finite places:
+   - At v with D.finite(v) > 0: v(f) ≤ exp(D.finite(v)), v(q) = exp(-D.finite(v)), so v(f·q) ≤ 1
+   - At v with D.finite(v) ≤ 0: f is already integral, q has valuation 1
+3. By eq_algebraMap_of_valuation_le_one_forall, f·q is a polynomial
+4. The degree of f·q is bounded by D.inftyCoeff + deg(q)
+5. The map f ↦ f·q is injective (q ≠ 0), so L(D) embeds into bounded-degree polynomials
+6. Bounded-degree polynomials are finite-dimensional, so L(D) is too
+
+**Implementation Note**: The detailed valuation arithmetic (showing the clearing polynomial
+has the correct valuation at each place) requires careful handling of generator valuations.
 -/
 instance RRSpace_proj_ext_finite (D : ExtendedDivisor (Polynomial Fq)) :
     Module.Finite Fq (RRSpace_proj_ext Fq D) := by
-  -- Strategy: Embed into a finite-dimensional polynomial space.
+  -- Strategy: The clearing polynomial q clears all allowed poles
+  -- Map f ↦ f·q embeds L(D) into bounded-degree polynomials
+  -- Bounded-degree polynomials are finite-dimensional
   --
-  -- The key insight is that RRSpace_proj_ext D has bounded poles:
-  -- 1. At finite places: poles bounded by max(0, D.finite(v))
-  -- 2. At infinity: degree bounded by D.inftyCoeff
+  -- Key ingredients needed:
+  -- 1. mul_clearingPoly_integral: f·q is integral at all finite places
+  -- 2. eq_algebraMap_of_valuation_le_one_forall: integral at all finite ⟹ polynomial
+  -- 3. Degree bound from intDegree constraint + clearing poly degree
+  -- 4. Polynomial.degreeLT is finite-dimensional
   --
-  -- This gives a finite-dimensional space because:
-  -- - Denominator is bounded (from finite place constraints)
-  -- - Numerator is bounded (from infinity constraint + denominator bound)
-  --
-  -- Implementation: Define a clearing polynomial q that clears all allowed poles,
-  -- then embed f ↦ f·q into Polynomial.degreeLT of appropriate bound.
-  --
-  -- NOTE (Cycle 273 Discovery): When D.finite has positive coefficients,
-  -- poles ARE allowed at those places. The proof requires handling this
-  -- via pole-clearing multiplication, not just the polynomial embedding.
-  --
-  -- Deferred to future cycle for full implementation.
+  -- Cycle 274: Architecture established with clearing polynomial infrastructure
+  -- Remaining: Fill valuation arithmetic for mul_clearingPoly_integral
   sorry
 
 end P1Instance
