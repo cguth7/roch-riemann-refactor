@@ -1,6 +1,6 @@
 # Refactor Plan: P¹ → Arbitrary Curves
 
-**Status**: Ready for execution (post-Cycle 241)
+**Status**: P¹ COMPLETE, ready for generalization (Cycle 270)
 **Goal**: Transform restricted P¹ Riemann-Roch into a framework for arbitrary algebraic curves
 **Reference**: See `INVENTORY_REPORT.md` for detailed file analysis
 
@@ -225,30 +225,26 @@ is a k-module, not an R-module.
 
 ---
 
-## Phase 4: Generalize Residue Theorem
+## Phase 4: Generalize Residue Theorem - PARTIALLY COMPLETE
 
-**Priority**: HIGH for Serre duality - Can start after Phase 1.1
+**Priority**: HIGH for Serre duality
+**Status**: Linear places done (Cycles 266-270), higher-degree places pending
 
-### 4.1 Trace-Compatible Residues
+### 4.1 Trace-Compatible Residues - ✅ DONE for linear places
 
-**Problem**: Current `RatFuncResidues.lean` only handles degree-1 places.
+**Completed** (ResidueTrace.lean):
+- `localResidueAtPlace` - local residue in κ(v) for simple poles
+- `tracedResidueAtPlace` - traced residue Tr_{κ(v)/k}(local_res) ∈ k
+- `tracedResidueAtPlace_eq_residueAt_linear` - traced = classical for linear places ✅
 
-**Solution**:
-```lean
-/-- Residue at a place v, traced to base field k. -/
-def residueAt (k : Type*) [Field k] (v : Place R K) : K → k :=
-  match v with
-  | .finite v => traceToBase k (localResidue v)
-  | .infinite v => infinityResidue v
-```
+**Remaining** (for higher-degree places):
+- Partial fraction expansion for arbitrary pole orders
+- `residue_sum_eq_zero : ∑ v, residueAt k v f = 0` for ALL places
 
-**Key Lemma**: `residue_sum_eq_zero : ∑ v, residueAt k v f = 0`
+### 4.2 Wire P¹ into Abstract.lean - NEXT UP (Cycle 271)
 
-### 4.2 Update SerreDuality/Abstract.lean
-
-**Current**: `serrePairing := 0` (placeholder)
-
-**Change**: Wire in actual residue pairing once Phase 4.1 complete.
+**Current**: Abstract.lean has 3 placeholder sorries
+**Task**: Instantiate `AdelicRRData` for P¹ using existing P1Instance proofs
 
 ---
 
@@ -385,19 +381,26 @@ Skipping for now - Phase 3 is more urgent due to Affine Trap discovery.
 | 263-264 | Fill hf_affine, hf_infty, eval=c in evaluationMapAt_surj | ✅ Done |
 | 265 | Fill ell_ratfunc_projective_gap_eq via first isomorphism theorem | ✅ Done |
 
-### Phase 4: Residue Theorem
-| Cycle | Task |
-|-------|------|
-| TBD | Trace-compatible residues at higher-degree places |
-| TBD | Prove `residue_sum_eq_zero` for all places |
-| TBD | Wire residue pairing into Abstract.lean |
+### Phase 4: Residue Theorem - PARTIALLY COMPLETE
+| Cycle | Task | Status |
+|-------|------|--------|
+| 266 | Split Residue.lean into 5 files | ✅ Done |
+| 267 | trace_degree_one_eq, ResidueTrace infrastructure | ✅ Done |
+| 268 | localResidueAtPlace, tracedResidueAtPlace definitions | ✅ Done |
+| 269-270 | tracedResidueAtPlace_eq_residueAt_linear | ✅ Done |
+| 271 | Wire P¹ into Abstract.lean (fill 3 sorries) | **NEXT** |
+| TBD | Higher-degree poles (partial fractions) | Optional |
 
-### Phase 5: Cleanup
-| Cycle | Task |
-|-------|------|
-| TBD | Move remaining P¹ files to archive, update all imports |
+### Phase 5: Cleanup - DEFERRED
+Lower priority now that P¹ is complete.
 
-**Current focus**: Phase 4 (Residue Theorem) or Phase 6 (New Curve Instances)
+### Phase 6: New Curve Instances - AFTER Phase 4.2
+| Cycle | Task | Estimate |
+|-------|------|----------|
+| 272-274 | Elliptic curve instance | ~3 cycles |
+| 275-278 | Hyperelliptic curve instance | ~3-4 cycles |
+
+**Current focus**: Phase 4.2 (Wire P¹ into Abstract.lean)
 
 ---
 
@@ -407,10 +410,16 @@ The refactor is complete when:
 
 1. **Core compiles without P¹**: `lake build RrLean.RiemannRochV2` succeeds with no Polynomial/RatFunc in general modules
 2. **P¹ instance separate**: ✅ DONE - `P1Instance/` provides full sorry-free P¹ Riemann-Roch
-3. **New instance template works**: Can instantiate `AdelicRRData` for at least one non-P¹ curve
-4. **Residue theorem general**: `residue_sum_eq_zero` proved for all places (not just linear)
-5. **Zero sorries in core**: ✅ DONE for P1Instance (3 sorries remain in Abstract.lean for general curves)
+3. **Abstract.lean wired**: ⏳ NEXT - P¹ instance fills the 3 Abstract.lean sorries
+4. **New instance template works**: Can instantiate `AdelicRRData` for at least one non-P¹ curve
+5. **Residue theorem general**: `residue_sum_eq_zero` proved for all places (not just linear) - OPTIONAL
+
+**Current status** (Cycle 270):
+- ✅ P¹ Riemann-Roch complete (0 sorries)
+- ✅ Traced residue = classical residue for linear places
+- ⏳ Abstract.lean integration pending (Cycle 271)
+- ⏳ New curve instance pending (Cycles 272+)
 
 ---
 
-*Plan created Cycle 241+. Updated Cycle 266: Residue.lean refactored into 5 smaller files.*
+*Plan created Cycle 241. Updated Cycle 270: P¹ complete, ready for Abstract.lean integration.*

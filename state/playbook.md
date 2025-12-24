@@ -1,6 +1,6 @@
 # Playbook
 
-Strategic guide for formalizing Riemann-Roch. Updated Cycle 266.
+Strategic guide for formalizing Riemann-Roch. Updated Cycle 270.
 
 ---
 
@@ -392,11 +392,13 @@ What was actually true:
 
 ---
 
-## Honest Sorry Audit (Cycle 265)
+## Honest Sorry Audit (Cycle 270)
 
 ### Total: 3 sorries in non-archived code
 
 **P1Instance/** - ✅ SORRY-FREE - All P¹ Riemann-Roch complete!
+
+**ResidueTrace.lean** - ✅ SORRY-FREE - Traced residue equality proved!
 
 **Abstract.lean** (3 sorries) - placeholder `AdelicRRData` instance for general curves:
 | Line | Field | What's needed |
@@ -404,6 +406,8 @@ What was actually true:
 | 199 | `h1_finite` | H¹ finiteness from compactness |
 | 200 | `ell_finite` | L(D) finiteness |
 | 202 | `h1_vanishing` | H¹ vanishing |
+
+**Next step**: Wire P¹ instance into Abstract.lean (Cycle 271)
 
 ### What's Proved (no sorryAx)
 
@@ -413,12 +417,14 @@ What was actually true:
 - ✅ `RRSpace_ratfunc_projective_effective_finite` - L(D) finite-dimensional for effective D
 - ✅ `ellV3_p1Canonical_sub_ofAffine_eq_zero` - ℓ(K-D) = 0 for effective D on P¹
 - ✅ `riemann_roch_p1` - Full P¹ Riemann-Roch formula
+- ✅ `tracedResidueAtPlace_eq_residueAt_linear` - traced residue = classical residue for linear places
 
 ### Verification Command
 
 ```bash
 grep -rn "sorry" RrLean/RiemannRochV2/P1Instance/
-# Expected: No output (all P1Instance sorries filled!)
+grep -rn "sorry" RrLean/RiemannRochV2/ResidueTheory/ResidueTrace.lean
+# Expected: No output (all sorries filled!)
 ```
 
 ---

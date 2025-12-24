@@ -687,10 +687,104 @@ theorem tracedResidueAtPlace_eq_residueAt_linear (α : Fq) (f : RatFunc Fq)
         ((q' : PowerSeries Fq) : LaurentSeries Fq) := (RatFunc.coe_coe q').symm
     -- The RHS computation shows that residueAt α f = num(α) / cofactor(α)
     -- via Laurent series expansion of translateBy α f = num'/(X * q').
-    -- The coefficient of X⁻¹ in (num'/q')/X equals num'(0)/q'(0) = num(α)/cofactor(α).
-    -- This is a lengthy but straightforward Laurent series calculation.
-    -- TODO: Clean up this proof in a future cycle
-    sorry
+    -- The coefficient of X⁻¹ in (num'/X/q') equals num'(0)/q'(0) = num(α)/cofactor(α).
+    -- Goal: num(α) / cofactor(α) = ((num'/X/q' : RatFunc) : LS).coeff (-1)
+    -- First push the outer algebraMap inside the divisions
+    rw [map_div₀, map_div₀]
+    -- Now use the helper lemmas to rewrite each piece
+    rw [hnum'_coe, hq'_coe]
+    -- For X, algebraMap Poly RatFunc X = RatFunc.X, and RatFunc.X : LS = single 1 1
+    rw [RatFunc.algebraMap_X]
+    have hX_LS : ((RatFunc.X : RatFunc Fq) : LaurentSeries Fq) = HahnSeries.single 1 1 := RatFunc.coe_X
+    rw [hX_LS]
+    -- Goal: num(α)/cofactor(α) = ((num':PS:LS / single 1 1) / q':PS:LS).coeff (-1)
+    -- Since q' has nonzero constant term, (q':PS) is a unit, so we can work with it
+    have hq'_const_ne : (q' : PowerSeries Fq).constantCoeff ≠ 0 := by
+      rw [Polynomial.constantCoeff_coe, hq'_def, hcofactor_const]
+      exact hcofactor_α_ne
+    have hq'_unit : IsUnit (q' : PowerSeries Fq) := by
+      rw [PowerSeries.isUnit_iff_constantCoeff]
+      exact hq'_const_ne.isUnit
+    -- Rewrite: a / b / c = a / (b * c)
+    rw [div_div]
+    -- Now: (num':PS:LS / (single(1,1) * q':PS:LS)).coeff (-1)
+    -- single(1,1) * q' = (X * q') in Laurent series
+    -- The goal becomes: coefficient of X⁻¹ in num' / (X * q')
+    -- This equals num'(0) / q'(0) = num(α) / cofactor(α)
+    -- Use the explicit computation of Laurent series coefficient
+    have hq'_PS_ne : (q' : PowerSeries Fq) ≠ 0 := by
+      intro h
+      apply hq'_const_ne
+      rw [h, map_zero]
+    have hq'_LS_ne : ((q' : PowerSeries Fq) : LaurentSeries Fq) ≠ 0 :=
+      (map_ne_zero_iff (HahnSeries.ofPowerSeries ℤ Fq) (HahnSeries.ofPowerSeries_injective)).mpr hq'_PS_ne
+    have hX_ne : HahnSeries.single (1 : ℤ) (1 : Fq) ≠ 0 := HahnSeries.single_ne_zero one_ne_zero
+    have hXq_ne : HahnSeries.single (1 : ℤ) (1 : Fq) * ((q' : PowerSeries Fq) : LaurentSeries Fq) ≠ 0 :=
+      mul_ne_zero hX_ne hq'_LS_ne
+    -- Compute: (num' / (X * q')).coeff(-1) using direct Laurent expansion
+    -- For f = num' / (X * q'), we compute f * (X * q') = num'
+    -- The coefficient of X⁻¹ in num'/(X*q') equals num'(0)/q'(0)
+    -- This is because num' = a₀ + a₁X + ..., q' = b₀ + b₁X + ... (b₀ ≠ 0)
+    -- num'/(X*q') = (a₀ + a₁X + ...)/(X*(b₀ + b₁X + ...))
+    --             = (a₀ + a₁X + ...)/(b₀X + b₁X² + ...)
+    --             = (a₀/b₀) * X⁻¹ + higher order terms
+    -- So coeff(-1) = a₀/b₀ = num'(0)/q'(0) = num(α)/cofactor(α)
+    -- To prove this formally, use the multiplicative inverse characterization
+    have key : ((↑(num' : PowerSeries Fq) : LaurentSeries Fq) /
+        (HahnSeries.single 1 1 * (↑(q' : PowerSeries Fq) : LaurentSeries Fq))).coeff (-1) =
+        f.num.eval α / (denomCofactor Fq v f).eval α := by
+      -- Convert single(1,1) * q' to the right form
+      -- single(1,1) = X in Laurent series
+      -- Let's compute num' * (X * q')⁻¹ and extract coeff at -1
+      rw [div_eq_mul_inv, mul_comm (HahnSeries.single 1 1) _, mul_inv]
+      -- Goal: (num' * q'⁻¹ * X⁻¹).coeff(-1) = num(α)/cofactor(α)
+      -- Since q' is a unit, q'⁻¹ is also a power series
+      rw [← mul_assoc]
+      -- (num' * q'⁻¹) is a power series; multiplying by X⁻¹ shifts it
+      -- (f * X⁻¹).coeff(-1) = f.coeff(0)
+      have hXinv : (HahnSeries.single 1 (1 : Fq))⁻¹ = HahnSeries.single (-1) 1 := by
+        rw [HahnSeries.inv_single, inv_one]
+      rw [hXinv]
+      -- Goal: (num' * q'⁻¹ * single(-1,1)).coeff(-1) = num(α)/cofactor(α)
+      -- Key step: (f * single(-1,1)).coeff(-1) = f.coeff(0) for any f
+      -- Since q' is a unit power series, q'⁻¹ is also a power series
+      -- num' * q'⁻¹ is a power series, call it g
+      -- g * single(-1,1) shifts g by -1, so coeff(-1) of (g * single(-1,1)) = coeff(0) of g
+      -- coeff(0) of (num' * q'⁻¹) = num'(0) * q'(0)⁻¹ = num(α) / cofactor(α)
+      set g : LaurentSeries Fq := (↑(num' : PowerSeries Fq) : LaurentSeries Fq) *
+        ((↑(q' : PowerSeries Fq) : LaurentSeries Fq))⁻¹ with hg_def
+      -- Use fact: for power series with unit denominator, the product is a power series
+      -- and we can compute its constant term
+      have hg_coeff : g.coeff 0 = f.num.eval α / (denomCofactor Fq v f).eval α := by
+        rw [hg_def]
+        -- g = num' * q'⁻¹ in LaurentSeries
+        -- First, note that q'⁻¹ in LaurentSeries = (q' : PowerSeries)⁻¹ since q' is a unit
+        have hq'_inv_eq : ((q' : PowerSeries Fq) : LaurentSeries Fq)⁻¹ =
+            (((q' : PowerSeries Fq)⁻¹ : PowerSeries Fq) : LaurentSeries Fq) := by
+          -- Both sides are inverses of (q' : LS), so they're equal
+          -- Use: if a * b = 1 and a * c = 1 in a monoid, then b = c
+          have hmul_ps : (q' : PowerSeries Fq) * (q' : PowerSeries Fq)⁻¹ = 1 :=
+            PowerSeries.mul_inv_cancel _ hq'_const_ne
+          have hmul : ((q' : PowerSeries Fq) : LaurentSeries Fq) *
+              (((q' : PowerSeries Fq)⁻¹ : PowerSeries Fq) : LaurentSeries Fq) = 1 := by
+            rw [← map_mul, hmul_ps, map_one]
+          have hq'_LS_unit : IsUnit ((q' : PowerSeries Fq) : LaurentSeries Fq) := hq'_unit.map _
+          rw [← hq'_LS_unit.mul_right_inj]
+          rw [hq'_LS_unit.mul_inv_cancel, hmul]
+        rw [hq'_inv_eq, ← map_mul]
+        -- Now we have (num' * q'⁻¹ : PowerSeries : LaurentSeries).coeff 0
+        rw [show (0 : ℤ) = ↑(0 : ℕ) by rfl, HahnSeries.ofPowerSeries_apply_coeff]
+        rw [PowerSeries.coeff_zero_eq_constantCoeff]
+        rw [map_mul, PowerSeries.constantCoeff_inv]
+        simp only [Polynomial.constantCoeff_coe, hnum'_def, hq'_def, ← hnum_const, ← hcofactor_const]
+        ring
+      -- Now show (g * single(-1,1)).coeff(-1) = g.coeff(0)
+      have hshift : (g * HahnSeries.single (-1) (1 : Fq)).coeff (-1) = g.coeff 0 := by
+        have h := HahnSeries.coeff_mul_single_add (r := (1 : Fq)) (x := g) (a := 0) (b := -1)
+        simp only [zero_add, mul_one] at h
+        exact h
+      rw [hshift, hg_coeff]
+    rw [key]
   /-
   set v := linearPlace Fq α with hv_def
   set gen := RiemannRochV2.PlaceDegree.generator Fq v with hgen_def

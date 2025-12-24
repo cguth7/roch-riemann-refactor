@@ -1,6 +1,6 @@
 # Proof Chain: P¹ Riemann-Roch
 
-Tracks the critical path from main theorems down to Mathlib. Updated Cycle 266.
+Tracks the critical path from main theorems down to Mathlib. Updated Cycle 270.
 
 ---
 
@@ -139,7 +139,7 @@ lake build RrLean.RiemannRochV2.SerreDuality.Smoke
 | Definitions/ | Infrastructure, RRDefinitions, Projective, FullRRData | ✅ |
 | Adelic/ | Adeles, AdelicH1v2, AdelicTopology, FullAdelesBase, FullAdelesCompact | ✅ |
 | Dimension/ | KernelProof | ✅ |
-| ResidueTheory/ | ResidueAtX, ResidueAtInfinity, ResidueAtLinear, ResidueLinearCorrect, ResidueTheorem | ✅ |
+| ResidueTheory/ | ResidueAtX, ResidueAtInfinity, ResidueAtLinear, ResidueLinearCorrect, ResidueTheorem, ResidueTrace | ✅ |
 | P1Instance/ | ProductFormula, FqPolynomialInstance | ✅ |
 
 ### Not on Main Chain
@@ -227,3 +227,6 @@ The Logic:
 | 236 | Created Smoke.lean for build hygiene |
 | 237-240 | Filled DimensionCore sorries |
 | 247 | Filled AdelicH1Full sorries, created this doc, mapped full chain |
+| 265 | Filled ell_ratfunc_projective_gap_eq → 0 sorries in P1Instance |
+| 266 | Refactored Residue.lean into 5 files |
+| 267-270 | Created ResidueTrace.lean, filled tracedResidueAtPlace_eq_residueAt_linear |
