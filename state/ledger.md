@@ -56,20 +56,53 @@ theorem RRSpace_proj_ext_canonical_sub_eq_bot
 
 **Goal**: Fill the sorry in `globalPlusBoundedSubmodule_full_eq_top_of_deg_ge_neg_one` (line 614)
 
-**Mathematical context** (corrected from Cycle 278):
-- The theorem now correctly requires `D.deg ≥ -1` hypothesis
-- This matches Serre vanishing: H¹(D) = 0 when deg(D) > 2g-2 = -2 for P¹
-- For deg(D) < -1, H¹(D) ≠ 0 (e.g., H¹(⟨0,-3⟩) = L(1[∞])ᵛ has dimension 2)
+**Mathematical context**:
+- Theorem requires `D.deg ≥ -1` (Serre vanishing threshold for P¹)
+- D.deg = D.finite.deg + D.inftyCoeff
+- At infinity: |k|_∞ = q^(intDegree k), bound is exp(D.inftyCoeff) = q^(D.inftyCoeff)
 
-**Strategy**:
-1. Use `exists_local_approximant_with_bound_infty` to approximate at infinity first
-2. Apply `strong_approximation_ratfunc` to the adjusted finite adele
-3. The degree hypothesis `D.deg ≥ -1` ensures the combined approximation works
+**Critical Insight from Analysis**:
 
-**Key infrastructure available**:
-- `exists_local_approximant_with_bound_infty` (lines 561-580): approximation at ∞ with any bound
-- `strong_approximation_ratfunc` (RatFuncPairing.lean): approximation at finite places
-- `denseRange_inftyRingHom` (FullAdelesCompact.lean): K is dense in K_∞
+The existing `strong_approximation_ratfunc` only handles **finite places**. It uses:
+1. Principal parts decomposition: k_pole = Σ_{v ∈ S} pp_v
+2. CRT refinement for places needing zeros
+3. Result: k is integral outside S, approximates at S
+
+The **key gap**: This doesn't control infinity valuation of k.
+
+**Recommended Strategy** (NOT sequential "infinity first"):
+
+1. **Finite-first with degree tracking**:
+   - `strong_approximation_ratfunc` produces k for finite places
+   - k = k_pole + poly where k_pole is sum of principal parts
+   - deg(k_pole) ≤ Σ_{v ∈ S} (order of pole at v) × deg(v) ≤ D.finite.deg (roughly)
+
+2. **Use deg(D) ≥ -1 for compatibility**:
+   - Need: |a_∞ - k|_∞ ≤ exp(D.inftyCoeff)
+   - We have: |k|_∞ ≈ q^(D.finite.deg)
+   - The slack from deg(D) ≥ -1: D.inftyCoeff ≥ -1 - D.finite.deg
+   - This ensures the infinity bound is satisfiable
+
+3. **Key lemma needed**: Bound on deg(k) from `exists_global_approximant_from_local`
+   - The principal parts have controlled degree
+   - Need: Σ deg(pp_v) ≤ some function of D.finite
+
+**Alternative approach**: Prove a variant that includes infinity:
+```lean
+-- Needed: strong_approximation_ratfunc_full that takes ExtendedDivisor
+-- and produces k satisfying both finite AND infinity bounds
+theorem strong_approximation_ratfunc_full
+    (a : FqFullAdeleRing Fq)
+    (D : ExtendedDivisor (Polynomial Fq))
+    (hdeg : D.deg ≥ -1) :
+    ∃ k : RatFunc Fq, ...
+```
+
+**Key infrastructure**:
+- `exists_global_approximant_from_local` (RatFuncPairing:1262): glues local approx
+- `exists_principal_part_at_spec`: principal part decomposition
+- `strong_approximation_ratfunc` (RatFuncPairing:1613): finite-only version
+- `exists_local_approximant_with_bound_infty` (AdelicH1Full:561): infinity approx
 
 **After**: Complete remaining Abstract.lean sorries for full Serre duality
 
