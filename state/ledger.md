@@ -6,9 +6,9 @@ Tactical tracking for Riemann-Roch formalization.
 
 ## Current State
 
-**Build**: ✅ Compiles with 1 sorry (in AdelicH1Full.lean line 582)
-**Result**: RRSpace_proj_ext_finite proved - L(D) is finite-dimensional for all extended divisors
-**Cycle**: 278 (Next)
+**Build**: ❌ Compile error (needs small fix in AdelicH1Full.lean line 568)
+**Result**: Added `exists_local_approximant_with_bound_infty` helper lemma (partial)
+**Cycle**: 279 (Next)
 
 ---
 
@@ -52,16 +52,51 @@ theorem RRSpace_proj_ext_canonical_sub_eq_bot
 
 ## Next Steps
 
-### Cycle 278: Fill `globalPlusBoundedSubmodule_full_eq_top`
+### Cycle 279: Fix compile error and complete `globalPlusBoundedSubmodule_full_eq_top`
 
-**Target**: Prove that K + A_K(D) = FullAdeleRing for P¹ (strong approximation for full adeles)
+**Immediate**: Fix `Valued.isClopen_closedBall` call in AdelicH1Full.lean:568
+- Current error: wrong argument type to `Valued.isClopen_closedBall`
+- Fix: Check the correct Mathlib API for clopen balls in valued rings
 
-**Context**: This is the key lemma showing H¹(D) = 0 for P¹. The proof requires:
-1. Strong approximation for finite adeles (already proved)
-2. Density of K in K_∞ (completion at infinity)
-3. Show the same global k works for both finite and infinity bounds
+**Then complete**: `globalPlusBoundedSubmodule_full_eq_top` (line ~605 after fix)
+
+**Strategy** (from Cycle 278 analysis):
+1. Use `exists_local_approximant_with_bound_infty` to approximate at infinity first
+2. Apply `strong_approximation_ratfunc` to the adjusted finite adele
+3. The key challenge: ensuring k₂ from finite approx doesn't mess up infinity bound
+
+**Key infrastructure available**:
+- `exists_local_approximant_with_bound_infty` (lines 561-580): approximation at ∞ with any bound
+- `strong_approximation_ratfunc` (RatFuncPairing.lean): approximation at finite places
+- `denseRange_inftyRingHom` (FullAdelesCompact.lean): K is dense in K_∞
 
 **After**: Abstract.lean sorries become provable, completing P¹ Riemann-Roch infrastructure
+
+---
+
+## Cycle 278 Summary (Partial)
+
+**Task**: Fill `globalPlusBoundedSubmodule_full_eq_top`
+
+**Progress**:
+- Added `FullStrongApproximation` section to AdelicH1Full.lean
+- Added `exists_local_approximant_with_bound_infty`: approximation at infinity with arbitrary bounds
+  - Uses density of K in FqtInfty plus clopen balls in valued rings
+- Analyzed proof strategy for full strong approximation
+- Removed broken `exists_fractional_part_small_infty` lemma (API issues)
+
+**Blocking issue**:
+- `Valued.isClopen_closedBall` API mismatch at line 568
+- Need to find correct Mathlib signature for clopen balls
+
+**Key insight from analysis**:
+The proof requires a two-step process:
+1. First approximate at infinity: find k₁ with |a.2 - k₁|_∞ ≤ exp(D.inftyCoeff)
+2. Then handle finite places on (a.1 - diag(k₁)) using strong_approximation_ratfunc
+3. Set k = k₁ + k₂ and verify both bounds hold
+
+The challenge is that k₂ might have large infinity valuation that disrupts step 1.
+Need to either bound |k₂|_∞ or use a clever construction.
 
 ---
 

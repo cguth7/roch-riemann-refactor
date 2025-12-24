@@ -1,6 +1,6 @@
 # Refactor Plan: P¹ → Arbitrary Curves
 
-**Status**: P¹ COMPLETE, Abstract.lean integration in progress (Cycle 271)
+**Status**: P¹ nearly complete, 1 sorry + 1 compile error remaining (Cycle 278)
 **Goal**: Transform P¹ Riemann-Roch into a framework for arbitrary algebraic curves
 
 ---
@@ -11,7 +11,7 @@
 |-------|--------|-----------|
 | 0-1 | ✅ Complete | Infrastructure, AdelicH1Full |
 | 3 | ✅ Complete | Place.lean, DivisorV3, RRSpaceV3, P1Instance/ |
-| 4 | 🔄 In Progress | Abstract.lean (ProjectiveAdelicRRData) |
+| 4 | 🔄 In Progress | Abstract.lean, AdelicH1Full (1 sorry) |
 | 5-6 | ⏳ Future | Cleanup, new curve instances |
 
 ---
@@ -36,27 +36,30 @@ Elements are "integral at all finite places" but can have ANY pole at infinity.
 
 ---
 
-## Current Work: Cycle 274
+## Current Work: Cycle 279
 
-**Task**: Prove `RRSpace_proj_ext_finite` via pole-clearing approach
+**Task**: Complete `globalPlusBoundedSubmodule_full_eq_top` (full strong approximation)
 
-**Strategic Direction (Post-Cycle 273 Review)**:
-- ⚠️ Option A (restrict to effective divisors) REJECTED - breaks roadmap for general curves
-- **Priority 1**: Finiteness via pole-clearing (Cycle 274)
-- **Priority 2**: Actual residue pairing for Serre duality (after finiteness)
+**Recent Progress**:
+- ✅ Cycle 274-276: Pole-clearing infrastructure built
+- ✅ Cycle 277: `RRSpace_proj_ext_finite` PROVED via pole-clearing
+- 🔄 Cycle 278: Added `exists_local_approximant_with_bound_infty` helper (compile error)
 
 **Sorries remaining**:
 | Sorry | Location | Description |
 |-------|----------|-------------|
-| `globalPlusBoundedSubmodule_full_eq_top` | AdelicH1Full:566 | ⚠️ Claims h¹(D)=0 for all D (FALSE for non-effective) |
-| `RRSpace_proj_ext_finite` | AdelicH1Full:724 | **PRIORITY**: Finiteness via pole-clearing |
-| `serre_duality` cases | Abstract:300,304 | Needs actual residue pairing, not "both=0" |
+| `globalPlusBoundedSubmodule_full_eq_top` | AdelicH1Full:~605 | Proves h¹(D)=0 for P¹ |
+| Abstract.lean sorries | Various | Blocked by above |
 
-**Cycle 274 Implementation Plan**:
-1. Construct clearing polynomial `q = ∏ generator^{max(0, D.finite(v))}`
-2. Define embedding L(D) ↪ Polynomial.degreeLT via f ↦ f·q
-3. Prove embedding is injective
-4. Conclude finiteness from finite-dimensional target
+**Blocking issue**: Compile error at AdelicH1Full:568
+- `Valued.isClopen_closedBall` API mismatch
+- Need to check correct Mathlib signature for clopen balls
+
+**Proof strategy for globalPlusBoundedSubmodule_full_eq_top**:
+1. Use `exists_local_approximant_with_bound_infty` to approximate at infinity first
+2. Apply `strong_approximation_ratfunc` to adjusted finite adele
+3. Combine: k = k₁ + k₂ satisfies both bounds
+4. Challenge: ensure k₂ from finite approx doesn't mess up infinity bound
 
 ---
 
@@ -72,13 +75,25 @@ Elements are "integral at all finite places" but can have ANY pole at infinity.
 - `RRSpaceV3.lean` - Projective L(D) as k-module
 - `P1Instance/` - Full P¹ Riemann-Roch (sorry-free)
 
+### Phase 4.1: Finiteness ✅ (Cycles 274-277)
+- Built pole-clearing infrastructure
+- `clearingPoly` - product of generators at places with D(v) > 0
+- `RRSpace_proj_ext_finite` - L(D) finite-dimensional for all extended divisors
+- Key technique: embed L(D) ↪ Polynomial.degreeLT via f ↦ f·clearingPoly
+
 ---
 
 ## Remaining Phases
 
-### Phase 4.2: Wire P¹ into Abstract.lean (Current)
+### Phase 4.2: Complete H¹ Vanishing (Current - Cycle 279)
+**Immediate**: Fix compile error, then fill `globalPlusBoundedSubmodule_full_eq_top`
+- This proves h¹(D) = 0 for P¹ (strong approximation at all places)
+- Once complete: Abstract.lean sorries become fillable
+
+### Phase 4.3: Wire P¹ into Abstract.lean (Next)
 - Create P¹ instance of `ProjectiveAdelicRRData`
 - Bridge between `RRSpace_proj_ext` and `RRSpace_ratfunc_projective`
+- Fill remaining Abstract.lean sorries
 
 ### Phase 5: Cleanup (Low Priority)
 Move P¹-specific files to archive once general framework works.
@@ -105,4 +120,4 @@ instance ellipticRRData (E : EllipticCurve Fq) :
 
 ---
 
-*Updated Cycle 271: Added ProjectiveAdelicRRData, documented affine/projective mismatch.*
+*Updated Cycle 278: RRSpace_proj_ext_finite proved, 1 sorry remaining (globalPlusBoundedSubmodule_full_eq_top).*

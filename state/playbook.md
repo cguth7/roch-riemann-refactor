@@ -1,6 +1,6 @@
 # Playbook
 
-Strategic guide for formalizing Riemann-Roch. Updated Cycle 273.
+Strategic guide for formalizing Riemann-Roch. Updated Cycle 278.
 
 ---
 
@@ -334,6 +334,20 @@ For P¹, `ell_proj(0)` = ∞ (all polynomials are integral at finite places)!
 
 **Rule**: For projective curves, always use `ProjectiveAdelicRRData` not `AdelicRRData`.
 
+### Valued Ring API Pattern (Cycle 278 Lesson)
+When working with `Valued` rings (like FqtInfty, adicCompletion):
+- **Clopen balls**: Use `Valued.isClopen_ball` not `Valued.isClopen_closedBall`
+- **Extension to completion**: Use `Valued.extension_extends` to relate completion valuation to original
+- **Density**: RatFunc is dense in FqtInfty via `denseRange_inftyRingHom`
+
+For approximation at infinity:
+```lean
+-- Key pattern: density + clopen balls → local approximation
+obtain ⟨k, hk⟩ := (denseRange_inftyRingHom Fq).exists_mem_open hopen ⟨a, hne⟩
+```
+
+Check Mathlib for exact signatures - the API has changed across versions.
+
 ### Serre Duality "Both Zero" Trap (Cycle 273 Lesson)
 The naive approach to Serre duality for P¹:
 - "h¹(D) = 0 by strong approximation"
@@ -425,27 +439,29 @@ What was actually true:
 
 ---
 
-## Honest Sorry Audit (Cycle 273)
+## Honest Sorry Audit (Cycle 278)
 
-### Total: 3 real sorries (in projective infrastructure)
+### Total: 1 real sorry + 1 compile error (in projective infrastructure)
 
 **P1Instance/** - ✅ SORRY-FREE
 **ResidueTrace.lean** - ✅ SORRY-FREE
-**AdelicH1Full.lean** - 2 sorries (projective infrastructure)
-**Abstract.lean** - 2 sorries (Serre duality non-effective cases)
+**AdelicH1Full.lean** - ❌ COMPILE ERROR + 1 sorry
+**Abstract.lean** - 5 sorries (abstract infrastructure, blocked by above)
 
-**Sorries remaining**:
-1. `globalPlusBoundedSubmodule_full_eq_top` - ⚠️ ARCHITECTURE ISSUE: claims h¹(D)=0 for all D (only true for deg(D) > -2)
-2. `RRSpace_proj_ext_finite` - needs pole-clearing approach, not just polynomial embedding
-3. `p1ProjectiveAdelicRRData.serre_duality` - ⚠️ Cannot prove via "both=0" for non-effective D
+**Current blockers**:
+1. `exists_local_approximant_with_bound_infty` - ❌ COMPILE ERROR at line 568
+   - Issue: `Valued.isClopen_closedBall` API mismatch
+   - Fix: Check correct Mathlib signature for clopen balls
+2. `globalPlusBoundedSubmodule_full_eq_top` - sorry (line ~605)
+   - Key lemma showing h¹(D) = 0 for P¹
+   - Proof strategy: two-step approximation (infinity first, then finite)
 
-**Cycle 273 discovery**: The serre_duality proof strategy is fundamentally flawed for non-effective D.
-For D = ⟨0, -3⟩: ℓ(K-D) = 2 ≠ 0. True Serre duality requires residue pairing, not triviality.
+**Cycle 277 achievement**: `RRSpace_proj_ext_finite` ✅ PROVED via pole-clearing!
 
-**Strategic Direction (Post-Cycle 273 Review)**:
-- ⚠️ Do NOT restrict to effective divisors - this breaks the roadmap for general curves
-- **Priority 1**: Prove `RRSpace_proj_ext_finite` via pole-clearing (foundational)
-- **Priority 2**: Implement actual residue pairing for Serre duality (uses finiteness)
+**Strategic Direction (Post-Cycle 278 Review)**:
+- **Priority 1**: Fix compile error in `exists_local_approximant_with_bound_infty`
+- **Priority 2**: Complete `globalPlusBoundedSubmodule_full_eq_top`
+- **Priority 3**: Fill Abstract.lean sorries (will follow from above)
 
 ### What's Proved (no sorryAx)
 

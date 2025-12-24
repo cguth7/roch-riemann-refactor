@@ -543,6 +543,44 @@ theorem deg_canonical_eq_2g_minus_2 :
 
 end KeyProperties
 
+/-! ## Full Strong Approximation
+
+These lemmas extend strong approximation to handle both finite and infinite places.
+-/
+
+section FullStrongApproximation
+
+open RiemannRochV2.FullAdeles FunctionField
+
+/-- Local approximation at infinity with arbitrary bounds.
+
+For any element of FqtInfty and any bound n, there exists k ∈ K with |a - k|_∞ ≤ exp(n).
+This follows from density of K in FqtInfty plus the fact that closed balls are clopen
+in valued rings.
+-/
+lemma exists_local_approximant_with_bound_infty (a : FqtInfty Fq) (n : ℤ) :
+    ∃ k : RatFunc Fq, Valued.v (a - inftyRingHom Fq k) ≤ WithZero.exp n := by
+  -- The closed ball {x : Valued.v x ≤ exp(n)} is open in valued rings
+  have h_exp_ne : (WithZero.exp n : WithZero (Multiplicative ℤ)) ≠ 0 := WithZero.exp_ne_zero
+  have hopen : IsOpen {x : FqtInfty Fq | Valued.v (a - x) ≤ WithZero.exp n} := by
+    have h_ball_open : IsOpen {x : FqtInfty Fq | Valued.v x ≤ WithZero.exp n} := by
+      -- Use the clopen ball property for valued rings
+      exact (Valued.isClopen_closedBall (WithZero.exp n)).isOpen
+    have h_eq : {x : FqtInfty Fq | Valued.v (a - x) ≤ WithZero.exp n} =
+        (fun y => a - y) ⁻¹' {y | Valued.v y ≤ WithZero.exp n} := by
+      ext x; simp only [Set.mem_preimage, Set.mem_setOf_eq]
+    rw [h_eq]
+    exact h_ball_open.preimage (by continuity)
+  -- This set is non-empty (contains a)
+  have hne : a ∈ {x : FqtInfty Fq | Valued.v (a - x) ≤ WithZero.exp n} := by
+    simp only [Set.mem_setOf_eq, sub_self, map_zero]
+    exact zero_le'
+  -- K is dense in FqtInfty
+  obtain ⟨k, hk⟩ := (denseRange_inftyRingHom Fq).exists_mem_open hopen ⟨a, hne⟩
+  exact ⟨k, hk⟩
+
+end FullStrongApproximation
+
 /-! ## P¹ Instance of ProjectiveAdelicRRData
 
 For P¹ over Fq, we instantiate `ProjectiveAdelicRRData` using the fact that
