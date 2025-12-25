@@ -1,6 +1,6 @@
 # Refactor Plan: P¹ → Arbitrary Curves
 
-**Status**: P¹ complete. Elliptic curves ready to begin. Updated Cycle 288.
+**Status**: P¹ complete. Elliptic RR complete. Sorry cleanup in progress. Updated Cycle 293.
 **Goal**: Riemann-Roch for algebraically closed curves of any genus.
 
 ---
@@ -12,7 +12,8 @@
 | 0-4 | ✅ Complete | P¹ infrastructure, Serre duality |
 | 4.5 | ✅ Complete | Valuation-degree, IsLinearPlaceSupport fix |
 | 5 | ⏸️ Deferred | Edge case cleanup (low priority) |
-| 6 | ⏳ **In Progress** | Elliptic curves (genus 1) - Setup + Places done |
+| 5.5 | ⏳ **In Progress** | Sorry cleanup (IsLinearPlaceSupport, infinity bounds) |
+| 6 | ✅ Complete | Elliptic curves (genus 1) - RR proved! |
 | 7 | Future | Hyperelliptic curves (genus ≥ 2) |
 
 ---
@@ -226,10 +227,46 @@ For elliptic curves: `genus = 1`, `canonical = 0`, `deg_canonical = 0`.
 - Axiomatized vanishing for deg > 0 (h1_vanishing_positive)
 - Axiomatized Serre duality: h¹(D) = ℓ(-D)
 
-### Cycle 293: EllipticRRData (Next)
-- Create `ProjectiveAdelicRRData` instance using axioms
-- Prove `ℓ(D) - ℓ(-D) = deg(D)` for genus 1
+### Cycle 293: EllipticRRData ✅ DONE
+- Created `AdelicRRData` instance using axioms
+- Proved `ℓ(D) - ℓ(-D) = deg(D)` for genus 1
 
 ---
 
-*Updated Cycle 292: EllipticH1 complete. Next: EllipticRRData instance (Cycle 293).*
+## Phase 5.5: Sorry Cleanup (In Progress)
+
+### The Infinity Bound Problem (Cycle 294 - Next)
+
+**Target**: AdelicH1Full.lean line 698
+
+The key missing piece in P¹ strong approximation is proving that principal parts
+from `strong_approximation_ratfunc` have bounded infinity valuation:
+
+```lean
+-- Need to prove: |k₂|_∞ ≤ exp(-1)
+-- Where k₂ is a sum of principal parts like c/(X-a)^n
+-- These have intDegree ≤ -1, hence infinity valuation ≤ exp(-1)
+```
+
+This unblocks lines 698, 763, 1167, 1233 in AdelicH1Full.
+
+### The IsLinearPlaceSupport Issue (Cycle 296)
+
+**Key Insight**: `IsLinearPlaceSupport` is NOT provable for finite Fq!
+
+```lean
+def deg (D : DivisorV2 R) : ℤ := D.sum (fun _ n => n)  -- UNWEIGHTED!
+```
+
+The current `DivisorV2.deg` sums coefficients without weighting by place degree.
+`IsLinearPlaceSupport` was a workaround to ensure unweighted = weighted.
+
+**Resolution Options**:
+1. Add `[IsAlgClosed Fq]` hypothesis where needed
+2. Refactor to use weighted degrees throughout
+
+Decision deferred until infinity bound is resolved.
+
+---
+
+*Updated Cycle 293: Elliptic RR complete. Next: Sorry cleanup (infinity bound, then IsLinearPlaceSupport).*

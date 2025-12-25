@@ -111,26 +111,50 @@ PlaceDegree.lean
 
 ---
 
-## Sorry Locations (9 total)
+## Sorry Locations (10 total, updated Cycle 293)
 
-### Content Sorries (4) - Need proof work
+### Content Sorries (4) - Core proof work needed
+
+| Location | Line | Description | Priority |
+|----------|------|-------------|----------|
+| AdelicH1Full.lean | 698 | Strong approx infinity bound `\|k₂\|_∞ ≤ exp(-1)` | **HIGH** |
+| AdelicH1Full.lean | 763 | Deep negative inftyCoeff (uses 698) | Medium |
+| AdelicH1Full.lean | 1167 | Degree gap in L(K-D)=0 | Medium |
+| AdelicH1Full.lean | 1233 | Non-effective case (uses 698) | Medium |
+
+### Architectural Sorries (3) - NOT provable for Fq, need design decision
+
+| Location | Line | Description | Issue |
+|----------|------|-------------|-------|
+| Abstract.lean | 294 | IsLinearPlaceSupport | Fq has places of deg > 1 |
+| Abstract.lean | 312 | IsLinearPlaceSupport | Same |
+| Abstract.lean | 345 | IsLinearPlaceSupport | Same |
+
+**Key Insight**: `IsLinearPlaceSupport` asserts all places in support have degree 1.
+This is FALSE for finite Fq (e.g., X²+X+1 over F₂ has degree 2).
+Options: (1) Add `[IsAlgClosed Fq]`, or (2) Refactor to weighted degrees.
+
+### Low Priority Sorries (2) - Edge cases
 
 | Location | Line | Description |
 |----------|------|-------------|
-| AdelicH1Full.lean | 698 | Strong approx infinity bound |
-| AdelicH1Full.lean | 817 | Deep negative inftyCoeff |
-| AdelicH1Full.lean | 1213 | Degree gap in L(K-D)=0 |
-| AdelicH1Full.lean | 1283 | Non-effective IsLinearPlaceSupport |
+| Abstract.lean | 299 | deg(D) < -1 case (needs Serre duality) |
+| Abstract.lean | 351 | deg(D) < -1 case (needs Serre duality) |
 
-### Infrastructure Sorries (5) - Trivial for alg. closed
+### Axiom Sorries (3) - Intentional, keep as-is
 
 | Location | Line | Description |
 |----------|------|-------------|
-| Abstract.lean | 294 | IsLinearPlaceSupport |
-| Abstract.lean | 312 | IsLinearPlaceSupport |
-| Abstract.lean | 345 | IsLinearPlaceSupport |
-| Abstract.lean | 299 | deg(D) < -1 case |
-| Abstract.lean | 351 | deg(D) < -1 case |
+| EllipticSetup.lean | 105 | IsDedekindDomain CoordRing (Mathlib gap) |
+| StrongApproximation.lean | 115 | P1 density (provable but tedious) |
+| StrongApproximation.lean | 164 | Elliptic density (standard axiom) |
+
+### Proved Elsewhere (2) - Sorries remain for import ordering
+
+| Location | Line | Proved In |
+|----------|------|-----------|
+| EllipticH1.lean | 206 | EllipticRRData.riemann_roch_positive' |
+| EllipticH1.lean | 219 | EllipticRRData.riemann_roch_full' |
 
 ---
 

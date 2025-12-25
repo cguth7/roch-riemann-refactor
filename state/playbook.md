@@ -1,6 +1,6 @@
 # Playbook
 
-Strategic guide for formalizing Riemann-Roch. Updated Cycle 288.
+Strategic guide for formalizing Riemann-Roch. Updated Cycle 293.
 
 ---
 
@@ -34,14 +34,15 @@ Formalize **Riemann-Roch** for **algebraically closed curves** in Lean 4:
 ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
 ```
 
-### Current Status (Cycle 292)
+### Current Status (Cycle 293)
 
 | Component | Status |
 |-----------|--------|
 | P¹ Riemann-Roch formula | ✅ Complete |
 | P¹ Serre duality (effective D) | ✅ Complete |
 | P¹ edge cases (non-effective) | ✅ Works for alg. closed fields |
-| Elliptic curves (genus 1) | ⏳ H¹ axiomatized, RRData next |
+| Elliptic curves (genus 1) | ✅ RR proved (axiomatized) |
+| Sorry cleanup | ⏳ Next phase |
 
 ---
 
@@ -148,11 +149,14 @@ class StrongApproximation (K : Type*) [Field K] ... : Prop where
 
 ## Heuristics
 
-### Weighted vs Unweighted Degree (Cycle 287)
+### Weighted vs Unweighted Degree (Cycle 287, Updated 293)
 - `DivisorV2.deg` = Σ D(v) (unweighted, sum of coefficients)
 - `degWeighted` = Σ D(v) · deg(v) (weighted by place degree)
 - For algebraically closed fields: these are equal (all deg(v) = 1)
-- For general Fq: use `IsLinearPlaceSupport` hypothesis when needed
+- **Key Insight (Cycle 293)**: `IsLinearPlaceSupport` is NOT provable for finite Fq!
+  - It was a workaround to make unweighted = weighted
+  - Proper fix: either add `[IsAlgClosed Fq]` or refactor to weighted degrees
+  - The sorries in Abstract.lean are architectural, not proof gaps
 
 ### Coprimality Pattern (Cycle 284)
 ```lean
@@ -218,4 +222,4 @@ lake build RrLean.RiemannRochV2.SerreDuality.General.AdelicH1Full
 
 ---
 
-*Updated Cycle 292: EllipticH1 complete with h1_zero_eq_one, vanishing, Serre duality. Next: EllipticRRData (Cycle 293).*
+*Updated Cycle 293: Elliptic RR complete. Next: Sorry cleanup phase (IsLinearPlaceSupport, infinity bounds).*
