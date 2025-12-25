@@ -167,28 +167,27 @@ lake build 2>&1 | grep "sorry" | wc -l
 
 ## Elliptic Curve Chain (In Progress)
 
-### Critical Blocker: Strong Approximation
+### Current Status: H¹ Axiomatized
 
-The P¹ proof in `FullAdelesCompact.lean` uses Euclidean division (`div_add_mod`).
-This doesn't work for elliptic curves (Dedekind, not Euclidean).
-
-**Solution**: Axiomatize `StrongApproximation` as a typeclass (Cycle 291).
+Cycle 292 completed EllipticH1 with key axioms. Next: EllipticRRData instance.
 
 ### Dependency Graph
 
 ```
-EllipticRRData.lean (Cycle 293+)
+EllipticRRData.lean (Cycle 293) ←─── NEXT
 ├── ProjectiveAdelicRRData instance
 └── ℓ(D) - ℓ(-D) = deg(D)
         │
         ▼
-EllipticH1.lean (Cycle 292) ←─── BLOCKED until Cycle 291
-├── h1_finrank computation
-└── Requires: StrongApproximation axiom
+EllipticH1.lean ✅ CREATED (Cycle 292)
+├── h1_finrank W D (dimension of H¹)
+├── h1_zero_eq_one (AXIOM: dim H¹(O) = 1)
+├── h1_vanishing_positive (AXIOM: H¹(D)=0 for deg>0)
+└── serre_duality (AXIOM: h¹(D) = ℓ(-D))
         │
         ▼
-StrongApproximation.lean (Cycle 291) ←─── NEXT
-├── class StrongApproximation K
+StrongApproximation.lean ✅ CREATED (Cycle 291)
+├── class StrongApprox (density definition)
 └── instance for elliptic (sorry)
         │
         ▼
@@ -217,8 +216,11 @@ Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 | Axiom | File | Justification |
 |-------|------|---------------|
 | `IsDedekindDomain CoordRing` | EllipticSetup | Hartshorne II.6 |
-| `StrongApproximation K` | (Cycle 291) | K dense in A_S |
+| `StrongApprox K` | StrongApproximation | K dense in A_S |
+| `h1_zero_eq_one` | EllipticH1 | Genus = 1 |
+| `h1_vanishing_positive` | EllipticH1 | Serre vanishing |
+| `serre_duality` | EllipticH1 | Residue pairing |
 
 ---
 
-*Updated Cycle 290: EllipticCanonical added. Plan: 291 (SA axiom) → 292 (H1) → 293+ (RRData).*
+*Updated Cycle 292: EllipticH1 added. Plan: 293 (RRData instance) → 294 (prove RR theorems).*

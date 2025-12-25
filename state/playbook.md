@@ -34,14 +34,14 @@ Formalize **Riemann-Roch** for **algebraically closed curves** in Lean 4:
 ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
 ```
 
-### Current Status (Cycle 290)
+### Current Status (Cycle 292)
 
 | Component | Status |
 |-----------|--------|
 | P¹ Riemann-Roch formula | ✅ Complete |
 | P¹ Serre duality (effective D) | ✅ Complete |
 | P¹ edge cases (non-effective) | ✅ Works for alg. closed fields |
-| Elliptic curves (genus 1) | ⏳ Setup + Canonical done, H¹ next |
+| Elliptic curves (genus 1) | ⏳ H¹ axiomatized, RRData next |
 
 ---
 
@@ -122,7 +122,10 @@ structure WeilDifferential (K : Type*) where
 | Axiom | Justification | Used For |
 |-------|---------------|----------|
 | `IsDedekindDomain CoordRing` | Hartshorne II.6 (smooth ⟹ Dedekind) | HeightOneSpectrum |
-| `StrongApproximation K` | K dense in A_S (standard) | H¹ computations |
+| `StrongApprox K` | K dense in A_S (standard) | H¹ computations |
+| `h1_zero_eq_one` | Genus = 1 | Elliptic RR |
+| `h1_vanishing_positive` | Serre vanishing | Elliptic RR |
+| `serre_duality` | Residue pairing | Elliptic RR |
 
 **Example 1**: `IsDedekindDomain W.CoordinateRing` for smooth Weierstrass curves.
 - Mathematically: Textbook fact (Hartshorne II.6)
@@ -215,4 +218,4 @@ lake build RrLean.RiemannRochV2.SerreDuality.General.AdelicH1Full
 
 ---
 
-*Updated Cycle 290: EllipticCanonical (K=0) complete. Next: StrongApproximation axiom (Cycle 291).*
+*Updated Cycle 292: EllipticH1 complete with h1_zero_eq_one, vanishing, Serre duality. Next: EllipticRRData (Cycle 293).*

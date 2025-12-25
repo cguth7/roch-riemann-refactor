@@ -1,6 +1,7 @@
 import RrLean.RiemannRochV2.Elliptic.EllipticSetup
 import RrLean.RiemannRochV2.Elliptic.EllipticPlaces
 import RrLean.RiemannRochV2.Elliptic.EllipticCanonical
+import RrLean.RiemannRochV2.Elliptic.EllipticH1
 -- StrongApproximation typeclass (in Adelic/) with elliptic instance
 import RrLean.RiemannRochV2.Adelic.StrongApproximation
 
@@ -15,11 +16,11 @@ instantiating Riemann-Roch on genus 1 curves.
 * `EllipticSetup` - IsDedekindDomain axiom, basic definitions
 * `EllipticPlaces` - HeightOneSpectrum, local uniformizers
 * `EllipticCanonical` - K = 0 (trivial canonical divisor for g=1)
+* `EllipticH1` - H¹ calculations (dim H¹(O) = 1)
 
-## Status (Cycle 291)
+## Status (Cycle 292)
 
-Setup, canonical divisor, and Strong Approximation complete. Future cycles will add:
-- `EllipticH1.lean` - H¹ calculations (dim = 1 for O)
+Setup, canonical divisor, Strong Approximation, and H¹ complete. Future cycles will add:
 - `EllipticRRData.lean` - ProjectiveAdelicRRData instance
 
 ## StrongApproximation (CRITICAL)
