@@ -118,14 +118,25 @@ structure WeilDifferential (K : Type*) where
 
 **When to axiom**: "Trivial but tedious" gaps orthogonal to your goal.
 
-**Example**: `IsDedekindDomain W.CoordinateRing` for smooth Weierstrass curves.
+**Current Axiom Stack**:
+| Axiom | Justification | Used For |
+|-------|---------------|----------|
+| `IsDedekindDomain CoordRing` | Hartshorne II.6 (smooth ⟹ Dedekind) | HeightOneSpectrum |
+| `StrongApproximation K` | K dense in A_S (standard) | H¹ computations |
+
+**Example 1**: `IsDedekindDomain W.CoordinateRing` for smooth Weierstrass curves.
 - Mathematically: Textbook fact (Hartshorne II.6)
 - Formalization: Would require proving smoothness implies regular in codim 1
 - Decision: Axiom it. RR conditional on this is still a valid achievement.
 
+**Example 2**: `StrongApproximation` for elliptic function fields.
+- Mathematically: Standard (K is dense in restricted adeles)
+- Formalization: P¹ proof uses Euclidean division (PID-specific!)
+- Decision: Axiom it. Avoids circularity (SA proofs often use RR).
+
 ```lean
-/-- Smooth curves have Dedekind coordinate rings. Standard AG fact. -/
-instance [W.Nonsingular] : IsDedekindDomain W.CoordinateRing := sorry
+class StrongApproximation (K : Type*) [Field K] ... : Prop where
+  dense_in_finite_adeles : DenseRange (diagonalEmbedding K)
 ```
 
 **When NOT to axiom**: The actual RR content you're trying to prove.
@@ -204,4 +215,4 @@ lake build RrLean.RiemannRochV2.SerreDuality.General.AdelicH1Full
 
 ---
 
-*Updated Cycle 289: Elliptic curve infrastructure started (EllipticSetup + EllipticPlaces).*
+*Updated Cycle 289: SA blocker identified. Axiom stack: IsDedekindDomain + StrongApproximation.*

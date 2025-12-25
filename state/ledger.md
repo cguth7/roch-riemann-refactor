@@ -119,32 +119,42 @@ structure LocalUniformizer (v : EllipticPlace W) where
 
 ---
 
-## Next Steps: Cycle 290
+## Next Steps: Cycles 290-292
 
-**Recommended Path**: Continue elliptic curve infrastructure.
+### Critical Blocker Discovered
 
-### Remaining Files to Create
+**Problem**: The current Strong Approximation proof in `FullAdelesCompact.lean` uses
+Euclidean division (`div_add_mod`), which only works for PIDs like `Polynomial Fq`.
+Elliptic curves have Dedekind (not Euclidean) coordinate rings.
+
+**Solution**: Axiomatize Strong Approximation (Option B). This avoids:
+1. The "PID Trap" - generalizing Euclidean division to non-PIDs is substantial work
+2. Circularity - SA proofs for general curves often USE RR (chicken-and-egg)
+
+### Updated Plan
+
+| Cycle | Task | Dependency |
+|-------|------|------------|
+| 290 | EllipticCanonical (K=0, deg=0) | Independent, quick win |
+| 291 | StrongApproximation axiom/typeclass | Needed before H¹ |
+| 292 | EllipticH1 (dim H¹(O) = 1) | Requires SA |
+| 293+ | EllipticRRData instance | Requires all above |
+
+### Axiom Stack (Safe, Standard AG)
+| Axiom | Justification | Used For |
+|-------|---------------|----------|
+| `IsDedekindDomain CoordRing` | Hartshorne II.6 | HeightOneSpectrum |
+| `StrongApproximation K` | K dense in A_S | H¹ computations |
+
+### Remaining Files
 ```
 RrLean/RiemannRochV2/Elliptic/
 ├── EllipticSetup.lean      ✅ Created
 ├── EllipticPlaces.lean     ✅ Created
-├── EllipticCanonical.lean  # K = 0 (trivial for genus 1)
-├── EllipticH1.lean         # H¹ calculations (dim = 1 for O)
-└── EllipticRRData.lean     # ProjectiveAdelicRRData instance
+├── EllipticCanonical.lean  # Cycle 290: K = 0
+├── EllipticH1.lean         # Cycle 292: after SA axiom
+└── EllipticRRData.lean     # Cycle 293+
 ```
-
-### Key Differences from P¹
-| Aspect | P¹ (g=0) | Elliptic (g=1) |
-|--------|----------|----------------|
-| deg(K) | -2 | 0 |
-| ℓ(D) formula | deg(D) + 1 | deg(D) (for deg > 0) |
-| H¹(O) | 0 | 1-dimensional |
-| L(P) for point P | 2-dim {1, 1/π} | 1-dim {constants} |
-
-### What Needs Proving
-1. `ℓ(D) - ℓ(-D) = deg(D)` for elliptic (RR with g=1, K=0)
-2. H¹(O) = 1 (requires compactness of adelic quotient)
-3. Strong approximation for elliptic function fields
 
 ---
 
@@ -155,6 +165,12 @@ RrLean/RiemannRochV2/Elliptic/
 - Elliptic curves have Dedekind but **not PID** coordinate rings
 - Cannot use `MonicIrreduciblePoly` as generator in general infrastructure
 - Must use abstract `uniformizerAt` (local uniformizers always exist)
+
+### The "Strong Approximation Trap" (Cycle 289 discovery)
+- P¹ proof uses `div_add_mod` (Euclidean division) - PID-specific!
+- Elliptic curves: cannot divide polynomials in non-Euclidean rings
+- **Solution**: Axiomatize `StrongApproximation` as typeclass
+- Avoids circularity (SA proofs often use RR itself)
 
 ### Weil Differentials
 - Current residue pairing uses functions (works for P¹ because dt is global)
@@ -178,4 +194,4 @@ RrLean/RiemannRochV2/Elliptic/
 
 ---
 
-*Updated Cycle 289: Elliptic curve infrastructure started. EllipticSetup + EllipticPlaces created.*
+*Updated Cycle 289: Elliptic infrastructure started. SA blocker identified → axiom approach (Option B).*

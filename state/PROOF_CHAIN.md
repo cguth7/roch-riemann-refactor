@@ -167,18 +167,32 @@ lake build 2>&1 | grep "sorry" | wc -l
 
 ## Elliptic Curve Chain (In Progress)
 
+### Critical Blocker: Strong Approximation
+
+The P¹ proof in `FullAdelesCompact.lean` uses Euclidean division (`div_add_mod`).
+This doesn't work for elliptic curves (Dedekind, not Euclidean).
+
+**Solution**: Axiomatize `StrongApproximation` as a typeclass (Cycle 291).
+
+### Dependency Graph
+
 ```
-EllipticRRData.lean (planned)
+EllipticRRData.lean (Cycle 293+)
 ├── ProjectiveAdelicRRData instance
-└── h1_finrank_full_eq_genus_minus_ell
+└── ℓ(D) - ℓ(-D) = deg(D)
         │
         ▼
-EllipticH1.lean (planned)
+EllipticH1.lean (Cycle 292) ←─── BLOCKED until Cycle 291
 ├── h1_finrank computation
-└── SpaceModule for elliptic
+└── Requires: StrongApproximation axiom
         │
         ▼
-EllipticCanonical.lean (planned)
+StrongApproximation.lean (Cycle 291) ←─── NEW FILE NEEDED
+├── class StrongApproximation K
+└── instance for elliptic (sorry)
+        │
+        ▼
+EllipticCanonical.lean (Cycle 290) ←─── INDEPENDENT, DO FIRST
 ├── ellipticCanonical = 0
 └── deg_ellipticCanonical = 0
         │
@@ -196,11 +210,14 @@ EllipticSetup.lean ✅ CREATED (Cycle 289)
         │
         ▼
 Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
-├── WeierstrassCurve.Affine.CoordinateRing
-├── WeierstrassCurve.Affine.FunctionField
-└── W.Δ (discriminant)
 ```
+
+### Axiom Stack
+| Axiom | File | Justification |
+|-------|------|---------------|
+| `IsDedekindDomain CoordRing` | EllipticSetup | Hartshorne II.6 |
+| `StrongApproximation K` | (Cycle 291) | K dense in A_S |
 
 ---
 
-*Updated Cycle 289: Added EllipticSetup + EllipticPlaces. Axiom approach implemented.*
+*Updated Cycle 289: SA blocker identified. Plan: 290 (Canonical) → 291 (SA axiom) → 292 (H1).*

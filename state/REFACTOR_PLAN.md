@@ -78,11 +78,36 @@ RrLean/RiemannRochV2/Elliptic/
 
 ### What Needs Proving
 
-1. **Setup**: Wire Mathlib's `CoordinateRing` to our infrastructure
-2. **Canonical**: `ellipticCanonical = 0` (trivial divisor)
-3. **H¹(O) = 1**: Quotient by K gives 1-dimensional space
-4. **Serre duality**: `h¹(D) = ℓ(-D)` (since K = 0)
-5. **RR formula**: `ℓ(D) - ℓ(-D) = deg(D)` for deg(D) > 0
+1. ✅ **Setup**: Wire Mathlib's `CoordinateRing` to our infrastructure (Cycle 289)
+2. **Canonical**: `ellipticCanonical = 0` (trivial divisor) - Cycle 290
+3. **Strong Approximation**: Axiomatize for non-PID rings - Cycle 291
+4. **H¹(O) = 1**: Quotient by K gives 1-dimensional space - Cycle 292
+5. **Serre duality**: `h¹(D) = ℓ(-D)` (since K = 0) - Cycle 293+
+6. **RR formula**: `ℓ(D) - ℓ(-D) = deg(D)` for deg(D) > 0 - Cycle 293+
+
+### The Strong Approximation Blocker
+
+**Problem**: The P¹ proof in `FullAdelesCompact.lean` uses Euclidean division:
+```lean
+have ⟨q, r, hr⟩ := div_add_mod p gen  -- Only works for PIDs!
+```
+
+**Why this fails for elliptic curves**:
+- `CoordinateRing` is Dedekind but NOT a PID (class group = curve points)
+- Cannot "divide with remainder" to control degrees
+- Generalizing requires ideal arithmetic and CRT, not polynomial division
+
+**Solution**: Axiomatize Strong Approximation as a typeclass:
+```lean
+class StrongApproximation (K : Type*) [Field K] ... : Prop where
+  dense_in_finite_adeles : DenseRange (diagonalEmbedding K)
+```
+
+**Why this is acceptable**:
+- Standard result (K is dense in restricted adeles)
+- Avoids circularity (SA proofs often use RR itself!)
+- Consistent with `IsDedekindDomain` axiom approach
+- Can be filled later by someone interested in adelic analysis
 
 ### The "No Global Uniformizer" Issue
 
@@ -186,14 +211,24 @@ For elliptic curves: `genus = 1`, `canonical = 0`, `deg_canonical = 0`.
 
 ## Summary: What's Next
 
-**Cycle 289**: Create `EllipticSetup.lean` with:
-1. Import Mathlib elliptic curve infrastructure
-2. Add `IsDedekindDomain` axiom (with clear documentation)
-3. Define `EllipticPlaces := HeightOneSpectrum W.CoordinateRing`
-4. Verify basic properties compile
+### Cycle 290: EllipticCanonical (Quick Win)
+- Define `ellipticCanonical = 0` (trivial divisor for genus 1)
+- Prove `deg_ellipticCanonical = 0`
+- Independent of Strong Approximation
 
-**Cycle 290+**: Build up to `EllipticRRData` instance.
+### Cycle 291: StrongApproximation Axiom (Strategic)
+- Create `StrongApproximation` typeclass
+- Instance for elliptic curves with `sorry`
+- Decouples topology from geometry
+
+### Cycle 292: EllipticH1
+- Prove `dim H¹(O) = 1` using SA axiom
+- Key difference from P¹ (where H¹(O) = 0)
+
+### Cycle 293+: EllipticRRData
+- Full `ProjectiveAdelicRRData` instance
+- `ℓ(D) - ℓ(-D) = deg(D)` for genus 1
 
 ---
 
-*Updated Cycle 288: Elliptic curve investigation complete. Axiom approach validated. Ready to proceed.*
+*Updated Cycle 289: Strong Approximation blocker identified. Axiom approach (Option B) selected.*
