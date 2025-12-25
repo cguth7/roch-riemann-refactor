@@ -7,6 +7,7 @@ import RrLean.RiemannRochV2.Definitions.Infrastructure
 import RrLean.RiemannRochV2.Definitions.RRDefinitions
 import RrLean.RiemannRochV2.Adelic.FullAdeles
 import RrLean.RiemannRochV2.SerreDuality
+import RrLean.RiemannRochV2.Elliptic
 
 /-!
 # Riemann-Roch V2: Constructive Dedekind Domain Approach

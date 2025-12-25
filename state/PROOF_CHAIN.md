@@ -165,7 +165,7 @@ lake build 2>&1 | grep "sorry" | wc -l
 
 ---
 
-## Next: Elliptic Curve Chain (Planned)
+## Elliptic Curve Chain (In Progress)
 
 ```
 EllipticRRData.lean (planned)
@@ -173,27 +173,34 @@ EllipticRRData.lean (planned)
 └── h1_finrank_full_eq_genus_minus_ell
         │
         ▼
+EllipticH1.lean (planned)
+├── h1_finrank computation
+└── SpaceModule for elliptic
+        │
+        ▼
 EllipticCanonical.lean (planned)
 ├── ellipticCanonical = 0
 └── deg_ellipticCanonical = 0
         │
         ▼
-EllipticPlaces.lean (planned)
-├── HeightOneSpectrum W.CoordinateRing
+EllipticPlaces.lean ✅ CREATED (Cycle 289)
+├── EllipticPlace = HeightOneSpectrum (CoordRing W)
+├── LocalUniformizer structure
 └── uniformizerAt (local, not global!)
         │
         ▼
-EllipticSetup.lean (planned)
-├── [IsDedekindDomain W.CoordinateRing] ← AXIOM
-└── [IsFractionRing W.CoordinateRing W.FunctionField]
+EllipticSetup.lean ✅ CREATED (Cycle 289)
+├── NonsingularCurve typeclass
+├── [IsDedekindDomain (CoordRing W)] ← AXIOM (sorry)
+└── [IsFractionRing (CoordRing W) (FuncField W)]
         │
         ▼
-Mathlib.AlgebraicGeometry.EllipticCurve
+Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 ├── WeierstrassCurve.Affine.CoordinateRing
 ├── WeierstrassCurve.Affine.FunctionField
-└── WeierstrassCurve.Affine.Nonsingular
+└── W.Δ (discriminant)
 ```
 
 ---
 
-*Updated Cycle 288: Added sorry locations, module status, elliptic chain plan.*
+*Updated Cycle 289: Added EllipticSetup + EllipticPlaces. Axiom approach implemented.*

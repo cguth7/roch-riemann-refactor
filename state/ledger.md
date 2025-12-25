@@ -7,8 +7,8 @@ Tactical tracking for Riemann-Roch formalization.
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 288 (Complete)
-**Total Sorries**: 9 (4 AdelicH1Full + 5 Abstract.lean)
+**Cycle**: 289 (Complete)
+**Total Sorries**: 10 (4 AdelicH1Full + 5 Abstract.lean + 1 EllipticSetup)
 
 ---
 
@@ -29,6 +29,11 @@ Tactical tracking for Riemann-Roch formalization.
 | Abstract:299,351 | deg(D) < -1 edge cases | Require Serre duality |
 
 **Key Insight**: For algebraically closed fields, all places have degree 1, so IsLinearPlaceSupport is automatic. The "real" sorry count for alg. closed curves is **4**.
+
+### Infrastructure Sorries - Elliptic Curves (1) - Axiom for Mathlib gap
+| Location | Description | Status |
+|----------|-------------|--------|
+| EllipticSetup:105 | IsDedekindDomain for CoordinateRing | Safe axiom (Hartshorne II.6) |
 
 ---
 
@@ -57,6 +62,38 @@ theorem h1_finrank_full_eq_zero_of_deg_ge_neg_one ...
 
 ---
 
+## Cycle 289: Elliptic Curve Setup (Current)
+
+**Achievement**: Created initial elliptic curve infrastructure.
+
+### Files Created
+```
+RrLean/RiemannRochV2/Elliptic/
+├── EllipticSetup.lean      # NonsingularCurve class, IsDedekindDomain axiom
+├── EllipticPlaces.lean     # EllipticPlace, LocalUniformizer
+└── Elliptic.lean           # Module file
+```
+
+### Key Definitions
+```lean
+-- Typeclass for nonsingular curves (Δ ≠ 0)
+class NonsingularCurve (W : Affine F) : Prop where
+  discriminant_ne_zero : W.Δ ≠ 0
+
+-- IsDedekindDomain axiom (safe, standard AG)
+instance [NonsingularCurve W] : IsDedekindDomain (CoordRing W) := sorry
+
+-- Places = HeightOneSpectrum of coordinate ring
+abbrev EllipticPlace := HeightOneSpectrum (CoordRing W)
+
+-- Local uniformizers (exist by DVR theory)
+structure LocalUniformizer (v : EllipticPlace W) where
+  π : FuncField W
+  val_eq_one : v.valuation (FuncField W) π = 1
+```
+
+---
+
 ## Cycle 288: Elliptic Curve Investigation
 
 **Finding**: Mathlib gap blocks direct elliptic curve instantiation.
@@ -70,13 +107,6 @@ theorem h1_finrank_full_eq_zero_of_deg_ge_neg_one ...
 
 **Resolution**: Use axiom (standard formalization practice for "trivial but tedious" gaps).
 
-```lean
-/-- Smooth curves have Dedekind coordinate rings. Standard AG fact. -/
-instance [W.Nonsingular] : IsDedekindDomain W.CoordinateRing := sorry
-```
-
-This is a **safe axiom**: it's textbook mathematics (Hartshorne II.6), orthogonal to RR content.
-
 ---
 
 ## Cycle 287: Weighted vs Unweighted Degree
@@ -89,20 +119,21 @@ This is a **safe axiom**: it's textbook mathematics (Hartshorne II.6), orthogona
 
 ---
 
-## Next Steps: Cycle 289
+## Next Steps: Cycle 290
 
-**Recommended Path**: Proceed with elliptic curves using axiom approach.
+**Recommended Path**: Continue elliptic curve infrastructure.
 
-### Phase 1: Create Elliptic Setup
+### Remaining Files to Create
 ```
 RrLean/RiemannRochV2/Elliptic/
-├── EllipticSetup.lean      # IsDedekindDomain axiom + basic defs
-├── EllipticPlaces.lean     # HeightOneSpectrum for elliptic curves
+├── EllipticSetup.lean      ✅ Created
+├── EllipticPlaces.lean     ✅ Created
 ├── EllipticCanonical.lean  # K = 0 (trivial for genus 1)
+├── EllipticH1.lean         # H¹ calculations (dim = 1 for O)
 └── EllipticRRData.lean     # ProjectiveAdelicRRData instance
 ```
 
-### Phase 2: Key Differences from P¹
+### Key Differences from P¹
 | Aspect | P¹ (g=0) | Elliptic (g=1) |
 |--------|----------|----------------|
 | deg(K) | -2 | 0 |
@@ -110,7 +141,7 @@ RrLean/RiemannRochV2/Elliptic/
 | H¹(O) | 0 | 1-dimensional |
 | L(P) for point P | 2-dim {1, 1/π} | 1-dim {constants} |
 
-### Phase 3: What Needs Proving
+### What Needs Proving
 1. `ℓ(D) - ℓ(-D) = deg(D)` for elliptic (RR with g=1, K=0)
 2. H¹(O) = 1 (requires compactness of adelic quotient)
 3. Strong approximation for elliptic function fields
@@ -141,9 +172,10 @@ RrLean/RiemannRochV2/Elliptic/
 | ResidueTheory | 7 | 2,000 | ✅ Complete |
 | Adelic (with sorries) | 4 | 2,500 | 90% complete |
 | SerreDuality/Abstract | 1 | 350 | 80% complete |
+| Elliptic | 3 | ~200 | ⏳ Started (setup + places) |
 
-**Total**: ~15K LOC, 98% complete
+**Total**: ~15K LOC, 98% P¹ complete
 
 ---
 
-*Updated Cycle 288: Elliptic curve investigation complete. Axiom approach validated.*
+*Updated Cycle 289: Elliptic curve infrastructure started. EllipticSetup + EllipticPlaces created.*

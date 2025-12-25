@@ -34,14 +34,14 @@ Formalize **Riemann-Roch** for **algebraically closed curves** in Lean 4:
 ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
 ```
 
-### Current Status (Cycle 288)
+### Current Status (Cycle 289)
 
 | Component | Status |
 |-----------|--------|
 | P¹ Riemann-Roch formula | ✅ Complete |
 | P¹ Serre duality (effective D) | ✅ Complete |
 | P¹ edge cases (non-effective) | ✅ Works for alg. closed fields |
-| Elliptic curves (genus 1) | ⏳ Ready to begin (axiom approach) |
+| Elliptic curves (genus 1) | ⏳ In progress (Setup + Places done) |
 
 ---
 
@@ -204,4 +204,4 @@ lake build RrLean.RiemannRochV2.SerreDuality.General.AdelicH1Full
 
 ---
 
-*Updated Cycle 288: Added Gemini architectural lessons, axiom strategy, sorry classification.*
+*Updated Cycle 289: Elliptic curve infrastructure started (EllipticSetup + EllipticPlaces).*

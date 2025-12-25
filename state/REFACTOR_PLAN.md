@@ -12,7 +12,7 @@
 | 0-4 | ✅ Complete | P¹ infrastructure, Serre duality |
 | 4.5 | ✅ Complete | Valuation-degree, IsLinearPlaceSupport fix |
 | 5 | ⏸️ Deferred | Edge case cleanup (low priority) |
-| 6 | ⏳ **Ready** | Elliptic curves (genus 1) |
+| 6 | ⏳ **In Progress** | Elliptic curves (genus 1) - Setup + Places done |
 | 7 | Future | Hyperelliptic curves (genus ≥ 2) |
 
 ---
