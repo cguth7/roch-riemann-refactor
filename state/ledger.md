@@ -5,51 +5,63 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 316
+**Cycle**: 317
 **Phase**: 7 (Weil Differentials) - Active
 **Total Sorries**: 8 (2 archived P¹ edge cases + 6 axioms)
 
 ---
 
-## Cycle 316 Completed
+## Cycle 317 Completed
 
-**Extended**: `RrLean/RiemannRochV2/General/WeilDifferential.lean`
+**Issue**: WeilDifferential.lean was not hooked into the build system, so Cycle 316 changes
+were committed without being compiled. The full build passed because nothing imports this file.
 
-### Non-Degeneracy Infrastructure
-- [x] `PairingNondegenerateLeft` - for f ≠ 0, ∃ ω with ⟨f, ω⟩ ≠ 0
-- [x] `PairingNondegenerateRight` - for ω ≠ 0, ∃ f with ⟨f, ω⟩ ≠ 0
-- [x] `PairingPerfect` - both left and right non-degeneracy
-- [x] `PairingNondegenerateLeft'` - kernel formulation
-- [x] `PairingNondegenerateRight'` - kernel formulation
-- [x] `pairingNondegenerateLeft_iff_kernel` - equivalence proof
+### Key Discovery
+- `lake build` succeeds but `lake env lean WeilDifferential.lean` fails on Cycle 316 code
+- Cycle 315 is the last compiling version
+- Cycle 316 added non-degeneracy defs with type parameter issues (missing `R := R`, `K := K`)
 
-### Dimension Theorems
-- [x] `dim_le_of_nondeg_left` - left nondeg ⟹ dim L(D) ≤ dim Ω(E)
-- [x] `dim_le_of_nondeg_right` - right nondeg ⟹ dim Ω(E) ≤ dim L(D)
-- [x] `dim_eq_of_perfect_pairing` - perfect ⟹ dim L(D) = dim Ω(E)
+### Resolution
+- **Reverted** WeilDifferential.lean to Cycle 315 (last compiling version)
+- The Cycle 315 code includes:
+  - WeilDifferential structure with k-module and K-module actions
+  - DivisorDifferentials Ω(D) submodule
+  - serrePairingGeneral L(D) × Ω(E) → k bilinear pairing
 
-### Canonical Divisor Typeclass
-- [x] `HasCanonicalDivisor` - packages canonical divisor, genus, Serre duality
-- [x] `canonicalDivisor`, `curveGenus` - accessor abbreviations
-- [x] `ell`, `dimOmega` - dimension abbreviations
-- [x] `serre_duality_dim` - ℓ(D) = dim Ω(K - D)
-- [x] `serre_duality_swap` - ℓ(K - D) = dim Ω(D)
-- [x] `riemann_roch_abstract` - RR from Euler characteristic assumption
+### Architecture Note for P¹ Validation
+P¹ already has a working Riemann-Roch theorem in `P1RiemannRoch.lean` using:
+- `ell_ratfunc_projective` - dimension formula for L(D)
+- `ellV3` - dimension formula using DivisorV3 (projective divisors)
 
-### Technical Notes
-The `HasCanonicalDivisor` typeclass axiomatizes Serre duality for now.
-Concrete instances will prove non-degeneracy for specific curve families.
+The WeilDifferential framework is for **general curves**. P¹ validation of the
+abstract framework requires:
+1. Defining a completion K_infty at the infinite place
+2. Connecting the abstract Ω(D) to the concrete P¹ dimension computations
 
 ---
 
-## Cycle 317 Target
+## Cycle 318 Target
 
-**Options for next steps**:
-1. **Prove non-degeneracy** from compactness or local-to-global
-2. **Connect to FullRRData** - bridge the abstract framework
-3. **Instantiate for P¹** - genus 0, canonical = -2·∞
+**Priority**: Hook up WeilDifferential.lean to the build system before adding more code.
 
-Recommended: Option 3 (instantiate for P¹) to validate the framework.
+**Steps**:
+1. Add `import RrLean.RiemannRochV2.General.WeilDifferential` to a top-level file
+2. Verify the file compiles with `lake build`
+3. Re-add non-degeneracy definitions (fixing type parameter issues)
+4. Add HasCanonicalDivisor with `infiniteDegree` field for P¹ support
+
+---
+
+## Cycle 316 (Archived - Contains Bugs)
+
+**Note**: Cycle 316 code did not compile. Reverted in Cycle 317.
+
+The *intended* additions were:
+- Non-degeneracy definitions (PairingNondegenerateLeft/Right/Perfect)
+- HasCanonicalDivisor typeclass
+- Dimension theorems from perfect pairing
+
+These need to be properly re-implemented with correct type parameters.
 
 ---
 
