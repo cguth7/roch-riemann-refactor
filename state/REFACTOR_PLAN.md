@@ -1,252 +1,192 @@
-# Refactor Plan: P¹ → Arbitrary Curves
+# Refactor Plan: P¹ → General Curves
 
-**Status**: P¹ Frozen. Phase 7 (General Curves via Weil Differentials) Active. Updated Cycle 311.
-**Goal**: Riemann-Roch for curves of any genus g ≥ 0 using Weil Differentials.
-
----
-
-## Quick Reference
-
-| Phase | Status | Key Achievement |
-|-------|--------|-----------------|
-| 0-4 | ✅ Complete | P¹ infrastructure, Serre duality |
-| 4.5 | ✅ Complete | Valuation-degree, IsLinearPlaceSupport fix |
-| 5 | ⏸️ Archived | P¹ edge cases (PID-specific, not generalizable) |
-| 6 | ✅ Complete | Elliptic curves (genus 1) - RR proved with axioms |
-| 7 | ⏳ **Active** | Weil Differentials for general curves |
+**Status**: Phase 7 Active. **~15-20 cycles to completion.**
+**Goal**: Sorry-free Riemann-Roch for smooth projective curves.
 
 ---
 
-## Phase 7: General Curves via Weil Differentials (Active)
+## Critical Insight (Cycle 311)
 
-### Motivation
+Per INVENTORY_REPORT.md, we have **3,700 lines of curve-agnostic infrastructure**:
 
-The P¹ proof uses `RatFunc Fq` directly for the Serre duality pairing because:
-- The canonical bundle is trivializable (dt is a global differential)
-- Functions can substitute for differentials
+| Asset | Status |
+|-------|--------|
+| Riemann Inequality | ✅ **PROVED** |
+| DVR for completions | ✅ **PROVED** |
+| H¹(D) framework | ✅ DONE |
+| Dimension machinery | ✅ PROVED |
+| FullRRData axiom package | ✅ DONE |
 
-For g ≥ 2, this fails:
-- No global differential exists
-- Must use **Weil Differentials** (functional-analytic approach)
+**The P¹ sorries are edge cases we BYPASS with Weil differentials.**
 
-### Key References
+---
 
-- [Rosen "Number Theory in Function Fields" Ch. 6](https://link.springer.com/chapter/10.1007/978-1-4757-6046-0_6) - "Weil Differentials and the Canonical Class"
-- [Stichtenoth "Algebraic Function Fields and Codes" §1.7](https://link.springer.com/book/10.1007/978-3-540-76878-4) - "Local Components of Weil Differentials"
-- [Charles University Thesis on Weil Differentials](https://dspace.cuni.cz/bitstream/handle/20.500.11956/62611/DPTX_2012_2_11320_0_392289_0_137152.pdf) - Computational algorithms
+## Phase Summary
 
-### Mathematical Framework
+| Phase | Status | Achievement |
+|-------|--------|-------------|
+| 0-4 | ✅ Complete | P¹ infrastructure |
+| 5 | ⏸️ Archived | P¹ edge cases (bypassed) |
+| 6 | ✅ Complete | Elliptic (axiomatized) |
+| 7 | ⏳ **Active** | Weil differentials → RR |
 
-**Definition (Weil Differential)**:
-A Weil differential of F/K is a K-linear mapping ω : A_F → K that vanishes on A_F(A) + F for some divisor A.
+---
 
-```lean
-/-- A Weil differential is a linear functional on full adeles vanishing on K -/
-def WeilDifferential (K : Type*) [Field K] :=
-  { ω : FullAdeleRing R K K_infty →ₗ[k] k //
-    ∀ x : K, ω (fullDiagonalEmbedding R K K_infty x) = 0 }
-```
+## Phase 7: Weil Differentials (Revised)
 
-**Definition (Local Component)**:
-For a Weil differential ω and place P, the local component ω_P is extracted via the adele product structure. The relationship: residue algorithms can compute local components.
+### Why This Approach
 
-**Definition (Valuation of Differential)**:
-v_P(ω) = max { n : ω vanishes on A_F(nP) at place P }
+The P¹ sorries are about strong approximation for edge cases.
+Weil differential pairing `⟨f, ω⟩ = ω(f)` **bypasses** that entirely.
 
-**Definition (Canonical Divisor)**:
-(ω) = Σ_P v_P(ω) · P for any nonzero Weil differential ω
+We already have:
+- H¹(D) as quotient of adeles ✅
+- Riemann Inequality ✅
+- Gap bounds ✅
+- FullRRData framework ✅
 
-**Key Property**: dim_K(WeilDifferential) = 1, so the canonical class is well-defined.
+We need:
+- WeilDifferential definition
+- Pairing is perfect (non-degeneracy)
+- deg(K) = 2g-2
 
 ### Implementation Plan
 
-#### Cycle 312: Define WeilDifferential
+#### Cycle 312: WeilDifferential Structure
 **File**: `RrLean/RiemannRochV2/General/WeilDifferential.lean`
 
 ```lean
-/-- Weil differential: linear functional on adeles vanishing on K -/
+/-- A Weil differential is a linear functional on adeles vanishing on K -/
 structure WeilDifferential (k R K K_infty : Type*)
     [Field k] [CommRing R] [IsDedekindDomain R] [Field K]
     [Algebra R K] [IsFractionRing R K] [Field K_infty] [Algebra K K_infty] where
   toLinearMap : FullAdeleRing R K K_infty →ₗ[k] k
   vanishes_on_K : ∀ x : K, toLinearMap (fullDiagonalEmbedding R K K_infty x) = 0
-
-instance : Module K (WeilDifferential k R K K_infty) := ...
 ```
 
 **Deliverables**:
-- [ ] Define `WeilDifferential` structure
-- [ ] Prove it forms a K-vector space
-- [ ] Prove K-linear maps compose correctly
+- [x] Define structure
+- [ ] Prove AddCommGroup instance
+- [ ] Prove Module K instance
 
-#### Cycle 313: Local Components (THE HARD PART)
-**File**: `RrLean/RiemannRochV2/General/LocalComponent.lean`
+#### Cycle 313: K-Module Structure
+- Prove `WeilDifferential` is a K-vector space
+- Scalar multiplication: `(c • ω)(a) = ω(c⁻¹ • a)`
+- Basic lemmas
 
-The challenge: extract ω_P from global ω using adele product structure.
-
-**Strategy**:
-1. Use that A_K = ∏'_v K_v (restricted product)
-2. For each place v, project adele to v-component
-3. Define localComponent_v(ω) : K_v → k
+#### Cycle 314: Serre Pairing
+**File**: `RrLean/RiemannRochV2/General/SerrePairing.lean`
 
 ```lean
-/-- Extract local component at place v -/
-def localComponent (ω : WeilDifferential k R K K_infty)
-    (v : HeightOneSpectrum R) : v.adicCompletion K →ₗ[k] k := ...
-
-/-- Local components determine the global differential -/
-theorem ext_localComponent :
-    (∀ v, localComponent ω₁ v = localComponent ω₂ v) → ω₁ = ω₂ := ...
-```
-
-**Deliverables**:
-- [ ] Define `localComponent` extraction
-- [ ] Prove extensionality (local components determine global)
-- [ ] Connect to existing residue infrastructure
-
-#### Cycle 314: Divisor of a Differential
-**File**: `RrLean/RiemannRochV2/General/DifferentialDivisor.lean`
-
-```lean
-/-- Valuation of differential at a place -/
-def valuation_differential (ω : WeilDifferential k R K K_infty)
-    (v : HeightOneSpectrum R) : ℤ :=
-  -- Largest n such that ω vanishes on A_K(n·v)
-  ...
-
-/-- Divisor of a differential -/
-def div (ω : WeilDifferential k R K K_infty) : DivisorV2 R :=
-  Finsupp.ofSupportFinite (fun v => valuation_differential ω v) (by ...)
-```
-
-**Deliverables**:
-- [ ] Define `valuation_differential`
-- [ ] Define `div ω`
-- [ ] Prove div is finite (uses compactness)
-
-#### Cycle 315: The Serre Duality Pairing
-**File**: `RrLean/RiemannRochV2/General/SerrePairingGeneral.lean`
-
-The beautiful simplification: ⟨f, ω⟩ = ω(f) is just evaluation!
-
-```lean
-/-- Serre duality pairing via evaluation -/
-def serrePairing_general (D : DivisorV2 R) :
+/-- The Serre pairing is just evaluation -/
+def serrePairing (D : DivisorV2 R) :
     RRSpace_proj k R K D →ₗ[k] WeilDifferential k R K K_infty →ₗ[k] k :=
-  fun f => fun ω => ω.toLinearMap (embed_function_to_adele f)
+  fun f => fun ω => ω.toLinearMap (embed_to_adele f)
 ```
 
-**Deliverables**:
-- [ ] Define the pairing
-- [ ] Prove bilinearity
-- [ ] Axiomatize non-degeneracy (or derive from RR)
+This is straightforward once WeilDifferential exists.
 
-#### Cycle 316: Canonical Divisor Properties
-**File**: `RrLean/RiemannRochV2/General/Canonical.lean`
+#### Cycle 315-320: Non-Degeneracy (THE CRUX)
+
+Need to prove:
+```lean
+theorem serrePairing_nondegenerate :
+    ∀ f ∈ L(D), f ≠ 0 → ∃ ω ∈ Ω(K-D), serrePairing D f ω ≠ 0
+```
+
+**Strategy options**:
+1. **From compactness**: A_K/K is compact → quotient is finite-dim → pairing is perfect
+2. **Local-to-global**: Non-degenerate at each place → global non-degeneracy
+3. **Axiomatize**: If proofs are too hard, acceptable to axiomatize
+
+We have compactness infrastructure in `AdelicTopology.lean`, so option 1 is viable.
+
+#### Cycle 321-325: Canonical Class
 
 ```lean
-/-- The canonical divisor class is well-defined -/
-theorem canonical_class_unique :
-    ∀ ω₁ ω₂ : WeilDifferential k R K K_infty,
-    ω₁ ≠ 0 → ω₂ ≠ 0 → div ω₁ ≈ div ω₂ := ...
+/-- Canonical divisor as divisor of any nonzero differential -/
+def canonicalDivisor (ω : WeilDifferential k R K K_infty) (hω : ω ≠ 0) : DivisorV2 R := ...
 
-/-- Degree of canonical divisor -/
-theorem deg_canonical : (div ω).deg = 2 * genus - 2 := ...
+theorem deg_canonical : (canonicalDivisor ω hω).deg = 2 * genus - 2 := ...
 ```
 
-**Deliverables**:
-- [ ] Prove canonical class well-defined
-- [ ] Prove deg(K) = 2g - 2
-- [ ] Connect to existing elliptic canonical (g=1 case)
+#### Cycle 326-330: Assembly
 
-#### Cycle 317+: Complete RR
-- Fill axioms or derive from general theory
-- Prove h¹(D) = ℓ(K-D) using the new pairing
-- Unify with existing P¹ and elliptic proofs
+Instantiate `FullRRData` with:
+- `canonical := canonicalDivisor ω hω`
+- `genus := g`
+- `serre_duality_eq` from non-degeneracy
+
+Then `riemann_roch_full` gives us RR!
 
 ---
 
-## Archived: Phase 5 (P¹ Edge Cases)
+## What We Keep (3,700 lines)
 
-**Decision**: SKIPPED. Cycle 311 archives these.
+From INVENTORY_REPORT.md "Core Kernel":
 
-The remaining sorries in AdelicH1Full.lean (lines 757, 1458) are:
-- `globalPlusBoundedSubmodule_full_eq_top_deep_neg_infty`
-- `globalPlusBoundedSubmodule_full_eq_top_not_effective`
+| File | Lines | Status |
+|------|-------|--------|
+| Basic.lean | 100 | KEEP |
+| Typeclasses.lean | 150 | KEEP |
+| Infrastructure.lean | 300 | KEEP |
+| Divisor.lean | 200 | KEEP |
+| RRSpace.lean | 200 | KEEP |
+| KernelProof.lean | 400 | KEEP |
+| DimensionCounting.lean | 200 | KEEP |
+| RiemannInequality.lean | 250 | KEEP (**PROVED**) |
+| DedekindDVR.lean | 100 | KEEP (**PROVED**) |
+| AdelicTopology.lean | 300 | KEEP |
+| AdelicH1v2.lean | 550 | KEEP |
+| Projective.lean | 350 | KEEP |
+| ResidueFieldIso.lean | 250 | KEEP (**PROVED**) |
+| DifferentIdealBridge.lean | 200 | KEEP |
+| FullRRData.lean | 150 | KEEP |
 
-These are **PID-specific artifacts**:
-- Rely on Euclidean division for strong approximation bounds
-- Not generalizable to non-PID coordinate rings
-- Not needed for the Weil differential approach
-
-**Legacy Status**: P¹ proof is "complete enough" to validate architecture.
-
----
-
-## Completed Phases (Summary)
-
-### Phase 0-4: P¹ Infrastructure ✅
-- Full adele ring with infinity
-- Serre duality for effective divisors
-- Riemann-Roch formula: ℓ(D) = deg(D) + 1
-
-### Phase 6: Elliptic Curves ✅
-- RR proved with axioms (genus = 1)
-- 5 axioms: IsDedekindDomain, StrongApprox, h1_zero_eq_one, h1_vanishing, serre_duality
+**Total: ~3,700 lines curve-agnostic, mostly sorry-free**
 
 ---
 
-## Architecture for General Curves
+## What We Archive (P¹-Specific)
 
-### File Structure (Proposed)
+| File | Reason |
+|------|--------|
+| RatFuncPairing.lean | Linear places only |
+| DimensionScratch.lean | ℓ(D)=deg+1 is P¹-only |
+| P1Instance.lean | P¹ validation |
+| ProductFormula.lean | Naive formula is false |
+| AdelicH1Full sorries | Strong approx edge cases |
 
-```
-RrLean/RiemannRochV2/General/
-├── WeilDifferential.lean      # Definition, K-module structure
-├── LocalComponent.lean        # Extract ω_P from global ω
-├── DifferentialDivisor.lean   # div(ω), valuation
-├── SerrePairingGeneral.lean   # ⟨f, ω⟩ = ω(f)
-├── Canonical.lean             # Canonical class, deg(K) = 2g-2
-└── GeneralRRData.lean         # ProjectiveAdelicRRData instance
-```
+These don't block general RR.
 
-### Key Insight: Pairing Simplification
+---
 
-**P¹ approach** (current):
+## Estimated Timeline
+
+| Phase | Cycles | Confidence |
+|-------|--------|------------|
+| WeilDifferential basics | 3 | High |
+| Pairing definition | 1 | High |
+| Non-degeneracy | 5-10 | Medium |
+| Canonical class | 3-5 | Medium |
+| Assembly | 2-3 | High |
+| **Total** | **~15-20** | **Medium-High** |
+
+---
+
+## Success Criteria
+
+Sorry-free proof of:
 ```lean
-⟨f, g⟩ = Σ_v res_v(f · g)  -- Sum of residues
+theorem riemann_roch (D : DivisorV2 R) :
+    ell_proj D - ell_proj (canonical - D) = D.deg + 1 - genus
 ```
-Requires: residue infrastructure, residue theorem, pole cancellation.
 
-**Weil approach** (new):
-```lean
-⟨f, ω⟩ = ω(f)  -- Just evaluation!
-```
-The residue theorem is *built into* the definition of WeilDifferential (vanishes on K).
-
-### What We Keep vs Replace
-
-| Component | P¹ Version | General Version |
-|-----------|------------|-----------------|
-| Adele ring | FullAdeleRing ✅ | Same (reuse) |
-| H¹(D) definition | FullAdeleRing / (K + A_K(D)) ✅ | Same (reuse) |
-| Serre pairing | residueSumTotal | ω(f) evaluation |
-| Canonical divisor | -2[∞] (hardcoded) | div(ω) (intrinsic) |
-| Residue infrastructure | Heavy (2000 LOC) | Implicit in WeilDiff |
+With:
+- `canonical` defined via WeilDifferential
+- `genus` defined as dim(Ω) or from deg(K) = 2g-2
+- Non-degeneracy proved (not axiomatized) if possible
 
 ---
 
-## Remaining Sorries After Phase 7
-
-### To Be Axiomatized (Acceptable)
-- `dim_K(WeilDifferential) = 1` - standard, orthogonal to RR
-- `serrePairing_nondegenerate` - follows from RR or axiomatize
-- `StrongApprox K` for general K - standard, avoids circularity
-
-### To Be Proved (Core RR Content)
-- `h¹(D) = ℓ(K-D)` - the Serre duality statement
-- `deg(K) = 2g-2` - follows from Weil differential theory
-
----
-
-*Updated Cycle 311. Phase 7 active. See ledger.md for current state.*
+*Updated Cycle 311 (corrected). ~15-20 cycles remaining.*
