@@ -279,13 +279,15 @@ instance p1ProjectiveAdelicRRData :
   h1_finite := fun D => by
     -- H¹(D) is finite-dimensional for all D.
     -- Two cases:
-    -- 1. If deg(D) ≥ -1: H¹(D) = 0 (subsingleton → finite)
-    -- 2. If deg(D) < -1: H¹(D) ≅ L(K-D)ᵛ which is finite-dimensional
-    --    This requires showing the quotient FullAdeleRing/(K + A_K(D)) is finite-dim
-    --    The proof uses compactness of A_K(D) / (K ∩ A_K(D)) (adelic argument)
+    -- 1. If deg(D) ≥ -1 with D.finite effective and D.inftyCoeff ≥ -1: H¹(D) = 0
+    -- 2. Otherwise: requires compactness/Serre duality argument
     -- For now, we defer the full proof
     by_cases hdeg : D.deg ≥ -1
-    · exact SpaceModule_full_finite_of_deg_ge_neg_one Fq D hdeg
+    · by_cases heff : D.finite.Effective
+      · by_cases hinfty : D.inftyCoeff ≥ -1
+        · exact SpaceModule_full_finite_of_deg_ge_neg_one Fq D hdeg heff hinfty
+        · sorry -- D.finite effective but D.inftyCoeff < -1
+      · sorry -- D.finite not effective
     · -- deg(D) < -1: need compactness/Serre duality argument
       -- H¹(D) ≅ L(K-D)ᵛ, and L(K-D) is finite-dimensional by RRSpace_proj_ext_finite
       -- The isomorphism requires the residue pairing infrastructure
@@ -294,23 +296,31 @@ instance p1ProjectiveAdelicRRData :
   h1_vanishing := fun D hdeg => by
     -- hdeg : D.deg > 2 * 0 - 2 = -2, i.e., D.deg ≥ -1
     have h : D.deg ≥ -1 := by omega
-    exact h1_finrank_full_eq_zero_of_deg_ge_neg_one Fq D h
+    by_cases heff : D.finite.Effective
+    · by_cases hinfty : D.inftyCoeff ≥ -1
+      · exact h1_finrank_full_eq_zero_of_deg_ge_neg_one Fq D h heff hinfty
+      · sorry -- D.finite effective but D.inftyCoeff < -1: vacuous for P¹?
+    · sorry -- D.finite not effective: vacuous for P¹?
   serre_duality := fun D => by
     -- Serre duality: h¹(D) = ℓ(K-D)
     -- For deg(D) ≥ -1: both sides = 0 (use vanishing theorems)
     -- For deg(D) < -1: requires full residue pairing construction
     by_cases hdeg : D.deg ≥ -1
     · -- Vanishing case: both sides = 0
-      rw [h1_finrank_full_eq_zero_of_deg_ge_neg_one Fq D hdeg]
-      -- Need: ell_proj_ext (K - D) = 0 when deg(D) ≥ -1, i.e., deg(K-D) ≤ -1
-      -- K-D has degree -2 - D.deg ≤ -2 - (-1) = -1 < 0, but this doesn't directly give 0
-      -- Actually need: deg(K-D) = -2 - D.deg ≤ -1 and analyze L(K-D)
       by_cases hfin : D.finite.Effective
-      · by_cases h : D.inftyCoeff ≥ 0
-        · have heq : p1CanonicalExt Fq = canonicalExtended Fq := rfl
+      · by_cases hinfty : D.inftyCoeff ≥ 0
+        · -- Main case: effective with non-negative inftyCoeff
+          have h_infty' : D.inftyCoeff ≥ -1 := by omega
+          rw [h1_finrank_full_eq_zero_of_deg_ge_neg_one Fq D hdeg hfin h_infty']
+          have heq : p1CanonicalExt Fq = canonicalExtended Fq := rfl
           rw [heq]
-          exact (ell_proj_ext_canonical_sub_eq_zero Fq D hfin h).symm
-        · sorry -- D.finite effective, D.inftyCoeff < 0
+          exact (ell_proj_ext_canonical_sub_eq_zero Fq D hfin hinfty).symm
+        · by_cases h_infty' : D.inftyCoeff ≥ -1
+          · -- D.finite effective, -1 ≤ D.inftyCoeff < 0
+            rw [h1_finrank_full_eq_zero_of_deg_ge_neg_one Fq D hdeg hfin h_infty']
+            -- Need ell_proj_ext (K - D) = 0; deg(K-D) = -2 - D.deg < 0
+            sorry -- edge case: ell_proj_ext for K-D with inftyCoeff in [-1, 0)
+          · sorry -- D.finite effective, D.inftyCoeff < -1
       · sorry -- D.finite not effective
     · -- Non-vanishing case: requires actual Serre duality via residue pairing
       sorry
