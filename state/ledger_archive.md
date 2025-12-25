@@ -5431,3 +5431,47 @@ theorem exists_translate_in_integralFullAdeles : ...
 - Used first isomorphism theorem: L(D+v)/L(D) ≅ κ(v)
 - P¹ Riemann-Roch now fully proved for ALL effective divisors!
 - (1 → 0 sorries in P1Instance)
+
+---
+
+## Cycle 302 (2025-12-25): Proof Strategy Documentation
+
+**Goal**: Document proof strategy for degree-valuation infrastructure
+
+### Changes
+1. Added `linear_of_degree_eq_one` helper (PlaceDegree:155) with sorry
+2. Documented proof strategy in `intDegree_ge_deg_of_valuation_bounds_and_linear_support`
+
+### Proof Strategy for `intDegree_ge_deg_of_valuation_bounds_and_linear_support`
+1. **Numerator lower bound**: Apply `natDegree_ge_degWeighted_of_valuation_bounds` to num with D.posPart
+2. **Denominator upper bound**: Denom splits (all factors linear by hlin), bound each rootMult by |D(v)|
+3. **Combine**: intDegree ≥ D.posPart.deg - D.negPart.deg = D.deg
+
+### Result
+- Sorry count: 10 → 11
+- Clear path: fill helper lemma, then main theorem
+
+---
+
+## Cycles 287-301 Summary (Archived)
+
+| Cycle | Achievement |
+|-------|-------------|
+| 287-292 | Elliptic RR instance setup |
+| 293 | EllipticRRData instance complete |
+| 294 | Infinity valuation investigation |
+| 295 | IsPrincipalPartAtSpec fix |
+| 296 | AdelicH1Full:619 filled via strong approximation |
+| 297 | Remaining sorry analysis |
+| 298-299 | Degree gap refactoring |
+| 300 | posPart/negPart infrastructure |
+| 301 | Added degree-valuation theorem statement |
+
+### Key Infrastructure Added (Cycles 298-301)
+- `denom_not_mem_of_valuation_constraint`
+- `num_intValuation_eq_valuation_of_nonneg`
+- `num_intValuation_le_of_nonneg`
+- `DivisorV2.posPart`, `DivisorV2.negPart`
+- `intDegree_ge_deg_of_valuation_and_denom_constraint` (AdelicH1Full)
+- `intDegree_ge_deg_of_valuation_bounds_and_linear_support` (PlaceDegree)
+

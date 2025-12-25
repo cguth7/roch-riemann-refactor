@@ -145,6 +145,19 @@ lemma linearPlace_degree_eq_one (α : k) :
     eq_of_monic_of_associated hmonic_gen hmonic_lin hassoc
   rw [heq, natDegree_X_sub_C]
 
+/-- Places of degree 1 are linear places.
+
+Proof: If degree(v) = 1, then generator(v) has natDegree 1.
+Over a field, monic polynomials of degree 1 are of the form X - C α,
+so v = linearPlace α for some α ∈ k.
+
+This is the converse of `linearPlace_degree_eq_one`. -/
+lemma linear_of_degree_eq_one (v : HeightOneSpectrum (Polynomial k)) (hdeg : degree k v = 1) :
+    ∃ α : k, v = linearPlace α := by
+  -- The generator has natDegree 1, so it's X - C α for some α
+  -- Then v.asIdeal = span{X - C α} = (linearPlace α).asIdeal
+  sorry
+
 /-! ## Finrank of Residue Field -/
 
 /-- The residue field of a place v has finrank equal to the place degree.
@@ -514,14 +527,31 @@ theorem intDegree_ge_deg_of_valuation_bounds_and_linear_support
     (hdenom_only_neg : ∀ v, f.denom ∈ v.asIdeal → D v < 0)
     (hlin : ∀ v ∈ D.support, degree k v = 1) :
     f.intDegree ≥ D.deg := by
-  -- The proof requires:
-  -- 1. natDegree_eq_sum_ord_times_deg: p.natDegree = Σ_v ord_v(p) * deg(v)
-  -- 2. Decomposition of intDegree = Σ (ord_v(num) - ord_v(denom)) * deg(v)
-  -- 3. Using IsLinearPlaceSupport to simplify the weighted sum
-  -- 4. Applying the valuation constraints to get the lower bound
-  --
-  -- This is the key infrastructure lemma needed for L(K-D) vanishing.
-  -- See AdelicH1Full.lean:intDegree_ge_deg_of_valuation_and_denom_constraint
+  /-
+  **Proof Strategy (Cycle 302)**:
+
+  1. **Numerator lower bound**: Define E = D.posPart (positive part of D).
+     - At v ∈ E.support: D(v) > 0, so denom ∉ v.asIdeal (by hdenom_only_neg)
+     - Hence val_v(num) = val_v(f) ≤ exp(-D(v)) = exp(-E(v))
+     - Apply `natDegree_ge_degWeighted_of_valuation_bounds` to get num.natDegree ≥ E.deg
+
+  2. **Denominator upper bound**:
+     - Denom zeros only at D(v) < 0 places (from hdenom_only_neg)
+     - These places have degree 1 (from hlin), so all irreducible factors are linear
+     - Hence denom splits completely
+     - Each root α has rootMult(α) ≤ |D(linearPlace α)| by valuation constraint + coprimality
+     - Sum: denom.natDegree = Σ rootMult ≤ Σ |D(v)| = D.negPart.deg
+
+  3. **Combine**:
+     intDegree = num.natDegree - denom.natDegree
+               ≥ D.posPart.deg - D.negPart.deg
+               = D.deg
+
+  **Dependencies**:
+  - `linear_of_degree_eq_one`: Places of degree 1 are linear (needs proof)
+  - `intValuation_linearPlace_eq_exp_neg_rootMultiplicity`: Bridge from valuation to rootMult
+  - `Splits.natDegree_eq_card_roots`: For split polynomials, natDegree = roots.card
+  -/
   sorry
 
 end PlaceDegree

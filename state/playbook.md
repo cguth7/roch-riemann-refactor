@@ -1,6 +1,6 @@
 # Playbook
 
-Strategic guide for formalizing Riemann-Roch. Updated Cycle 293.
+Strategic guide for formalizing Riemann-Roch. Updated Cycle 302.
 
 ---
 
@@ -34,15 +34,14 @@ Formalize **Riemann-Roch** for **algebraically closed curves** in Lean 4:
 ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
 ```
 
-### Current Status (Cycle 293)
+### Current Status (Cycle 302)
 
 | Component | Status |
 |-----------|--------|
 | P¹ Riemann-Roch formula | ✅ Complete |
 | P¹ Serre duality (effective D) | ✅ Complete |
-| P¹ edge cases (non-effective) | ✅ Works for alg. closed fields |
 | Elliptic curves (genus 1) | ✅ RR proved (axiomatized) |
-| Sorry cleanup | ⏳ Next phase |
+| Sorry cleanup | ⏳ In progress (11 sorries) |
 
 ---
 
@@ -222,4 +221,4 @@ lake build RrLean.RiemannRochV2.SerreDuality.General.AdelicH1Full
 
 ---
 
-*Updated Cycle 293: Elliptic RR complete. Next: Sorry cleanup phase (IsLinearPlaceSupport, infinity bounds).*
+*Updated Cycle 302. See ledger.md for current sorries and next steps.*
