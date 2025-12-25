@@ -5,20 +5,19 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 306
-**Total Sorries**: 12 (3 new infrastructure + 3 high-level + 6 axioms)
+**Cycle**: 307
+**Total Sorries**: 11 (2 new infrastructure + 3 high-level + 6 axioms)
 **Elliptic Axioms**: 8
 
 ---
 
 ## Sorry Classification
 
-### Content Sorries - New Infrastructure (3)
+### Content Sorries - New Infrastructure (2)
 | Location | Line | Description | Difficulty |
 |----------|------|-------------|------------|
-| PlaceDegree | 770 | `intValuation_eq_exp_neg_ord` | Medium (valuation API) ← NEXT |
-| PlaceDegree | 789 | `natDegree_eq_sum_ord_mul_degree` | Medium (UFD) |
-| PlaceDegree | 819 | `intDegree_ge_deg_of_valuation_bounds_and_linear_support` | Blocked on above |
+| PlaceDegree | 802 | `natDegree_eq_sum_ord_mul_degree` | Medium (UFD) ← NEXT |
+| PlaceDegree | 832 | `intDegree_ge_deg_of_valuation_bounds_and_linear_support` | Blocked on above |
 
 ### Content Sorries - High Level (3)
 | Location | Line | Description | Difficulty |
@@ -63,29 +62,30 @@
 | 304 | Fill `ord_generator_self` and `ord_generator_other` | ✅ DONE |
 | 305 | Add UFD infrastructure + ord lemmas | ✅ DONE |
 | 306 | Fill `pow_generator_dvd_iff_le_ord` (Nat arithmetic) | ✅ DONE |
-| 307 | Fill `intValuation_eq_exp_neg_ord` | **NEXT** (Medium - valuation API) |
-| 308 | Fill `natDegree_eq_sum_ord_mul_degree` | Medium (UFD) |
+| 307 | Fill `intValuation_eq_exp_neg_ord` | ✅ DONE |
+| 308 | Fill `natDegree_eq_sum_ord_mul_degree` | **NEXT** (Medium - UFD) |
 | 309+ | High-level AdelicH1Full sorries | Blocked |
 
-### Cycle 306 Summary
+### Cycle 307 Summary
 **Completed**:
-- Filled `pow_generator_dvd_iff_le_ord` - key divisibility characterization of ord
-- Proof uses `generalize` to capture Nat.find from goal and work with unified decidability instance
-- Used `Nat.find_spec` and `Nat.find_min` with the generalized Nat.find
-- Key insight: `n ≤ ord ↔ n < Nat.find ↔ gen^n | p`
-- Nat arithmetic: `Nat.sub_lt_iff_lt_add`, `Nat.lt_of_le_pred`
+- Filled `intValuation_eq_exp_neg_ord` - key bridge between valuation and divisibility
+- Proof uses `Ideal.count_associates_eq'` from Mathlib to connect:
+  - `v.intValuation p = exp(-(Associates.count on ideal factorization))`
+  - `ord k v p = count in polynomial factorization`
+- Key insight: `v.asIdeal = span{generator(v)}` via `asIdeal_eq_span_generator`
+- Used `pow_generator_dvd_iff_le_ord` to establish divisibility bounds
 
-**Unblocked**: `ord_eq_count_normalizedFactors` now uses `pow_generator_dvd_iff_le_ord`
+**Unblocked**: Path to `natDegree_eq_sum_ord_mul_degree` is clearer
 
-### Cycle 307 Target
-**File**: PlaceDegree.lean:770
-**Lemma**: `intValuation_eq_exp_neg_ord`
-**Goal**: `v.intValuation p = WithZero.exp (-(ord k v p : ℤ))`
+### Cycle 308 Target
+**File**: PlaceDegree.lean:802
+**Lemma**: `natDegree_eq_sum_ord_mul_degree`
+**Goal**: `(p.natDegree : ℤ) = ∑ v ∈ S, (ord k v p : ℤ) * (degree k v : ℤ)`
 **Approach**:
-- Both definitions count the same thing (multiplicity of generator)
-- `intValuation` uses Associates.count on ideals
-- `ord` uses divisibility of generator
-- Bridge: `v.asIdeal = span{generator(v)}`
+- Unique factorization: `p = c * ∏ gen(v)^{ord_v(p)}`
+- `natDegree(p) = natDegree(∏ gen(v)^{ord_v(p)})` (leading coeff is unit)
+- Use `natDegree_multiset_prod_of_monic` for product
+- `natDegree(gen(v)^n) = n * natDegree(gen(v)) = n * degree(v)`
 
 ---
 
@@ -105,4 +105,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 306. See ledger_archive.md for historical cycles.*
+*Updated Cycle 307. See ledger_archive.md for historical cycles.*

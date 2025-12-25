@@ -111,15 +111,15 @@ PlaceDegree.lean
 
 ---
 
-## Sorry Locations (11 total, updated Cycle 302)
+## Sorry Locations (11 total, updated Cycle 307)
 
 See `ledger.md` for authoritative sorry list. Summary:
 
 ### Content Sorries (5)
 | Location | Description |
 |----------|-------------|
-| PlaceDegree:155 | `linear_of_degree_eq_one` ← **NEXT** |
-| PlaceDegree:524 | `intDegree_ge_deg_of_valuation_bounds_and_linear_support` |
+| PlaceDegree:802 | `natDegree_eq_sum_ord_mul_degree` ← **NEXT** |
+| PlaceDegree:832 | `intDegree_ge_deg_of_valuation_bounds_and_linear_support` |
 | AdelicH1Full:757 | Deep negative inftyCoeff |
 | AdelicH1Full:1328 | Degree gap lemma |
 | AdelicH1Full:1460 | Non-effective strong approx |
@@ -223,4 +223,4 @@ Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 
 ---
 
-*Updated Cycle 302. See ledger.md for current state.*
+*Updated Cycle 307. See ledger.md for current state.*

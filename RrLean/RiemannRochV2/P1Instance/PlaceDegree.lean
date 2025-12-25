@@ -774,7 +774,20 @@ lemma intValuation_eq_exp_neg_ord (v : HeightOneSpectrum (Polynomial k))
   -- intValuation uses Associates.count on ideals
   -- ord uses divisibility of generator
   -- These agree because v.asIdeal = span{generator(v)}
-  sorry
+  classical
+  -- Unfold intValuation for nonzero p
+  rw [v.intValuation_if_neg hp]
+  -- Replace v.asIdeal with span{generator}
+  rw [asIdeal_eq_span_generator k v]
+  -- Now we need: Associates.count on ideals = ord
+  -- Use Ideal.count_associates_eq': for prime x, if x^n | a and ¬ x^(n+1) | a, count = n
+  have hgen_prime : Prime (generator k v) := (generator_irreducible k v).prime
+  set n := ord k v p with hn
+  have hdvd : (generator k v) ^ n ∣ p := (pow_generator_dvd_iff_le_ord k v p hp n).mpr le_rfl
+  have hndvd : ¬ (generator k v) ^ (n + 1) ∣ p := by
+    rw [pow_generator_dvd_iff_le_ord k v p hp]
+    omega
+  rw [Ideal.count_associates_eq' hgen_prime hdvd hndvd]
 
 /-- **Key Theorem**: natDegree equals sum of ord × degree over all places.
 
