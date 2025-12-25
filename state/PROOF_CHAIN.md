@@ -187,14 +187,15 @@ EllipticH1.lean (Cycle 292) ←─── BLOCKED until Cycle 291
 └── Requires: StrongApproximation axiom
         │
         ▼
-StrongApproximation.lean (Cycle 291) ←─── NEW FILE NEEDED
+StrongApproximation.lean (Cycle 291) ←─── NEXT
 ├── class StrongApproximation K
 └── instance for elliptic (sorry)
         │
         ▼
-EllipticCanonical.lean (Cycle 290) ←─── INDEPENDENT, DO FIRST
+EllipticCanonical.lean ✅ CREATED (Cycle 290)
 ├── ellipticCanonical = 0
-└── deg_ellipticCanonical = 0
+├── deg_ellipticCanonical = 0
+└── ellipticCanonical_sub : K - D = -D
         │
         ▼
 EllipticPlaces.lean ✅ CREATED (Cycle 289)
@@ -220,4 +221,4 @@ Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 
 ---
 
-*Updated Cycle 289: SA blocker identified. Plan: 290 (Canonical) → 291 (SA axiom) → 292 (H1).*
+*Updated Cycle 290: EllipticCanonical added. Plan: 291 (SA axiom) → 292 (H1) → 293+ (RRData).*

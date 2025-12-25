@@ -7,7 +7,7 @@ Tactical tracking for Riemann-Roch formalization.
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 289 (Complete)
+**Cycle**: 290 (Complete)
 **Total Sorries**: 10 (4 AdelicH1Full + 5 Abstract.lean + 1 EllipticSetup)
 
 ---
@@ -62,7 +62,40 @@ theorem h1_finrank_full_eq_zero_of_deg_ge_neg_one ...
 
 ---
 
-## Cycle 289: Elliptic Curve Setup (Current)
+## Cycle 290: Elliptic Canonical Divisor (Current)
+
+**Achievement**: Defined canonical divisor K = 0 for elliptic curves.
+
+### Files Created/Updated
+```
+RrLean/RiemannRochV2/Elliptic/
+├── EllipticSetup.lean      # NonsingularCurve class, IsDedekindDomain axiom
+├── EllipticPlaces.lean     # EllipticPlace, LocalUniformizer
+├── EllipticCanonical.lean  # ✅ NEW: K = 0, deg(K) = 0
+└── Elliptic.lean           # Module file (updated)
+```
+
+### Key Definitions
+```lean
+-- Canonical divisor is zero (trivial canonical bundle for g=1)
+def ellipticCanonical : DivisorV2 (CoordRing W) := 0
+
+-- Degree is zero (giving genus 1 via 2g-2 formula)
+lemma deg_ellipticCanonical : (ellipticCanonical W).deg = 0
+
+-- Serre duality simplifies: K - D = -D
+lemma ellipticCanonical_sub (D) : ellipticCanonical W - D = -D
+```
+
+### Mathematical Insight
+The invariant differential ω = dx/(2y) on elliptic curves has no zeros
+or poles anywhere (including at infinity). Thus K = div(ω) = 0.
+
+This is the key genus-1 property: deg(K) = 0 = 2g - 2 ⟹ g = 1.
+
+---
+
+## Cycle 289: Elliptic Curve Setup
 
 **Achievement**: Created initial elliptic curve infrastructure.
 
@@ -119,9 +152,9 @@ structure LocalUniformizer (v : EllipticPlace W) where
 
 ---
 
-## Next Steps: Cycles 290-292
+## Next Steps: Cycles 291-293
 
-### Critical Blocker Discovered
+### Critical Blocker: Strong Approximation
 
 **Problem**: The current Strong Approximation proof in `FullAdelesCompact.lean` uses
 Euclidean division (`div_add_mod`), which only works for PIDs like `Polynomial Fq`.
@@ -133,10 +166,10 @@ Elliptic curves have Dedekind (not Euclidean) coordinate rings.
 
 ### Updated Plan
 
-| Cycle | Task | Dependency |
-|-------|------|------------|
-| 290 | EllipticCanonical (K=0, deg=0) | Independent, quick win |
-| 291 | StrongApproximation axiom/typeclass | Needed before H¹ |
+| Cycle | Task | Status |
+|-------|------|--------|
+| 290 | EllipticCanonical (K=0, deg=0) | ✅ Complete |
+| 291 | StrongApproximation axiom/typeclass | Next |
 | 292 | EllipticH1 (dim H¹(O) = 1) | Requires SA |
 | 293+ | EllipticRRData instance | Requires all above |
 
@@ -149,9 +182,9 @@ Elliptic curves have Dedekind (not Euclidean) coordinate rings.
 ### Remaining Files
 ```
 RrLean/RiemannRochV2/Elliptic/
-├── EllipticSetup.lean      ✅ Created
-├── EllipticPlaces.lean     ✅ Created
-├── EllipticCanonical.lean  # Cycle 290: K = 0
+├── EllipticSetup.lean      ✅ Created (Cycle 289)
+├── EllipticPlaces.lean     ✅ Created (Cycle 289)
+├── EllipticCanonical.lean  ✅ Created (Cycle 290)
 ├── EllipticH1.lean         # Cycle 292: after SA axiom
 └── EllipticRRData.lean     # Cycle 293+
 ```
@@ -188,10 +221,10 @@ RrLean/RiemannRochV2/Elliptic/
 | ResidueTheory | 7 | 2,000 | ✅ Complete |
 | Adelic (with sorries) | 4 | 2,500 | 90% complete |
 | SerreDuality/Abstract | 1 | 350 | 80% complete |
-| Elliptic | 3 | ~200 | ⏳ Started (setup + places) |
+| Elliptic | 4 | ~350 | ⏳ Setup + Canonical done |
 
 **Total**: ~15K LOC, 98% P¹ complete
 
 ---
 
-*Updated Cycle 289: Elliptic infrastructure started. SA blocker identified → axiom approach (Option B).*
+*Updated Cycle 290: EllipticCanonical added (K=0). Next: StrongApproximation axiom (Cycle 291).*

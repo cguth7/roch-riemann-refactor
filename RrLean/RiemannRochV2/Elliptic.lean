@@ -1,5 +1,6 @@
 import RrLean.RiemannRochV2.Elliptic.EllipticSetup
 import RrLean.RiemannRochV2.Elliptic.EllipticPlaces
+import RrLean.RiemannRochV2.Elliptic.EllipticCanonical
 
 /-!
 # Elliptic Curve Infrastructure for Riemann-Roch
@@ -11,11 +12,11 @@ instantiating Riemann-Roch on genus 1 curves.
 
 * `EllipticSetup` - IsDedekindDomain axiom, basic definitions
 * `EllipticPlaces` - HeightOneSpectrum, local uniformizers
+* `EllipticCanonical` - K = 0 (trivial canonical divisor for g=1)
 
-## Status (Cycle 289)
+## Status (Cycle 290)
 
-This is the initial setup for elliptic curves. Future cycles will add:
-- `EllipticCanonical.lean` - K = 0 (trivial canonical for g=1)
+Setup and canonical divisor complete. Future cycles will add:
 - `EllipticH1.lean` - H¹ calculations (dim = 1 for O)
 - `EllipticRRData.lean` - ProjectiveAdelicRRData instance
 

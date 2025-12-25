@@ -79,7 +79,7 @@ RrLean/RiemannRochV2/Elliptic/
 ### What Needs Proving
 
 1. ✅ **Setup**: Wire Mathlib's `CoordinateRing` to our infrastructure (Cycle 289)
-2. **Canonical**: `ellipticCanonical = 0` (trivial divisor) - Cycle 290
+2. ✅ **Canonical**: `ellipticCanonical = 0` (trivial divisor) - Cycle 290
 3. **Strong Approximation**: Axiomatize for non-PID rings - Cycle 291
 4. **H¹(O) = 1**: Quotient by K gives 1-dimensional space - Cycle 292
 5. **Serre duality**: `h¹(D) = ℓ(-D)` (since K = 0) - Cycle 293+
@@ -211,12 +211,12 @@ For elliptic curves: `genus = 1`, `canonical = 0`, `deg_canonical = 0`.
 
 ## Summary: What's Next
 
-### Cycle 290: EllipticCanonical (Quick Win)
-- Define `ellipticCanonical = 0` (trivial divisor for genus 1)
-- Prove `deg_ellipticCanonical = 0`
-- Independent of Strong Approximation
+### Cycle 290: EllipticCanonical ✅ DONE
+- Defined `ellipticCanonical = 0` (trivial divisor for genus 1)
+- Proved `deg_ellipticCanonical = 0`
+- Proved `ellipticCanonical_sub : K - D = -D`
 
-### Cycle 291: StrongApproximation Axiom (Strategic)
+### Cycle 291: StrongApproximation Axiom (Next)
 - Create `StrongApproximation` typeclass
 - Instance for elliptic curves with `sorry`
 - Decouples topology from geometry
@@ -231,4 +231,4 @@ For elliptic curves: `genus = 1`, `canonical = 0`, `deg_canonical = 0`.
 
 ---
 
-*Updated Cycle 289: Strong Approximation blocker identified. Axiom approach (Option B) selected.*
+*Updated Cycle 290: EllipticCanonical complete. Next: StrongApproximation axiom (Cycle 291).*
