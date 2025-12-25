@@ -5,9 +5,51 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 315
+**Cycle**: 316
 **Phase**: 7 (Weil Differentials) - Active
 **Total Sorries**: 8 (2 archived P¹ edge cases + 6 axioms)
+
+---
+
+## Cycle 316 Completed
+
+**Extended**: `RrLean/RiemannRochV2/General/WeilDifferential.lean`
+
+### Non-Degeneracy Infrastructure
+- [x] `PairingNondegenerateLeft` - for f ≠ 0, ∃ ω with ⟨f, ω⟩ ≠ 0
+- [x] `PairingNondegenerateRight` - for ω ≠ 0, ∃ f with ⟨f, ω⟩ ≠ 0
+- [x] `PairingPerfect` - both left and right non-degeneracy
+- [x] `PairingNondegenerateLeft'` - kernel formulation
+- [x] `PairingNondegenerateRight'` - kernel formulation
+- [x] `pairingNondegenerateLeft_iff_kernel` - equivalence proof
+
+### Dimension Theorems
+- [x] `dim_le_of_nondeg_left` - left nondeg ⟹ dim L(D) ≤ dim Ω(E)
+- [x] `dim_le_of_nondeg_right` - right nondeg ⟹ dim Ω(E) ≤ dim L(D)
+- [x] `dim_eq_of_perfect_pairing` - perfect ⟹ dim L(D) = dim Ω(E)
+
+### Canonical Divisor Typeclass
+- [x] `HasCanonicalDivisor` - packages canonical divisor, genus, Serre duality
+- [x] `canonicalDivisor`, `curveGenus` - accessor abbreviations
+- [x] `ell`, `dimOmega` - dimension abbreviations
+- [x] `serre_duality_dim` - ℓ(D) = dim Ω(K - D)
+- [x] `serre_duality_swap` - ℓ(K - D) = dim Ω(D)
+- [x] `riemann_roch_abstract` - RR from Euler characteristic assumption
+
+### Technical Notes
+The `HasCanonicalDivisor` typeclass axiomatizes Serre duality for now.
+Concrete instances will prove non-degeneracy for specific curve families.
+
+---
+
+## Cycle 317 Target
+
+**Options for next steps**:
+1. **Prove non-degeneracy** from compactness or local-to-global
+2. **Connect to FullRRData** - bridge the abstract framework
+3. **Instantiate for P¹** - genus 0, canonical = -2·∞
+
+Recommended: Option 3 (instantiate for P¹) to validate the framework.
 
 ---
 
@@ -20,25 +62,6 @@
 - [x] `serrePairingRestricted_apply` - evaluation simp lemma
 - [x] `serrePairingGeneral` - general pairing L(D) × Ω(E) → k for any D, E
 - [x] `serrePairingGeneral_apply` - evaluation simp lemma
-
-### Non-Degeneracy Strategy Documented
-Outlined three approaches for proving non-degeneracy (Cycle 316+):
-1. From A_K/K compactness → perfect pairing
-2. Local non-degeneracy at each place → global
-3. Axiomatize if needed
-
-### Technical Notes
-Import added: `RrLean.RiemannRochV2.Definitions.Projective` for `RRSpace_proj`.
-Non-degeneracy definitions deferred to Cycle 316 due to typeclass complexity.
-
----
-
-## Cycle 316 Target
-
-**Non-degeneracy formalization**:
-1. Define `PairingNondegenerateLeft`, `PairingNondegenerateRight`, `PairingPerfect`
-2. Prove `dim_eq_of_perfect_pairing`
-3. Begin proving non-degeneracy (or axiomatize)
 
 ---
 
@@ -163,15 +186,15 @@ Estimated remaining: **~10-15 cycles** (3 more cycles completed).
 | 313 | Local components + Ω(D) definition | ✅ DONE |
 | 314 | Serre pairing `⟨f, ω⟩ = ω(diag f)` | ✅ DONE |
 | 315 | Restricted pairing L(D) × Ω(E) → k | ✅ DONE |
+| 316 | Non-degeneracy defs + HasCanonicalDivisor | ✅ DONE |
 
 ### Remaining
 | Cycle | Task | Difficulty | Est. |
 |-------|------|------------|------|
-| 316-320 | **Prove non-degeneracy** | **HARD** | 4-6 cycles |
-| 321-323 | Prove dim(Ω) = g (or deg(K) = 2g-2) | Medium | 2-3 cycles |
-| 324 | Instantiate FullRRData | Easy | 1 cycle |
-| 325-327 | Assembly + cleanup | Medium | 2-3 cycles |
-| **Total** | | | **~9-14 cycles** |
+| 317-318 | Instantiate for P¹ or elliptic | Medium | 2 cycles |
+| 319-320 | Bridge to FullRRData | Easy-Medium | 2 cycles |
+| 321-323 | Assembly + final RR theorem | Medium | 2-3 cycles |
+| **Total** | | | **~6-8 cycles** |
 
 ---
 
