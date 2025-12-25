@@ -7,21 +7,22 @@ Tactical tracking for Riemann-Roch formalization.
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 295 (Complete)
-**Total Sorries**: 10 (4 AdelicH1Full + 1 Abstract + 1 EllipticSetup + 2 StrongApproximation + 2 EllipticH1)
+**Cycle**: 296 (Complete)
+**Total Sorries**: 9 (3 AdelicH1Full + 1 Abstract + 1 EllipticSetup + 2 StrongApproximation + 2 EllipticH1)
 **Elliptic Axioms**: 8 (in addition to sorries: 3 in EllipticH1 + 3 in EllipticRRData + 1 in EllipticPlaces + 1 h1_zero_finite)
 
 ---
 
 ## Sorry Classification
 
-### Content Sorries (4) - Actual proof work needed
+### Content Sorries (3) - Actual proof work needed
 | Location | Description | Priority |
 |----------|-------------|----------|
-| AdelicH1Full:619 | Strong approximation infinity bound (needs chain from RatFuncPairing) | **High** |
-| AdelicH1Full:763 | Deep negative inftyCoeff case | Medium |
-| AdelicH1Full:1167 | Degree gap in L(K-D)=0 | High |
-| AdelicH1Full:1233 | Non-effective + IsLinearPlaceSupport | Low |
+| AdelicH1Full:757 | Deep negative inftyCoeff case | Medium |
+| AdelicH1Full:1161 | Degree gap in L(K-D)=0 | High |
+| AdelicH1Full:1227 | Non-effective + IsLinearPlaceSupport | Low |
+
+**Note**: AdelicH1Full:619 (infinity bound) was **FILLED** in Cycle 296 using `strong_approximation_ratfunc_effective`.
 
 ### Infrastructure Sorries (5) - Trivial for algebraically closed fields
 | Location | Description | Status |
@@ -78,6 +79,36 @@ theorem h1_finrank_full_eq_zero_of_deg_ge_neg_one ...
 - **Core/** (2K LOC) - Place, Divisor, RRSpace definitions
 - **Support/** (600 LOC) - DVR properties
 - **Dimension/** (650 LOC) - Gap bounds, inequalities
+
+---
+
+## Cycle 296: Chain Infinity Bound to AdelicH1Full (Complete)
+
+**Goal**: Fill the sorry at AdelicH1Full.lean:619 (strong approximation infinity bound)
+
+### Achievement
+Created `strong_approximation_ratfunc_effective` that returns the infinity valuation bound
+when D is effective, then used it to fill the sorry.
+
+### Changes Made
+1. **Created `strong_approximation_ratfunc_effective`** (RatFuncPairing.lean:1897-2057):
+   - When D is effective, the approximating k is a sum of principal parts (k_pole)
+   - Returns both the approximation bound AND `inftyValuationDef k ≤ exp(-1)`
+   - Proof uses `principal_part_inftyValuationDef_le_exp_neg_one` + `p1InftyPlace_valuation_sum_le`
+
+2. **Updated `globalPlusBoundedSubmodule_full_eq_top_of_deg_ge_neg_one`** (AdelicH1Full.lean:619):
+   - Changed from `strong_approximation_ratfunc` to `strong_approximation_ratfunc_effective`
+   - Uses `hk₂_infty` to fill the sorry: `_ ≤ WithZero.exp (-1 : ℤ) := hk₂_infty`
+
+### Result
+- **Sorry count: 10 → 9**
+- AdelicH1Full.lean:619 sorry is now **FILLED**
+- The "effective divisor" case of full adele strong approximation is complete
+
+### What's Left in AdelicH1Full
+- Line 757: Deep negative inftyCoeff case (D.inftyCoeff < -1)
+- Line 1161: Degree gap in L(K-D)=0 proof
+- Line 1227: Non-effective + IsLinearPlaceSupport
 
 ---
 
@@ -350,7 +381,7 @@ structure LocalUniformizer (v : EllipticPlace W) where
 
 ---
 
-## Next Steps: Cycles 296+ (Sorry Cleanup)
+## Next Steps: Cycles 297+ (Sorry Cleanup)
 
 ### Updated Plan
 
@@ -359,8 +390,8 @@ structure LocalUniformizer (v : EllipticPlace W) where
 | 293 | EllipticRRData instance + RR proofs | ✅ Complete |
 | 294 | Investigate infinity valuation bound | ✅ Complete |
 | 295 | Fix IsPrincipalPartAtSpec + fill RatFuncPairing:1081 | ✅ Complete |
-| 296 | Chain infinity bound to AdelicH1Full:619 | **Next** |
-| 297 | Fill remaining AdelicH1Full sorries | Uses 296 |
+| 296 | Chain infinity bound to AdelicH1Full:619 | ✅ Complete |
+| 297 | Fill remaining AdelicH1Full sorries | **Next** |
 | 298 | IsLinearPlaceSupport: add [IsAlgClosed] OR refactor | Cleanup |
 
 ### Sorry Cleanup Strategy
@@ -369,17 +400,16 @@ structure LocalUniformizer (v : EllipticPlace W) where
 - Strengthened predicate with fourth condition: `p = 0 ∨ p.intDegree ≤ -1`
 - Filled RatFuncPairing.lean sorry
 
-**Phase 2: Chain to AdelicH1Full (Cycle 296) - NEXT**
-- Target: AdelicH1Full.lean line 619
-- With RatFuncPairing:1081 now filled:
-  1. Create `strong_approximation_ratfunc_with_infty_bound` (exports infinity bound for effective D)
-  2. Or directly trace through construction showing k = k_pole = Σ pp_v
-  3. Apply `principal_part_inftyValuationDef_le_exp_neg_one` to each pp_v
-  4. Apply `p1InftyPlace_valuation_sum_le` (ultrametric) for the sum
+**Phase 2: Chain to AdelicH1Full (Cycle 296) - ✅ DONE**
+- Created `strong_approximation_ratfunc_effective` with infinity bound
+- Filled AdelicH1Full.lean:619 sorry (now line 692)
+- Sorry count: 10 → 9
 
-**Phase 3: Remaining AdelicH1Full Sorries (Cycle 297)**
-- Targets: lines 763, 1167, 1233
-- May reuse infrastructure from Phase 2
+**Phase 3: Remaining AdelicH1Full Sorries (Cycle 297) - NEXT**
+- Targets: lines 757, 1161, 1227
+- Line 757: Deep negative inftyCoeff (may need different approach since D.finite is effective but inftyCoeff < -1)
+- Line 1161: Degree gap (may need `strong_approximation_ratfunc_effective` approach)
+- Line 1227: Non-effective case with IsLinearPlaceSupport
 
 **Phase 4: IsLinearPlaceSupport Resolution (Cycle 298)**
 - Target: Abstract.lean line 277
@@ -387,7 +417,7 @@ structure LocalUniformizer (v : EllipticPlace W) where
 - **Options**:
   1. Add `[IsAlgClosed Fq]` hypothesis
   2. Refactor to weighted degrees
-- Decision deferred until Phase 2-3 complete
+- Decision deferred until Phase 3 complete
 
 ### Axiom Stack (Safe, Standard AG)
 | Axiom | File | Justification |
@@ -456,4 +486,4 @@ RrLean/RiemannRochV2/Adelic/
 
 ---
 
-*Updated Cycle 295: Strengthened IsPrincipalPartAtSpec with intDegree bound. Filled RatFuncPairing sorry. Sorry count: 11 → 10.*
+*Updated Cycle 296: Created strong_approximation_ratfunc_effective. Filled AdelicH1Full:619 sorry. Sorry count: 10 → 9.*

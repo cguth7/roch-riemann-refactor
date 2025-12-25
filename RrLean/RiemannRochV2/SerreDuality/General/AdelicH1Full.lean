@@ -635,7 +635,8 @@ theorem globalPlusBoundedSubmodule_full_eq_top_of_deg_ge_neg_one
     a.1 - AdelicH1v2.diagonalK (Polynomial Fq) (RatFunc Fq) k₁
 
   -- Use strong approximation to find k₂ with b - diag(k₂) bounded by D.finite
-  obtain ⟨k₂, hk₂⟩ := strong_approximation_ratfunc b D.finite
+  -- For effective D.finite, we also get the infinity valuation bound
+  obtain ⟨k₂, hk₂, hk₂_infty⟩ := strong_approximation_ratfunc_effective b D.finite heff
 
   -- Step 3: Set k = k₁ + k₂
   let k := k₁ + k₂
@@ -688,14 +689,7 @@ theorem globalPlusBoundedSubmodule_full_eq_top_of_deg_ge_neg_one
       -- The bound chain: |k₂|_∞ ≤ exp(-1) ≤ exp(D.inftyCoeff)
       calc Valued.v (inftyRingHom Fq k₂)
           = FunctionField.inftyValuationDef Fq k₂ := valued_FqtInfty_eq_inftyValuationDef Fq k₂
-        _ ≤ WithZero.exp (-1 : ℤ) := by
-            -- TODO: Prove this sorry (Cycle 280 technical debt)
-            -- Mathematical fact: k₂ from strong_approximation_ratfunc with effective D.finite
-            -- is a sum of principal parts at finite places.
-            -- Principal parts have deg(num) < deg(denom), so intDegree ≤ -1, hence val_∞ ≤ exp(-1).
-            -- Blocked by: Type class synthesis for DecidableEq (RatFunc Fq) with inftyValuationDef
-            -- See ledger.md Technical Debt Notes for details.
-            sorry
+        _ ≤ WithZero.exp (-1 : ℤ) := hk₂_infty
         _ ≤ WithZero.exp D.inftyCoeff := WithZero.exp_le_exp.mpr h_infty
   · -- Show fqFullDiagonalEmbedding k + (a - fqFullDiagonalEmbedding k) = a
     simp only [add_sub_cancel]

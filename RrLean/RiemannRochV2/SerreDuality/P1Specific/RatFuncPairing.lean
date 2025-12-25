@@ -1884,6 +1884,178 @@ theorem strong_approximation_ratfunc
       simp only [WithZero.exp_zero]
       exact hsub_int
 
+/-- Strong approximation for effective divisors: the approximating element has bounded
+infinity valuation.
+
+When D is effective (all D(v) ≥ 0), the approximating k from strong_approximation_ratfunc
+is a sum of principal parts (no polynomial term needed). Principal parts have poles only
+at finite places, hence bounded infinity valuation.
+
+This is the key lemma connecting the finite adele construction to the full adele bound
+needed in AdelicH1Full.
+-/
+theorem strong_approximation_ratfunc_effective
+    (a : FiniteAdeleRing (Polynomial Fq) (RatFunc Fq))
+    (D : DivisorV2 (Polynomial Fq))
+    (heff : D.Effective) :
+    ∃ k : RatFunc Fq,
+      (a - diagonalK (Polynomial Fq) (RatFunc Fq) k ∈
+        boundedSubmodule Fq (Polynomial Fq) (RatFunc Fq) D) ∧
+      FunctionField.inftyValuationDef Fq k ≤ WithZero.exp (-1 : ℤ) := by
+  -- Check if a is already D-bounded everywhere
+  haveI : DecidableEq (HeightOneSpectrum (Polynomial Fq)) := Classical.decEq _
+  -- Use global instDecidableEqRatFunc from P1Place
+  by_cases h : ∀ v, AdelicH1v2.satisfiesBoundAt (Polynomial Fq) (RatFunc Fq) a v D
+  · -- a is already in A_K(D), so k = 0 works
+    refine ⟨0, ?_, ?_⟩
+    · simp only [map_zero, sub_zero]; exact h
+    · exact inftyValuationDef_zero_le_exp_neg_one
+  · -- Some places exceed the bound - need non-trivial approximation
+    -- Define the finite set of "bad" places
+    have h_finite : {v | ¬ a v ∈ v.adicCompletionIntegers (RatFunc Fq)}.Finite :=
+      Filter.eventually_cofinite.mp a.2
+
+    let nonIntPlaces : Finset (HeightOneSpectrum (Polynomial Fq)) := h_finite.toFinset
+    let S : Finset (HeightOneSpectrum (Polynomial Fq)) := D.support ∪ nonIntPlaces
+
+    -- For each v ∈ S, get local approximant y_v
+    have h_local : ∀ v : S, ∃ y : RatFunc Fq, Valued.v (a ↑v - y) ≤ WithZero.exp (D ↑v) := by
+      intro ⟨v, _hv⟩
+      exact exists_local_approximant_with_bound v (a v) (D v)
+
+    choose y_local hy_local using h_local
+
+    -- Extract principal parts for each y_v
+    choose pp r h_decomp using fun v => exists_principal_part_at_spec v.val (y_local v)
+
+    -- k_pole := sum of all principal parts
+    let k_pole : RatFunc Fq := ∑ v : S, pp v
+
+    -- When D is effective, all D(v) ≥ 0, so k_pole suffices (no CRT refinement needed)
+    -- The key is that k_pole is a sum of principal parts with bounded infinity valuation
+    use k_pole
+    constructor
+    · -- Prove approximation bound (same as strong_approximation_ratfunc)
+      intro v
+      by_cases hv : v ∈ S
+      · -- v ∈ S: use ultrametric with local approximation
+        let v' : S := ⟨v, hv⟩
+
+        -- y_v - k_pole is integral at v (same proof as in exists_global_approximant_from_local)
+        have h_integral : v.valuation (RatFunc Fq) (y_local v' - k_pole) ≤ 1 := by
+          classical
+          have hr_val : v.valuation (RatFunc Fq) (r v') ≤ 1 := (h_decomp v').2.2.1
+          have hpp_val : ∀ w : S, w ≠ v' → v.valuation (RatFunc Fq) (pp w) ≤ 1 := by
+            intro w hne
+            have hne' : v ≠ w.val := by
+              intro heq; apply hne; exact Subtype.ext heq.symm
+            exact (h_decomp w).2.1 v hne'
+          have hsum_eq : k_pole = pp v' + ∑ w ∈ Finset.univ.filter (· ≠ v'), pp w := by
+            simp only [k_pole]
+            rw [← Finset.sum_filter_add_sum_filter_not (s := Finset.univ) (p := (· = v'))]
+            congr 1
+            simp only [Finset.filter_eq', Finset.mem_univ, ↓reduceIte, Finset.sum_singleton]
+          have hy_eq : y_local v' - k_pole = r v' - ∑ w ∈ Finset.univ.filter (· ≠ v'), pp w := by
+            rw [hsum_eq, (h_decomp v').1]; ring
+          rw [hy_eq]
+          have hsum_val : v.valuation (RatFunc Fq) (∑ w ∈ Finset.univ.filter (· ≠ v'), pp w) ≤ 1 := by
+            apply Valuation.map_sum_le
+            intro w hw
+            apply hpp_val w
+            simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hw
+            exact hw
+          calc v.valuation (RatFunc Fq) (r v' - ∑ w ∈ Finset.univ.filter (· ≠ v'), pp w)
+              ≤ max (v.valuation (RatFunc Fq) (r v'))
+                    (v.valuation (RatFunc Fq) (-(∑ w ∈ Finset.univ.filter (· ≠ v'), pp w))) := by
+                  rw [sub_eq_add_neg]; exact Valuation.map_add_le_max' _ _ _
+            _ ≤ max 1 1 := max_le_max hr_val (by rw [Valuation.map_neg]; exact hsum_val)
+            _ = 1 := max_self 1
+
+        -- D(v) ≥ 0 since D is effective
+        have hDv_ge : D v ≥ 0 := heff v
+        have hexp_ge : WithZero.exp (D v) ≥ 1 := by
+          simp only [ge_iff_le, ← WithZero.exp_zero]
+          exact WithZero.exp_le_exp.mpr hDv_ge
+
+        have hdiag : (diagonalK (Polynomial Fq) (RatFunc Fq) k_pole) v =
+            (k_pole : v.adicCompletion (RatFunc Fq)) := rfl
+        have hval_yk : Valued.v ((y_local v' - k_pole : RatFunc Fq) : v.adicCompletion (RatFunc Fq)) =
+            v.valuation (RatFunc Fq) (y_local v' - k_pole) :=
+          valuedAdicCompletion_eq_valuation' v (y_local v' - k_pole)
+        have hyk_coe : (y_local v' : v.adicCompletion (RatFunc Fq)) -
+            (k_pole : v.adicCompletion (RatFunc Fq)) =
+            ((y_local v' - k_pole : RatFunc Fq) : v.adicCompletion (RatFunc Fq)) :=
+          ((algebraMap (RatFunc Fq) (v.adicCompletion (RatFunc Fq))).map_sub (y_local v') k_pole).symm
+        have hsplit : (a - diagonalK (Polynomial Fq) (RatFunc Fq) k_pole) v =
+            (a v - (y_local v' : v.adicCompletion (RatFunc Fq))) +
+            ((y_local v' : v.adicCompletion (RatFunc Fq)) -
+             (k_pole : v.adicCompletion (RatFunc Fq))) := by
+          show a v - (diagonalK (Polynomial Fq) (RatFunc Fq) k_pole) v = _
+          rw [hdiag]; ring
+        simp only [satisfiesBoundAt, valuationAt, hsplit]
+        calc Valued.v ((a v - (y_local v' : v.adicCompletion (RatFunc Fq))) +
+                ((y_local v' : v.adicCompletion (RatFunc Fq)) -
+                 (k_pole : v.adicCompletion (RatFunc Fq))))
+            ≤ max (Valued.v (a v - (y_local v' : v.adicCompletion (RatFunc Fq))))
+                  (Valued.v ((y_local v' : v.adicCompletion (RatFunc Fq)) -
+                   (k_pole : v.adicCompletion (RatFunc Fq)))) :=
+              Valuation.map_add_le_max' _ _ _
+          _ ≤ max (WithZero.exp (D v)) (v.valuation (RatFunc Fq) (y_local v' - k_pole)) := by
+              apply max_le_max
+              · exact hy_local v'
+              · rw [hyk_coe, hval_yk]
+          _ ≤ max (WithZero.exp (D v)) 1 := max_le_max le_rfl h_integral
+          _ ≤ WithZero.exp (D v) := max_le le_rfl hexp_ge
+
+      · -- v ∉ S: a_v is already D-bounded and k_pole is integral at v
+        simp only [S, Finset.mem_union, not_or] at hv
+        obtain ⟨hv_supp, hv_int⟩ := hv
+        have hDv : D v = 0 := Finsupp.notMem_support_iff.mp hv_supp
+        have ha_int : a v ∈ v.adicCompletionIntegers (RatFunc Fq) := by
+          by_contra h_not_int
+          have h_in_bad : v ∈ nonIntPlaces := (Set.Finite.mem_toFinset h_finite).mpr h_not_int
+          exact hv_int h_in_bad
+        -- k_pole is integral at v (poles only at places in S)
+        have hkpole_int : v.valuation (RatFunc Fq) k_pole ≤ 1 := by
+          simp only [k_pole]
+          apply Valuation.map_sum_le
+          intro w _
+          have hne : v ≠ (w : HeightOneSpectrum (Polynomial Fq)) := by
+            intro heq; rw [heq] at hv_supp hv_int
+            have hmem : w.val ∈ S := w.property
+            simp only [S, Finset.mem_union] at hmem
+            rcases hmem with hl | hr
+            · exact hv_supp hl
+            · exact hv_int hr
+          exact (h_decomp w).2.1 v hne
+        simp only [satisfiesBoundAt, valuationAt]
+        have hk_mem : (diagonalK (Polynomial Fq) (RatFunc Fq) k_pole) v ∈
+            v.adicCompletionIntegers (RatFunc Fq) := by
+          have heq' : (diagonalK (Polynomial Fq) (RatFunc Fq) k_pole) v =
+              (k_pole : v.adicCompletion (RatFunc Fq)) := rfl
+          rw [heq', mem_adicCompletionIntegers, valuedAdicCompletion_eq_valuation']
+          exact hkpole_int
+        have hsub_int : Valued.v ((a - diagonalK (Polynomial Fq) (RatFunc Fq) k_pole) v) ≤ 1 := by
+          have heq : (a - diagonalK (Polynomial Fq) (RatFunc Fq) k_pole) v =
+              a v - (diagonalK (Polynomial Fq) (RatFunc Fq) k_pole) v := rfl
+          rw [heq]
+          exact (v.adicCompletionIntegers (RatFunc Fq)).sub_mem ha_int hk_mem
+        rw [hDv]
+        simp only [WithZero.exp_zero]
+        exact hsub_int
+
+    · -- Prove infinity valuation bound: k_pole is a sum of principal parts
+      -- Each pp_v has inftyValuationDef ≤ exp(-1) by principal_part_inftyValuationDef_le_exp_neg_one
+      -- By ultrametric (p1InftyPlace_valuation_sum_le), the sum also has this bound
+      classical
+      simp only [k_pole]
+      -- Use p1InftyPlace_valuation_eq' to rewrite in terms of p1InftyPlace valuation
+      rw [← p1InftyPlace_valuation_eq']
+      apply p1InftyPlace_valuation_sum_le
+      intro s
+      rw [p1InftyPlace_valuation_eq']
+      exact principal_part_inftyValuationDef_le_exp_neg_one s.val (y_local s) (pp s) (r s) (h_decomp s)
+
 /-- Strong approximation implies globalPlusBoundedSubmodule = ⊤.
 
 This is the key consequence: every finite adele can be written as
