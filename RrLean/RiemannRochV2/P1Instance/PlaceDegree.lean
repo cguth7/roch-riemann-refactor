@@ -939,12 +939,145 @@ theorem intDegree_ge_deg_of_valuation_bounds_and_linear_support
     (hdenom_only_neg : ∀ v, f.denom ∈ v.asIdeal → D v < 0)
     (hlin : ∀ v ∈ D.support, degree k v = 1) :
     f.intDegree ≥ D.deg := by
-  /-
-  **Blocked**: This theorem requires `natDegree_eq_sum_ord_mul_degree` which
-  expresses natDegree as a sum over places. See Cycle 304 for the algebraic
-  foundation that unblocks this proof.
-  -/
-  sorry
+  classical
+  -- Step 1: Express intDegree in terms of num and denom natDegrees
+  have hnum_ne : f.num ≠ 0 := RatFunc.num_ne_zero hf
+  have hdenom_ne : f.denom ≠ 0 := RatFunc.denom_ne_zero f
+  -- intDegree(f) = num.natDegree - denom.natDegree (by definition in Mathlib)
+  have hintDeg : f.intDegree = (f.num.natDegree : ℤ) - (f.denom.natDegree : ℤ) := rfl
+  -- Step 2: Build a finset containing all relevant places
+  -- We need S to contain D.support and all places where num or denom have nonzero ord
+  -- Map each normalized factor to its corresponding place
+  let num_factors := (UniqueFactorizationMonoid.normalizedFactors f.num).toFinset
+  let denom_factors := (UniqueFactorizationMonoid.normalizedFactors f.denom).toFinset
+  -- Build set of places from factors
+  let num_places : Finset (HeightOneSpectrum (Polynomial k)) :=
+    num_factors.attach.image (fun ⟨q, hq⟩ =>
+      (exists_place_with_generator k q
+        (monic_of_mem_normalizedFactors k f.num (Multiset.mem_toFinset.mp hq))
+        (UniqueFactorizationMonoid.irreducible_of_normalized_factor q
+          (Multiset.mem_toFinset.mp hq))).choose)
+  let denom_places : Finset (HeightOneSpectrum (Polynomial k)) :=
+    denom_factors.attach.image (fun ⟨q, hq⟩ =>
+      (exists_place_with_generator k q
+        (monic_of_mem_normalizedFactors k f.denom (Multiset.mem_toFinset.mp hq))
+        (UniqueFactorizationMonoid.irreducible_of_normalized_factor q
+          (Multiset.mem_toFinset.mp hq))).choose)
+  let S := D.support ∪ num_places ∪ denom_places
+  -- Step 3: Use natDegree_eq_sum_ord_mul_degree for both num and denom
+  have hS_contains_num : ∀ v, ord k v f.num ≠ 0 → v ∈ S := by
+    intro v hord
+    -- v has generator in normalized factors of f.num
+    have hord_pos : 0 < ord k v f.num := Nat.pos_of_ne_zero hord
+    have hgen_mem : generator k v ∈ UniqueFactorizationMonoid.normalizedFactors f.num := by
+      rw [← Multiset.count_pos, ← ord_eq_count_normalizedFactors k v f.num hnum_ne]
+      exact hord_pos
+    have hv_in_num_places : v ∈ num_places := by
+      rw [Finset.mem_image]
+      use ⟨generator k v, Multiset.mem_toFinset.mpr hgen_mem⟩
+      simp only [Finset.mem_attach, true_and]
+      exact ((exists_place_with_generator k (generator k v) (generator_monic k v)
+        (generator_irreducible k v)).choose_spec.2 v rfl).symm
+    exact Finset.mem_union_left _ (Finset.mem_union_right _ hv_in_num_places)
+  have hS_contains_denom : ∀ v, ord k v f.denom ≠ 0 → v ∈ S := by
+    intro v hord
+    have hord_pos : 0 < ord k v f.denom := Nat.pos_of_ne_zero hord
+    have hgen_mem : generator k v ∈ UniqueFactorizationMonoid.normalizedFactors f.denom := by
+      rw [← Multiset.count_pos, ← ord_eq_count_normalizedFactors k v f.denom hdenom_ne]
+      exact hord_pos
+    have hv_in_denom_places : v ∈ denom_places := by
+      rw [Finset.mem_image]
+      use ⟨generator k v, Multiset.mem_toFinset.mpr hgen_mem⟩
+      simp only [Finset.mem_attach, true_and]
+      exact ((exists_place_with_generator k (generator k v) (generator_monic k v)
+        (generator_irreducible k v)).choose_spec.2 v rfl).symm
+    exact Finset.mem_union_right _ hv_in_denom_places
+  have hnum_deg : (f.num.natDegree : ℤ) = ∑ v ∈ S, (ord k v f.num : ℤ) * (degree k v : ℤ) :=
+    natDegree_eq_sum_ord_mul_degree k f.num hnum_ne S hS_contains_num
+  have hdenom_deg : (f.denom.natDegree : ℤ) = ∑ v ∈ S, (ord k v f.denom : ℤ) * (degree k v : ℤ) :=
+    natDegree_eq_sum_ord_mul_degree k f.denom hdenom_ne S hS_contains_denom
+  -- Step 4: Express intDegree as sum of differences
+  have hintDeg_sum : f.intDegree = ∑ v ∈ S, ((ord k v f.num : ℤ) - (ord k v f.denom : ℤ)) * (degree k v : ℤ) := by
+    rw [hintDeg, hnum_deg, hdenom_deg, ← Finset.sum_sub_distrib]
+    congr 1
+    ext v
+    ring
+  -- Step 5: Key lemmas about ord and valuations
+  -- For v with D(v) ≥ 0, hdenom_only_neg contrapositive gives denom ∉ v.asIdeal
+  have hdenom_ord_zero_of_nonneg : ∀ v, D v ≥ 0 → ord k v f.denom = 0 := by
+    intro v hDv
+    by_contra hord_ne
+    have hord_pos : ord k v f.denom ≥ 1 := Nat.one_le_iff_ne_zero.mpr hord_ne
+    have hdvd := (pow_generator_dvd_iff_le_ord k v f.denom hdenom_ne 1).mpr hord_pos
+    have hmem : f.denom ∈ v.asIdeal := by
+      rw [asIdeal_eq_span_generator k v, Ideal.mem_span_singleton]
+      simpa using hdvd
+    have hDv_neg := hdenom_only_neg v hmem
+    omega
+  -- Step 6: Valuation constraint gives ord(num) - ord(denom) ≥ D(v)
+  -- v.valuation f = exp(ord(denom) - ord(num)), so exp(ord(denom) - ord(num)) ≤ exp(-D(v))
+  -- implies ord(denom) - ord(num) ≤ -D(v), i.e., ord(num) - ord(denom) ≥ D(v)
+  have hord_ge_Dv : ∀ v, (ord k v f.num : ℤ) - (ord k v f.denom : ℤ) ≥ D v := by
+    intro v
+    have hval := hf_val v
+    -- Express valuation in terms of intValuation
+    conv_lhs at hval => rw [← RatFunc.num_div_denom f, Valuation.map_div,
+      HeightOneSpectrum.valuation_of_algebraMap, HeightOneSpectrum.valuation_of_algebraMap]
+    -- Use intValuation_eq_exp_neg_ord
+    rw [intValuation_eq_exp_neg_ord k v f.num hnum_ne,
+        intValuation_eq_exp_neg_ord k v f.denom hdenom_ne] at hval
+    -- exp(-a) / exp(-b) = exp(-a + b) = exp(b - a)
+    rw [← WithZero.exp_sub] at hval
+    simp only [neg_sub_neg] at hval
+    -- Now hval : exp(ord(denom) - ord(num)) ≤ exp(-D(v))
+    have hexp_mono := WithZero.exp_le_exp.mp hval
+    omega
+  -- Step 7: Split the sum and bound
+  rw [hintDeg_sum]
+  -- D.deg = Σ_{v ∈ D.support} D(v)
+  have hDdeg : D.deg = ∑ v ∈ D.support, D v := rfl
+  rw [hDdeg]
+  -- The sum over S ⊇ D.support, so it's enough to show each term is ≥
+  have hD_support_sub : D.support ⊆ S := by
+    intro v hv
+    simp only [S, Finset.mem_union]
+    left; left; exact hv
+  -- Split S = D.support ∪ (S \ D.support)
+  have hS_split : S = D.support ∪ (S \ D.support) := by
+    ext v
+    simp only [Finset.mem_union, Finset.mem_sdiff]
+    constructor
+    · intro hv
+      by_cases h : v ∈ D.support
+      · left; exact h
+      · right; exact ⟨hv, h⟩
+    · intro hv
+      rcases hv with h | ⟨h, _⟩
+      · exact hD_support_sub h
+      · exact h
+  rw [hS_split, Finset.sum_union (Finset.disjoint_sdiff)]
+  -- For v ∉ D.support: D(v) = 0, and ord(denom) = 0 (since D(v) = 0 ≥ 0)
+  -- so contribution is ord(num) * deg(v) ≥ 0
+  have hrest_nonneg : 0 ≤ ∑ v ∈ S \ D.support, ((ord k v f.num : ℤ) - (ord k v f.denom : ℤ)) * (degree k v : ℤ) := by
+    apply Finset.sum_nonneg
+    intro v hv
+    have hv_not_supp : v ∉ D.support := Finset.mem_sdiff.mp hv |>.2
+    have hDv : D v = 0 := Finsupp.notMem_support_iff.mp hv_not_supp
+    have hdenom_ord := hdenom_ord_zero_of_nonneg v (by rw [hDv])
+    simp only [hdenom_ord, Nat.cast_zero, sub_zero]
+    apply mul_nonneg
+    · exact Nat.cast_nonneg _
+    · exact Nat.cast_nonneg _
+  -- For v ∈ D.support: deg(v) = 1 by hlin, and (ord(num) - ord(denom)) * 1 ≥ D(v)
+  have hsupp_ge : ∑ v ∈ D.support, ((ord k v f.num : ℤ) - (ord k v f.denom : ℤ)) * (degree k v : ℤ) ≥
+      ∑ v ∈ D.support, D v := by
+    apply Finset.sum_le_sum
+    intro v hv
+    have hdeg_one := hlin v hv
+    rw [hdeg_one]
+    simp only [Nat.cast_one, mul_one]
+    exact hord_ge_Dv v
+  linarith
 
 end PlaceDegree
 

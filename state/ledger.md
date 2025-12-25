@@ -5,24 +5,22 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 308
-**Total Sorries**: 10 (1 new infrastructure + 3 high-level + 6 axioms)
+**Cycle**: 309
+**Total Sorries**: 9 (0 new infrastructure + 3 high-level + 6 axioms)
 **Elliptic Axioms**: 8
 
 ---
 
 ## Sorry Classification
 
-### Content Sorries - New Infrastructure (1)
-| Location | Line | Description | Difficulty |
-|----------|------|-------------|------------|
-| PlaceDegree | 936 | `intDegree_ge_deg_of_valuation_bounds_and_linear_support` | Medium ← NEXT |
+### Content Sorries - New Infrastructure (0)
+*All new infrastructure filled!*
 
 ### Content Sorries - High Level (3)
 | Location | Line | Description | Difficulty |
 |----------|------|-------------|------------|
 | AdelicH1Full | 757 | `globalPlusBoundedSubmodule_full_eq_top_deep_neg_infty` | High |
-| AdelicH1Full | 1328 | `intDegree_ge_deg_of_valuation_bounds_and_linear_support_ratfunc` | Medium (blocked on PlaceDegree) |
+| AdelicH1Full | 1328 | `intDegree_ge_deg_of_valuation_bounds_and_linear_support_ratfunc` | Medium (unblocked!) |
 | AdelicH1Full | 1460 | `globalPlusBoundedSubmodule_full_eq_top_not_effective` | High |
 
 ### Axiom Sorries (6) - Intentional
@@ -63,31 +61,29 @@
 | 306 | Fill `pow_generator_dvd_iff_le_ord` (Nat arithmetic) | ✅ DONE |
 | 307 | Fill `intValuation_eq_exp_neg_ord` | ✅ DONE |
 | 308 | Fill `natDegree_eq_sum_ord_mul_degree` | ✅ DONE |
-| 309 | Fill `intDegree_ge_deg_of_valuation_bounds_and_linear_support` | **NEXT** |
-| 310+ | High-level AdelicH1Full sorries | Blocked |
+| 309 | Fill `intDegree_ge_deg_of_valuation_bounds_and_linear_support` | ✅ DONE |
+| 310 | Fill `intDegree_ge_deg_of_valuation_and_denom_constraint` (AdelicH1Full) | **NEXT** |
+| 311+ | High-level AdelicH1Full sorries | Ready |
 
-### Cycle 308 Summary
+### Cycle 309 Summary
 **Completed**:
-- Filled `natDegree_eq_sum_ord_mul_degree` - key theorem relating natDegree to sum over places
-- Proof uses `Finset.sum_bij'` to establish bijection between:
-  - `T = (normalizedFactors p).toFinset` (monic irreducible factors)
-  - `{v : ord k v p ≠ 0}` (places with nonzero multiplicity)
-- Key lemmas used:
-  - `Finset.sum_multiset_map_count` to convert multiset sum to finset sum
-  - `exists_place_with_generator` for the bijection
-  - `ord_eq_count_normalizedFactors` to connect ord with count
+- Filled `intDegree_ge_deg_of_valuation_bounds_and_linear_support` at PlaceDegree.lean:936
+- Key theorem: For f = num/denom with valuation bounds, `f.intDegree ≥ D.deg`
+- Proof structure:
+  1. Express intDegree = num.natDegree - denom.natDegree
+  2. Use `natDegree_eq_sum_ord_mul_degree` for both num and denom over a common finset S
+  3. S contains D.support plus places where num/denom have nonzero ord
+  4. Key insight: `hdenom_only_neg` implies ord(denom) = 0 for D(v) ≥ 0
+  5. Valuation constraint `exp(-ord(num)) / exp(-ord(denom)) ≤ exp(-D(v))` gives ord(num) - ord(denom) ≥ D(v)
+  6. With deg(v) = 1 for v ∈ D.support, sum bounds yield result
 
-**Unblocked**: `intDegree_ge_deg_of_valuation_bounds_and_linear_support` can now proceed
+**Unblocked**: `intDegree_ge_deg_of_valuation_and_denom_constraint` in AdelicH1Full can now use this directly
 
-### Cycle 309 Target
-**File**: PlaceDegree.lean:936
-**Lemma**: `intDegree_ge_deg_of_valuation_bounds_and_linear_support`
-**Goal**: For f = num/denom with valuation bounds, `f.intDegree ≥ D.deg`
-**Approach**:
-- Use `natDegree_eq_sum_ord_mul_degree` for both num and denom
-- intDegree(f) = natDegree(num) - natDegree(denom)
-- With IsLinearPlaceSupport (deg(v) = 1), simplifies to sum of ord differences
-- Valuation constraints give: ord(num) - ord(denom) ≥ D(v) at each place
+### Cycle 310 Target
+**File**: AdelicH1Full.lean:1328
+**Lemma**: `intDegree_ge_deg_of_valuation_and_denom_constraint`
+**Goal**: Same as above but for RatFunc Fq specifically
+**Approach**: Likely wrapper calling PlaceDegree version with appropriate instantiation
 
 ---
 
@@ -107,4 +103,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 308. See ledger_archive.md for historical cycles.*
+*Updated Cycle 309. See ledger_archive.md for historical cycles.*
