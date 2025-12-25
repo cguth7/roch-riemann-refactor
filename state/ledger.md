@@ -6,12 +6,42 @@ Tactical tracking for Riemann-Roch formalization.
 
 ## Current State
 
-**Build**: ✅ PASSING (2 sorries in AdelicH1Full.lean, 8 edge case sorries in Abstract.lean)
-**Cycle**: 282 (Complete)
+**Build**: ✅ PASSING (1 sorry in PlaceDegree.lean, 2 sorries in AdelicH1Full.lean, 8 edge case sorries in Abstract.lean)
+**Cycle**: 283 (In Progress)
 
 ---
 
-## Cycle 282 Summary: Edge Case Analysis
+## Cycle 283 Summary: Valuation-Degree Infrastructure
+
+**Goal**: Fill the degree-valuation relationship sorry in AdelicH1Full.lean.
+
+**What was done**:
+
+1. **Added new lemmas to PlaceDegree.lean**:
+   - `asIdeal_pow_eq_span_generator_pow`: v.asIdeal^n = span{gen_v^n}
+   - `mem_asIdeal_pow_iff_generator_pow_dvd`: Membership ↔ generator power divides
+   - `natDegree_ge_of_pow_dvd`: If g^n | p (g monic), then p.natDegree ≥ n * g.natDegree
+   - `natDegree_ge_of_intValuation_le`: If val_v(p) ≤ exp(-n), then p.natDegree ≥ n * deg(v)
+   - `degWeighted_ge_deg`: For effective D, degWeighted ≥ D.deg (proved!)
+   - `natDegree_ge_degWeighted_of_valuation_bounds`: Sum version (has 1 sorry for coprimality)
+
+2. **Proof structure established**:
+   - Key: generators at different places are coprime (irreducible, distinct primes)
+   - Product of gen_v^{D(v)} over support divides p
+   - Degree of product = degWeighted k D ≥ D.deg
+   - This gives p.natDegree ≥ D.finite.deg, yielding the contradiction
+
+3. **Remaining work**:
+   - The sorry in `natDegree_ge_degWeighted_of_valuation_bounds` needs:
+     - `IsCoprime` proof for generator powers at different places
+     - `Finset.prod_dvd_of_coprime` application
+   - Once this is filled, AdelicH1Full.lean:999 can be completed
+
+**Key insight**: The valuation-degree relationship reduces to polynomial factorization. When gen_v^n | p for coprime generators, their product divides p, and degree(product) = sum of contributions.
+
+---
+
+## Cycle 282 Summary (Archive)
 
 **Goal**: Fill edge case sorries in Abstract.lean.
 
@@ -27,12 +57,7 @@ Tactical tracking for Riemann-Roch formalization.
    - For D.finite effective, -1 ≤ D.inftyCoeff < 0: NOW PROVED via the new theorems
    - Both h¹(D) = 0 and ℓ(K-D) = 0, so Serre duality holds as 0 = 0
 
-3. **Analyzed remaining edge cases**:
-   - D.finite not effective: Requires more complex analysis (elements of L(K-D) can have poles)
-   - D.inftyCoeff < -1: Strong approximation proof fails at infinity (k₂ has |k₂|_∞ ≤ exp(-1) but we need ≤ exp(D.inftyCoeff) < exp(-1))
-   - deg(D) < -1: Non-vanishing case requiring full residue pairing construction
-
-**Key insight**: For P¹, the main applications use effective divisors with inftyCoeff ≥ 0. The edge cases (non-effective or deeply negative inftyCoeff) are mathematically valid but less common in practice.
+**Key insight**: For P¹, the main applications use effective divisors with inftyCoeff ≥ 0.
 
 ---
 
@@ -65,9 +90,15 @@ theorem serre_duality_p1 (D : ExtendedDivisor (Polynomial Fq))
 
 | Location | Count | Status |
 |----------|-------|--------|
+| PlaceDegree.lean:403 | 1 | `natDegree_ge_degWeighted_of_valuation_bounds` - coprimality proof needed |
 | AdelicH1Full.lean:619 | 1 | `inftyValuationDef k₂ ≤ exp(-1)` - ACCEPTED DEBT |
-| AdelicH1Full.lean:893 | 1 | Polynomial degree-valuation relationship - NEW |
+| AdelicH1Full.lean:999 | 1 | Polynomial degree-valuation relationship - blocked by PlaceDegree sorry |
 | Abstract.lean | 8 | Edge cases in p1ProjectiveAdelicRRData |
+
+**PlaceDegree.lean sorry** (new in Cycle 283):
+- `natDegree_ge_degWeighted_of_valuation_bounds`: Sum version of valuation-degree bound
+- Requires: IsCoprime proof for generators at different places
+- Once filled: AdelicH1Full.lean:999 can be completed using the lemma
 
 **Abstract.lean sorries breakdown** (in p1ProjectiveAdelicRRData instance):
 - `h1_finite` (3 sorries):
@@ -86,31 +117,34 @@ theorem serre_duality_p1 (D : ExtendedDivisor (Polynomial Fq))
 
 ---
 
-## Next Steps: Cycle 283
+## Next Steps: Cycle 284
 
-Options:
-1. **Prove AdelicH1Full.lean:893** - the polynomial degree-valuation relationship
-   - Need: Σ ord_v(p)·deg(v) ≤ p.natDegree for polynomial p
-   - This would complete ℓ(K-D)=0 for deeply negative inftyCoeff case
+Priority:
+1. **Complete PlaceDegree.lean:403** - the coprimality proof
+   - Need: `IsCoprime (generator v) (generator w)` for v ≠ w (different irreducibles are coprime)
+   - Use: `Finset.prod_dvd_of_coprime` to get product divisibility
+   - This unblocks AdelicH1Full.lean:999
 
-2. **Extend strong approximation** - prove H¹(D)=0 for D.inftyCoeff < -1
-   - Requires modifying the k₂ construction to have smaller infinity valuation
-   - Mathematically: use polynomial adjustment at infinity
-
-3. **Prove the accepted sorry** - tackle `inftyValuationDef k₂ ≤ exp(-1)`
-
+Other options:
+2. **Prove the accepted sorry** - tackle `inftyValuationDef k₂ ≤ exp(-1)` at AdelicH1Full.lean:619
+3. **Extend strong approximation** - prove H¹(D)=0 for D.inftyCoeff < -1
 4. **Begin elliptic curve infrastructure** - extend Place type to support higher genus
 
 ---
 
 ## Technical Debt Notes
 
+**PlaceDegree.lean:403** - Coprimality of generators (NEW in Cycle 283)
+- **What to prove**: Product of gen_v^{D(v)} divides p when each gen_v^{D(v)} divides p
+- **Mathematical fact**: Generators at different places are coprime (distinct irreducibles)
+- **Status**: Documented, proof structure established, needs IsCoprime lemma
+
 **AdelicH1Full.lean:619** - Principal parts infinity bound
 - **What to prove**: `FunctionField.inftyValuationDef Fq k₂ ≤ WithZero.exp (-1)`
 - **Mathematical fact**: Principal parts at finite places are proper fractions
 - **Status**: ACCEPTED DEBT from Cycle 280
 
-**AdelicH1Full.lean:893** - Polynomial degree-valuation (NEW)
-- **What to prove**: For polynomial p with val_v(p) ≤ exp(-n), the total zeros (weighted by place degree) is at least n
-- **Mathematical fact**: Σ_{v|p} ord_v(p)·deg(v) = p.natDegree (fundamental theorem of algebra)
-- **Status**: Documented, blocks deep-negative-infty case
+**AdelicH1Full.lean:999** - Polynomial degree-valuation
+- **What to prove**: For polynomial p satisfying valuation bounds from D.finite, p.natDegree ≥ D.finite.deg
+- **Mathematical fact**: Σ_{v|p} ord_v(p)·deg(v) ≤ p.natDegree, with equality for zeros
+- **Status**: Blocked by PlaceDegree.lean:403 sorry

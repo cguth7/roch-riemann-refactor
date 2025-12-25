@@ -4,6 +4,7 @@ import RrLean.RiemannRochV2.SerreDuality.P1Specific.RatFuncPairing
 import RrLean.RiemannRochV2.Definitions.Infrastructure
 import Mathlib.RingTheory.AdjoinRoot
 import Mathlib.RingTheory.Polynomial.Quotient
+import Mathlib.RingTheory.Coprime.Lemmas
 
 /-!
 # Place Degree for Polynomial Rings
@@ -326,6 +327,102 @@ lemma uniformizerQuotient_residue_ne_zero (v : HeightOneSpectrum (Polynomial k))
     Ideal.Quotient.mk v.asIdeal (uniformizerQuotient k v) ≠ 0 := by
   rw [ne_eq, Ideal.Quotient.eq_zero_iff_mem]
   exact uniformizerQuotient_not_mem_asIdeal k v
+
+/-! ## Valuation-Degree Relationship
+
+The key lemmas connecting valuations at places to polynomial degrees.
+For polynomial p over field k:
+- val_v(p) ≤ exp(-n) iff generator_v^n | p
+- If generator_v^n | p, then p.natDegree ≥ n * deg(v)
+-/
+
+/-- The n-th power of v.asIdeal equals span{generator^n}. -/
+lemma asIdeal_pow_eq_span_generator_pow (v : HeightOneSpectrum (Polynomial k)) (n : ℕ) :
+    v.asIdeal ^ n = Ideal.span {generator k v ^ n} := by
+  rw [asIdeal_eq_span_generator k v, Ideal.span_singleton_pow]
+
+/-- Membership in v.asIdeal^n is equivalent to generator^n dividing the element. -/
+lemma mem_asIdeal_pow_iff_generator_pow_dvd (v : HeightOneSpectrum (Polynomial k))
+    (p : Polynomial k) (n : ℕ) :
+    p ∈ v.asIdeal ^ n ↔ generator k v ^ n ∣ p := by
+  rw [asIdeal_pow_eq_span_generator_pow k v n, Ideal.mem_span_singleton]
+
+/-- If g^n divides p (g monic, p nonzero), then p.natDegree ≥ n * g.natDegree. -/
+lemma natDegree_ge_of_pow_dvd {g p : Polynomial k} (hg_monic : g.Monic)
+    (hp_ne : p ≠ 0) (n : ℕ) (hdvd : g ^ n ∣ p) :
+    p.natDegree ≥ n * g.natDegree := by
+  obtain ⟨q, hpq⟩ := hdvd
+  have hq_ne : q ≠ 0 := by
+    intro hq0
+    rw [hq0, mul_zero] at hpq
+    exact hp_ne hpq
+  have hgn_monic : (g ^ n).Monic := hg_monic.pow n
+  have hgn_ne : g ^ n ≠ 0 := hgn_monic.ne_zero
+  calc p.natDegree = (g ^ n * q).natDegree := by rw [hpq]
+    _ = (g ^ n).natDegree + q.natDegree := by
+        rw [natDegree_mul hgn_ne hq_ne]
+    _ ≥ (g ^ n).natDegree := Nat.le_add_right _ _
+    _ = n * g.natDegree := by rw [natDegree_pow]
+
+/-- Key lemma: If val_v(p) ≤ exp(-n), then p.natDegree ≥ n * deg(v).
+
+This connects the v-adic valuation to polynomial degree bounds. -/
+lemma natDegree_ge_of_intValuation_le (v : HeightOneSpectrum (Polynomial k))
+    (p : Polynomial k) (hp_ne : p ≠ 0) (n : ℕ)
+    (hval : v.intValuation p ≤ WithZero.exp (-(n : ℤ))) :
+    p.natDegree ≥ n * degree k v := by
+  -- Valuation bound implies membership in ideal power
+  rw [v.intValuation_le_pow_iff_mem] at hval
+  -- Membership in ideal power implies generator^n divides p
+  rw [mem_asIdeal_pow_iff_generator_pow_dvd] at hval
+  -- Apply the degree bound lemma
+  exact natDegree_ge_of_pow_dvd k (generator_monic k v) hp_ne n hval
+
+/-- For effective divisors, degWeighted ≥ deg since all place degrees are ≥ 1. -/
+lemma degWeighted_ge_deg (D : DivisorV2 (Polynomial k)) (hD_eff : D.Effective) :
+    degWeighted k D ≥ D.deg := by
+  unfold degWeighted DivisorV2.deg
+  apply Finsupp.sum_le_sum
+  intro v _
+  have hdeg_pos : degree k v ≥ 1 := degree_pos k v
+  have hDv : D v ≥ 0 := hD_eff v
+  have hdeg_ge_one : (degree k v : ℤ) ≥ 1 := by simp only [ge_iff_le]; omega
+  calc D v * (degree k v : ℤ)
+      ≥ D v * 1 := by
+        apply mul_le_mul_of_nonneg_left hdeg_ge_one hDv
+    _ = D v := by ring
+
+/-- Sum version: If val_v(p) ≤ exp(-D(v)) for all v in support of D,
+then p.natDegree ≥ D.degWeighted (sum of D(v) * deg(v)).
+
+This is the key lemma for proving L(K-D) vanishing.
+
+Proof sketch: Each valuation bound val_v(p) ≤ exp(-D(v)) means gen_v^{D(v)} | p.
+Since generators at different places are coprime, their product divides p.
+The degree of this product equals degWeighted k D, giving the bound. -/
+lemma natDegree_ge_degWeighted_of_valuation_bounds (D : DivisorV2 (Polynomial k))
+    (hD_eff : D.Effective) (p : Polynomial k) (hp_ne : p ≠ 0)
+    (hval : ∀ v ∈ D.support, v.intValuation p ≤ WithZero.exp (-(D v : ℤ))) :
+    (p.natDegree : ℤ) ≥ degWeighted k D := by
+  -- First, if D.support is empty, degWeighted = 0 and the bound is trivial
+  by_cases hsupp : D.support = ∅
+  · rw [Finsupp.support_eq_empty] at hsupp
+    simp only [hsupp, degWeighted, Finsupp.sum_zero_index]
+    exact Nat.cast_nonneg _
+  -- For nonempty support: each gen_v^{D(v)} divides p (from valuation bound)
+  have hdvd_each : ∀ v ∈ D.support, generator k v ^ (D v).toNat ∣ p := by
+    intro v hv
+    have hDv_pos : D v ≥ 0 := hD_eff v
+    have hval_v := hval v hv
+    -- Convert: D v = (D v).toNat as integers when D v ≥ 0
+    have hDv_eq : (D v : ℤ) = ((D v).toNat : ℤ) := (Int.toNat_of_nonneg hDv_pos).symm
+    rw [hDv_eq] at hval_v
+    rw [v.intValuation_le_pow_iff_mem, mem_asIdeal_pow_iff_generator_pow_dvd] at hval_v
+    exact hval_v
+  -- Generators at different places are coprime, so product divides p
+  -- Product has degree = degWeighted k D
+  -- Full proof requires IsCoprime infrastructure - accept as sorry for now
+  sorry
 
 end PlaceDegree
 
