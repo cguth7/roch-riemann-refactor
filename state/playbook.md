@@ -1,6 +1,6 @@
 # Playbook
 
-Strategic guide for formalizing Riemann-Roch. Updated Cycle 287.
+Strategic guide for formalizing Riemann-Roch. Updated Cycle 288.
 
 ---
 
@@ -13,7 +13,8 @@ state/
 ├── ledger_archive.md    # Historical cycles 1-240
 ├── PROOF_CHAIN.md       # Import chain from theorems to Mathlib, file status
 ├── REFACTOR_PLAN.md     # Roadmap for generalizing P¹ → arbitrary curves
-└── INVENTORY_REPORT.md  # Deep scan of all files (from Cycle 241 refactor)
+├── INVENTORY_REPORT.md  # Deep scan of all files (from Cycle 241 refactor)
+└── gemini_deepthink.md  # External architectural analysis (Gemini)
 ```
 
 | File | When to read | When to update |
@@ -33,17 +34,14 @@ Formalize **Riemann-Roch** for **algebraically closed curves** in Lean 4:
 ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
 ```
 
-### Current Status (Cycle 287)
+### Current Status (Cycle 288)
 
 | Component | Status |
 |-----------|--------|
 | P¹ Riemann-Roch formula | ✅ Complete |
 | P¹ Serre duality (effective D) | ✅ Complete |
 | P¹ edge cases (non-effective) | ✅ Works for alg. closed fields |
-| Elliptic curves (genus 1) | ⏳ Next phase |
-
-**Key insight (Cycle 287)**: For algebraically closed fields, all places have degree 1,
-so `IsLinearPlaceSupport` is automatic and all theorems apply.
+| Elliptic curves (genus 1) | ⏳ Ready to begin (axiom approach) |
 
 ---
 
@@ -62,9 +60,81 @@ theorem ell_ratfunc_projective_eq_deg_plus_one (D : DivisorV2 (Polynomial Fq))
 
 ---
 
+## Architectural Lessons (from Gemini Analysis)
+
+### 1. The Generator Trap
+
+**Problem**: P¹ works because `Polynomial Fq` is a PID (every prime ideal is principal).
+General curves have Dedekind but NOT PID coordinate rings.
+
+**Symptom**: Temptation to use `MonicIrreduciblePoly` as place generators.
+
+**Rule**: Keep infrastructure abstract. Use `uniformizerAt` (local uniformizers always exist).
+Concrete generators belong in instance files only.
+
+```lean
+-- WRONG (in general infrastructure):
+structure Place where
+  generator : Polynomial Fq  -- Assumes PID!
+
+-- RIGHT:
+class HasUniformizer (v : HeightOneSpectrum R) where
+  π : K
+  val_eq_one : v.valuation K π = 1
+```
+
+### 2. The Dimension Formula Trap
+
+**Problem**: `ℓ(D) = deg(D) + 1` is genus-0 ONLY.
+
+| Curve | Formula |
+|-------|---------|
+| P¹ (g=0) | ℓ(D) = deg(D) + 1 |
+| Elliptic (g=1) | ℓ(D) = deg(D) for deg > 0 |
+| General | ℓ(D) - ℓ(K-D) = deg(D) + 1 - g |
+
+**Rule**: Any file proving `ℓ(D) = deg(D) + 1` is P¹-specific, not general.
+
+### 3. The Residue/Differential Trap
+
+**Problem**: Residues are defined on *differentials*, not functions.
+For P¹, dt is a global differential, so we can identify functions with differentials.
+General curves have no global differential (canonical bundle is non-trivial for g ≠ 1).
+
+**Rule**: For g > 0, use Weil Differentials (dual of adeles mod K), not function residues.
+
+```lean
+-- For P¹: Functions work because dt trivializes Ω
+def residuePairing (f : RatFunc Fq) (a : Adele) : Fq := ...
+
+-- For general curves: Need proper differential type
+structure WeilDifferential (K : Type*) where
+  -- Linear functional on adeles vanishing on K
+  toFun : Adele K → k
+  vanishes_on_K : ∀ f : K, toFun (diagonal f) = 0
+```
+
+### 4. The Axiom Strategy
+
+**When to axiom**: "Trivial but tedious" gaps orthogonal to your goal.
+
+**Example**: `IsDedekindDomain W.CoordinateRing` for smooth Weierstrass curves.
+- Mathematically: Textbook fact (Hartshorne II.6)
+- Formalization: Would require proving smoothness implies regular in codim 1
+- Decision: Axiom it. RR conditional on this is still a valid achievement.
+
+```lean
+/-- Smooth curves have Dedekind coordinate rings. Standard AG fact. -/
+instance [W.Nonsingular] : IsDedekindDomain W.CoordinateRing := sorry
+```
+
+**When NOT to axiom**: The actual RR content you're trying to prove.
+
+---
+
 ## Heuristics
 
-### Weighted vs Unweighted Degree (Cycle 287 Lesson)
+### Weighted vs Unweighted Degree (Cycle 287)
 - `DivisorV2.deg` = Σ D(v) (unweighted, sum of coefficients)
 - `degWeighted` = Σ D(v) · deg(v) (weighted by place degree)
 - For algebraically closed fields: these are equal (all deg(v) = 1)
@@ -97,6 +167,14 @@ Finset.prod_dvd_of_coprime      -- product divides if pairwise coprime
 - "Fill all sorries in this file"
 - "Implement elliptic curves completely"
 
+### Sorry Classification
+
+| Type | Example | Action |
+|------|---------|--------|
+| **Content** | Strong approximation proof | Must fill |
+| **Infrastructure** | `IsDedekindDomain W.CoordinateRing` | Can axiom |
+| **Edge case** | deg(D) < -1 with non-effective | Low priority |
+
 ---
 
 ## Verification Commands
@@ -107,9 +185,23 @@ lake build 2>&1 | grep -E "sorry|^error:"
 
 # Full build
 lake build
+
+# Check specific file
+lake build RrLean.RiemannRochV2.SerreDuality.General.AdelicH1Full
 ```
 
 ---
 
-*Updated Cycle 287: Discovered weighted/unweighted degree issue, added IsLinearPlaceSupport fix,
-prepared for elliptic curve phase.*
+## Key Files for New Contributors
+
+| Goal | Start Here |
+|------|------------|
+| Understand P¹ proof | `P1Instance/P1VanishingLKD.lean` |
+| Understand Serre duality | `SerreDuality/General/Abstract.lean` |
+| See sorry locations | `SerreDuality/General/AdelicH1Full.lean` |
+| Understand adelic H¹ | `Adelic/AdelicH1v2.lean` |
+| See what's proved | `state/PROOF_CHAIN.md` |
+
+---
+
+*Updated Cycle 288: Added Gemini architectural lessons, axiom strategy, sorry classification.*
