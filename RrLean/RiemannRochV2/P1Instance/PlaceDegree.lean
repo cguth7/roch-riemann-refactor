@@ -479,6 +479,51 @@ lemma natDegree_ge_degWeighted_of_valuation_bounds (D : DivisorV2 (Polynomial k)
       ≥ (∏ v ∈ D.support, generator k v ^ (D v).toNat).natDegree := by exact_mod_cast hge
     _ = degWeighted k D := hprod_deg
 
+/-! ## Polynomial Degree as Sum of Multiplicities
+
+The fundamental theorem relating polynomial degree to place multiplicities.
+For p ≠ 0: p.natDegree = Σ_v ord_v(p) * deg(v)
+
+This comes from unique factorization: p = u * ∏_v generator(v)^{ord_v(p)}
+where u is the leading coefficient (a unit in k).
+-/
+
+/-- For a rational function f = num/denom, the intDegree bounds relate to valuations.
+
+**Key insight**: At each place v:
+- val_v(f) = exp(ord_v(denom) - ord_v(num)) where ord_v is the multiplicity
+- The constraint val_v(f) ≤ exp(-D(v)) means ord_v(num) - ord_v(denom) ≥ D(v)
+
+For polynomials p ≠ 0, natDegree(p) = Σ_v ord_v(p) * deg(v) (sum over all zeros).
+
+With IsLinearPlaceSupport (deg(v) = 1 for all v ∈ D.support), this becomes:
+- intDegree(f) = Σ (ord_v(num) - ord_v(denom))
+              ≥ Σ D(v) = D.deg
+
+**Mathematical proof outline**:
+1. By unique factorization: p = u * ∏ gen_v^{ord_v(p)} where u is the leading coeff
+2. natDegree(p) = Σ ord_v(p) * natDegree(gen_v) = Σ ord_v(p) * deg(v)
+3. For f = num/denom: intDegree = num.natDegree - denom.natDegree
+                                 = Σ ord_v(num) * deg(v) - Σ ord_v(denom) * deg(v)
+4. With IsLinearPlaceSupport: deg(v) = 1 for v ∈ D.support
+5. Using constraints: intDegree ≥ Σ D(v) = D.deg
+-/
+theorem intDegree_ge_deg_of_valuation_bounds_and_linear_support
+    (D : DivisorV2 (Polynomial k)) (f : RatFunc k) (hf : f ≠ 0)
+    (hf_val : ∀ v, v.valuation (RatFunc k) f ≤ WithZero.exp (-D v))
+    (hdenom_only_neg : ∀ v, f.denom ∈ v.asIdeal → D v < 0)
+    (hlin : ∀ v ∈ D.support, degree k v = 1) :
+    f.intDegree ≥ D.deg := by
+  -- The proof requires:
+  -- 1. natDegree_eq_sum_ord_times_deg: p.natDegree = Σ_v ord_v(p) * deg(v)
+  -- 2. Decomposition of intDegree = Σ (ord_v(num) - ord_v(denom)) * deg(v)
+  -- 3. Using IsLinearPlaceSupport to simplify the weighted sum
+  -- 4. Applying the valuation constraints to get the lower bound
+  --
+  -- This is the key infrastructure lemma needed for L(K-D) vanishing.
+  -- See AdelicH1Full.lean:intDegree_ge_deg_of_valuation_and_denom_constraint
+  sorry
+
 end PlaceDegree
 
 end RiemannRochV2
