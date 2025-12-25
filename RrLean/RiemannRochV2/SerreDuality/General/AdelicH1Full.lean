@@ -1122,6 +1122,200 @@ theorem ell_proj_ext_canonical_sub_eq_zero_deep_neg_infty
   rw [RRSpace_proj_ext_canonical_sub_eq_bot_deep_neg_infty Fq D hDfin h_infty hdeg]
   exact finrank_bot Fq (RatFunc Fq)
 
+/-! ## Non-Effective Divisor Case
+
+When D.finite is NOT effective (has negative coefficients at some places), we need
+different arguments. The key insights:
+
+1. For H¹(D) = 0: Strong approximation still works because:
+   - The |k₂|_∞ bound is max(exp(-1), exp(-D.finite⁻.deg)) ≤ exp(-1) when D.finite⁻.deg ≥ 1
+   - For deg(D) ≥ -1: either D.inftyCoeff ≥ -1 (standard case) or D.finite.deg > 0 (deep neg case)
+
+2. For L(K-D) = {0}: The zero requirements from (K-D).finite⁻ force high numerator degree,
+   while pole permissions from (K-D).finite⁺ limit denominator degree. Combined with
+   the infinity constraint and deg(D) ≥ -1, we get a contradiction for any f ≠ 0.
+
+**Key observation**: For D.finite not effective with deg(D) ≥ -1, we can show
+D.inftyCoeff ≥ -1 OR D.finite.deg > 0. In either case, the existing proof techniques apply.
+-/
+
+/-- For non-effective D.finite with deg(D) ≥ -1, D.inftyCoeff ≥ -1 when D.finite.deg ≤ 0. -/
+lemma inftyCoeff_ge_neg_one_of_deg_ge_neg_one_and_finite_deg_nonpos
+    (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1) (hfin_deg : D.finite.deg ≤ 0) :
+    D.inftyCoeff ≥ -1 := by
+  have : D.finite.deg + D.inftyCoeff ≥ -1 := hdeg
+  omega
+
+/-- For non-effective D.finite with deg(D) ≥ -1 and D.inftyCoeff < -1, D.finite.deg > 0. -/
+lemma finite_deg_pos_of_deg_ge_neg_one_and_inftyCoeff_lt_neg_one
+    (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1) (h_infty : D.inftyCoeff < -1) :
+    D.finite.deg > 0 := by
+  have : D.finite.deg + D.inftyCoeff ≥ -1 := hdeg
+  omega
+
+/-- L(K-D) = {0} when deg(D) ≥ -1, regardless of whether D.finite is effective.
+
+The proof uses degree counting:
+- Zero requirements from places where D.finite(v) > 0 contribute D.finite⁺.deg to numerator
+- Pole permissions from places where D.finite(v) < 0 allow D.finite⁻.deg in denominator
+- So deg(f) ≥ D.finite⁺.deg - D.finite⁻.deg = D.finite.deg
+- But deg(f) ≤ -2 - D.inftyCoeff from the infinity constraint
+- From deg(D) ≥ -1: D.finite.deg > -2 - D.inftyCoeff
+- Contradiction! So L(K-D) = {0}
+-/
+theorem RRSpace_proj_ext_canonical_sub_eq_bot_of_deg_ge_neg_one
+    (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1) :
+    RRSpace_proj_ext Fq (canonicalExtended Fq - D) = ⊥ := by
+  ext f
+  simp only [Submodule.mem_bot]
+  constructor
+  · intro hf
+    rcases hf with rfl | ⟨hf_val, hf_deg⟩
+    · rfl
+    · by_contra hf_ne
+      -- The infinity constraint: deg(f) ≤ -2 - D.inftyCoeff
+      have h_KD_infty : (canonicalExtended Fq - D).inftyCoeff = -2 - D.inftyCoeff := rfl
+      -- From deg(D) ≥ -1: D.finite.deg + D.inftyCoeff ≥ -1
+      -- So D.finite.deg ≥ -1 - D.inftyCoeff > -2 - D.inftyCoeff
+      have h_deg_gap : D.finite.deg > -2 - D.inftyCoeff := by
+        have h : D.finite.deg + D.inftyCoeff ≥ -1 := hdeg
+        omega
+      -- For non-zero f, deg(f) = num.natDegree - denom.natDegree
+      -- The valuation constraints determine lower/upper bounds
+      -- At places where D.finite(v) > 0: val ≤ exp(-D.finite(v)), so zeros needed
+      -- At places where D.finite(v) < 0: val ≤ exp(-D.finite(v)) = exp(|D.finite(v)|), poles allowed
+      -- At places where D.finite(v) = 0: val ≤ 1, integral
+      -- The zeros force: num has total degree ≥ D.finite⁺.deg = Σ_{D.finite(v)>0} D.finite(v)·deg(v)
+      -- The poles allow: denom has total degree ≤ D.finite⁻.deg = Σ_{D.finite(v)<0} |D.finite(v)|·deg(v)
+      -- So deg(f) = deg(num) - deg(denom) ≥ D.finite⁺.deg - D.finite⁻.deg = D.finite.deg
+      -- But deg(f) ≤ -2 - D.inftyCoeff < D.finite.deg, contradiction!
+      --
+      -- To formalize this, we need the relationship between valuations and degrees.
+      -- For now, we use that the constraints force a degree contradiction.
+      -- The proof mirrors RRSpace_proj_ext_canonical_sub_eq_bot but handles all cases.
+      --
+      -- Simplified argument: deg(f) = f.num.natDegree - f.denom.natDegree
+      have hdeg_f : (f.num.natDegree : ℤ) - f.denom.natDegree ≤ -2 - D.inftyCoeff := by
+        rw [h_KD_infty] at hf_deg
+        have hf_deg' : (f.num.natDegree : ℤ) ≤ (f.denom.natDegree : ℤ) + (-2 - D.inftyCoeff) := hf_deg
+        linarith
+      -- We need: (f.num.natDegree : ℤ) - f.denom.natDegree ≥ D.finite.deg
+      -- This would contradict hdeg_f and h_deg_gap
+      -- The valuation constraints from hf_val give this bound:
+      -- - For v with D.finite(v) > 0: f must have zeros of multiplicity ≥ D.finite(v)
+      --   This contributes D.finite(v) · deg(v) to num degree
+      -- - For v with D.finite(v) < 0: f can have poles of multiplicity ≤ |D.finite(v)|
+      --   This contributes |D.finite(v)| · deg(v) to denom degree
+      -- Sum: deg(num) - deg(denom) ≥ D.finite⁺.deg - D.finite⁻.deg = D.finite.deg
+      -- We defer the full formalization to a future cycle
+      sorry
+  · intro hf; rw [hf]; exact Or.inl rfl
+
+/-- ℓ(K-D) = 0 when deg(D) ≥ -1, regardless of effectiveness. -/
+theorem ell_proj_ext_canonical_sub_eq_zero_of_deg_ge_neg_one
+    (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1) :
+    ell_proj_ext Fq (canonicalExtended Fq - D) = 0 := by
+  unfold ell_proj_ext
+  rw [RRSpace_proj_ext_canonical_sub_eq_bot_of_deg_ge_neg_one Fq D hdeg]
+  exact finrank_bot Fq (RatFunc Fq)
+
+/-- Strong approximation for full adeles: non-effective finite part case.
+
+When D.finite is not effective but deg(D) ≥ -1, strong approximation still works because:
+1. The strong_approximation_ratfunc works for any D (no effectiveness assumption)
+2. The |k₂|_∞ bound is still exp(-1) since D.finite⁻.deg ≥ 1 for non-effective D
+3. Either D.inftyCoeff ≥ -1 (covered by 2) or D.finite.deg > 0 (deep neg case)
+-/
+theorem globalPlusBoundedSubmodule_full_eq_top_not_effective
+    (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1)
+    (h_not_eff : ¬D.finite.Effective) :
+    globalPlusBoundedSubmodule_full Fq D = ⊤ := by
+  -- Case split on D.inftyCoeff
+  by_cases h_infty : D.inftyCoeff ≥ -1
+  · -- Case: D.inftyCoeff ≥ -1
+    -- The proof follows the effective case but we need different argument for k₂ bound
+    -- For non-effective D.finite, the polynomial part of k₂ has |·|_∞ ≤ 1
+    -- and principal parts have |·|_∞ ≤ exp(-1)
+    -- Combined: |k₂|_∞ ≤ exp(-1) ≤ exp(D.inftyCoeff)
+    rw [eq_top_iff]
+    intro a _
+    obtain ⟨k₁, hk₁⟩ := exists_local_approximant_with_bound_infty Fq a.2 D.inftyCoeff
+    let b : FiniteAdeleRing (Polynomial Fq) (RatFunc Fq) :=
+      a.1 - AdelicH1v2.diagonalK (Polynomial Fq) (RatFunc Fq) k₁
+    obtain ⟨k₂, hk₂⟩ := strong_approximation_ratfunc b D.finite
+    let k := k₁ + k₂
+    unfold globalPlusBoundedSubmodule_full
+    rw [Submodule.add_eq_sup, Submodule.mem_sup]
+    use fqFullDiagonalEmbedding Fq k
+    constructor
+    · exact ⟨k, rfl⟩
+    use a - fqFullDiagonalEmbedding Fq k
+    constructor
+    · constructor
+      · intro v
+        have heq : (a - fqFullDiagonalEmbedding Fq k).1 =
+            b - AdelicH1v2.diagonalK (Polynomial Fq) (RatFunc Fq) k₂ := by
+          simp only [k, b, map_add, fqFullDiagonalEmbedding_fst,
+            FullAdeleRing.fst_sub, FullAdeleRing.fst_add, AdelicH1v2.diagonalK, sub_sub]
+        rw [heq]
+        exact hk₂ v
+      · show Valued.v (a - fqFullDiagonalEmbedding Fq k).2 ≤ WithZero.exp D.inftyCoeff
+        have heq : (a - fqFullDiagonalEmbedding Fq k).2 =
+            (a.2 - inftyRingHom Fq k₁) - inftyRingHom Fq k₂ := by
+          simp only [k, map_add, fqFullDiagonalEmbedding_snd,
+            FullAdeleRing.snd_sub, FullAdeleRing.snd_add, sub_sub]
+        rw [heq]
+        calc Valued.v ((a.2 - inftyRingHom Fq k₁) - inftyRingHom Fq k₂)
+            ≤ max (Valued.v (a.2 - inftyRingHom Fq k₁)) (Valued.v (inftyRingHom Fq k₂)) :=
+              Valuation.map_sub _ _ _
+          _ ≤ max (WithZero.exp D.inftyCoeff) (Valued.v (inftyRingHom Fq k₂)) :=
+              max_le_max_right _ hk₁
+          _ ≤ WithZero.exp D.inftyCoeff := ?_
+        -- Need: max(exp(D.inftyCoeff), |k₂|_∞) ≤ exp(D.inftyCoeff)
+        -- This requires |k₂|_∞ ≤ exp(D.inftyCoeff)
+        -- For non-effective D.finite, k₂ is built from principal parts (≤ exp(-1))
+        -- plus polynomial corrections for zeros (|·|_∞ ≤ 1)
+        -- Combined: |k₂|_∞ ≤ exp(-1) ≤ exp(D.inftyCoeff) since D.inftyCoeff ≥ -1
+        sorry
+    · simp only [add_sub_cancel]
+  · -- Case: D.inftyCoeff < -1
+    -- Then D.finite.deg > 0 by degree constraint
+    push_neg at h_infty
+    have h_fin_pos : D.finite.deg > 0 :=
+      finite_deg_pos_of_deg_ge_neg_one_and_inftyCoeff_lt_neg_one Fq D hdeg h_infty
+    -- Use the deep negative approach with slack from D.finite.deg > 0
+    -- The slack from positive coefficients in D.finite absorbs both:
+    -- - The tight infinity constraint
+    -- - The zero requirements at places with D.finite(v) < 0
+    sorry
+
+/-- H¹(D) is a subsingleton when D.finite is not effective but deg(D) ≥ -1. -/
+theorem SpaceModule_full_subsingleton_not_effective
+    (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1)
+    (h_not_eff : ¬D.finite.Effective) :
+    Subsingleton (SpaceModule_full Fq D) := by
+  rw [Submodule.Quotient.subsingleton_iff]
+  exact globalPlusBoundedSubmodule_full_eq_top_not_effective Fq D hdeg h_not_eff
+
+/-- H¹(D) is finite-dimensional when D.finite is not effective but deg(D) ≥ -1. -/
+theorem SpaceModule_full_finite_not_effective
+    (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1)
+    (h_not_eff : ¬D.finite.Effective) :
+    Module.Finite Fq (SpaceModule_full Fq D) := by
+  haveI : Subsingleton (SpaceModule_full Fq D) :=
+    SpaceModule_full_subsingleton_not_effective Fq D hdeg h_not_eff
+  infer_instance
+
+/-- h¹(D) = 0 when D.finite is not effective but deg(D) ≥ -1. -/
+theorem h1_finrank_full_eq_zero_not_effective
+    (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1)
+    (h_not_eff : ¬D.finite.Effective) :
+    h1_finrank_full Fq D = 0 := by
+  unfold h1_finrank_full
+  haveI : Subsingleton (SpaceModule_full Fq D) :=
+    SpaceModule_full_subsingleton_not_effective Fq D hdeg h_not_eff
+  exact Module.finrank_zero_of_subsingleton
+
 /-- Serre duality for P¹: h¹(D) = ℓ(K-D).
 
 For P¹, both sides are 0 when D is effective (finite part effective, inftyCoeff ≥ 0).

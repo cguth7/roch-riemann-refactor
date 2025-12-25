@@ -6,8 +6,40 @@ Tactical tracking for Riemann-Roch formalization.
 
 ## Current State
 
-**Build**: ✅ PASSING (2 sorries in AdelicH1Full.lean, 5 edge case sorries in Abstract.lean)
-**Cycle**: 285 (Complete)
+**Build**: ✅ PASSING (5 sorries in AdelicH1Full.lean, 2 edge case sorries in Abstract.lean)
+**Cycle**: 286 (Complete)
+
+---
+
+## Cycle 286 Summary: Handle Non-Effective Divisors
+
+**Goal**: Fill 3 sorries in Abstract.lean for the D.finite not effective case.
+
+**What was done**:
+
+1. **Added new theorems to AdelicH1Full.lean for non-effective D.finite**:
+   - `inftyCoeff_ge_neg_one_of_deg_ge_neg_one_and_finite_deg_nonpos`: Helper lemma for degree constraints
+   - `finite_deg_pos_of_deg_ge_neg_one_and_inftyCoeff_lt_neg_one`: Helper lemma for slack argument
+   - `RRSpace_proj_ext_canonical_sub_eq_bot_of_deg_ge_neg_one`: L(K-D) = {0} for deg(D) ≥ -1 (any D)
+   - `ell_proj_ext_canonical_sub_eq_zero_of_deg_ge_neg_one`: ℓ(K-D) = 0 for deg(D) ≥ -1
+   - `globalPlusBoundedSubmodule_full_eq_top_not_effective`: Strong approx for non-effective D.finite
+   - `SpaceModule_full_subsingleton_not_effective`: H¹(D) is Subsingleton for non-effective case
+   - `SpaceModule_full_finite_not_effective`: H¹(D) is finite-dimensional for non-effective case
+   - `h1_finrank_full_eq_zero_not_effective`: h¹(D) = 0 for non-effective D.finite with deg(D) ≥ -1
+
+2. **Filled 3 sorries in Abstract.lean**:
+   - `h1_finite` for D.finite not effective → uses `SpaceModule_full_finite_not_effective`
+   - `h1_vanishing` for D.finite not effective → uses `h1_finrank_full_eq_zero_not_effective`
+   - `serre_duality` for D.finite not effective → uses both h¹=0 and ℓ(K-D)=0
+
+**Key insight**: For non-effective D.finite with deg(D) ≥ -1:
+- The degree constraint ensures D.inftyCoeff ≥ -1 OR D.finite.deg > 0
+- In both cases, strong approximation works and H¹(D) = 0
+- For L(K-D): zero requirements force high numerator degree while pole permissions limit denominator degree, combined with infinity constraint gives L(K-D) = {0}
+
+**Sorries added**: 3 new sorries in the non-effective case theorems (deferred degree-valuation formalization)
+
+**Sorries eliminated**: 3 (Abstract.lean D.finite not effective cases)
 
 ---
 
@@ -120,27 +152,27 @@ theorem h1_finrank_full_eq_zero_deep_neg_infty (D : ExtendedDivisor (Polynomial 
 | Location | Count | Status |
 |----------|-------|--------|
 | AdelicH1Full.lean:619 | 1 | `inftyValuationDef k₂ ≤ exp(-1)` - ACCEPTED DEBT |
-| AdelicH1Full.lean:763 | 1 | Deep negative strong approximation - NEW (Cycle 285) |
-| Abstract.lean | 5 | Edge cases in p1ProjectiveAdelicRRData |
+| AdelicH1Full.lean:763 | 1 | Deep negative strong approximation - Cycle 285 |
+| AdelicH1Full.lean:1166 | 1 | L(K-D) = {0} degree-valuation proof - NEW (Cycle 286) |
+| AdelicH1Full.lean:1229 | 2 | Non-effective strong approximation (2 cases) - NEW (Cycle 286) |
+| Abstract.lean | 2 | Edge cases in p1ProjectiveAdelicRRData |
 
 **Abstract.lean sorries breakdown** (in p1ProjectiveAdelicRRData instance):
-- `h1_finite` (2 sorries):
-  - D.finite not effective
+- `h1_finite` (1 sorry):
   - deg(D) < -1 (requires Serre duality isomorphism)
-- `h1_vanishing` (1 sorry):
-  - D.finite not effective
-- `serre_duality` (2 sorries):
-  - D.finite not effective
+- `serre_duality` (1 sorry):
   - deg(D) < -1 (requires full residue pairing)
 
 **Note**: Template code at lines 200-203 has 3 sorries but is inside a docstring (not active code).
 
 ---
 
-## Next Steps: Cycle 286
+## Next Steps: Cycle 287
 
 Options:
-1. **Handle non-effective divisors** - fill 3 sorries for D.finite not effective case (Abstract.lean:292, 307, 336)
+1. **Prove the new non-effective sorries** - fill the 3 sorries added in Cycle 286:
+   - `RRSpace_proj_ext_canonical_sub_eq_bot_of_deg_ge_neg_one` (degree-valuation relationship)
+   - `globalPlusBoundedSubmodule_full_eq_top_not_effective` (|k₂|_∞ bound and deep neg case)
 2. **Prove the deep negative sorry** - fill `globalPlusBoundedSubmodule_full_eq_top_deep_neg_infty` by showing K_S dense in K_∞
 3. **Prove the accepted sorry** - tackle `inftyValuationDef k₂ ≤ exp(-1)` at AdelicH1Full.lean:619
 4. **Begin elliptic curve infrastructure** - extend Place type to support higher genus
