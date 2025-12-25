@@ -80,6 +80,21 @@ instance instAddCommGroup : AddCommGroup (FullAdeleRing R K K_infty) :=
 instance instRing : Ring (FullAdeleRing R K K_infty) :=
   Prod.instRing
 
+-- Simp lemmas for FullAdeleRing projections
+-- These are needed because FullAdeleRing is a def, not an abbrev,
+-- so Prod.fst_sub etc. don't apply directly
+@[simp] lemma FullAdeleRing.fst_sub (a b : FullAdeleRing R K K_infty) :
+    (a - b).1 = a.1 - b.1 := rfl
+
+@[simp] lemma FullAdeleRing.snd_sub (a b : FullAdeleRing R K K_infty) :
+    (a - b).2 = a.2 - b.2 := rfl
+
+@[simp] lemma FullAdeleRing.fst_add (a b : FullAdeleRing R K K_infty) :
+    (a + b).1 = a.1 + b.1 := rfl
+
+@[simp] lemma FullAdeleRing.snd_add (a b : FullAdeleRing R K K_infty) :
+    (a + b).2 = a.2 + b.2 := rfl
+
 variable [TopologicalSpace K_infty]
 
 instance instTopologicalSpace :

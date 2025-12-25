@@ -651,7 +651,8 @@ theorem globalPlusBoundedSubmodule_full_eq_top_of_deg_ge_neg_one
       -- The finite part: (a - diag(k)).1 = a.1 - diag(k₁ + k₂).1 = a.1 - diag(k₁) - diag(k₂) = b - diag(k₂)
       have heq : (a - fqFullDiagonalEmbedding Fq k).1 =
           b - AdelicH1v2.diagonalK (Polynomial Fq) (RatFunc Fq) k₂ := by
-        simp only [k, b, fqFullDiagonalEmbedding_fst, map_add, map_sub, sub_sub]
+        simp only [k, b, map_add, fqFullDiagonalEmbedding_fst,
+          FullAdeleRing.fst_sub, FullAdeleRing.fst_add, AdelicH1v2.diagonalK, sub_sub]
       rw [heq]
       exact hk₂ v
     · -- Infinity: |a.2 - k|_∞ ≤ exp(D.inftyCoeff)
@@ -659,7 +660,8 @@ theorem globalPlusBoundedSubmodule_full_eq_top_of_deg_ge_neg_one
       -- (a - diag(k)).2 = a.2 - (k₁ + k₂) = (a.2 - k₁) - k₂
       have heq : (a - fqFullDiagonalEmbedding Fq k).2 =
           (a.2 - inftyRingHom Fq k₁) - inftyRingHom Fq k₂ := by
-        simp only [k, fqFullDiagonalEmbedding_snd, map_add, map_sub, sub_sub]
+        simp only [k, map_add, fqFullDiagonalEmbedding_snd,
+          FullAdeleRing.snd_sub, FullAdeleRing.snd_add, sub_sub]
       rw [heq]
       -- Ultrametric: |x - y| ≤ max(|x|, |y|)
       calc Valued.v ((a.2 - inftyRingHom Fq k₁) - inftyRingHom Fq k₂)
