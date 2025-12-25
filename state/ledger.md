@@ -5,19 +5,18 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 307
-**Total Sorries**: 11 (2 new infrastructure + 3 high-level + 6 axioms)
+**Cycle**: 308
+**Total Sorries**: 10 (1 new infrastructure + 3 high-level + 6 axioms)
 **Elliptic Axioms**: 8
 
 ---
 
 ## Sorry Classification
 
-### Content Sorries - New Infrastructure (2)
+### Content Sorries - New Infrastructure (1)
 | Location | Line | Description | Difficulty |
 |----------|------|-------------|------------|
-| PlaceDegree | 802 | `natDegree_eq_sum_ord_mul_degree` | Medium (UFD) ← NEXT |
-| PlaceDegree | 832 | `intDegree_ge_deg_of_valuation_bounds_and_linear_support` | Blocked on above |
+| PlaceDegree | 936 | `intDegree_ge_deg_of_valuation_bounds_and_linear_support` | Medium ← NEXT |
 
 ### Content Sorries - High Level (3)
 | Location | Line | Description | Difficulty |
@@ -63,29 +62,32 @@
 | 305 | Add UFD infrastructure + ord lemmas | ✅ DONE |
 | 306 | Fill `pow_generator_dvd_iff_le_ord` (Nat arithmetic) | ✅ DONE |
 | 307 | Fill `intValuation_eq_exp_neg_ord` | ✅ DONE |
-| 308 | Fill `natDegree_eq_sum_ord_mul_degree` | **NEXT** (Medium - UFD) |
-| 309+ | High-level AdelicH1Full sorries | Blocked |
+| 308 | Fill `natDegree_eq_sum_ord_mul_degree` | ✅ DONE |
+| 309 | Fill `intDegree_ge_deg_of_valuation_bounds_and_linear_support` | **NEXT** |
+| 310+ | High-level AdelicH1Full sorries | Blocked |
 
-### Cycle 307 Summary
+### Cycle 308 Summary
 **Completed**:
-- Filled `intValuation_eq_exp_neg_ord` - key bridge between valuation and divisibility
-- Proof uses `Ideal.count_associates_eq'` from Mathlib to connect:
-  - `v.intValuation p = exp(-(Associates.count on ideal factorization))`
-  - `ord k v p = count in polynomial factorization`
-- Key insight: `v.asIdeal = span{generator(v)}` via `asIdeal_eq_span_generator`
-- Used `pow_generator_dvd_iff_le_ord` to establish divisibility bounds
+- Filled `natDegree_eq_sum_ord_mul_degree` - key theorem relating natDegree to sum over places
+- Proof uses `Finset.sum_bij'` to establish bijection between:
+  - `T = (normalizedFactors p).toFinset` (monic irreducible factors)
+  - `{v : ord k v p ≠ 0}` (places with nonzero multiplicity)
+- Key lemmas used:
+  - `Finset.sum_multiset_map_count` to convert multiset sum to finset sum
+  - `exists_place_with_generator` for the bijection
+  - `ord_eq_count_normalizedFactors` to connect ord with count
 
-**Unblocked**: Path to `natDegree_eq_sum_ord_mul_degree` is clearer
+**Unblocked**: `intDegree_ge_deg_of_valuation_bounds_and_linear_support` can now proceed
 
-### Cycle 308 Target
-**File**: PlaceDegree.lean:802
-**Lemma**: `natDegree_eq_sum_ord_mul_degree`
-**Goal**: `(p.natDegree : ℤ) = ∑ v ∈ S, (ord k v p : ℤ) * (degree k v : ℤ)`
+### Cycle 309 Target
+**File**: PlaceDegree.lean:936
+**Lemma**: `intDegree_ge_deg_of_valuation_bounds_and_linear_support`
+**Goal**: For f = num/denom with valuation bounds, `f.intDegree ≥ D.deg`
 **Approach**:
-- Unique factorization: `p = c * ∏ gen(v)^{ord_v(p)}`
-- `natDegree(p) = natDegree(∏ gen(v)^{ord_v(p)})` (leading coeff is unit)
-- Use `natDegree_multiset_prod_of_monic` for product
-- `natDegree(gen(v)^n) = n * natDegree(gen(v)) = n * degree(v)`
+- Use `natDegree_eq_sum_ord_mul_degree` for both num and denom
+- intDegree(f) = natDegree(num) - natDegree(denom)
+- With IsLinearPlaceSupport (deg(v) = 1), simplifies to sum of ord differences
+- Valuation constraints give: ord(num) - ord(denom) ≥ D(v) at each place
 
 ---
 
@@ -105,4 +107,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 307. See ledger_archive.md for historical cycles.*
+*Updated Cycle 308. See ledger_archive.md for historical cycles.*

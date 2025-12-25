@@ -803,11 +803,115 @@ theorem natDegree_eq_sum_ord_mul_degree (p : Polynomial k) (hp : p ≠ 0)
     (S : Finset (HeightOneSpectrum (Polynomial k)))
     (hS : ∀ v, ord k v p ≠ 0 → v ∈ S) :
     (p.natDegree : ℤ) = ∑ v ∈ S, (ord k v p : ℤ) * (degree k v : ℤ) := by
-  -- The proof uses unique factorization in k[X]
-  -- p = c * ∏ gen(v)^{ord_v(p)} where c = leadingCoeff / (product of leading coeffs)
-  -- Since generators are monic, c = leadingCoeff (a unit in k)
-  -- natDegree(p) = natDegree(∏ gen(v)^{ord_v(p)}) = Σ ord_v(p) * natDegree(gen(v))
-  sorry
+  classical
+  -- Step 1: natDegree(p) = sum of natDegrees of normalized factors
+  have h1 : p.natDegree = ((UniqueFactorizationMonoid.normalizedFactors p).map Polynomial.natDegree).sum := by
+    rw [← natDegree_normalizedFactors_prod k p hp, natDegree_normalizedFactors_prod_eq_sum k p hp]
+  -- Step 2: Convert multiset sum to finset sum
+  let T := (UniqueFactorizationMonoid.normalizedFactors p).toFinset
+  have h2 : ((UniqueFactorizationMonoid.normalizedFactors p).map Polynomial.natDegree).sum =
+      ∑ q ∈ T, (UniqueFactorizationMonoid.normalizedFactors p).count q * q.natDegree := by
+    rw [Finset.sum_multiset_map_count]
+    apply Finset.sum_congr rfl
+    intro q _
+    rw [smul_eq_mul]
+  -- Step 3: Build infrastructure for converting T to places
+  have hT_irr : ∀ q ∈ T, Irreducible q := fun q hq =>
+    UniqueFactorizationMonoid.irreducible_of_normalized_factor q (Multiset.mem_toFinset.mp hq)
+  have hT_monic : ∀ q ∈ T, q.Monic := fun q hq =>
+    monic_of_mem_normalizedFactors k p (Multiset.mem_toFinset.mp hq)
+  -- Step 4: The key relationship - for each place v:
+  -- ord(v, p) * degree(v) = count(gen_v) * natDegree(gen_v)
+  -- and generator is injective on places
+  -- Step 5: Sum over places with nonzero ord
+  -- Places with ord = 0 contribute 0 to the sum
+  have hord_zero_contrib : ∀ v, ord k v p = 0 → (ord k v p : ℤ) * (degree k v : ℤ) = 0 := by
+    intro v hord
+    simp [hord]
+  -- Step 6: Key - the sum over S can be restricted to places with nonzero ord
+  have hS_sum : ∑ v ∈ S, (ord k v p : ℤ) * (degree k v : ℤ) =
+      ∑ v ∈ S.filter (fun v => ord k v p ≠ 0), (ord k v p : ℤ) * (degree k v : ℤ) := by
+    rw [← Finset.sum_filter_add_sum_filter_not (s := S) (p := fun v => ord k v p ≠ 0)]
+    simp only [ne_eq, Decidable.not_not]
+    have h0 : ∑ v ∈ S.filter (fun v => ord k v p = 0), (ord k v p : ℤ) * (degree k v : ℤ) = 0 := by
+      apply Finset.sum_eq_zero
+      intro v hv
+      simp only [Finset.mem_filter] at hv
+      simp [hv.2]
+    rw [h0, add_zero]
+  -- Step 7: Places with nonzero ord biject with T via generator
+  -- For v with ord ≠ 0, generator(v) ∈ T
+  have hgen_in_T : ∀ v, ord k v p ≠ 0 → generator k v ∈ T := by
+    intro v hord
+    have hmem : generator k v ∈ UniqueFactorizationMonoid.normalizedFactors p := by
+      rw [← Multiset.count_pos, ← ord_eq_count_normalizedFactors k v p hp]
+      exact Nat.pos_of_ne_zero hord
+    exact Multiset.mem_toFinset.mpr hmem
+  -- For q ∈ T, the unique place v with generator(v) = q has ord ≠ 0
+  -- Key: the generator function is injective on HeightOneSpectrum
+  have hgen_inj : ∀ v w : HeightOneSpectrum (Polynomial k), generator k v = generator k w → v = w := by
+    intro v w heq
+    apply HeightOneSpectrum.ext
+    rw [asIdeal_eq_span_generator k v, asIdeal_eq_span_generator k w, heq]
+  -- Step 8: Compute the sum over T in terms of places
+  -- For q ∈ T, let v_q be the unique place with generator = q
+  -- Then count(q) = ord(v_q, p) and natDegree(q) = degree(v_q)
+  -- The sum over T = sum over {v_q : q ∈ T} = sum over {v : ord(v,p) ≠ 0}
+  -- Build the sum directly
+  have hT_sum : ∑ q ∈ T, (UniqueFactorizationMonoid.normalizedFactors p).count q * q.natDegree =
+      ∑ v ∈ S.filter (fun v => ord k v p ≠ 0), ord k v p * degree k v := by
+    -- Use Finset.sum_bij' with explicit proof terms
+    let i : (v : HeightOneSpectrum (Polynomial k)) → v ∈ S.filter (fun v => ord k v p ≠ 0) →
+        Polynomial k := fun v _ => generator k v
+    let j : (q : Polynomial k) → q ∈ T → HeightOneSpectrum (Polynomial k) := fun q hq =>
+        (exists_place_with_generator k q (hT_monic q hq) (hT_irr q hq)).choose
+    have hi : ∀ v hv, i v hv ∈ T := by
+      intro v hv
+      have hord := (Finset.mem_filter.mp hv).2
+      exact hgen_in_T v hord
+    have hj : ∀ q hq, j q hq ∈ S.filter (fun v => ord k v p ≠ 0) := by
+      intro q hq
+      apply Finset.mem_filter.mpr
+      have hv_gen : generator k (j q hq) = q :=
+        (exists_place_with_generator k q (hT_monic q hq) (hT_irr q hq)).choose_spec.1
+      have hcount_pos : 0 < (UniqueFactorizationMonoid.normalizedFactors p).count q :=
+        Multiset.count_pos.mpr (Multiset.mem_toFinset.mp hq)
+      constructor
+      · apply hS
+        rw [ord_eq_count_normalizedFactors k (j q hq) p hp, hv_gen]
+        exact Nat.pos_iff_ne_zero.mp hcount_pos
+      · rw [ord_eq_count_normalizedFactors k (j q hq) p hp, hv_gen]
+        exact Nat.pos_iff_ne_zero.mp hcount_pos
+    have left_inv : ∀ v hv, j (i v hv) (hi v hv) = v := by
+      intro v hv
+      have hord := (Finset.mem_filter.mp hv).2
+      have hgenT := hgen_in_T v hord
+      have huniq := (exists_place_with_generator k (generator k v) (hT_monic _ hgenT)
+          (hT_irr _ hgenT)).choose_spec.2
+      exact (huniq v rfl).symm
+    have right_inv : ∀ q hq, i (j q hq) (hj q hq) = q := by
+      intro q hq
+      exact (exists_place_with_generator k q (hT_monic q hq) (hT_irr q hq)).choose_spec.1
+    have h_eq : ∀ v hv, ord k v p * degree k v =
+        (UniqueFactorizationMonoid.normalizedFactors p).count (i v hv) * (i v hv).natDegree := by
+      intro v hv
+      simp only [i]
+      rw [ord_eq_count_normalizedFactors k v p hp]
+      rfl
+    symm
+    exact Finset.sum_bij' i j hi hj left_inv right_inv h_eq
+  -- Combine everything
+  calc (p.natDegree : ℤ)
+      = ((UniqueFactorizationMonoid.normalizedFactors p).map Polynomial.natDegree).sum := by
+          rw [h1]
+    _ = (∑ q ∈ T, (UniqueFactorizationMonoid.normalizedFactors p).count q * q.natDegree : ℕ) := by
+          rw [h2]
+    _ = (∑ v ∈ S.filter (fun v => ord k v p ≠ 0), ord k v p * degree k v : ℕ) := by
+          rw [hT_sum]
+    _ = ∑ v ∈ S.filter (fun v => ord k v p ≠ 0), (ord k v p : ℤ) * (degree k v : ℤ) := by
+          push_cast
+          rfl
+    _ = ∑ v ∈ S, (ord k v p : ℤ) * (degree k v : ℤ) := hS_sum.symm
 
 /-- For a rational function f = num/denom, the intDegree bounds relate to valuations.
 
