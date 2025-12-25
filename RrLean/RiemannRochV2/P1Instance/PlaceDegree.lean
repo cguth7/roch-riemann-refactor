@@ -540,21 +540,92 @@ For p ≠ 0, this is the largest n such that generator(v)^n | p.
 For p = 0, we define ord = 0 (though valuation is infinite).
 
 This uses the divisibility-based definition which is more constructive
-than the Associates.count approach for Polynomial k. -/
+than the Associates.count approach for Polynomial k.
+
+Implementation: Nat.find gives the first n where gen^n ∤ p. Since gen^0 = 1 always
+divides nonzero p, Nat.find ≥ 1. We subtract 1 to get the multiplicity. -/
 noncomputable def ord (v : HeightOneSpectrum (Polynomial k)) (p : Polynomial k) : ℕ :=
   if hp : p = 0 then 0
   else @Nat.find (fun n => ¬(generator k v ^ n ∣ p)) (Classical.decPred _)
-    (exists_pow_generator_not_dvd k v p hp)
+    (exists_pow_generator_not_dvd k v p hp) - 1
 
 /-- At the generator's own place, ord = 1. -/
 lemma ord_generator_self (v : HeightOneSpectrum (Polynomial k)) :
     ord k v (generator k v) = 1 := by
-  sorry -- gen^1 | gen, but gen^2 ∤ gen (irreducible)
+  -- Unfold definition: ord = Nat.find(...) - 1
+  unfold ord
+  -- generator is nonzero (irreducible)
+  have hgen_ne : generator k v ≠ 0 := (generator_irreducible k v).ne_zero
+  simp only [hgen_ne, ↓reduceDIte]
+  -- Add decidability instance for Nat.find lemmas
+  haveI : DecidablePred (fun n => ¬(generator k v ^ n ∣ generator k v)) := Classical.decPred _
+  -- Need to show: Nat.find(...) - 1 = 1, i.e., Nat.find(...) = 2
+  -- Upper bound: Nat.find ≤ 2 because gen² ∤ gen
+  have hgen_sq_not_dvd : ¬(generator k v ^ 2 ∣ generator k v) := by
+    intro hdvd_sq
+    have hirr := generator_irreducible k v
+    rw [pow_two] at hdvd_sq
+    obtain ⟨q, hq⟩ := hdvd_sq
+    rw [mul_assoc] at hq
+    have h1 : generator k v * 1 = generator k v * (generator k v * q) := by
+      rw [mul_one]; exact hq
+    have h2 : (1 : Polynomial k) = generator k v * q := mul_left_cancel₀ hgen_ne h1
+    have hdvd_one : generator k v ∣ 1 := ⟨q, h2⟩
+    exact hirr.not_isUnit (isUnit_of_dvd_one hdvd_one)
+  have hle : Nat.find (exists_pow_generator_not_dvd k v (generator k v) hgen_ne) ≤ 2 :=
+    Nat.find_min' _ hgen_sq_not_dvd
+  -- Lower bound: 2 ≤ Nat.find because gen^0 | gen and gen^1 | gen
+  have hge : 2 ≤ Nat.find (exists_pow_generator_not_dvd k v (generator k v) hgen_ne) := by
+    rw [Nat.le_find_iff]
+    intro m hm
+    push_neg
+    interval_cases m
+    · simp only [pow_zero, one_dvd]
+    · simp only [pow_one, dvd_refl]
+  -- Combine bounds: find = 2
+  have heq : Nat.find (exists_pow_generator_not_dvd k v (generator k v) hgen_ne) = 2 :=
+    Nat.le_antisymm hle hge
+  -- Goal: @Nat.find _ (Classical.decPred _) _ - 1 = 1
+  -- The two Nat.find have the same predicate, just different instances.
+  -- Use Nat.find_congr' to unify them (predicate is definitionally equal).
+  have heq' : @Nat.find _ (Classical.decPred _) (exists_pow_generator_not_dvd k v (generator k v) hgen_ne) = 2 := by
+    convert heq using 2
+  rw [heq']
 
 /-- At a different place, ord of generator = 0. -/
 lemma ord_generator_other (v w : HeightOneSpectrum (Polynomial k)) (hw : w ≠ v) :
     ord k w (generator k v) = 0 := by
-  sorry -- gen(w)^1 ∤ gen(v) by coprimality
+  -- Unfold definition: ord = Nat.find(...) - 1
+  unfold ord
+  -- generator v is nonzero
+  have hgen_v_ne : generator k v ≠ 0 := (generator_irreducible k v).ne_zero
+  simp only [hgen_v_ne, ↓reduceDIte]
+  -- Add decidability instance for Nat.find lemmas
+  haveI : DecidablePred (fun n => ¬(generator k w ^ n ∣ generator k v)) := Classical.decPred _
+  -- Need to show: Nat.find(...) - 1 = 0, i.e., Nat.find(...) = 1
+  -- Upper bound: Nat.find ≤ 1 because gen(w) ∤ gen(v) (by coprimality)
+  have hgen_w_not_dvd : ¬(generator k w ∣ generator k v) := by
+    intro hdvd
+    have hmem : generator k v ∈ w.asIdeal := by
+      rw [asIdeal_eq_span_generator k w, Ideal.mem_span_singleton]
+      exact hdvd
+    exact generator_not_mem_other_prime k v w hw hmem
+  have hle : Nat.find (exists_pow_generator_not_dvd k w (generator k v) hgen_v_ne) ≤ 1 := by
+    apply Nat.find_min'
+    simpa only [pow_one] using hgen_w_not_dvd
+  -- Lower bound: 1 ≤ Nat.find because gen(w)^0 = 1 | gen(v)
+  have hge : 1 ≤ Nat.find (exists_pow_generator_not_dvd k w (generator k v) hgen_v_ne) := by
+    rw [Nat.le_find_iff]
+    intro m hm
+    interval_cases m
+    simp only [pow_zero, one_dvd, not_true_eq_false, not_false_eq_true]
+  -- Combine bounds: find = 1
+  have heq : Nat.find (exists_pow_generator_not_dvd k w (generator k v) hgen_v_ne) = 1 :=
+    Nat.le_antisymm hle hge
+  -- Goal: @Nat.find _ (Classical.decPred _) _ - 1 = 0
+  have heq' : @Nat.find _ (Classical.decPred _) (exists_pow_generator_not_dvd k w (generator k v) hgen_v_ne) = 1 := by
+    convert heq using 2
+  rw [heq']
 
 /-- The intValuation relates to ord via exp(-ord).
 

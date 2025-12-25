@@ -5,22 +5,20 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 303
-**Total Sorries**: 14 (5 new infrastructure + 3 high-level + 6 axioms)
+**Cycle**: 304
+**Total Sorries**: 12 (3 new infrastructure + 3 high-level + 6 axioms)
 **Elliptic Axioms**: 8
 
 ---
 
 ## Sorry Classification
 
-### Content Sorries - New Infrastructure (5)
+### Content Sorries - New Infrastructure (3)
 | Location | Line | Description | Difficulty |
 |----------|------|-------------|------------|
-| PlaceDegree | 550 | `ord_generator_self` | Low ← NEXT |
-| PlaceDegree | 555 | `ord_generator_other` | Low |
-| PlaceDegree | 562 | `intValuation_eq_exp_neg_ord` | Medium |
-| PlaceDegree | 581 | `natDegree_eq_sum_ord_mul_degree` | Medium |
-| PlaceDegree | 611 | `intDegree_ge_deg_of_valuation_bounds_and_linear_support` | Blocked on above |
+| PlaceDegree | 633 | `intValuation_eq_exp_neg_ord` | Medium ← NEXT |
+| PlaceDegree | 652 | `natDegree_eq_sum_ord_mul_degree` | Medium (UFD) |
+| PlaceDegree | 682 | `intDegree_ge_deg_of_valuation_bounds_and_linear_support` | Blocked on above |
 
 ### Content Sorries - High Level (3)
 | Location | Line | Description | Difficulty |
@@ -60,24 +58,38 @@
 | Cycle | Task | Status |
 |-------|------|--------|
 | 303 | Fill `linear_of_degree_eq_one` + add ord infrastructure | ✅ DONE |
-| 304 | Fill `ord_generator_self` and `ord_generator_other` | **NEXT** (Low) |
-| 305 | Fill `intValuation_eq_exp_neg_ord` | Medium |
-| 306 | Fill `natDegree_eq_sum_ord_mul_degree` | Medium (UFD) |
+| 304 | Fill `ord_generator_self` and `ord_generator_other` | ✅ DONE |
+| 305 | Fill `natDegree_eq_sum_ord_mul_degree` (UFD) | **NEXT** (Medium) |
+| 306 | Fill `intValuation_eq_exp_neg_ord` | Deferred (valuation API) |
 | 307 | Fill `intDegree_ge_deg...` using above | Blocked |
 | 308+ | High-level AdelicH1Full sorries | Blocked |
 
-### Cycle 304 Target
-**File**: PlaceDegree.lean:550, 555
-**Lemmas**: `ord_generator_self`, `ord_generator_other`
-**Proof sketch**:
-- `ord_generator_self`: gen^1 | gen trivially; gen^2 ∤ gen because irreducible
-- `ord_generator_other`: gen(w)^1 ∤ gen(v) by coprimality (use `generator_not_mem_other_prime`)
+### Cycle 304 Summary
+**Completed**:
+- Fixed `ord` definition (was off-by-one: added `- 1` to Nat.find result)
+- Proved `ord_generator_self`: gen² ∤ gen for irreducible gen, so ord = 1
+- Proved `ord_generator_other`: gen(w) ∤ gen(v) for v ≠ w by coprimality, so ord = 0
 
-### New Infrastructure (Cycle 303)
-Added foundational ord/degree framework in PlaceDegree.lean:
-- `exists_pow_generator_not_dvd` - Well-foundedness for ord ✅
-- `ord` - Multiplicity of p at place v (via Nat.find) ✅ (defn)
-- `natDegree_eq_sum_ord_mul_degree` - Key UFD theorem (sorry)
+**Proof Techniques**:
+- Used `Nat.find_min'` for upper bounds
+- Used `Nat.le_find_iff` for lower bounds
+- Handled DecidablePred instance mismatch with `convert ... using 2`
+
+### Cycle 305 Target
+**File**: PlaceDegree.lean:652
+**Lemma**: `natDegree_eq_sum_ord_mul_degree` (UFD approach)
+**Goal**: Express polynomial degree as sum of multiplicities:
+```lean
+p.natDegree = ∑ v ∈ S, ord k v p * degree k v
+```
+**Proof sketch** (direct UFD, bypasses valuation bridge):
+1. Use unique factorization: `p = c * ∏ gen(v)^{ord_v(p)}`
+2. `natDegree` is multiplicative: `natDegree(a*b) = natDegree(a) + natDegree(b)`
+3. `natDegree(gen(v)) = degree(v)` by definition
+4. `natDegree(c) = 0` for constants
+5. Use `ord_generator_self` and `ord_generator_other` to identify multiplicities
+
+**Alternative** (deferred): `intValuation_eq_exp_neg_ord` bridges valuation to `ord` via Mathlib's `Associates.count`. More complex, requires diving into valuation internals.
 
 ---
 
@@ -97,4 +109,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 303. See ledger_archive.md for historical cycles.*
+*Updated Cycle 304. See ledger_archive.md for historical cycles.*
