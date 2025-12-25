@@ -5,52 +5,62 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 318
+**Cycle**: 319
 **Phase**: 7 (Weil Differentials) - Active
-**Total Sorries**: 9 (2 archived P¹ edge cases + 6 axioms + 1 symmetry lemma)
+**Total Sorries**: 10 (2 archived P¹ edge cases + 6 axioms + 1 symmetry + 1 dimension theorem)
 
 ---
 
-## Cycle 318 Completed
+## Cycle 319 Completed
+
+**Goal**: Bridge WeilDifferential to FullRRData for final assembly.
+
+### Deliverables
+
+1. **Dimension Theorem**:
+   - `finrank_eq_of_perfect_pairing` - if pairing is perfect, dim L(D) = dim Ω(E)
+   - Proof deferred (sorry) - standard linear algebra fact
+   - Uses: left non-deg → injection L(D) → Ω(E)*, right non-deg → injection Ω(E) → L(D)*
+
+2. **HasPerfectPairing' Structure**:
+   - `finite_rrspace` - L(D) finite-dimensional for all D
+   - `finite_differentials` - Ω(E) finite-dimensional for all E
+   - `pairing_perfect` - pairing L(D) × Ω(K-D) → k is perfect for all D
+   - `finrank_rrspace_eq_finrank_differentials'` - dimension equality theorem
+
+3. **WeilRRData' Structure**:
+   - `hasPerfectPairing : HasPerfectPairing'` - the pairing is perfect
+   - `dim_omega_eq` - dim Ω(E) = ℓ(K-E) (Ω interpretation axiom)
+   - `serre_duality_dim'` - ℓ(D) = dim Ω(K-D)
+   - `ell_via_omega'` - ℓ(D) = ℓ(K - (K-D)) = ℓ(D)
+
+### Architecture Note
+The bridge between Weil differentials and FullRRData is now established:
+- `CanonicalData` provides K, g, deg(K) = 2g-2
+- `HasPerfectPairing'` asserts the Serre pairing is perfect
+- `WeilRRData'` adds the dimension identification Ω(E) ↔ L(K-E)
+
+---
+
+## Cycle 320 Target
+
+**Priority**: Complete bridge to FullRRData instance.
+
+**Steps**:
+1. Fill in `finrank_eq_of_perfect_pairing` sorry (standard linear algebra)
+2. Create FullRRData instance from WeilRRData'
+3. Begin validating with P¹ or elliptic examples
+
+---
+
+## Cycle 318 Summary (Archived)
 
 **Goal**: Hook WeilDifferential.lean into build, add non-degeneracy infrastructure.
 
 ### Deliverables
-
-1. **Build Integration**:
-   - Created `RrLean/RiemannRochV2/General.lean` (imports WeilDifferential)
-   - Added `import RrLean.RiemannRochV2.General` to `RiemannRochV2.lean`
-   - WeilDifferential.lean now compiles with full build (2844 jobs)
-
-2. **Non-Degeneracy Definitions**:
-   - `PairingNondegenerateLeft D E` - ∀ f ≠ 0 in L(D), ∃ ω in Ω(E) with ⟨f, ω⟩ ≠ 0
-   - `PairingNondegenerateRight D E` - ∀ ω ≠ 0 in Ω(E), ∃ f in L(D) with ⟨f, ω⟩ ≠ 0
-   - `PairingPerfect D E` - both left and right non-degeneracy
-   - `pairingNondegenerateLeft_symm` - symmetry (sorry, placeholder)
-   - `pairingPerfect_symm` - perfect pairing is symmetric
-
-3. **CanonicalData Structure**:
-   - `CanonicalData R` - packages canonical divisor K, genus g, infiniteDegree
-   - `deg_canonical : canonical.deg + infiniteDegree = 2g - 2`
-   - `CanonicalData.p1` - P¹ instance (genus 0, infiniteDegree = -2)
-   - `CanonicalData.elliptic` - elliptic instance (genus 1, infiniteDegree = 0)
-
-### Architecture Note
-The `infiniteDegree` field handles P¹ compatibility:
-- For P¹ = Spec k[T] ∪ {∞}, canonical K = -2∞
-- DivisorV2 tracks finite places only, so infiniteDegree = -2
-- deg(K) + infiniteDegree = 0 + (-2) = -2 = 2(0) - 2 ✓
-
----
-
-## Cycle 319 Target
-
-**Priority**: Bridge WeilDifferential to FullRRData for final assembly.
-
-**Steps**:
-1. Add dimension theorems from perfect pairing
-2. Create typeclass `HasPerfectPairing` connecting L(D) and Ω(K-D)
-3. Begin instantiating `FullRRData` with Weil differential infrastructure
+- Build integration (RrLean/RiemannRochV2/General.lean)
+- Non-degeneracy definitions (PairingNondegenerateLeft/Right/Perfect)
+- CanonicalData structure with P¹ and elliptic instances
 
 ---
 
