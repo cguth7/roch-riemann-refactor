@@ -1,6 +1,6 @@
 # Refactor Plan: P¹ → Arbitrary Curves
 
-**Status**: P¹ complete. Elliptic RR complete. Sorry cleanup in progress. Updated Cycle 302.
+**Status**: P¹ complete. Elliptic RR complete. Sorry cleanup in progress. Updated Cycle 309.
 **Goal**: Riemann-Roch for algebraically closed curves of any genus.
 
 ---
@@ -269,4 +269,4 @@ Decision deferred until infinity bound is resolved.
 
 ---
 
-*Updated Cycle 302. Next: Fill `linear_of_degree_eq_one` then degree-valuation lemma. See ledger.md.*
+*Updated Cycle 309. All infrastructure sorries filled! Next: High-level AdelicH1Full sorries. See ledger.md.*

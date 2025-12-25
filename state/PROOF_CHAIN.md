@@ -1,6 +1,6 @@
 # Proof Chain: Riemann-Roch Formalization
 
-Tracks the dependency chain from main theorems down to Mathlib. Updated Cycle 302.
+Tracks the dependency chain from main theorems down to Mathlib. Updated Cycle 309.
 
 ---
 
@@ -111,17 +111,20 @@ PlaceDegree.lean
 
 ---
 
-## Sorry Locations (11 total, updated Cycle 307)
+## Sorry Locations (9 total, updated Cycle 309)
 
 See `ledger.md` for authoritative sorry list. Summary:
 
-### Content Sorries (5)
+### Content Sorries - Infrastructure (0)
+*All infrastructure filled!*
+- ✅ `natDegree_eq_sum_ord_mul_degree` (Cycle 308)
+- ✅ `intDegree_ge_deg_of_valuation_bounds_and_linear_support` (Cycle 309)
+
+### Content Sorries - High Level (3)
 | Location | Description |
 |----------|-------------|
-| PlaceDegree:802 | `natDegree_eq_sum_ord_mul_degree` ← **NEXT** |
-| PlaceDegree:832 | `intDegree_ge_deg_of_valuation_bounds_and_linear_support` |
 | AdelicH1Full:757 | Deep negative inftyCoeff |
-| AdelicH1Full:1328 | Degree gap lemma |
+| AdelicH1Full:1328 | Degree gap lemma (unblocked!) |
 | AdelicH1Full:1460 | Non-effective strong approx |
 
 ### Axiom Sorries (6) - Intentional
@@ -138,7 +141,7 @@ See `ledger.md` for authoritative sorry list. Summary:
 
 | File | Key Lemmas |
 |------|------------|
-| `PlaceDegree.lean` | `generator_monic`, `generator_irreducible`, `natDegree_ge_degWeighted_of_valuation_bounds` |
+| `PlaceDegree.lean` | `generator_monic`, `generator_irreducible`, `natDegree_eq_sum_ord_mul_degree`, `intDegree_ge_deg_of_valuation_bounds_and_linear_support` |
 | `P1Canonical.lean` | `canonicalExtended`, `deg_canonicalExtended` |
 | `P1VanishingLKD.lean` | `RRSpace_proj_ext_canonical_sub_eq_bot` |
 | `FullAdelesCompact.lean` | `strong_approximation_ratfunc` |
@@ -223,4 +226,4 @@ Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 
 ---
 
-*Updated Cycle 307. See ledger.md for current state.*
+*Updated Cycle 309. See ledger.md for current state.*
