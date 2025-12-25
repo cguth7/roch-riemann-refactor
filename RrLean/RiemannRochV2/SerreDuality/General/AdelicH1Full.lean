@@ -616,19 +616,67 @@ theorem globalPlusBoundedSubmodule_full_eq_top_of_deg_ge_neg_one
     globalPlusBoundedSubmodule_full Fq D = ⊤ := by
   rw [eq_top_iff]
   intro a _
-  -- This requires extending strong approximation to full adeles.
-  -- The key steps are:
-  -- 1. Use strong approximation for finite adeles to find k with a.1 - diag(k) bounded
-  -- 2. Use density of K in K_∞ to show a.2 - k has bounded infinity valuation
-  -- 3. Combine these to get a = diag(k) + bounded in FullAdeleRing
-  --
-  -- The main technical challenge is showing the same k works for both bounds.
-  -- For P¹, this follows from the fact that strong approximation produces
-  -- polynomials with controlled degree, which also bounds their infinity valuation.
-  -- The hypothesis hdeg : D.deg ≥ -1 ensures the degree bound is compatible.
-  --
-  -- Deferred to a future cycle for full implementation.
-  sorry
+  -- Goal: a ∈ globalSubmodule_full + boundedSubmodule_full = K + A_K(D)
+  -- We need to find k ∈ K such that a - diag(k) ∈ A_K(D)
+
+  -- Step 1: Approximate at infinity first
+  -- Use density of K in FqtInfty to find k₁ with |a.2 - k₁|_∞ ≤ exp(D.inftyCoeff)
+  obtain ⟨k₁, hk₁⟩ := exists_local_approximant_with_bound_infty Fq a.2 D.inftyCoeff
+
+  -- Step 2: Handle finite places
+  -- Let b := a.1 - diag(k₁) (the finite part shifted by k₁)
+  let b : FiniteAdeleRing (Polynomial Fq) (RatFunc Fq) :=
+    a.1 - AdelicH1v2.diagonalK (Polynomial Fq) (RatFunc Fq) k₁
+
+  -- Use strong approximation to find k₂ with b - diag(k₂) bounded by D.finite
+  obtain ⟨k₂, hk₂⟩ := strong_approximation_ratfunc b D.finite
+
+  -- Step 3: Set k = k₁ + k₂
+  let k := k₁ + k₂
+
+  -- Prove a ∈ K + A_K(D)
+  -- globalPlusBoundedSubmodule_full = globalSubmodule_full + boundedSubmodule_full
+  unfold globalPlusBoundedSubmodule_full
+  rw [Submodule.add_eq_sup, Submodule.mem_sup]
+  use fqFullDiagonalEmbedding Fq k
+  constructor
+  · exact ⟨k, rfl⟩
+  use a - fqFullDiagonalEmbedding Fq k
+  constructor
+  · -- Show a - diag(k) ∈ boundedSubmodule_full Fq D
+    -- i.e., (1) finite part is D.finite-bounded, (2) infinity part is D.inftyCoeff-bounded
+    constructor
+    · -- Finite places: (a - diag(k)).1 = b - diag(k₂) which is D.finite-bounded
+      intro v
+      -- The finite part: (a - diag(k)).1 = a.1 - diag(k₁ + k₂).1 = a.1 - diag(k₁) - diag(k₂) = b - diag(k₂)
+      have heq : (a - fqFullDiagonalEmbedding Fq k).1 =
+          b - AdelicH1v2.diagonalK (Polynomial Fq) (RatFunc Fq) k₂ := by
+        simp only [k, b, fqFullDiagonalEmbedding_fst, map_add, map_sub, sub_sub]
+      rw [heq]
+      exact hk₂ v
+    · -- Infinity: |a.2 - k|_∞ ≤ exp(D.inftyCoeff)
+      show Valued.v (a - fqFullDiagonalEmbedding Fq k).2 ≤ WithZero.exp D.inftyCoeff
+      -- (a - diag(k)).2 = a.2 - (k₁ + k₂) = (a.2 - k₁) - k₂
+      have heq : (a - fqFullDiagonalEmbedding Fq k).2 =
+          (a.2 - inftyRingHom Fq k₁) - inftyRingHom Fq k₂ := by
+        simp only [k, fqFullDiagonalEmbedding_snd, map_add, map_sub, sub_sub]
+      rw [heq]
+      -- Ultrametric: |x - y| ≤ max(|x|, |y|)
+      calc Valued.v ((a.2 - inftyRingHom Fq k₁) - inftyRingHom Fq k₂)
+          ≤ max (Valued.v (a.2 - inftyRingHom Fq k₁)) (Valued.v (inftyRingHom Fq k₂)) :=
+            Valuation.map_sub _ _ _
+        _ ≤ max (WithZero.exp D.inftyCoeff) (Valued.v (inftyRingHom Fq k₂)) :=
+            max_le_max_right _ hk₁
+        _ ≤ WithZero.exp D.inftyCoeff := ?_
+      -- Need: max(exp(D.inftyCoeff), |k₂|_∞) ≤ exp(D.inftyCoeff)
+      -- i.e., |k₂|_∞ ≤ exp(D.inftyCoeff)
+      apply max_le (le_refl _)
+      -- Key lemma: k₂ from strong_approximation has bounded infinity valuation
+      -- The deg(D) ≥ -1 hypothesis ensures D.inftyCoeff ≥ -1 - D.finite.deg
+      -- and the strong approximation k₂ has |k₂|_∞ controlled by the divisor structure
+      sorry
+  · -- Show fqFullDiagonalEmbedding k + (a - fqFullDiagonalEmbedding k) = a
+    simp only [add_sub_cancel]
 
 /-- H¹(D) is a subsingleton for P¹ with full adeles when deg(D) ≥ -1.
 

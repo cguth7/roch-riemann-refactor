@@ -7,8 +7,8 @@ Tactical tracking for Riemann-Roch formalization.
 ## Current State
 
 **Build**: ✅ Compiles (with expected sorries)
-**Result**: Corrected mathematical error in H¹(D) vanishing theorem
-**Cycle**: 279 (Complete)
+**Result**: Proof structure for full strong approximation complete, 1 sorry remaining
+**Cycle**: 280 (In Progress)
 
 ---
 
@@ -45,66 +45,76 @@ theorem RRSpace_proj_ext_canonical_sub_eq_bot
 |----------|-------|--------|
 | P1Instance/ | 0 | ✅ Complete |
 | ResidueTrace.lean | 0 | ✅ Complete |
-| AdelicH1Full.lean | 1 | `globalPlusBoundedSubmodule_full_eq_top_of_deg_ge_neg_one` (line 614) |
+| AdelicH1Full.lean | 1 | Line 677: `|k₂|_∞ ≤ exp(D.inftyCoeff)` for strong approx k₂ |
 | Abstract.lean | 5 | General abstract infrastructure (h1_finite low-deg case, serre_duality cases) |
 
 ---
 
 ## Next Steps
 
-### Cycle 280: Complete `globalPlusBoundedSubmodule_full_eq_top_of_deg_ge_neg_one`
+### Cycle 280 (In Progress): Complete infinity valuation bound for k₂
 
-**Goal**: Fill the sorry in `globalPlusBoundedSubmodule_full_eq_top_of_deg_ge_neg_one` (line 614)
+**Goal**: Fill the remaining sorry at line 677 in `globalPlusBoundedSubmodule_full_eq_top_of_deg_ge_neg_one`
 
-**Mathematical context**:
-- Theorem requires `D.deg ≥ -1` (Serre vanishing threshold for P¹)
-- D.deg = D.finite.deg + D.inftyCoeff
-- At infinity: |k|_∞ = q^(intDegree k), bound is exp(D.inftyCoeff) = q^(D.inftyCoeff)
+**What's been done**:
+- ✅ Proof structure complete using two-step approach
+- ✅ Step 1: k₁ from `exists_local_approximant_with_bound_infty` approximates a.2 at infinity
+- ✅ Step 2: k₂ from `strong_approximation_ratfunc` handles finite places for (a.1 - diag(k₁))
+- ✅ Ultrametric inequality reduces to: |k₂|_∞ ≤ exp(D.inftyCoeff)
 
-**Critical Insight from Analysis**:
+**Remaining sorry**: Prove `Valued.v (inftyRingHom Fq k₂) ≤ WithZero.exp D.inftyCoeff`
 
-The existing `strong_approximation_ratfunc` only handles **finite places**. It uses:
-1. Principal parts decomposition: k_pole = Σ_{v ∈ S} pp_v
-2. CRT refinement for places needing zeros
-3. Result: k is integral outside S, approximates at S
+**Mathematical Analysis**:
 
-The **key gap**: This doesn't control infinity valuation of k.
+The key insight: k₂ = k_pole + p where:
+- k_pole = Σ principal parts at linear places → intDegree ≤ -1 → |k_pole|_∞ ≤ exp(-1)
+- p = CRT polynomial (if D.finite has negative coefficients)
 
-**Recommended Strategy** (NOT sequential "infinity first"):
+**For effective D.finite** (all coefficients ≥ 0):
+- No CRT polynomial needed, k₂ = k_pole
+- |k₂|_∞ ≤ exp(-1) ≤ exp(D.inftyCoeff) since D.inftyCoeff ≥ -1 (from deg(D) ≥ -1)
+- This case should be straightforward to prove
 
-1. **Finite-first with degree tracking**:
-   - `strong_approximation_ratfunc` produces k for finite places
-   - k = k_pole + poly where k_pole is sum of principal parts
-   - deg(k_pole) ≤ Σ_{v ∈ S} (order of pole at v) × deg(v) ≤ D.finite.deg (roughly)
+**For non-effective D.finite** (some D.finite(v) < 0):
+- CRT polynomial has degree bounded by Σ_{D.finite(v) < 0} |D.finite(v)|
+- Need more careful analysis to show compatibility with D.inftyCoeff
+- The constraint deg(D) ≥ -1 should provide the necessary slack
 
-2. **Use deg(D) ≥ -1 for compatibility**:
-   - Need: |a_∞ - k|_∞ ≤ exp(D.inftyCoeff)
-   - We have: |k|_∞ ≈ q^(D.finite.deg)
-   - The slack from deg(D) ≥ -1: D.inftyCoeff ≥ -1 - D.finite.deg
-   - This ensures the infinity bound is satisfiable
-
-3. **Key lemma needed**: Bound on deg(k) from `exists_global_approximant_from_local`
-   - The principal parts have controlled degree
-   - Need: Σ deg(pp_v) ≤ some function of D.finite
-
-**Alternative approach**: Prove a variant that includes infinity:
-```lean
--- Needed: strong_approximation_ratfunc_full that takes ExtendedDivisor
--- and produces k satisfying both finite AND infinity bounds
-theorem strong_approximation_ratfunc_full
-    (a : FqFullAdeleRing Fq)
-    (D : ExtendedDivisor (Polynomial Fq))
-    (hdeg : D.deg ≥ -1) :
-    ∃ k : RatFunc Fq, ...
-```
-
-**Key infrastructure**:
-- `exists_global_approximant_from_local` (RatFuncPairing:1262): glues local approx
-- `exists_principal_part_at_spec`: principal part decomposition
-- `strong_approximation_ratfunc` (RatFuncPairing:1613): finite-only version
-- `exists_local_approximant_with_bound_infty` (AdelicH1Full:561): infinity approx
+**Recommended approach for completion**:
+1. First prove the effective case (should be direct from principal part properties)
+2. Then handle non-effective case using CRT degree bounds
 
 **After**: Complete remaining Abstract.lean sorries for full Serre duality
+
+---
+
+## Cycle 280 Summary (In Progress)
+
+**Task**: Complete `globalPlusBoundedSubmodule_full_eq_top_of_deg_ge_neg_one`
+
+**Progress**:
+
+1. **Implemented two-step proof structure**:
+   - Step 1: Use `exists_local_approximant_with_bound_infty` for k₁ with |a.2 - k₁|_∞ ≤ exp(D.inftyCoeff)
+   - Step 2: Use `strong_approximation_ratfunc` for k₂ on shifted finite adele (a.1 - diag(k₁))
+   - Set k = k₁ + k₂ as the global approximant
+
+2. **Proved finite places condition**:
+   - (a - diag(k)).1 = (a.1 - diag(k₁)) - diag(k₂) which is D.finite-bounded by construction
+
+3. **Reduced infinity condition to key lemma**:
+   - By ultrametric: |a.2 - k|_∞ ≤ max(|a.2 - k₁|_∞, |k₂|_∞)
+   - First term bounded by hk₁
+   - Reduces to proving: |k₂|_∞ ≤ exp(D.inftyCoeff)
+
+4. **Identified mathematical structure**:
+   - For effective D.finite: k₂ = sum of principal parts, has intDegree ≤ -1
+   - For non-effective D.finite: k₂ = principal parts + CRT polynomial
+   - The deg(D) ≥ -1 constraint ensures compatibility
+
+**Blocking issue**: Need to prove |k₂|_∞ ≤ exp(D.inftyCoeff) using properties of strong_approximation_ratfunc
+
+**Build status**: ✅ Compiles with 1 sorry in AdelicH1Full.lean
 
 ---
 
