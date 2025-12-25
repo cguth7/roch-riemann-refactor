@@ -5,8 +5,8 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 309
-**Total Sorries**: 9 (0 new infrastructure + 3 high-level + 6 axioms)
+**Cycle**: 310
+**Total Sorries**: 8 (0 new infrastructure + 2 high-level + 6 axioms)
 **Elliptic Axioms**: 8
 
 ---
@@ -16,12 +16,11 @@
 ### Content Sorries - New Infrastructure (0)
 *All new infrastructure filled!*
 
-### Content Sorries - High Level (3)
+### Content Sorries - High Level (2)
 | Location | Line | Description | Difficulty |
 |----------|------|-------------|------------|
 | AdelicH1Full | 757 | `globalPlusBoundedSubmodule_full_eq_top_deep_neg_infty` | High |
-| AdelicH1Full | 1328 | `intDegree_ge_deg_of_valuation_bounds_and_linear_support_ratfunc` | Medium (unblocked!) |
-| AdelicH1Full | 1460 | `globalPlusBoundedSubmodule_full_eq_top_not_effective` | High |
+| AdelicH1Full | 1458 | `globalPlusBoundedSubmodule_full_eq_top_not_effective` | High |
 
 ### Axiom Sorries (6) - Intentional
 | Location | Line | Description |
@@ -62,28 +61,23 @@
 | 307 | Fill `intValuation_eq_exp_neg_ord` | ✅ DONE |
 | 308 | Fill `natDegree_eq_sum_ord_mul_degree` | ✅ DONE |
 | 309 | Fill `intDegree_ge_deg_of_valuation_bounds_and_linear_support` | ✅ DONE |
-| 310 | Fill `intDegree_ge_deg_of_valuation_and_denom_constraint` (AdelicH1Full) | **NEXT** |
-| 311+ | High-level AdelicH1Full sorries | Ready |
+| 310 | Fill `intDegree_ge_deg_of_valuation_and_denom_constraint` (AdelicH1Full) | ✅ DONE |
+| 311+ | High-level AdelicH1Full sorries | **NEXT** |
 
-### Cycle 309 Summary
+### Cycle 310 Summary
 **Completed**:
-- Filled `intDegree_ge_deg_of_valuation_bounds_and_linear_support` at PlaceDegree.lean:936
-- Key theorem: For f = num/denom with valuation bounds, `f.intDegree ≥ D.deg`
-- Proof structure:
-  1. Express intDegree = num.natDegree - denom.natDegree
-  2. Use `natDegree_eq_sum_ord_mul_degree` for both num and denom over a common finset S
-  3. S contains D.support plus places where num/denom have nonzero ord
-  4. Key insight: `hdenom_only_neg` implies ord(denom) = 0 for D(v) ≥ 0
-  5. Valuation constraint `exp(-ord(num)) / exp(-ord(denom)) ≤ exp(-D(v))` gives ord(num) - ord(denom) ≥ D(v)
-  6. With deg(v) = 1 for v ∈ D.support, sum bounds yield result
+- Filled `intDegree_ge_deg_of_valuation_and_denom_constraint` at AdelicH1Full.lean:1328
+- Simple wrapper: converts `IsLinearPlaceSupport D` to `∀ v ∈ D.support, degree Fq v = 1`
+- Then applies `PlaceDegree.intDegree_ge_deg_of_valuation_bounds_and_linear_support`
+- Uses `linearPlace_degree_eq_one` to prove degree = 1 for linear places
 
-**Unblocked**: `intDegree_ge_deg_of_valuation_and_denom_constraint` in AdelicH1Full can now use this directly
+**Remaining**: 2 high-level sorries in AdelicH1Full (deep negative infty + non-effective cases)
 
-### Cycle 310 Target
-**File**: AdelicH1Full.lean:1328
-**Lemma**: `intDegree_ge_deg_of_valuation_and_denom_constraint`
-**Goal**: Same as above but for RatFunc Fq specifically
-**Approach**: Likely wrapper calling PlaceDegree version with appropriate instantiation
+### Cycle 311 Target
+**File**: AdelicH1Full.lean:757 or 1458
+**Lemma**: One of the remaining high-level sorries
+**Challenge**: These handle edge cases (deep negative inftyCoeff, non-effective divisors)
+**Approach**: May require new infrastructure or can be deferred as low-priority edge cases
 
 ---
 
@@ -103,4 +97,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 309. See ledger_archive.md for historical cycles.*
+*Updated Cycle 310. See ledger_archive.md for historical cycles.*

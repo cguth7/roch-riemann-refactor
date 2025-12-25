@@ -1331,16 +1331,14 @@ lemma intDegree_ge_deg_of_valuation_and_denom_constraint
     (hdenom_only_neg : ∀ v, f.denom ∈ v.asIdeal → D v < 0)
     (hlin : IsLinearPlaceSupport D) :
     f.intDegree ≥ D.deg := by
-  -- Proof strategy:
-  -- 1. At D > 0 places: num has zeros (ord_v(num) ≥ D(v)), denom coprime to v
-  -- 2. At D < 0 places: constraint gives ord_v(num) - ord_v(denom) ≥ D(v)
-  -- 3. At D = 0 places: denom coprime to v (from hdenom_only_neg)
-  -- 4. intDegree = Σ(ord_v(num) - ord_v(denom)) * deg(v)
-  --              ≥ Σ_{D.support} (ord_v(num) - ord_v(denom)) (since deg(v) = 1 by hlin)
-  --              ≥ D.deg (by cases 1-2 above)
-  --
-  -- The proof requires `polynomial.natDegree = Σ ord_v * deg(v)` which we don't have yet.
-  sorry
+  -- Convert IsLinearPlaceSupport to degree condition and apply PlaceDegree version
+  have hlin' : ∀ v ∈ D.support, PlaceDegree.degree Fq v = 1 := by
+    intro v hv
+    obtain ⟨α, hα⟩ := hlin v hv
+    rw [hα]
+    exact PlaceDegree.linearPlace_degree_eq_one (k := Fq) α
+  exact PlaceDegree.intDegree_ge_deg_of_valuation_bounds_and_linear_support (k := Fq)
+    D f hf_ne hf_val hdenom_only_neg hlin'
 
 /-- L(K-D) = {0} when deg(D) ≥ -1 and D.finite is supported on linear places.
 

@@ -1,6 +1,6 @@
 # Proof Chain: Riemann-Roch Formalization
 
-Tracks the dependency chain from main theorems down to Mathlib. Updated Cycle 309.
+Tracks the dependency chain from main theorems down to Mathlib. Updated Cycle 310.
 
 ---
 
@@ -111,7 +111,7 @@ PlaceDegree.lean
 
 ---
 
-## Sorry Locations (9 total, updated Cycle 309)
+## Sorry Locations (8 total, updated Cycle 310)
 
 See `ledger.md` for authoritative sorry list. Summary:
 
@@ -119,13 +119,13 @@ See `ledger.md` for authoritative sorry list. Summary:
 *All infrastructure filled!*
 - ✅ `natDegree_eq_sum_ord_mul_degree` (Cycle 308)
 - ✅ `intDegree_ge_deg_of_valuation_bounds_and_linear_support` (Cycle 309)
+- ✅ `intDegree_ge_deg_of_valuation_and_denom_constraint` (Cycle 310)
 
-### Content Sorries - High Level (3)
+### Content Sorries - High Level (2)
 | Location | Description |
 |----------|-------------|
 | AdelicH1Full:757 | Deep negative inftyCoeff |
-| AdelicH1Full:1328 | Degree gap lemma (unblocked!) |
-| AdelicH1Full:1460 | Non-effective strong approx |
+| AdelicH1Full:1458 | Non-effective strong approx |
 
 ### Axiom Sorries (6) - Intentional
 | Location | Description |
@@ -226,4 +226,4 @@ Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 
 ---
 
-*Updated Cycle 309. See ledger.md for current state.*
+*Updated Cycle 310. See ledger.md for current state.*
