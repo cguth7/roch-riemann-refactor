@@ -318,9 +318,19 @@ instance p1ProjectiveAdelicRRData :
         · by_cases h_infty' : D.inftyCoeff ≥ -1
           · -- D.finite effective, -1 ≤ D.inftyCoeff < 0
             rw [h1_finrank_full_eq_zero_of_deg_ge_neg_one Fq D hdeg hfin h_infty']
-            -- Need ell_proj_ext (K - D) = 0; deg(K-D) = -2 - D.deg < 0
-            sorry -- edge case: ell_proj_ext for K-D with inftyCoeff in [-1, 0)
-          · sorry -- D.finite effective, D.inftyCoeff < -1
+            have heq : p1CanonicalExt Fq = canonicalExtended Fq := rfl
+            rw [heq]
+            have h_high : D.inftyCoeff < 0 := by push_neg at hinfty; exact hinfty
+            exact (ell_proj_ext_canonical_sub_eq_zero_neg_infty Fq D hfin h_infty' h_high).symm
+          · -- D.finite effective, D.inftyCoeff < -1
+            -- h¹(D) = 0 would follow from strong approximation, but current proof requires D.inftyCoeff ≥ -1
+            -- ℓ(K-D) = 0 by ell_proj_ext_canonical_sub_eq_zero_deep_neg_infty (has a sorry for degree-valuation)
+            -- For now, use the ℓ(K-D) = 0 result and sorry the h¹ side
+            push_neg at h_infty'
+            have heq : p1CanonicalExt Fq = canonicalExtended Fq := rfl
+            rw [heq]
+            -- Both sides should be 0, but proving h¹(D) = 0 needs extended strong approximation
+            sorry
       · sorry -- D.finite not effective
     · -- Non-vanishing case: requires actual Serre duality via residue pairing
       sorry
