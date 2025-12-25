@@ -7,8 +7,8 @@ Tactical tracking for Riemann-Roch formalization.
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 290 (Complete)
-**Total Sorries**: 10 (4 AdelicH1Full + 5 Abstract.lean + 1 EllipticSetup)
+**Cycle**: 291 (Complete)
+**Total Sorries**: 8 (4 AdelicH1Full + 1 Abstract + 1 EllipticSetup + 2 StrongApproximation)
 
 ---
 
@@ -34,6 +34,15 @@ Tactical tracking for Riemann-Roch formalization.
 | Location | Description | Status |
 |----------|-------------|--------|
 | EllipticSetup:105 | IsDedekindDomain for CoordinateRing | Safe axiom (Hartshorne II.6) |
+
+### Strong Approximation Sorries (2) - Topological density
+| Location | Description | Status |
+|----------|-------------|--------|
+| StrongApproximation:115 | P1 density (DenseRange) | Provable (needs RestrictedProduct API) |
+| StrongApproximation:164 | Elliptic density | Safe axiom (standard adelic topology) |
+
+**Key Insight**: StrongApproximation is defined as TOPOLOGICAL DENSITY (DenseRange),
+NOT as "A = K + O" which would force H¹(O) = 0 and collapse genus to 0.
 
 ---
 
@@ -62,7 +71,53 @@ theorem h1_finrank_full_eq_zero_of_deg_ge_neg_one ...
 
 ---
 
-## Cycle 290: Elliptic Canonical Divisor (Current)
+## Cycle 291: Strong Approximation Typeclass (Current)
+
+**Achievement**: Defined StrongApproximation as TOPOLOGICAL DENSITY, not algebraic equality.
+
+### Critical Architectural Decision
+
+**The Trap Avoided**: Defining SA as "∀ a, ∃ k, a - diag(k) ∈ O" would assert A = K + O,
+forcing H¹(O) = A/(K + O) = 0 for ALL curves. This collapses genus to 0!
+
+**The Correct Definition**:
+```lean
+class StrongApprox (R K) : Prop where
+  dense_in_finite_adeles : DenseRange (FiniteAdeleRing.algebraMap R K)
+```
+
+This says K is DENSE in finite adeles (can approximate arbitrarily closely),
+NOT that you can land exactly in O. This preserves H¹(O) ≅ k for elliptic curves.
+
+### Files Created
+```
+RrLean/RiemannRochV2/Adelic/
+└── StrongApproximation.lean   # ✅ NEW: Typeclass + P1/Elliptic instances
+```
+
+### Key Definitions
+```lean
+-- Topological density (the CORRECT definition)
+class StrongApprox (R K) : Prop where
+  dense_in_finite_adeles : DenseRange (FiniteAdeleRing.algebraMap R K)
+
+-- P1 instance (sorry - provable, needs RestrictedProduct API)
+instance instStrongApprox_P1 : StrongApprox Fq[X] (RatFunc Fq)
+
+-- Elliptic instance (sorry - safe axiom, standard adelic topology)
+instance instStrongApprox_Elliptic (W : Affine F) [NonsingularCurve W] :
+    StrongApprox (CoordRing W) (FuncField W)
+```
+
+### Why P1 Sorry Is Provable (Not An Axiom)
+The proof exists in FullAdelesCompact.lean infrastructure:
+1. K is dense in each K_v (`UniformSpace.Completion.denseRange_coe`)
+2. CRT combines local approximations (`exists_local_approximant`)
+3. Just needs RestrictedProduct topology lemmas to connect to DenseRange
+
+---
+
+## Cycle 290: Elliptic Canonical Divisor
 
 **Achievement**: Defined canonical divisor K = 0 for elliptic curves.
 
@@ -152,32 +207,23 @@ structure LocalUniformizer (v : EllipticPlace W) where
 
 ---
 
-## Next Steps: Cycles 291-293
-
-### Critical Blocker: Strong Approximation
-
-**Problem**: The current Strong Approximation proof in `FullAdelesCompact.lean` uses
-Euclidean division (`div_add_mod`), which only works for PIDs like `Polynomial Fq`.
-Elliptic curves have Dedekind (not Euclidean) coordinate rings.
-
-**Solution**: Axiomatize Strong Approximation (Option B). This avoids:
-1. The "PID Trap" - generalizing Euclidean division to non-PIDs is substantial work
-2. Circularity - SA proofs for general curves often USE RR (chicken-and-egg)
+## Next Steps: Cycles 292-294
 
 ### Updated Plan
 
 | Cycle | Task | Status |
 |-------|------|--------|
 | 290 | EllipticCanonical (K=0, deg=0) | ✅ Complete |
-| 291 | StrongApproximation axiom/typeclass | Next |
-| 292 | EllipticH1 (dim H¹(O) = 1) | Requires SA |
-| 293+ | EllipticRRData instance | Requires all above |
+| 291 | StrongApproximation typeclass (density) | ✅ Complete |
+| 292 | EllipticH1 (dim H¹(O) = 1) | Next |
+| 293 | EllipticRRData instance | Requires H1 |
+| 294 | Fill P1 density proof (optional) | Low priority |
 
 ### Axiom Stack (Safe, Standard AG)
-| Axiom | Justification | Used For |
-|-------|---------------|----------|
-| `IsDedekindDomain CoordRing` | Hartshorne II.6 | HeightOneSpectrum |
-| `StrongApproximation K` | K dense in A_S | H¹ computations |
+| Axiom | File | Justification |
+|-------|------|---------------|
+| `IsDedekindDomain CoordRing` | EllipticSetup | Hartshorne II.6 |
+| `StrongApprox` (density) | StrongApproximation | Adelic topology |
 
 ### Remaining Files
 ```
@@ -185,8 +231,11 @@ RrLean/RiemannRochV2/Elliptic/
 ├── EllipticSetup.lean      ✅ Created (Cycle 289)
 ├── EllipticPlaces.lean     ✅ Created (Cycle 289)
 ├── EllipticCanonical.lean  ✅ Created (Cycle 290)
-├── EllipticH1.lean         # Cycle 292: after SA axiom
+├── EllipticH1.lean         # Cycle 292: H¹ computation
 └── EllipticRRData.lean     # Cycle 293+
+
+RrLean/RiemannRochV2/Adelic/
+└── StrongApproximation.lean ✅ Created (Cycle 291)
 ```
 
 ---
@@ -199,10 +248,11 @@ RrLean/RiemannRochV2/Elliptic/
 - Cannot use `MonicIrreduciblePoly` as generator in general infrastructure
 - Must use abstract `uniformizerAt` (local uniformizers always exist)
 
-### The "Strong Approximation Trap" (Cycle 289 discovery)
+### The "Strong Approximation Trap" (Cycle 289 discovery, RESOLVED Cycle 291)
 - P¹ proof uses `div_add_mod` (Euclidean division) - PID-specific!
 - Elliptic curves: cannot divide polynomials in non-Euclidean rings
-- **Solution**: Axiomatize `StrongApproximation` as typeclass
+- **CRITICAL**: Must define SA as DENSITY, not "A = K + O" (which kills H¹)
+- **Solution**: `StrongApprox` typeclass with `DenseRange` definition
 - Avoids circularity (SA proofs often use RR itself)
 
 ### Weil Differentials
@@ -221,10 +271,11 @@ RrLean/RiemannRochV2/Elliptic/
 | ResidueTheory | 7 | 2,000 | ✅ Complete |
 | Adelic (with sorries) | 4 | 2,500 | 90% complete |
 | SerreDuality/Abstract | 1 | 350 | 80% complete |
-| Elliptic | 4 | ~350 | ⏳ Setup + Canonical done |
+| Elliptic | 4 | ~400 | ⏳ Setup + Canonical + SA done |
+| Adelic/StrongApproximation | 1 | ~170 | ✅ NEW (Cycle 291) |
 
 **Total**: ~15K LOC, 98% P¹ complete
 
 ---
 
-*Updated Cycle 290: EllipticCanonical added (K=0). Next: StrongApproximation axiom (Cycle 291).*
+*Updated Cycle 291: StrongApprox typeclass with DenseRange definition. Next: EllipticH1 (Cycle 292).*

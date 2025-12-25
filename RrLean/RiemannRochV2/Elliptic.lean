@@ -1,6 +1,8 @@
 import RrLean.RiemannRochV2.Elliptic.EllipticSetup
 import RrLean.RiemannRochV2.Elliptic.EllipticPlaces
 import RrLean.RiemannRochV2.Elliptic.EllipticCanonical
+-- StrongApproximation typeclass (in Adelic/) with elliptic instance
+import RrLean.RiemannRochV2.Adelic.StrongApproximation
 
 /-!
 # Elliptic Curve Infrastructure for Riemann-Roch
@@ -14,11 +16,21 @@ instantiating Riemann-Roch on genus 1 curves.
 * `EllipticPlaces` - HeightOneSpectrum, local uniformizers
 * `EllipticCanonical` - K = 0 (trivial canonical divisor for g=1)
 
-## Status (Cycle 290)
+## Status (Cycle 291)
 
-Setup and canonical divisor complete. Future cycles will add:
+Setup, canonical divisor, and Strong Approximation complete. Future cycles will add:
 - `EllipticH1.lean` - H¹ calculations (dim = 1 for O)
 - `EllipticRRData.lean` - ProjectiveAdelicRRData instance
+
+## StrongApproximation (CRITICAL)
+
+The `StrongApprox` typeclass is defined as TOPOLOGICAL DENSITY:
+```lean
+class StrongApprox (R K) : Prop where
+  dense_in_finite_adeles : DenseRange (FiniteAdeleRing.algebraMap R K)
+```
+
+This is NOT "A = K + O" which would force H¹(O) = 0 and collapse genus!
 
 ## Mathematical Background
 
