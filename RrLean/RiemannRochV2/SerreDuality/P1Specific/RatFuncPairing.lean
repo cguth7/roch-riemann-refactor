@@ -791,11 +791,16 @@ This generalizes the linear place case to arbitrary monic irreducibles.
 
 /-- General principal part extraction predicate for any place v.
     `IsPrincipalPartAtSpec v p y r` means y = p + r, where p has poles only at v,
-    and r has no pole at v. -/
+    and r has no pole at v.
+
+    The fourth condition `intDegree_bound` ensures that p has negative intDegree
+    (or is zero), which is crucial for bounding infinity valuation. This follows
+    from the partial fractions construction: p = r₁/π^m with deg(r₁) < deg(π^m). -/
 def IsPrincipalPartAtSpec (v : HeightOneSpectrum (Polynomial Fq)) (p y r : RatFunc Fq) : Prop :=
   y = p + r ∧
   (∀ w : HeightOneSpectrum (Polynomial Fq), w ≠ v → w.valuation (RatFunc Fq) p ≤ 1) ∧
-  v.valuation (RatFunc Fq) r ≤ 1
+  v.valuation (RatFunc Fq) r ≤ 1 ∧
+  (p = 0 ∨ p.intDegree ≤ -1)
 
 /-- A rational function with denominator p^n has valuation ≤ 1 at all places where p is a unit.
 
@@ -849,6 +854,45 @@ lemma exists_eq_pow_mul_not_dvd {p f : Polynomial Fq} (hp_monic : p.Monic)
   obtain ⟨g, hfac, hndvd⟩ := hfin.exists_eq_pow_mul_and_not_dvd
   exact ⟨multiplicity p f, g, hfac, hndvd⟩
 
+/-! ### Integer Degree Bounds for Polynomial Fractions
+
+These lemmas establish that polynomial fractions r/d with deg(r) < deg(d) have negative
+intDegree. This is used to prove the intDegree bound in `IsPrincipalPartAtSpec`.
+-/
+
+/-- A polynomial fraction r/d with deg(r) < deg(d) has intDegree < 0 (when r ≠ 0).
+
+When r ≠ 0 and deg(r) < deg(d), we have:
+- intDegree(r/d) = natDegree(r) - natDegree(d) < 0
+
+This is the key property of principal parts: they have negative intDegree.
+-/
+lemma intDegree_div_lt_zero_of_deg_lt {r d : Polynomial Fq}
+    (hr : r ≠ 0) (hd : d ≠ 0) (hdeg : r.degree < d.degree) :
+    (algebraMap (Polynomial Fq) (RatFunc Fq) r /
+     algebraMap (Polynomial Fq) (RatFunc Fq) d).intDegree < 0 := by
+  -- For the quotient r/d as a RatFunc, intDegree = natDegree(num) - natDegree(denom)
+  have hr_map : algebraMap (Polynomial Fq) (RatFunc Fq) r ≠ 0 := RatFunc.algebraMap_ne_zero hr
+  have hd_map : algebraMap (Polynomial Fq) (RatFunc Fq) d ≠ 0 := RatFunc.algebraMap_ne_zero hd
+  -- intDegree(r/d) = intDegree(r) + intDegree(d⁻¹) = intDegree(r) - intDegree(d)
+  rw [div_eq_mul_inv, RatFunc.intDegree_mul hr_map (inv_ne_zero hd_map)]
+  rw [RatFunc.intDegree_inv, RatFunc.intDegree_polynomial, RatFunc.intDegree_polynomial]
+  -- Need: (r.natDegree : ℤ) + -(d.natDegree : ℤ) < 0
+  -- i.e., r.natDegree < d.natDegree
+  have hnat : r.natDegree < d.natDegree := Polynomial.natDegree_lt_natDegree hr hdeg
+  omega
+
+/-- A polynomial fraction r/d with deg(r) < deg(d) has intDegree ≤ -1 (when r ≠ 0).
+
+This strengthens `intDegree_div_lt_zero_of_deg_lt` to give the precise bound.
+-/
+lemma intDegree_div_le_neg_one_of_deg_lt {r d : Polynomial Fq}
+    (hr : r ≠ 0) (hd : d ≠ 0) (hdeg : r.degree < d.degree) :
+    (algebraMap (Polynomial Fq) (RatFunc Fq) r /
+     algebraMap (Polynomial Fq) (RatFunc Fq) d).intDegree ≤ -1 := by
+  have hlt := intDegree_div_lt_zero_of_deg_lt hr hd hdeg
+  omega
+
 /-- Principal parts exist for any rational function at any place.
 
 For y ∈ RatFunc Fq and v : HeightOneSpectrum, there exist p and r such that:
@@ -899,33 +943,30 @@ lemma exists_principal_part_at_spec (v : HeightOneSpectrum (Polynomial Fq)) (y :
   by_cases hm : m = 0
   · -- m = 0: y has no pole at v, so p_part = 0 and r_part = y
     use 0, y
-    constructor
-    · ring
-    constructor
-    · intro w _; simp
-    · -- y has no pole at v since denom is coprime to π
-      simp only [hm, pow_zero, one_mul] at hdenom_factor
-      -- denom = R and π ∤ R, so denom is coprime to π
-      have hcoprime : IsCoprime π denom := by
-        rw [hdenom_factor]
-        exact hπ_irr.coprime_iff_not_dvd.mpr hR_not_dvd
-      -- The valuation of y at v is: val(num) - val(denom)
-      -- val(denom) = 1 since π ∤ denom
-      -- val(num) ≤ 1 since num is a polynomial
-      have hval_denom : v.valuation (RatFunc Fq)
-          (algebraMap (Polynomial Fq) (RatFunc Fq) denom) = 1 := by
-        rw [v.valuation_of_algebraMap]
-        have hdenom_not_zero : denom ≠ 0 := hdenom_ne
-        have hdenom_not_mem : denom ∉ v.asIdeal := by
-          intro hmem
-          rw [hπ_span, Ideal.mem_span_singleton] at hmem
-          exact hπ_irr.not_isUnit (hcoprime.isUnit_of_dvd' (dvd_refl π) hmem)
-        exact_mod_cast intValuation_eq_one_iff.mpr hdenom_not_mem
-      have hval_num : v.valuation (RatFunc Fq)
-          (algebraMap (Polynomial Fq) (RatFunc Fq) num) ≤ 1 :=
-        polynomial_valuation_le_one v num
-      rw [← RatFunc.num_div_denom y, Valuation.map_div, hval_denom, div_one]
-      exact hval_num
+    refine ⟨by ring, by intro w _; simp, ?_, Or.inl rfl⟩
+    -- y has no pole at v since denom is coprime to π
+    simp only [hm, pow_zero, one_mul] at hdenom_factor
+    -- denom = R and π ∤ R, so denom is coprime to π
+    have hcoprime : IsCoprime π denom := by
+      rw [hdenom_factor]
+      exact hπ_irr.coprime_iff_not_dvd.mpr hR_not_dvd
+    -- The valuation of y at v is: val(num) - val(denom)
+    -- val(denom) = 1 since π ∤ denom
+    -- val(num) ≤ 1 since num is a polynomial
+    have hval_denom : v.valuation (RatFunc Fq)
+        (algebraMap (Polynomial Fq) (RatFunc Fq) denom) = 1 := by
+      rw [v.valuation_of_algebraMap]
+      have hdenom_not_zero : denom ≠ 0 := hdenom_ne
+      have hdenom_not_mem : denom ∉ v.asIdeal := by
+        intro hmem
+        rw [hπ_span, Ideal.mem_span_singleton] at hmem
+        exact hπ_irr.not_isUnit (hcoprime.isUnit_of_dvd' (dvd_refl π) hmem)
+      exact_mod_cast intValuation_eq_one_iff.mpr hdenom_not_mem
+    have hval_num : v.valuation (RatFunc Fq)
+        (algebraMap (Polynomial Fq) (RatFunc Fq) num) ≤ 1 :=
+      polynomial_valuation_le_one v num
+    rw [← RatFunc.num_div_denom y, Valuation.map_div, hval_denom, div_one]
+    exact hval_num
   · -- m > 0: Apply partial fractions
     have hm_pos : 0 < m := Nat.pos_of_ne_zero hm
     -- R is monic and nonzero
@@ -966,6 +1007,7 @@ lemma exists_principal_part_at_spec (v : HeightOneSpectrum (Polynomial Fq)) (y :
     · -- p_part has poles only at v, i.e., valuation ≤ 1 at all w ≠ v
       intro w hw
       exact valuation_le_one_at_coprime_place v w hw π hπ_span r₁ m
+    constructor
     · -- r_part has no pole at v
       -- r_part = q + r₂/R where q is polynomial and R is coprime to π
       -- q has val ≤ 1 at v (polynomial)
@@ -999,45 +1041,22 @@ lemma exists_principal_part_at_spec (v : HeightOneSpectrum (Polynomial Fq)) (y :
                algebraMap (Polynomial Fq) (RatFunc Fq) R)) := Valuation.map_add_le_max' _ _ _
         _ ≤ max 1 1 := max_le_max hq_val hr₂R_val
         _ = 1 := max_self 1
+    · -- intDegree bound: p_part = 0 ∨ p_part.intDegree ≤ -1
+      -- p_part = r₁/π^m where hdeg₁ : r₁.degree < (π ^ m).degree
+      by_cases hr₁ : r₁ = 0
+      · -- Case r₁ = 0: p_part = 0
+        left
+        simp only [p_part, hr₁, map_zero, zero_div]
+      · -- Case r₁ ≠ 0: use intDegree_div_le_neg_one_of_deg_lt
+        right
+        have hπm_ne : (π ^ m) ≠ 0 := pow_ne_zero m hπ_ne
+        exact intDegree_div_le_neg_one_of_deg_lt hr₁ hπm_ne hdeg₁
 
 /-! ### Infinity Valuation Bounds for Principal Parts
 
 Principal parts have negative intDegree, which bounds their infinity valuation.
 This is key for strong approximation: sums of principal parts have |·|_∞ ≤ exp(-1).
 -/
-
-/-- A polynomial fraction r/d with deg(r) < deg(d) has intDegree < 0 (when r ≠ 0).
-
-When r ≠ 0 and deg(r) < deg(d), we have:
-- intDegree(r/d) = natDegree(r) - natDegree(d) < 0
-
-This is the key property of principal parts: they have negative intDegree.
--/
-lemma intDegree_div_lt_zero_of_deg_lt {r d : Polynomial Fq}
-    (hr : r ≠ 0) (hd : d ≠ 0) (hdeg : r.degree < d.degree) :
-    (algebraMap (Polynomial Fq) (RatFunc Fq) r /
-     algebraMap (Polynomial Fq) (RatFunc Fq) d).intDegree < 0 := by
-  -- For the quotient r/d as a RatFunc, intDegree = natDegree(num) - natDegree(denom)
-  have hr_map : algebraMap (Polynomial Fq) (RatFunc Fq) r ≠ 0 := RatFunc.algebraMap_ne_zero hr
-  have hd_map : algebraMap (Polynomial Fq) (RatFunc Fq) d ≠ 0 := RatFunc.algebraMap_ne_zero hd
-  -- intDegree(r/d) = intDegree(r) + intDegree(d⁻¹) = intDegree(r) - intDegree(d)
-  rw [div_eq_mul_inv, RatFunc.intDegree_mul hr_map (inv_ne_zero hd_map)]
-  rw [RatFunc.intDegree_inv, RatFunc.intDegree_polynomial, RatFunc.intDegree_polynomial]
-  -- Need: (r.natDegree : ℤ) + -(d.natDegree : ℤ) < 0
-  -- i.e., r.natDegree < d.natDegree
-  have hnat : r.natDegree < d.natDegree := Polynomial.natDegree_lt_natDegree hr hdeg
-  omega
-
-/-- A polynomial fraction r/d with deg(r) < deg(d) has intDegree ≤ -1 (when r ≠ 0).
-
-This strengthens `intDegree_div_lt_zero_of_deg_lt` to give the precise bound.
--/
-lemma intDegree_div_le_neg_one_of_deg_lt {r d : Polynomial Fq}
-    (hr : r ≠ 0) (hd : d ≠ 0) (hdeg : r.degree < d.degree) :
-    (algebraMap (Polynomial Fq) (RatFunc Fq) r /
-     algebraMap (Polynomial Fq) (RatFunc Fq) d).intDegree ≤ -1 := by
-  have hlt := intDegree_div_lt_zero_of_deg_lt hr hd hdeg
-  omega
 
 /-- A nonzero polynomial fraction r/d with deg(r) < deg(d) has inftyValuationDef ≤ exp(-1).
 
@@ -1065,39 +1084,25 @@ lemma inftyValuationDef_zero_le_exp_neg_one [DecidableEq (RatFunc Fq)] :
 
 This is a key bound for strong approximation: principal parts have small infinity valuation.
 
-**Mathematical fact**: The construction in `exists_principal_part_at_spec` produces
-p = r₁/π^m where deg(r₁) < deg(π^m), giving intDegree(p) ≤ -1.
-
-Note: This does NOT follow from `IsPrincipalPartAtSpec` alone, which is too weak
-(it allows polynomials as "principal parts"). The bound comes from the specific
-construction using partial fractions with remainder terms.
-
-**Proof outline**:
-1. When m = 0: p = 0, so inftyValuationDef = 0 ≤ exp(-1)
-2. When m > 0: p = r₁/π^m with deg(r₁) < m·deg(π) from partial fractions
-3. Apply intDegree_div_le_neg_one_of_deg_lt to get intDegree(p) ≤ -1
-4. Hence inftyValuationDef(p) = exp(intDegree(p)) ≤ exp(-1)
+The fourth condition of `IsPrincipalPartAtSpec` guarantees that either p = 0 or
+p.intDegree ≤ -1, which implies inftyValuationDef(p) ≤ exp(-1).
 -/
 lemma principal_part_inftyValuationDef_le_exp_neg_one [DecidableEq (RatFunc Fq)]
     (v : HeightOneSpectrum (Polynomial Fq)) (y : RatFunc Fq) :
     ∀ p r : RatFunc Fq, IsPrincipalPartAtSpec v p y r →
       FunctionField.inftyValuationDef Fq p ≤ WithZero.exp (-1 : ℤ) := by
-  intro p r _hp
-  by_cases hp_zero : p = 0
-  · rw [hp_zero]
+  intro p r hp
+  -- Use the intDegree bound from IsPrincipalPartAtSpec
+  rcases hp.2.2.2 with hp_zero | hp_deg
+  · -- Case p = 0: trivial
+    rw [hp_zero]
     exact inftyValuationDef_zero_le_exp_neg_one
-  · -- The key mathematical fact: principal parts from the partial fractions construction
-    -- have p = r₁/π^m where deg(r₁) < deg(π^m), so intDegree(p) ≤ -1.
-    -- This follows from exists_principal_part_at_spec using div_eq_quo_add_rem_div_add_rem_div.
-    --
-    -- The predicate IsPrincipalPartAtSpec is too weak to prove this directly -
-    -- it would allow p to be a polynomial, which has intDegree ≥ 0.
-    -- We rely on the specific construction from exists_principal_part_at_spec.
-    --
-    -- For a complete proof, we would need to either:
-    -- 1. Strengthen IsPrincipalPartAtSpec to include intDegree ≤ -1, or
-    -- 2. Prove this directly from the construction, not from the predicate
-    sorry
+  · -- Case p.intDegree ≤ -1: use exp is monotone
+    rw [@FunctionField.inftyValuation_of_nonzero Fq _ _ _ (by
+      intro heq
+      simp only [heq, RatFunc.intDegree_zero] at hp_deg
+      omega)]
+    exact WithZero.exp_le_exp.mpr hp_deg
 
 /-- Sums of elements have bounded infinity valuation by ultrametric inequality. -/
 lemma p1InftyPlace_valuation_sum_le
@@ -1437,7 +1442,7 @@ lemma exists_global_approximant_from_local
 
     -- val_v(r_v) ≤ 1 from IsPrincipalPartAtSpec
     have hr_val : (v : HeightOneSpectrum (Polynomial Fq)).valuation (RatFunc Fq) (r v) ≤ 1 :=
-      (h_decomp v).2.2
+      (h_decomp v).2.2.1
 
     -- For each w : S with w ≠ v: val_v(pp_w) ≤ 1 (pp_w has poles only at w)
     have hpp_val : ∀ w : S, w ≠ v →

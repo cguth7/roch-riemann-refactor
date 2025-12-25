@@ -7,22 +7,21 @@ Tactical tracking for Riemann-Roch formalization.
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 294 (In Progress)
-**Total Sorries**: 11 (4 AdelicH1Full + 1 Abstract + 1 EllipticSetup + 2 StrongApproximation + 2 EllipticH1 + 1 RatFuncPairing)
+**Cycle**: 295 (Complete)
+**Total Sorries**: 10 (4 AdelicH1Full + 1 Abstract + 1 EllipticSetup + 2 StrongApproximation + 2 EllipticH1)
 **Elliptic Axioms**: 8 (in addition to sorries: 3 in EllipticH1 + 3 in EllipticRRData + 1 in EllipticPlaces + 1 h1_zero_finite)
 
 ---
 
 ## Sorry Classification
 
-### Content Sorries (5) - Actual proof work needed
+### Content Sorries (4) - Actual proof work needed
 | Location | Description | Priority |
 |----------|-------------|----------|
-| RatFuncPairing:1081 | Principal part infinity bound (IsPrincipalPartAtSpec too weak) | **High** |
-| AdelicH1Full:698 | Strong approximation infinity bound (blocked by above) | Medium |
-| AdelicH1Full:817 | Deep negative inftyCoeff case | Medium |
-| AdelicH1Full:1213 | Degree gap in L(K-D)=0 | High |
-| AdelicH1Full:1283 | Non-effective + IsLinearPlaceSupport | Low |
+| AdelicH1Full:619 | Strong approximation infinity bound (needs chain from RatFuncPairing) | **High** |
+| AdelicH1Full:763 | Deep negative inftyCoeff case | Medium |
+| AdelicH1Full:1167 | Degree gap in L(K-D)=0 | High |
+| AdelicH1Full:1233 | Non-effective + IsLinearPlaceSupport | Low |
 
 ### Infrastructure Sorries (5) - Trivial for algebraically closed fields
 | Location | Description | Status |
@@ -82,77 +81,61 @@ theorem h1_finrank_full_eq_zero_of_deg_ge_neg_one ...
 
 ---
 
-## Cycle 294: Infinity Valuation Bound (In Progress)
+## Cycle 295: IsPrincipalPartAtSpec Strengthened (Complete)
 
-**Goal**: Prove `|k₂|_∞ ≤ exp(-1)` at AdelicH1Full.lean:698
+**Goal**: Fill the sorry in `principal_part_inftyValuationDef_le_exp_neg_one`
 
-### Progress Made
-1. ✅ Investigated sorry context - k₂ comes from `strong_approximation_ratfunc`
-2. ✅ Traced structure: when D.finite effective, k₂ = sum of principal parts
-3. ✅ Added key lemmas to RatFuncPairing.lean (lines 1002-1061):
+### Achievement
+Strengthened `IsPrincipalPartAtSpec` to include a fourth condition guaranteeing the
+intDegree bound, then filled the sorry.
 
-```lean
--- Principal parts have negative intDegree
-lemma intDegree_div_lt_zero_of_deg_lt {r d : Polynomial Fq}
-    (hr : r ≠ 0) (hd : d ≠ 0) (hdeg : r.degree < d.degree) :
-    (algebraMap r / algebraMap d).intDegree < 0
+### Changes Made
+1. **Updated `IsPrincipalPartAtSpec`** (RatFuncPairing.lean:799):
+   - Added fourth condition: `p = 0 ∨ p.intDegree ≤ -1`
+   - This captures that principal parts have negative intDegree (or are zero)
 
-lemma intDegree_div_le_neg_one_of_deg_lt ...  -- intDegree ≤ -1
+2. **Moved intDegree lemmas** (RatFuncPairing.lean:857-894):
+   - Moved `intDegree_div_lt_zero_of_deg_lt` and `intDegree_div_le_neg_one_of_deg_lt`
+     before `exists_principal_part_at_spec` so they can be used in the proof
 
-lemma inftyValuationDef_le_exp_neg_one_of_deg_lt [DecidableEq (RatFunc Fq)]
-    {r d : Polynomial Fq} (hr : r ≠ 0) (hd : d ≠ 0) (hdeg : r.degree < d.degree) :
-    FunctionField.inftyValuationDef Fq (r/d) ≤ WithZero.exp (-1)
-```
+3. **Updated `exists_principal_part_at_spec`** (RatFuncPairing.lean:907 & 1044-1053):
+   - m=0 case: `Or.inl rfl` (p = 0)
+   - m>0 case: Either r₁ = 0 or use `intDegree_div_le_neg_one_of_deg_lt` with hdeg₁
 
-4. ✅ Added ultrametric sum lemma (RatFuncPairing.lean:1103):
+4. **Filled sorry in `principal_part_inftyValuationDef_le_exp_neg_one`** (RatFuncPairing.lean:1094-1105):
+   - Use the fourth condition: `rcases hp.2.2.2 with hp_zero | hp_deg`
+   - p = 0: trivial (inftyValuationDef 0 = 0 ≤ exp(-1))
+   - p.intDegree ≤ -1: use `FunctionField.inftyValuation_of_nonzero` and `WithZero.exp_le_exp`
 
-```lean
--- Sums with bounded valuations have bounded valuation (ultrametric)
-lemma p1InftyPlace_valuation_sum_le
-    (S : Finset (HeightOneSpectrum (Polynomial Fq))) (pp : S → RatFunc Fq)
-    (hpp : ∀ s : S, (p1InftyPlace Fq).valuation (pp s) ≤ exp(-1)) :
-    (p1InftyPlace Fq).valuation (∑ s : S, pp s) ≤ exp(-1)
-```
+5. **Fixed accessor** (RatFuncPairing.lean:1445):
+   - Changed `.2.2` to `.2.2.1` to account for new 4-field structure
 
-5. ✅ Added principal part bound lemma (RatFuncPairing.lean:1081 - WITH SORRY):
+### Result
+- **Sorry count: 11 → 10**
+- RatFuncPairing.lean:1081 sorry is now **FILLED**
+- The infrastructure for infinity valuation bounds is complete
 
-```lean
--- Principal parts from exists_principal_part_at_spec have infinity val ≤ exp(-1)
-lemma principal_part_inftyValuationDef_le_exp_neg_one ...  -- HAS SORRY
-```
+### What's Unblocked
+The AdelicH1Full.lean:619 sorry can now be filled by:
+1. Observing that `strong_approximation_ratfunc` with effective D returns k = k_pole
+2. k_pole = Σ pp_v (sum of principal parts from `exists_principal_part_at_spec`)
+3. Apply `principal_part_inftyValuationDef_le_exp_neg_one` to each pp_v
+4. Apply `p1InftyPlace_valuation_sum_le` (ultrametric) for the sum
 
-### Key Blocker Identified
+---
 
-**`IsPrincipalPartAtSpec` is too weak!**
+## Cycle 294: Infinity Valuation Investigation (Complete)
 
-The predicate `IsPrincipalPartAtSpec v p y r` only says:
-- y = p + r
-- val_w(p) ≤ 1 for all w ≠ v (p has poles only at v)
-- val_v(r) ≤ 1 (r has no pole at v)
+**Goal**: Investigate the sorry at AdelicH1Full.lean:698
 
-This does NOT imply deg(num) < deg(denom) for p, so intDegree could be ≥ 0.
-A polynomial p = X satisfies `IsPrincipalPartAtSpec` but has intDegree = 1 > 0.
+### Finding
+Identified that `IsPrincipalPartAtSpec` was too weak - it only constrained valuations,
+not degrees. The construction produces p = r₁/π^m with deg(r₁) < deg(π^m), but this
+wasn't captured in the predicate.
 
-**Solution Options**:
-1. **Strengthen `IsPrincipalPartAtSpec`** to include `p.intDegree ≤ -1 ∨ p = 0`
-2. **Work directly with the construction** from `exists_principal_part_at_spec`
-   - The construction produces p = r₁/π^m with deg(r₁) < deg(π^m) from partial fractions
-   - Track this degree bound through the proof chain
-
-### What Remains
-1. **Fill sorry in `principal_part_inftyValuationDef_le_exp_neg_one`**
-   - Either strengthen `IsPrincipalPartAtSpec` or prove from construction
-2. **Chain through `exists_global_approximant_from_local`**
-   - When all n_v ≥ 0, returns k_pole = Σ pp_v
-   - Apply sum lemma with individual bounds
-3. **Create `strong_approximation_ratfunc_with_infty_bound`**
-   - Export both bounded property AND infinity bound when D.Effective
-4. **Use in AdelicH1Full.lean:698**
-
-### Technical Notes
-- New sorry at RatFuncPairing.lean:1081 (principal_part_inftyValuationDef_le_exp_neg_one)
-- Total sorry count: 11 (was 10, +1 for new infrastructure lemma)
-- The new sorry localizes the problem to a single clear statement
+### Solution Designed
+Strengthen `IsPrincipalPartAtSpec` to add fourth condition: `p = 0 ∨ p.intDegree ≤ -1`.
+This was implemented in Cycle 295.
 
 ---
 
@@ -367,56 +350,44 @@ structure LocalUniformizer (v : EllipticPlace W) where
 
 ---
 
-## Next Steps: Cycles 295+ (Sorry Cleanup)
+## Next Steps: Cycles 296+ (Sorry Cleanup)
 
 ### Updated Plan
 
 | Cycle | Task | Status |
 |-------|------|--------|
 | 293 | EllipticRRData instance + RR proofs | ✅ Complete |
-| 294 | Investigate infinity valuation bound | ✅ Complete (blocker identified) |
-| 295 | Fix IsPrincipalPartAtSpec + fill RatFuncPairing:1081 | **Next** |
-| 296 | Chain infinity bound to AdelicH1Full:698 | Uses 295 |
-| 297 | IsLinearPlaceSupport: add [IsAlgClosed] OR refactor to weighted deg | Cleanup |
-| 298 | Fill Abstract.lean deg < -1 cases | Low priority |
+| 294 | Investigate infinity valuation bound | ✅ Complete |
+| 295 | Fix IsPrincipalPartAtSpec + fill RatFuncPairing:1081 | ✅ Complete |
+| 296 | Chain infinity bound to AdelicH1Full:619 | **Next** |
+| 297 | Fill remaining AdelicH1Full sorries | Uses 296 |
+| 298 | IsLinearPlaceSupport: add [IsAlgClosed] OR refactor | Cleanup |
 
 ### Sorry Cleanup Strategy
 
-**Phase 1: Fix IsPrincipalPartAtSpec (Cycle 295) - CORE BLOCKER**
-- Target: RatFuncPairing.lean line 1081
-- Problem: `IsPrincipalPartAtSpec` doesn't constrain degrees, only valuations
-- **Option A**: Strengthen predicate to include `p.intDegree ≤ -1 ∨ p = 0`
-- **Option B**: Create new lemma working directly with `exists_principal_part_at_spec` construction
-  - The construction produces `p = r₁/π^m` with `deg(r₁) < deg(π^m)` from partial fractions
-  - Track this degree bound through the proof
+**Phase 1: Fix IsPrincipalPartAtSpec (Cycle 295) - ✅ DONE**
+- Strengthened predicate with fourth condition: `p = 0 ∨ p.intDegree ≤ -1`
+- Filled RatFuncPairing.lean sorry
 
-**Phase 2: Chain to AdelicH1Full (Cycle 296)**
-- Target: AdelicH1Full.lean line 698
-- Once RatFuncPairing:1081 is filled:
-  1. Chain through `exists_global_approximant_from_local`
-  2. Create `strong_approximation_ratfunc_with_infty_bound`
-  3. Use in AdelicH1Full
+**Phase 2: Chain to AdelicH1Full (Cycle 296) - NEXT**
+- Target: AdelicH1Full.lean line 619
+- With RatFuncPairing:1081 now filled:
+  1. Create `strong_approximation_ratfunc_with_infty_bound` (exports infinity bound for effective D)
+  2. Or directly trace through construction showing k = k_pole = Σ pp_v
+  3. Apply `principal_part_inftyValuationDef_le_exp_neg_one` to each pp_v
+  4. Apply `p1InftyPlace_valuation_sum_le` (ultrametric) for the sum
 
-**Phase 3: Remaining Strong Approximation Proofs (Cycle 297)**
-- Targets: AdelicH1Full.lean lines 817, 1213, 1283
-- Uses the infrastructure from Phase 1-2
-- Complete all full adele strong approximation theorems
+**Phase 3: Remaining AdelicH1Full Sorries (Cycle 297)**
+- Targets: lines 763, 1167, 1233
+- May reuse infrastructure from Phase 2
 
 **Phase 4: IsLinearPlaceSupport Resolution (Cycle 298)**
-- Target: Abstract.lean lines 294, 312, 345
+- Target: Abstract.lean line 277
 - **Key Insight**: `IsLinearPlaceSupport` is NOT provable for finite Fq!
-  - `DivisorV2.deg` is UNWEIGHTED: `D.sum (fun _ n => n)`
-  - For places of degree > 1, unweighted ≠ weighted degree
-  - `IsLinearPlaceSupport` was a workaround, not a theorem to prove
 - **Options**:
-  1. Add `[IsAlgClosed Fq]` hypothesis (all places degree 1)
-  2. Refactor to use weighted degrees throughout (eliminates hypothesis)
-- Decision deferred until Phase 1-3 complete
-
-**Phase 5: Deep Negative Degree (Cycle 299 - Optional)**
-- Targets: Abstract.lean lines 299, 351
-- deg(D) < -1 cases require Serre duality argument
-- Low priority - most applications have deg(D) ≥ -1
+  1. Add `[IsAlgClosed Fq]` hypothesis
+  2. Refactor to weighted degrees
+- Decision deferred until Phase 2-3 complete
 
 ### Axiom Stack (Safe, Standard AG)
 | Axiom | File | Justification |
@@ -485,4 +456,4 @@ RrLean/RiemannRochV2/Adelic/
 
 ---
 
-*Updated Cycle 293: EllipticRRData with AdelicRRData instance. Elliptic RR theorem proved: ℓ(D) - ℓ(-D) = deg(D).*
+*Updated Cycle 295: Strengthened IsPrincipalPartAtSpec with intDegree bound. Filled RatFuncPairing sorry. Sorry count: 11 → 10.*
