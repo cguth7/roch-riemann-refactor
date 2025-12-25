@@ -140,9 +140,9 @@ theorem h1_finrank_full_eq_zero_deep_neg_infty (D : ExtendedDivisor (Polynomial 
 ## Next Steps: Cycle 286
 
 Options:
-1. **Prove the deep negative sorry** - fill `globalPlusBoundedSubmodule_full_eq_top_deep_neg_infty` by showing K_S dense in K_∞
-2. **Prove the accepted sorry** - tackle `inftyValuationDef k₂ ≤ exp(-1)` at AdelicH1Full.lean:619
-3. **Handle non-effective divisors** - characterize L(D) and H¹(D) when D.finite not effective
+1. **Handle non-effective divisors** - fill 3 sorries for D.finite not effective case (Abstract.lean:292, 307, 336)
+2. **Prove the deep negative sorry** - fill `globalPlusBoundedSubmodule_full_eq_top_deep_neg_infty` by showing K_S dense in K_∞
+3. **Prove the accepted sorry** - tackle `inftyValuationDef k₂ ≤ exp(-1)` at AdelicH1Full.lean:619
 4. **Begin elliptic curve infrastructure** - extend Place type to support higher genus
 
 ---
