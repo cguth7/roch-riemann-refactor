@@ -1220,6 +1220,51 @@ lemma DivisorV2.deg_eq_posPart_sub_negPart (D : DivisorV2 (Polynomial Fq)) :
   rw [sub_eq_add_neg, DivisorV2.deg_add, DivisorV2.deg_neg]
   ring
 
+/-- Key degree bound: For f ≠ 0 satisfying the valuation constraint at all places
+and with denom zeros only at negative places, f.intDegree ≥ D.deg.
+
+**Mathematical Proof**:
+
+At each place v, the valuation constraint val_v(f) ≤ exp(-D(v)) implies:
+  ord_v(num) - ord_v(denom) ≥ D(v)
+
+Split D.support into positive (D > 0) and negative (D < 0) places:
+
+1. At v with D(v) > 0:
+   - val_v(f) ≤ exp(-D(v)) < 1 forces f to have zeros at v
+   - In reduced form num/denom: num has zeros, denom doesn't (coprimality)
+   - So ord_v(num) ≥ D(v) and ord_v(denom) = 0
+
+2. At v with D(v) < 0:
+   - The constraint gives ord_v(num) - ord_v(denom) ≥ D(v)
+
+3. At v with D(v) = 0 (including v ∉ D.support):
+   - From hdenom_only_neg: denom ∉ v.asIdeal, so ord_v(denom) = 0
+
+For polynomial degrees:
+  num.natDegree = Σ_v ord_v(num) · deg(v)
+  denom.natDegree = Σ_{D<0} ord_v(denom) · deg(v)  (zeros only at negative places)
+
+With IsLinearPlaceSupport (deg(v) = 1 for v ∈ D.support):
+  f.intDegree = num.natDegree - denom.natDegree
+             ≥ Σ_{v ∈ D.support} ord_v(num) - Σ_{D<0} ord_v(denom)
+             = Σ_{D>0} ord_v(num) + Σ_{D<0} (ord_v(num) - ord_v(denom))
+             ≥ Σ_{D>0} D(v) + Σ_{D<0} D(v)
+             = D.deg
+
+This infrastructure requires lemmas relating polynomial degree to sum of multiplicities
+at all places, which is partially in PlaceDegree.lean for effective divisors.
+-/
+lemma intDegree_ge_deg_of_valuation_and_denom_constraint
+    (D : DivisorV2 (Polynomial Fq)) (f : RatFunc Fq) (hf_ne : f ≠ 0)
+    (hf_val : ∀ v, v.valuation (RatFunc Fq) f ≤ WithZero.exp (-D v))
+    (hdenom_only_neg : ∀ v, f.denom ∈ v.asIdeal → D v < 0)
+    (hlin : IsLinearPlaceSupport D) :
+    f.intDegree ≥ D.deg := by
+  -- The full formalization requires PlaceDegree infrastructure for non-effective divisors.
+  -- The mathematical proof is outlined in the docstring above.
+  sorry
+
 /-- L(K-D) = {0} when deg(D) ≥ -1 and D.finite is supported on linear places.
 
 For algebraically closed fields, all places have degree 1, so IsLinearPlaceSupport
@@ -1299,24 +1344,23 @@ theorem RRSpace_proj_ext_canonical_sub_eq_bot_of_deg_ge_neg_one
         by_contra h; push_neg at h
         have := denom_not_mem_of_valuation_constraint Fq D.finite f hf_ne hf_val' v h
         exact this hv_mem
-      -- Step 2: The degree argument
-      -- For non-effective D.finite with deg(D) ≥ -1 and IsLinearPlaceSupport:
-      -- - num must have zeros at positive places (contributing to num.natDegree)
-      -- - denom can only have zeros at negative places (bounded denom.natDegree)
-      -- - Combined: deg(f) ≥ D.finite.deg > -2 - D.inftyCoeff ≥ deg(f), contradiction!
-      --
-      -- The detailed degree bound requires formalizing:
-      -- 1. val_v(f) ≤ exp(-n) for n > 0 implies f has zeros of multiplicity ≥ n at v
-      -- 2. In reduced form num/denom: if f has zeros at v, num has them, denom doesn't
-      -- 3. Sum of zero multiplicities × place degrees = polynomial degree
-      --
-      -- This infrastructure exists partially in PlaceDegree.lean for effective divisors.
-      -- For non-effective, we need to extend it to handle both positive and negative parts.
-      --
-      -- For now, this sorry represents the degree counting argument which is mathematically
-      -- complete (as outlined above) but requires additional PlaceDegree infrastructure.
-      -- The sorry is localized to the degree bound: deg(f) ≥ D.finite.deg
-      sorry
+      -- Step 2: Apply the degree counting lemma
+      -- This lemma shows: f.intDegree ≥ D.finite.deg
+      have hdeg_lower : f.intDegree ≥ D.finite.deg :=
+        intDegree_ge_deg_of_valuation_and_denom_constraint Fq D.finite f hf_ne hf_val' hdenom_only_neg hlin
+      -- Step 3: Contradiction
+      -- We have: f.intDegree ≥ D.finite.deg > -2 - D.inftyCoeff ≥ f.intDegree
+      -- From hdeg_f: f.intDegree = f.num.natDegree - f.denom.natDegree ≤ -2 - D.inftyCoeff
+      have hf_int_upper : f.intDegree ≤ -2 - D.inftyCoeff := by
+        simp only [RatFunc.intDegree]; exact hdeg_f
+      -- From h_deg_gap: D.finite.deg > -2 - D.inftyCoeff
+      -- Combined with hdeg_lower: f.intDegree ≥ D.finite.deg > -2 - D.inftyCoeff ≥ f.intDegree
+      -- This is a contradiction!
+      have hcontra : f.intDegree < f.intDegree := calc
+        f.intDegree ≤ -2 - D.inftyCoeff := hf_int_upper
+        _ < D.finite.deg := h_deg_gap
+        _ ≤ f.intDegree := hdeg_lower
+      exact absurd hcontra (lt_irrefl _)
   · intro hf; rw [hf]; exact Or.inl rfl
 
 /-- ℓ(K-D) = 0 when deg(D) ≥ -1 and D.finite is supported on linear places. -/
