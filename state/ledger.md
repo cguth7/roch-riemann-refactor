@@ -5,21 +5,28 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 302
-**Total Sorries**: 11
+**Cycle**: 303
+**Total Sorries**: 14 (5 new infrastructure + 3 high-level + 6 axioms)
 **Elliptic Axioms**: 8
 
 ---
 
 ## Sorry Classification
 
-### Content Sorries (5)
+### Content Sorries - New Infrastructure (5)
 | Location | Line | Description | Difficulty |
 |----------|------|-------------|------------|
-| PlaceDegree | 155 | `linear_of_degree_eq_one` | **Low** ← NEXT |
-| PlaceDegree | 524 | `intDegree_ge_deg_of_valuation_bounds_and_linear_support` | Medium |
+| PlaceDegree | 550 | `ord_generator_self` | Low ← NEXT |
+| PlaceDegree | 555 | `ord_generator_other` | Low |
+| PlaceDegree | 562 | `intValuation_eq_exp_neg_ord` | Medium |
+| PlaceDegree | 581 | `natDegree_eq_sum_ord_mul_degree` | Medium |
+| PlaceDegree | 611 | `intDegree_ge_deg_of_valuation_bounds_and_linear_support` | Blocked on above |
+
+### Content Sorries - High Level (3)
+| Location | Line | Description | Difficulty |
+|----------|------|-------------|------------|
 | AdelicH1Full | 757 | Deep negative inftyCoeff | High |
-| AdelicH1Full | 1328 | Degree gap lemma | Medium |
+| AdelicH1Full | 1328 | Degree gap lemma | Medium (blocked) |
 | AdelicH1Full | 1460 | Non-effective strong approx | High |
 
 ### Axiom Sorries (6) - Intentional
@@ -52,18 +59,25 @@
 
 | Cycle | Task | Status |
 |-------|------|--------|
-| 303 | Fill `linear_of_degree_eq_one` | **NEXT** (Low) |
-| 304 | Fill main degree-valuation lemma | Blocked on 303 |
-| 305 | Fill AdelicH1Full:1328 | Blocked on 304 |
-| 306+ | Infinity bound sorries | Needs new approach |
+| 303 | Fill `linear_of_degree_eq_one` + add ord infrastructure | ✅ DONE |
+| 304 | Fill `ord_generator_self` and `ord_generator_other` | **NEXT** (Low) |
+| 305 | Fill `intValuation_eq_exp_neg_ord` | Medium |
+| 306 | Fill `natDegree_eq_sum_ord_mul_degree` | Medium (UFD) |
+| 307 | Fill `intDegree_ge_deg...` using above | Blocked |
+| 308+ | High-level AdelicH1Full sorries | Blocked |
 
-### Cycle 303 Target
-**File**: PlaceDegree.lean:155
-**Lemma**: `linear_of_degree_eq_one`
+### Cycle 304 Target
+**File**: PlaceDegree.lean:550, 555
+**Lemmas**: `ord_generator_self`, `ord_generator_other`
 **Proof sketch**:
-1. degree(v) = 1 means generator(v).natDegree = 1
-2. Monic degree-1 polynomial = X - C α (use `Polynomial.natDegree_eq_one`)
-3. So generator(v) = X - C α, hence v = linearPlace α
+- `ord_generator_self`: gen^1 | gen trivially; gen^2 ∤ gen because irreducible
+- `ord_generator_other`: gen(w)^1 ∤ gen(v) by coprimality (use `generator_not_mem_other_prime`)
+
+### New Infrastructure (Cycle 303)
+Added foundational ord/degree framework in PlaceDegree.lean:
+- `exists_pow_generator_not_dvd` - Well-foundedness for ord ✅
+- `ord` - Multiplicity of p at place v (via Nat.find) ✅ (defn)
+- `natDegree_eq_sum_ord_mul_degree` - Key UFD theorem (sorry)
 
 ---
 
@@ -83,4 +97,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 302. See ledger_archive.md for historical cycles.*
+*Updated Cycle 303. See ledger_archive.md for historical cycles.*

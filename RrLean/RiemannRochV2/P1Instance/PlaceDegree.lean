@@ -154,9 +154,22 @@ so v = linearPlace α for some α ∈ k.
 This is the converse of `linearPlace_degree_eq_one`. -/
 lemma linear_of_degree_eq_one (v : HeightOneSpectrum (Polynomial k)) (hdeg : degree k v = 1) :
     ∃ α : k, v = linearPlace α := by
-  -- The generator has natDegree 1, so it's X - C α for some α
-  -- Then v.asIdeal = span{X - C α} = (linearPlace α).asIdeal
-  sorry
+  -- The generator has natDegree 1
+  have hgen_monic := generator_monic k v
+  have hgen_deg : (generator k v).natDegree = 1 := hdeg
+  -- Monic degree-1 polynomial is X + C b for some b
+  have hform := hgen_monic.eq_X_add_C hgen_deg
+  -- Let α = -b, so generator = X - C α
+  use -(generator k v).coeff 0
+  -- v.asIdeal = span{generator} = span{X - C α} = (linearPlace α).asIdeal
+  apply HeightOneSpectrum.ext
+  rw [asIdeal_eq_span_generator k v, hform]
+  -- Now goal is: span{X + C b} = span{X - C (-b)}
+  -- These are equal since X + C b = X - C (-b)
+  congr 1
+  -- Goal: X + C b = X + C ((X + C b).coeff 0), but (X + C b).coeff 0 = b
+  simp only [Set.singleton_eq_singleton_iff, map_neg, sub_neg_eq_add, coeff_add, coeff_X_zero,
+             coeff_C_zero, zero_add]
 
 /-! ## Finrank of Residue Field -/
 
@@ -501,6 +514,80 @@ This comes from unique factorization: p = u * ∏_v generator(v)^{ord_v(p)}
 where u is the leading coefficient (a unit in k).
 -/
 
+/-- For any nonzero polynomial p, there exists n such that generator(v)^n ∤ p.
+
+This is needed to define the order (multiplicity) as a Nat.find.
+Proof: natDegree(generator(v)^n) = n * degree(v) grows without bound,
+but natDegree(p) is fixed, so eventually gen^n cannot divide p. -/
+lemma exists_pow_generator_not_dvd (v : HeightOneSpectrum (Polynomial k))
+    (p : Polynomial k) (hp : p ≠ 0) :
+    ∃ n : ℕ, ¬(generator k v ^ n ∣ p) := by
+  -- For large enough n, natDegree(gen^n) > natDegree(p), so gen^n ∤ p
+  use p.natDegree + 1
+  intro hdvd
+  have hgen_monic := generator_monic k v
+  have hdeg_pos := degree_pos k v
+  have hbound := natDegree_ge_of_pow_dvd k hgen_monic hp (p.natDegree + 1) hdvd
+  -- hbound: p.natDegree ≥ (p.natDegree + 1) * degree k v ≥ p.natDegree + 1
+  have h1 : (p.natDegree + 1) * degree k v ≥ p.natDegree + 1 :=
+    Nat.le_mul_of_pos_right (p.natDegree + 1) hdeg_pos
+  have h2 : p.natDegree ≥ p.natDegree + 1 := Nat.le_trans h1 hbound
+  exact Nat.not_succ_le_self p.natDegree h2
+
+/-- The order (multiplicity) of a polynomial at a place v.
+
+For p ≠ 0, this is the largest n such that generator(v)^n | p.
+For p = 0, we define ord = 0 (though valuation is infinite).
+
+This uses the divisibility-based definition which is more constructive
+than the Associates.count approach for Polynomial k. -/
+noncomputable def ord (v : HeightOneSpectrum (Polynomial k)) (p : Polynomial k) : ℕ :=
+  if hp : p = 0 then 0
+  else @Nat.find (fun n => ¬(generator k v ^ n ∣ p)) (Classical.decPred _)
+    (exists_pow_generator_not_dvd k v p hp)
+
+/-- At the generator's own place, ord = 1. -/
+lemma ord_generator_self (v : HeightOneSpectrum (Polynomial k)) :
+    ord k v (generator k v) = 1 := by
+  sorry -- gen^1 | gen, but gen^2 ∤ gen (irreducible)
+
+/-- At a different place, ord of generator = 0. -/
+lemma ord_generator_other (v w : HeightOneSpectrum (Polynomial k)) (hw : w ≠ v) :
+    ord k w (generator k v) = 0 := by
+  sorry -- gen(w)^1 ∤ gen(v) by coprimality
+
+/-- The intValuation relates to ord via exp(-ord).
+
+Note: This is a key bridge between the valuation and divisibility views. -/
+lemma intValuation_eq_exp_neg_ord (v : HeightOneSpectrum (Polynomial k))
+    (p : Polynomial k) (hp : p ≠ 0) :
+    v.intValuation p = WithZero.exp (-(ord k v p : ℤ)) := by
+  -- The key insight: both definitions count the same thing
+  -- intValuation uses Associates.count on ideals
+  -- ord uses divisibility of generator
+  -- These agree because v.asIdeal = span{generator(v)}
+  sorry
+
+/-- **Key Theorem**: natDegree equals sum of ord × degree over all places.
+
+This is the algebraic foundation for degree bounds. It follows from:
+1. p = leadingCoeff * ∏_v generator(v)^{ord_v(p)} (unique factorization)
+2. natDegree is additive: natDegree(a*b) = natDegree(a) + natDegree(b)
+3. natDegree(generator(v)) = degree(v) by definition
+4. natDegree(c) = 0 for constants c ∈ k
+
+The sum is finite because p has only finitely many irreducible factors.
+-/
+theorem natDegree_eq_sum_ord_mul_degree (p : Polynomial k) (hp : p ≠ 0)
+    (S : Finset (HeightOneSpectrum (Polynomial k)))
+    (hS : ∀ v, ord k v p ≠ 0 → v ∈ S) :
+    (p.natDegree : ℤ) = ∑ v ∈ S, (ord k v p : ℤ) * (degree k v : ℤ) := by
+  -- The proof uses unique factorization in k[X]
+  -- p = c * ∏ gen(v)^{ord_v(p)} where c = leadingCoeff / (product of leading coeffs)
+  -- Since generators are monic, c = leadingCoeff (a unit in k)
+  -- natDegree(p) = natDegree(∏ gen(v)^{ord_v(p)}) = Σ ord_v(p) * natDegree(gen(v))
+  sorry
+
 /-- For a rational function f = num/denom, the intDegree bounds relate to valuations.
 
 **Key insight**: At each place v:
@@ -528,29 +615,9 @@ theorem intDegree_ge_deg_of_valuation_bounds_and_linear_support
     (hlin : ∀ v ∈ D.support, degree k v = 1) :
     f.intDegree ≥ D.deg := by
   /-
-  **Proof Strategy (Cycle 302)**:
-
-  1. **Numerator lower bound**: Define E = D.posPart (positive part of D).
-     - At v ∈ E.support: D(v) > 0, so denom ∉ v.asIdeal (by hdenom_only_neg)
-     - Hence val_v(num) = val_v(f) ≤ exp(-D(v)) = exp(-E(v))
-     - Apply `natDegree_ge_degWeighted_of_valuation_bounds` to get num.natDegree ≥ E.deg
-
-  2. **Denominator upper bound**:
-     - Denom zeros only at D(v) < 0 places (from hdenom_only_neg)
-     - These places have degree 1 (from hlin), so all irreducible factors are linear
-     - Hence denom splits completely
-     - Each root α has rootMult(α) ≤ |D(linearPlace α)| by valuation constraint + coprimality
-     - Sum: denom.natDegree = Σ rootMult ≤ Σ |D(v)| = D.negPart.deg
-
-  3. **Combine**:
-     intDegree = num.natDegree - denom.natDegree
-               ≥ D.posPart.deg - D.negPart.deg
-               = D.deg
-
-  **Dependencies**:
-  - `linear_of_degree_eq_one`: Places of degree 1 are linear (needs proof)
-  - `intValuation_linearPlace_eq_exp_neg_rootMultiplicity`: Bridge from valuation to rootMult
-  - `Splits.natDegree_eq_card_roots`: For split polynomials, natDegree = roots.card
+  **Blocked**: This theorem requires `natDegree_eq_sum_ord_mul_degree` which
+  expresses natDegree as a sum over places. See Cycle 304 for the algebraic
+  foundation that unblocks this proof.
   -/
   sorry
 
