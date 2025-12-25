@@ -1,7 +1,7 @@
 # Refactor Plan: P¹ → Arbitrary Curves
 
-**Status**: P¹ complete. Elliptic RR complete. Sorry cleanup in progress. Updated Cycle 310.
-**Goal**: Riemann-Roch for algebraically closed curves of any genus.
+**Status**: P¹ Frozen. Phase 7 (General Curves via Weil Differentials) Active. Updated Cycle 311.
+**Goal**: Riemann-Roch for curves of any genus g ≥ 0 using Weil Differentials.
 
 ---
 
@@ -11,262 +11,242 @@
 |-------|--------|-----------------|
 | 0-4 | ✅ Complete | P¹ infrastructure, Serre duality |
 | 4.5 | ✅ Complete | Valuation-degree, IsLinearPlaceSupport fix |
-| 5 | ⏸️ Deferred | Edge case cleanup (low priority) |
-| 5.5 | ⏳ **In Progress** | Sorry cleanup (IsLinearPlaceSupport, infinity bounds) |
-| 6 | ✅ Complete | Elliptic curves (genus 1) - RR proved! |
-| 7 | Future | Hyperelliptic curves (genus ≥ 2) |
+| 5 | ⏸️ Archived | P¹ edge cases (PID-specific, not generalizable) |
+| 6 | ✅ Complete | Elliptic curves (genus 1) - RR proved with axioms |
+| 7 | ⏳ **Active** | Weil Differentials for general curves |
 
 ---
 
-## Phase 6: Elliptic Curves (Ready to Begin)
+## Phase 7: General Curves via Weil Differentials (Active)
 
-**Goal**: Instantiate `ProjectiveAdelicRRData` for genus 1.
+### Motivation
 
-### The Mathlib Gap
+The P¹ proof uses `RatFunc Fq` directly for the Serre duality pairing because:
+- The canonical bundle is trivializable (dt is a global differential)
+- Functions can substitute for differentials
 
-| Mathlib Provides | Mathlib Missing |
-|------------------|-----------------|
-| `WeierstrassCurve.Affine.CoordinateRing` | `IsDedekindDomain CoordinateRing` |
-| `WeierstrassCurve.Affine.FunctionField` | (Required for `HeightOneSpectrum`) |
-| `WeierstrassCurve.Affine.Nonsingular` | |
-| `IsDomain CoordinateRing` | |
-| Group law → Class Group | |
+For g ≥ 2, this fails:
+- No global differential exists
+- Must use **Weil Differentials** (functional-analytic approach)
 
-### Resolution: The Axiom Approach
+### Key References
 
-```lean
--- In RrLean/RiemannRochV2/Elliptic/EllipticSetup.lean
+- [Rosen "Number Theory in Function Fields" Ch. 6](https://link.springer.com/chapter/10.1007/978-1-4757-6046-0_6) - "Weil Differentials and the Canonical Class"
+- [Stichtenoth "Algebraic Function Fields and Codes" §1.7](https://link.springer.com/book/10.1007/978-3-540-76878-4) - "Local Components of Weil Differentials"
+- [Charles University Thesis on Weil Differentials](https://dspace.cuni.cz/bitstream/handle/20.500.11956/62611/DPTX_2012_2_11320_0_392289_0_137152.pdf) - Computational algorithms
 
-/-- The coordinate ring of a nonsingular Weierstrass curve is a Dedekind domain.
+### Mathematical Framework
 
-    This follows from: smooth ⟹ regular in codim 1 ⟹ integrally closed ⟹ Dedekind.
-    Standard algebraic geometry (Hartshorne II.6). -/
-instance ellipticCoordinateRing_isDedekindDomain
-    {F : Type*} [Field F] (W : WeierstrassCurve.Affine F)
-    [hns : W.Nonsingular] : IsDedekindDomain W.CoordinateRing := by
-  sorry -- Standard AG fact, orthogonal to RR content
-
-attribute [instance] ellipticCoordinateRing_isDedekindDomain
-```
-
-**Why this is acceptable**:
-- It's textbook mathematics (not a conjecture)
-- Orthogonal to what we're proving (RR, not ring theory)
-- Standard practice in formalization for "trivial but tedious" gaps
-- Can be filled later by someone interested in commutative algebra
-
-### File Structure
-
-```
-RrLean/RiemannRochV2/Elliptic/
-├── EllipticSetup.lean      # IsDedekindDomain axiom, basic imports
-├── EllipticPlaces.lean     # HeightOneSpectrum, local uniformizers
-├── EllipticCanonical.lean  # K = 0 (trivial canonical for g=1)
-├── EllipticH1.lean         # H¹ calculations (dim = 1 for O)
-└── EllipticRRData.lean     # ProjectiveAdelicRRData instance
-```
-
-### Key Differences from P¹
-
-| Aspect | P¹ (g=0) | Elliptic (g=1) |
-|--------|----------|----------------|
-| Coordinate ring | `Polynomial Fq` (PID) | `CoordinateRing` (Dedekind, not PID) |
-| deg(K) | -2 | 0 |
-| ℓ(D) for deg(D) > 0 | deg(D) + 1 | deg(D) |
-| H¹(O) dimension | 0 | 1 |
-| L(P) for point P | {1, 1/π} (2-dim) | {1} (1-dim) |
-| Global uniformizer | Yes (monic irred poly) | No! (class group non-trivial) |
-
-### What Needs Proving
-
-1. ✅ **Setup**: Wire Mathlib's `CoordinateRing` to our infrastructure (Cycle 289)
-2. ✅ **Canonical**: `ellipticCanonical = 0` (trivial divisor) - Cycle 290
-3. ✅ **Strong Approximation**: Axiomatize for non-PID rings - Cycle 291
-4. ✅ **H¹(O) = 1**: Axiomatized dim H¹(O) = 1 - Cycle 292
-5. ✅ **Serre duality**: `h¹(D) = ℓ(-D)` axiomatized - Cycle 292
-6. **RR formula**: `ℓ(D) - ℓ(-D) = deg(D)` - Cycle 293+ (needs RRData instance)
-
-### The Strong Approximation Blocker
-
-**Problem**: The P¹ proof in `FullAdelesCompact.lean` uses Euclidean division:
-```lean
-have ⟨q, r, hr⟩ := div_add_mod p gen  -- Only works for PIDs!
-```
-
-**Why this fails for elliptic curves**:
-- `CoordinateRing` is Dedekind but NOT a PID (class group = curve points)
-- Cannot "divide with remainder" to control degrees
-- Generalizing requires ideal arithmetic and CRT, not polynomial division
-
-**Solution**: Axiomatize Strong Approximation as a typeclass:
-```lean
-class StrongApproximation (K : Type*) [Field K] ... : Prop where
-  dense_in_finite_adeles : DenseRange (diagonalEmbedding K)
-```
-
-**Why this is acceptable**:
-- Standard result (K is dense in restricted adeles)
-- Avoids circularity (SA proofs often use RR itself!)
-- Consistent with `IsDedekindDomain` axiom approach
-- Can be filled later by someone interested in adelic analysis
-
-### The "No Global Uniformizer" Issue
-
-**Problem**: For P¹, every place has a global generator (monic irreducible polynomial).
-For elliptic curves, the coordinate ring is NOT a PID - primes may not be principal.
-
-**Solution**: Use local uniformizers only. Strong Approximation still works because:
-- For any place v, there exists π ∈ K with v(π) = 1 (local)
-- We DON'T need π to generate the prime ideal globally
-- The adelic machinery uses local valuations, not global generators
+**Definition (Weil Differential)**:
+A Weil differential of F/K is a K-linear mapping ω : A_F → K that vanishes on A_F(A) + F for some divisor A.
 
 ```lean
--- WRONG approach (works for P¹ only):
-def Place.generator (v : HeightOneSpectrum R) : R := ...  -- Assumes PID!
-
--- RIGHT approach (works for all curves):
-class HasLocalUniformizer (v : HeightOneSpectrum R) (K : Type*) where
-  π : K
-  val_eq_one : v.valuation K π = 1
-  -- No requirement that (π) = v.asIdeal!
+/-- A Weil differential is a linear functional on full adeles vanishing on K -/
+def WeilDifferential (K : Type*) [Field K] :=
+  { ω : FullAdeleRing R K K_infty →ₗ[k] k //
+    ∀ x : K, ω (fullDiagonalEmbedding R K K_infty x) = 0 }
 ```
+
+**Definition (Local Component)**:
+For a Weil differential ω and place P, the local component ω_P is extracted via the adele product structure. The relationship: residue algorithms can compute local components.
+
+**Definition (Valuation of Differential)**:
+v_P(ω) = max { n : ω vanishes on A_F(nP) at place P }
+
+**Definition (Canonical Divisor)**:
+(ω) = Σ_P v_P(ω) · P for any nonzero Weil differential ω
+
+**Key Property**: dim_K(WeilDifferential) = 1, so the canonical class is well-defined.
+
+### Implementation Plan
+
+#### Cycle 312: Define WeilDifferential
+**File**: `RrLean/RiemannRochV2/General/WeilDifferential.lean`
+
+```lean
+/-- Weil differential: linear functional on adeles vanishing on K -/
+structure WeilDifferential (k R K K_infty : Type*)
+    [Field k] [CommRing R] [IsDedekindDomain R] [Field K]
+    [Algebra R K] [IsFractionRing R K] [Field K_infty] [Algebra K K_infty] where
+  toLinearMap : FullAdeleRing R K K_infty →ₗ[k] k
+  vanishes_on_K : ∀ x : K, toLinearMap (fullDiagonalEmbedding R K K_infty x) = 0
+
+instance : Module K (WeilDifferential k R K K_infty) := ...
+```
+
+**Deliverables**:
+- [ ] Define `WeilDifferential` structure
+- [ ] Prove it forms a K-vector space
+- [ ] Prove K-linear maps compose correctly
+
+#### Cycle 313: Local Components (THE HARD PART)
+**File**: `RrLean/RiemannRochV2/General/LocalComponent.lean`
+
+The challenge: extract ω_P from global ω using adele product structure.
+
+**Strategy**:
+1. Use that A_K = ∏'_v K_v (restricted product)
+2. For each place v, project adele to v-component
+3. Define localComponent_v(ω) : K_v → k
+
+```lean
+/-- Extract local component at place v -/
+def localComponent (ω : WeilDifferential k R K K_infty)
+    (v : HeightOneSpectrum R) : v.adicCompletion K →ₗ[k] k := ...
+
+/-- Local components determine the global differential -/
+theorem ext_localComponent :
+    (∀ v, localComponent ω₁ v = localComponent ω₂ v) → ω₁ = ω₂ := ...
+```
+
+**Deliverables**:
+- [ ] Define `localComponent` extraction
+- [ ] Prove extensionality (local components determine global)
+- [ ] Connect to existing residue infrastructure
+
+#### Cycle 314: Divisor of a Differential
+**File**: `RrLean/RiemannRochV2/General/DifferentialDivisor.lean`
+
+```lean
+/-- Valuation of differential at a place -/
+def valuation_differential (ω : WeilDifferential k R K K_infty)
+    (v : HeightOneSpectrum R) : ℤ :=
+  -- Largest n such that ω vanishes on A_K(n·v)
+  ...
+
+/-- Divisor of a differential -/
+def div (ω : WeilDifferential k R K K_infty) : DivisorV2 R :=
+  Finsupp.ofSupportFinite (fun v => valuation_differential ω v) (by ...)
+```
+
+**Deliverables**:
+- [ ] Define `valuation_differential`
+- [ ] Define `div ω`
+- [ ] Prove div is finite (uses compactness)
+
+#### Cycle 315: The Serre Duality Pairing
+**File**: `RrLean/RiemannRochV2/General/SerrePairingGeneral.lean`
+
+The beautiful simplification: ⟨f, ω⟩ = ω(f) is just evaluation!
+
+```lean
+/-- Serre duality pairing via evaluation -/
+def serrePairing_general (D : DivisorV2 R) :
+    RRSpace_proj k R K D →ₗ[k] WeilDifferential k R K K_infty →ₗ[k] k :=
+  fun f => fun ω => ω.toLinearMap (embed_function_to_adele f)
+```
+
+**Deliverables**:
+- [ ] Define the pairing
+- [ ] Prove bilinearity
+- [ ] Axiomatize non-degeneracy (or derive from RR)
+
+#### Cycle 316: Canonical Divisor Properties
+**File**: `RrLean/RiemannRochV2/General/Canonical.lean`
+
+```lean
+/-- The canonical divisor class is well-defined -/
+theorem canonical_class_unique :
+    ∀ ω₁ ω₂ : WeilDifferential k R K K_infty,
+    ω₁ ≠ 0 → ω₂ ≠ 0 → div ω₁ ≈ div ω₂ := ...
+
+/-- Degree of canonical divisor -/
+theorem deg_canonical : (div ω).deg = 2 * genus - 2 := ...
+```
+
+**Deliverables**:
+- [ ] Prove canonical class well-defined
+- [ ] Prove deg(K) = 2g - 2
+- [ ] Connect to existing elliptic canonical (g=1 case)
+
+#### Cycle 317+: Complete RR
+- Fill axioms or derive from general theory
+- Prove h¹(D) = ℓ(K-D) using the new pairing
+- Unify with existing P¹ and elliptic proofs
 
 ---
 
-## Completed Phases
+## Archived: Phase 5 (P¹ Edge Cases)
+
+**Decision**: SKIPPED. Cycle 311 archives these.
+
+The remaining sorries in AdelicH1Full.lean (lines 757, 1458) are:
+- `globalPlusBoundedSubmodule_full_eq_top_deep_neg_infty`
+- `globalPlusBoundedSubmodule_full_eq_top_not_effective`
+
+These are **PID-specific artifacts**:
+- Rely on Euclidean division for strong approximation bounds
+- Not generalizable to non-PID coordinate rings
+- Not needed for the Weil differential approach
+
+**Legacy Status**: P¹ proof is "complete enough" to validate architecture.
+
+---
+
+## Completed Phases (Summary)
 
 ### Phase 0-4: P¹ Infrastructure ✅
 - Full adele ring with infinity
 - Serre duality for effective divisors
 - Riemann-Roch formula: ℓ(D) = deg(D) + 1
 
-### Phase 4.5: Algebraically Closed Fix ✅ (Cycle 287)
-- Discovered weighted vs unweighted degree mismatch
-- Added `IsLinearPlaceSupport` hypothesis
-- For alg. closed fields: all theorems apply (places have degree 1)
+### Phase 6: Elliptic Curves ✅
+- RR proved with axioms (genus = 1)
+- 5 axioms: IsDedekindDomain, StrongApprox, h1_zero_eq_one, h1_vanishing, serre_duality
 
 ---
 
-## Phase 5: Edge Cases (Deferred)
+## Architecture for General Curves
 
-Low priority sorries in Abstract.lean:
-- deg(D) < -1 cases (require full residue pairing)
-- Non-effective divisors over non-alg-closed fields
+### File Structure (Proposed)
 
-**Decision**: Skip for now, focus on higher genus.
-
----
-
-## Future: Phase 7+ (Hyperelliptic)
-
-For genus g ≥ 2:
-- Function field = Frac(k[x,y]/(y² = f(x))) where deg(f) = 2g+1 or 2g+2
-- Canonical divisor has degree 2g-2
-- Strong approximation becomes more complex
-- Need Weil Differentials (not just functions) for residue pairing
-
----
-
-## Architecture Constraints (from Gemini Analysis)
-
-### 1. Keep Infrastructure Abstract
-
-The general adelic files should NEVER assume:
-- Coordinate ring is a PID
-- Places have global generators
-- `ℓ(D) = deg(D) + 1`
-
-These are P¹-specific and belong in instance files only.
-
-### 2. Weil Differentials for g > 0
-
-For P¹: The residue pairing uses functions because dt is a global differential.
-
-For general curves: No global differential exists (unless g = 1).
-Must use Weil Differentials (dual space of adeles mod K).
-
-```lean
--- For elliptic: Can use invariant differential ω = dx/(2y)
--- This gives a canonical isomorphism: Functions ≅ Differentials
-
--- For g ≥ 2: Must work with actual differential type
-structure WeilDifferential (K : Type*) where
-  toFun : Adele K → k
-  vanishes_on_global : ∀ f : K, toFun (diag f) = 0
+```
+RrLean/RiemannRochV2/General/
+├── WeilDifferential.lean      # Definition, K-module structure
+├── LocalComponent.lean        # Extract ω_P from global ω
+├── DifferentialDivisor.lean   # div(ω), valuation
+├── SerrePairingGeneral.lean   # ⟨f, ω⟩ = ω(f)
+├── Canonical.lean             # Canonical class, deg(K) = 2g-2
+└── GeneralRRData.lean         # ProjectiveAdelicRRData instance
 ```
 
-### 3. The ProjectiveAdelicRRData Contract
+### Key Insight: Pairing Simplification
 
+**P¹ approach** (current):
 ```lean
-class ProjectiveAdelicRRData (k R K : Type*) (canonical : DivisorV2 R) (genus : ℕ) where
-  h1_finite : ∀ D, Module.Finite k (SpaceModule k R K D)
-  ell_finite : ∀ D, Module.Finite k (RRSpace_proj k R K D)
-  h1_vanishing : ∀ D, D.deg > 2 * genus - 2 → h1_finrank D = 0
-  serre_duality : ∀ D, h1_finrank D = ell_proj (canonical - D)
-  deg_canonical : canonical.deg = 2 * genus - 2
+⟨f, g⟩ = Σ_v res_v(f · g)  -- Sum of residues
 ```
+Requires: residue infrastructure, residue theorem, pole cancellation.
 
-For elliptic curves: `genus = 1`, `canonical = 0`, `deg_canonical = 0`.
+**Weil approach** (new):
+```lean
+⟨f, ω⟩ = ω(f)  -- Just evaluation!
+```
+The residue theorem is *built into* the definition of WeilDifferential (vanishes on K).
+
+### What We Keep vs Replace
+
+| Component | P¹ Version | General Version |
+|-----------|------------|-----------------|
+| Adele ring | FullAdeleRing ✅ | Same (reuse) |
+| H¹(D) definition | FullAdeleRing / (K + A_K(D)) ✅ | Same (reuse) |
+| Serre pairing | residueSumTotal | ω(f) evaluation |
+| Canonical divisor | -2[∞] (hardcoded) | div(ω) (intrinsic) |
+| Residue infrastructure | Heavy (2000 LOC) | Implicit in WeilDiff |
 
 ---
 
-## Summary: What's Next
+## Remaining Sorries After Phase 7
 
-### Cycle 290: EllipticCanonical ✅ DONE
-- Defined `ellipticCanonical = 0` (trivial divisor for genus 1)
-- Proved `deg_ellipticCanonical = 0`
-- Proved `ellipticCanonical_sub : K - D = -D`
+### To Be Axiomatized (Acceptable)
+- `dim_K(WeilDifferential) = 1` - standard, orthogonal to RR
+- `serrePairing_nondegenerate` - follows from RR or axiomatize
+- `StrongApprox K` for general K - standard, avoids circularity
 
-### Cycle 291: StrongApproximation Axiom ✅ DONE
-- Created `StrongApprox` typeclass (density definition)
-- Instance for elliptic curves with `sorry`
-- Decouples topology from geometry
-
-### Cycle 292: EllipticH1 ✅ DONE
-- Axiomatized `dim H¹(O) = 1` (h1_zero_eq_one)
-- Axiomatized vanishing for deg > 0 (h1_vanishing_positive)
-- Axiomatized Serre duality: h¹(D) = ℓ(-D)
-
-### Cycle 293: EllipticRRData ✅ DONE
-- Created `AdelicRRData` instance using axioms
-- Proved `ℓ(D) - ℓ(-D) = deg(D)` for genus 1
+### To Be Proved (Core RR Content)
+- `h¹(D) = ℓ(K-D)` - the Serre duality statement
+- `deg(K) = 2g-2` - follows from Weil differential theory
 
 ---
 
-## Phase 5.5: Sorry Cleanup (In Progress)
-
-### The Infinity Bound Problem (Cycle 294 - Next)
-
-**Target**: AdelicH1Full.lean line 698
-
-The key missing piece in P¹ strong approximation is proving that principal parts
-from `strong_approximation_ratfunc` have bounded infinity valuation:
-
-```lean
--- Need to prove: |k₂|_∞ ≤ exp(-1)
--- Where k₂ is a sum of principal parts like c/(X-a)^n
--- These have intDegree ≤ -1, hence infinity valuation ≤ exp(-1)
-```
-
-This unblocks lines 698, 763, 1167, 1233 in AdelicH1Full.
-
-### The IsLinearPlaceSupport Issue (Cycle 296)
-
-**Key Insight**: `IsLinearPlaceSupport` is NOT provable for finite Fq!
-
-```lean
-def deg (D : DivisorV2 R) : ℤ := D.sum (fun _ n => n)  -- UNWEIGHTED!
-```
-
-The current `DivisorV2.deg` sums coefficients without weighting by place degree.
-`IsLinearPlaceSupport` was a workaround to ensure unweighted = weighted.
-
-**Resolution Options**:
-1. Add `[IsAlgClosed Fq]` hypothesis where needed
-2. Refactor to use weighted degrees throughout
-
-Decision deferred until infinity bound is resolved.
-
----
-
-*Updated Cycle 310. All infrastructure sorries filled! Next: High-level AdelicH1Full sorries. See ledger.md.*
+*Updated Cycle 311. Phase 7 active. See ledger.md for current state.*

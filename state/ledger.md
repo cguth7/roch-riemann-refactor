@@ -5,22 +5,21 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 310
-**Total Sorries**: 8 (0 new infrastructure + 2 high-level + 6 axioms)
-**Elliptic Axioms**: 8
+**Cycle**: 311
+**Phase**: 7 (Weil Differentials) - Active
+**Total Sorries**: 8 (2 archived P¹ edge cases + 6 axioms)
 
 ---
 
 ## Sorry Classification
 
-### Content Sorries - New Infrastructure (0)
-*All new infrastructure filled!*
+### Content Sorries - Archived P¹ Edge Cases (2)
+*These are PID-specific and not needed for general curves.*
 
-### Content Sorries - High Level (2)
-| Location | Line | Description | Difficulty |
-|----------|------|-------------|------------|
-| AdelicH1Full | 757 | `globalPlusBoundedSubmodule_full_eq_top_deep_neg_infty` | High |
-| AdelicH1Full | 1458 | `globalPlusBoundedSubmodule_full_eq_top_not_effective` | High |
+| Location | Line | Description | Status |
+|----------|------|-------------|--------|
+| AdelicH1Full | 757 | `globalPlusBoundedSubmodule_full_eq_top_deep_neg_infty` | Archived |
+| AdelicH1Full | 1458 | `globalPlusBoundedSubmodule_full_eq_top_not_effective` | Archived |
 
 ### Axiom Sorries (6) - Intentional
 | Location | Line | Description |
@@ -36,48 +35,59 @@
 
 ## What's Proved
 
-### P¹ over Finite Field (98% complete)
-- Full adelic infrastructure
-- Divisor/RR-space definitions
-- Genus = 0 computation
-- ℓ(D) = max(0, deg(D)+1) for deg(D) ≥ -1
-- Serre duality (partial)
+### P¹ over Finite Field (Frozen - Architecture Validator)
+- Full adelic infrastructure ✅
+- Divisor/RR-space definitions ✅
+- Genus = 0 computation ✅
+- ℓ(D) = max(0, deg(D)+1) for deg(D) ≥ -1 ✅
+- Serre duality (effective D, non-negative inftyCoeff) ✅
 
-### Elliptic Curves (axiomatized)
-- Full RR theorem (uses 8 axioms)
-- Genus = 1 verification
-- ℓ(D) formulas
+### Elliptic Curves (genus 1, axiomatized)
+- Full RR theorem ✅ (uses 5 axioms)
+- Genus = 1 verification ✅
+- ℓ(D) - ℓ(-D) = deg(D) ✅
 
 ---
 
-## Next Steps
+## Phase 7: Weil Differentials
+
+### Overview
+Transition from P¹-specific residue pairing to general Weil differential pairing.
+
+### Cycle Plan
 
 | Cycle | Task | Status |
 |-------|------|--------|
-| 303 | Fill `linear_of_degree_eq_one` + add ord infrastructure | ✅ DONE |
-| 304 | Fill `ord_generator_self` and `ord_generator_other` | ✅ DONE |
-| 305 | Add UFD infrastructure + ord lemmas | ✅ DONE |
-| 306 | Fill `pow_generator_dvd_iff_le_ord` (Nat arithmetic) | ✅ DONE |
-| 307 | Fill `intValuation_eq_exp_neg_ord` | ✅ DONE |
-| 308 | Fill `natDegree_eq_sum_ord_mul_degree` | ✅ DONE |
-| 309 | Fill `intDegree_ge_deg_of_valuation_bounds_and_linear_support` | ✅ DONE |
-| 310 | Fill `intDegree_ge_deg_of_valuation_and_denom_constraint` (AdelicH1Full) | ✅ DONE |
-| 311+ | High-level AdelicH1Full sorries | **NEXT** |
+| 311 | Archive P¹ edge cases, activate Phase 7 | ✅ DONE |
+| 312 | Define `WeilDifferential` structure | **NEXT** |
+| 313 | Define `localComponent` extraction | Planned |
+| 314 | Define `div(ω)` and `valuation_differential` | Planned |
+| 315 | Define Serre pairing `⟨f, ω⟩ = ω(f)` | Planned |
+| 316 | Canonical divisor properties | Planned |
+| 317+ | Complete general RR | Future |
 
-### Cycle 310 Summary
+### Cycle 311 Summary
 **Completed**:
-- Filled `intDegree_ge_deg_of_valuation_and_denom_constraint` at AdelicH1Full.lean:1328
-- Simple wrapper: converts `IsLinearPlaceSupport D` to `∀ v ∈ D.support, degree Fq v = 1`
-- Then applies `PlaceDegree.intDegree_ge_deg_of_valuation_bounds_and_linear_support`
-- Uses `linearPlace_degree_eq_one` to prove degree = 1 for linear places
+- Archived P¹ edge case sorries (PID-specific, not generalizable)
+- Updated REFACTOR_PLAN.md with Phase 7 roadmap
+- Researched Weil differential definitions and references
 
-**Remaining**: 2 high-level sorries in AdelicH1Full (deep negative infty + non-effective cases)
+**Key Decision**: The remaining AdelicH1Full sorries are artifacts of the PID-based strong approximation proof. They're not needed for general curves, which will use Weil differentials.
 
-### Cycle 311 Target
-**File**: AdelicH1Full.lean:757 or 1458
-**Lemma**: One of the remaining high-level sorries
-**Challenge**: These handle edge cases (deep negative inftyCoeff, non-effective divisors)
-**Approach**: May require new infrastructure or can be deferred as low-priority edge cases
+### Cycle 312 Target
+**File**: `RrLean/RiemannRochV2/General/WeilDifferential.lean` (new)
+**Goal**: Define `WeilDifferential` as linear functional on adeles vanishing on K
+
+```lean
+structure WeilDifferential (k R K K_infty : Type*) ... where
+  toLinearMap : FullAdeleRing R K K_infty →ₗ[k] k
+  vanishes_on_K : ∀ x : K, toLinearMap (fullDiagonalEmbedding x) = 0
+```
+
+**Deliverables**:
+- [ ] Define `WeilDifferential` structure
+- [ ] Prove K-module structure
+- [ ] Basic lemmas (zero, add, smul)
 
 ---
 
@@ -86,10 +96,11 @@
 ```
 RrLean/RiemannRochV2/
 ├── Core/           - Divisor types, basic defs
-├── P1Instance/     - P¹-specific: PlaceDegree, RRSpace
-├── Adelic/         - Full adeles, compactness
-├── SerreDuality/   - H¹ computations, pairing
-├── Elliptic/       - Elliptic curve instance
+├── P1Instance/     - P¹-specific (frozen)
+├── Adelic/         - Full adeles (reusable)
+├── SerreDuality/   - H¹ computations
+├── Elliptic/       - Elliptic curves (axiomatized)
+├── General/        - NEW: Weil differentials
 └── Definitions/    - Infrastructure
 ```
 
@@ -97,4 +108,12 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 310. See ledger_archive.md for historical cycles.*
+## Key References
+
+- [Rosen Ch. 6](https://link.springer.com/chapter/10.1007/978-1-4757-6046-0_6) - Weil Differentials and Canonical Class
+- [Stichtenoth §1.7](https://link.springer.com/book/10.1007/978-3-540-76878-4) - Local Components
+- [Charles U. Thesis](https://dspace.cuni.cz/bitstream/handle/20.500.11956/62611/DPTX_2012_2_11320_0_392289_0_137152.pdf) - Computational Algorithms
+
+---
+
+*Updated Cycle 311. Phase 7 active. See REFACTOR_PLAN.md for detailed roadmap.*

@@ -1,6 +1,6 @@
 # Proof Chain: Riemann-Roch Formalization
 
-Tracks the dependency chain from main theorems down to Mathlib. Updated Cycle 310.
+Tracks the dependency chain from main theorems down to Mathlib. Updated Cycle 311.
 
 ---
 
@@ -16,112 +16,104 @@ theorem serre_duality_p1 (D : ExtendedDivisor (Polynomial Fq))
     (hDfin : D.finite.Effective) (hD : D.inftyCoeff ≥ 0) :
     h1_finrank_full Fq D = ell_proj_ext Fq (canonicalExtended Fq - D)
 
--- H¹ vanishing
-theorem h1_finrank_full_eq_zero_of_deg_ge_neg_one (D : ExtendedDivisor (Polynomial Fq))
-    (hdeg : D.deg ≥ -1) (heff : D.finite.Effective) (hinfty : D.inftyCoeff ≥ -1) :
-    h1_finrank_full Fq D = 0
+-- Elliptic RR (axiomatized)
+theorem ell_minus_ell_neg_eq_deg (D : DivisorV2 (EllipticCoordRing W))
+    : ell_proj D - ell_proj (-D) = D.deg
 ```
 
 ---
 
 ## Module Status
 
-### ✅ Complete (Sorry-Free)
+### ✅ Complete (Frozen)
 
 | Module | Files | LOC | Key Contribution |
 |--------|-------|-----|------------------|
 | **P1Instance/** | 10 | 3,300 | P¹ places, canonical divisor, L(K-D)=0 |
 | **ResidueTheory/** | 7 | 2,000 | Trace pairing, residue calculus |
 | **Core/** | 6 | 2,000 | Place, Divisor, RRSpace definitions |
-| **Support/** | 3 | 600 | DVR properties (proved, not axiom!) |
+| **Support/** | 3 | 600 | DVR properties |
 | **Dimension/** | 3 | 650 | Gap bounds, Riemann inequality |
 
-### ⚠️ Near-Complete (Has Sorries)
+### ⏸️ Archived (P¹ Edge Cases)
 
 | File | Sorries | Status |
 |------|---------|--------|
-| `SerreDuality/General/AdelicH1Full.lean` | 4 | 95% - strong approx edge cases |
-| `SerreDuality/General/Abstract.lean` | 5 | 85% - IsLinearPlaceSupport + deg < -1 |
-| `Adelic/FullAdelesCompact.lean` | 1-2 | 90% - compactness bounds |
+| `SerreDuality/General/AdelicH1Full.lean` | 2 | PID-specific, archived |
+
+### ⏳ Phase 7 (New)
+
+| File | Status |
+|------|--------|
+| `General/WeilDifferential.lean` | Cycle 312 |
+| `General/LocalComponent.lean` | Cycle 313 |
+| `General/DifferentialDivisor.lean` | Cycle 314 |
+| `General/SerrePairingGeneral.lean` | Cycle 315 |
 
 ---
 
 ## Proof Chain Diagram
+
+### Current (P¹ + Elliptic)
 
 ```
                     Main Theorems
                          │
         ┌────────────────┼────────────────┐
         ▼                ▼                ▼
-  serre_duality_p1   ell_proj_eq   h1_finrank_eq_zero
+  serre_duality_p1   ell_proj_eq   elliptic_RR
         │                │                │
         └────────────────┼────────────────┘
                          │
               ┌──────────┴──────────┐
               ▼                     ▼
-      AdelicH1Full.lean       P1VanishingLKD.lean
-      (SpaceModule_full)      (L(K-D) = 0)
+      AdelicH1Full.lean       EllipticRRData.lean
+      (P¹-specific)           (Axiomatized)
               │                     │
               ▼                     ▼
-      FullAdelesCompact       PlaceDegree.lean
-      (strong approx)         (valuation-degree)
-              │                     │
-              └──────────┬──────────┘
+      FullAdelesBase.lean     StrongApproximation
+      (FullAdeleRing)         (Axiom)
+              │
+              ▼
+         Mathlib
+```
+
+### Future (Phase 7: Weil Differentials)
+
+```
+                 General Riemann-Roch
+                         │
                          ▼
-              FullAdelesBase.lean
-              (FullAdeleRing = Finite × K∞)
+              h¹(D) = ℓ(K - D)
+                         │
+        ┌────────────────┼────────────────┐
+        ▼                ▼                ▼
+  WeilDifferential  SerrePairing    Canonical
+  (functionals)     (evaluation)    (div(ω))
+        │                │                │
+        └────────────────┼────────────────┘
+                         │
+                         ▼
+              LocalComponent.lean
+              (ω_P extraction)
                          │
               ┌──────────┴──────────┐
               ▼                     ▼
-      AdelicTopology.lean    P1Instance.lean
-      (compactness)          (IsDedekindDomain Fq[X])
+      FullAdeleRing ✅        HeightOneSpectrum ✅
+      (reuse)                 (reuse)
               │                     │
               └──────────┬──────────┘
                          ▼
                     Mathlib
-         (DedekindDomain, Valuation, Finsupp)
 ```
 
 ---
 
-## P1Instance Chain (Complete)
+## Sorry Locations (8 total, Cycle 311)
 
-```
-P1VanishingLKD.lean
-├── RRSpaceV3_p1Canonical_sub_ofAffine_eq_zero ✅
-├── denom_eq_one_of_valuation_le_one_forall ✅
-└── p1InftyValuation_polynomial_not_le_exp_neg2 ✅
-        │
-        ▼
-P1Canonical.lean
-├── p1Canonical = -2[∞] ✅
-└── deg_p1Canonical = -2 ✅
-        │
-        ▼
-P1Place.lean
-├── p1InftyPlace ✅
-└── HasInfinitePlaces instance ✅
-        │
-        ▼
-PlaceDegree.lean
-├── natDegree_ge_degWeighted_of_valuation_bounds ✅
-├── degWeighted_ge_deg ✅
-└── generator_not_mem_other_prime ✅
-```
+### Archived P¹ Edge Cases (2)
+*PID-specific, not needed for general curves*
 
----
-
-## Sorry Locations (8 total, updated Cycle 310)
-
-See `ledger.md` for authoritative sorry list. Summary:
-
-### Content Sorries - Infrastructure (0)
-*All infrastructure filled!*
-- ✅ `natDegree_eq_sum_ord_mul_degree` (Cycle 308)
-- ✅ `intDegree_ge_deg_of_valuation_bounds_and_linear_support` (Cycle 309)
-- ✅ `intDegree_ge_deg_of_valuation_and_denom_constraint` (Cycle 310)
-
-### Content Sorries - High Level (2)
 | Location | Description |
 |----------|-------------|
 | AdelicH1Full:757 | Deep negative inftyCoeff |
@@ -137,16 +129,77 @@ See `ledger.md` for authoritative sorry list. Summary:
 
 ---
 
-## Key Infrastructure (All Sorry-Free)
+## Phase 7: Weil Differential Chain (Planned)
 
-| File | Key Lemmas |
-|------|------------|
-| `PlaceDegree.lean` | `generator_monic`, `generator_irreducible`, `natDegree_eq_sum_ord_mul_degree`, `intDegree_ge_deg_of_valuation_bounds_and_linear_support` |
-| `P1Canonical.lean` | `canonicalExtended`, `deg_canonicalExtended` |
-| `P1VanishingLKD.lean` | `RRSpace_proj_ext_canonical_sub_eq_bot` |
-| `FullAdelesCompact.lean` | `strong_approximation_ratfunc` |
-| `DedekindDVR.lean` | `isDiscreteValuationRing_adicCompletionIntegers` |
-| `ResidueFieldIso.lean` | `residueFieldIso` (completion residue = quotient) |
+```
+GeneralRRData.lean (Cycle 317+)
+├── h¹(D) = ℓ(K - D) via WeilDifferential pairing
+└── Full RR for any genus
+        │
+        ▼
+SerrePairingGeneral.lean (Cycle 315)
+├── serrePairing_general : L(D) →ₗ WeilDiff →ₗ k
+├── Pairing is just evaluation: ⟨f, ω⟩ = ω(f)
+└── Non-degeneracy (axiom or prove)
+        │
+        ▼
+Canonical.lean (Cycle 316)
+├── canonical_class_unique (div ω₁ ≈ div ω₂)
+└── deg_canonical = 2g - 2
+        │
+        ▼
+DifferentialDivisor.lean (Cycle 314)
+├── valuation_differential ω v : ℤ
+└── div ω : DivisorV2 R
+        │
+        ▼
+LocalComponent.lean (Cycle 313) ← THE HARD PART
+├── localComponent ω v : K_v →ₗ k
+└── ext_localComponent (local determines global)
+        │
+        ▼
+WeilDifferential.lean (Cycle 312) ← NEXT
+├── structure WeilDifferential
+├── toLinearMap : FullAdeleRing →ₗ k
+├── vanishes_on_K : ∀ x : K, ω(diag x) = 0
+└── Module K WeilDifferential instance
+        │
+        ▼
+FullAdelesBase.lean ✅ (REUSE)
+├── FullAdeleRing = FiniteAdeleRing × K_infty
+└── fullDiagonalEmbedding : K → FullAdeleRing
+```
+
+---
+
+## Key Infrastructure (Reusable for Phase 7)
+
+| File | Key Components | Reusable? |
+|------|----------------|-----------|
+| `FullAdelesBase.lean` | FullAdeleRing, fullDiagonalEmbedding | ✅ Yes |
+| `AdelicH1v2.lean` | SpaceModule, globalPlusBoundedSubmodule | ✅ Yes |
+| `Core/Divisor.lean` | DivisorV2, deg, support | ✅ Yes |
+| `PlaceDegree.lean` | degree, generator | ⚠️ P¹-specific |
+| `ResidueTheory/*` | residueAt*, residueSumTotal | ❌ Replace |
+
+---
+
+## Axiom Stack (Current + Planned)
+
+### Existing Axioms
+| Axiom | File | Justification |
+|-------|------|---------------|
+| `IsDedekindDomain CoordRing` | EllipticSetup | Hartshorne II.6 |
+| `StrongApprox K` | StrongApproximation | K dense in A_S |
+| `h1_zero_eq_one` | EllipticH1 | Genus = 1 |
+| `h1_vanishing_positive` | EllipticH1 | Serre vanishing |
+| `serre_duality` | EllipticH1 | Residue pairing |
+
+### Planned Axioms (Phase 7)
+| Axiom | File | Justification |
+|-------|------|---------------|
+| `dim_K(WeilDiff) = 1` | WeilDifferential | Standard theory |
+| `serrePairing_nondegenerate` | SerrePairingGeneral | Or derive from RR |
 
 ---
 
@@ -157,73 +210,14 @@ See `ledger.md` for authoritative sorry list. Summary:
 grep -rn "sorry" RrLean/RiemannRochV2/P1Instance/
 # Expected: No output
 
-# Check AdelicH1Full sorries
-lake build 2>&1 | grep "AdelicH1Full.*sorry"
-# Expected: 4 lines
-
-# Full sorry count
+# Check total sorries
 lake build 2>&1 | grep "sorry" | wc -l
-# Expected: 9
+# Expected: 8
+
+# Full build
+lake build
 ```
 
 ---
 
-## Elliptic Curve Chain (In Progress)
-
-### Current Status: H¹ Axiomatized
-
-Cycle 292 completed EllipticH1 with key axioms. Next: EllipticRRData instance.
-
-### Dependency Graph
-
-```
-EllipticRRData.lean (Cycle 293) ←─── NEXT
-├── ProjectiveAdelicRRData instance
-└── ℓ(D) - ℓ(-D) = deg(D)
-        │
-        ▼
-EllipticH1.lean ✅ CREATED (Cycle 292)
-├── h1_finrank W D (dimension of H¹)
-├── h1_zero_eq_one (AXIOM: dim H¹(O) = 1)
-├── h1_vanishing_positive (AXIOM: H¹(D)=0 for deg>0)
-└── serre_duality (AXIOM: h¹(D) = ℓ(-D))
-        │
-        ▼
-StrongApproximation.lean ✅ CREATED (Cycle 291)
-├── class StrongApprox (density definition)
-└── instance for elliptic (sorry)
-        │
-        ▼
-EllipticCanonical.lean ✅ CREATED (Cycle 290)
-├── ellipticCanonical = 0
-├── deg_ellipticCanonical = 0
-└── ellipticCanonical_sub : K - D = -D
-        │
-        ▼
-EllipticPlaces.lean ✅ CREATED (Cycle 289)
-├── EllipticPlace = HeightOneSpectrum (CoordRing W)
-├── LocalUniformizer structure
-└── uniformizerAt (local, not global!)
-        │
-        ▼
-EllipticSetup.lean ✅ CREATED (Cycle 289)
-├── NonsingularCurve typeclass
-├── [IsDedekindDomain (CoordRing W)] ← AXIOM (sorry)
-└── [IsFractionRing (CoordRing W) (FuncField W)]
-        │
-        ▼
-Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
-```
-
-### Axiom Stack
-| Axiom | File | Justification |
-|-------|------|---------------|
-| `IsDedekindDomain CoordRing` | EllipticSetup | Hartshorne II.6 |
-| `StrongApprox K` | StrongApproximation | K dense in A_S |
-| `h1_zero_eq_one` | EllipticH1 | Genus = 1 |
-| `h1_vanishing_positive` | EllipticH1 | Serre vanishing |
-| `serre_duality` | EllipticH1 | Residue pairing |
-
----
-
-*Updated Cycle 310. See ledger.md for current state.*
+*Updated Cycle 311. Phase 7 active. See REFACTOR_PLAN.md for detailed roadmap.*

@@ -1,6 +1,6 @@
 # Playbook
 
-Strategic guide for formalizing Riemann-Roch. Updated Cycle 310.
+Strategic guide for formalizing Riemann-Roch. Updated Cycle 311.
 
 ---
 
@@ -34,14 +34,64 @@ Formalize **Riemann-Roch** for **algebraically closed curves** in Lean 4:
 ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
 ```
 
-### Current Status (Cycle 310)
+### Current Status (Cycle 311)
 
 | Component | Status |
 |-----------|--------|
-| P¹ Riemann-Roch formula | ✅ Complete |
-| P¹ Serre duality (effective D) | ✅ Complete |
+| P¹ Riemann-Roch formula | ✅ Complete (frozen) |
+| P¹ Serre duality (effective D) | ✅ Complete (frozen) |
 | Elliptic curves (genus 1) | ✅ RR proved (axiomatized) |
-| Sorry cleanup | ⏳ In progress (8 sorries, down from 11) |
+| **Phase 7: Weil Differentials** | ⏳ **Active** |
+
+---
+
+## Phase 7: The Weil Differential Strategy
+
+### Why Weil Differentials?
+
+**P¹ Limitation**: The current residue pairing uses functions directly because:
+- The canonical bundle Ω is trivial on P¹ (dt is global)
+- Functions can substitute for differentials
+
+**General Curves (g ≥ 2)**: No global differential exists. Must use Weil differentials.
+
+### The Key Insight
+
+**Old approach** (P¹-specific):
+```lean
+⟨f, g⟩ = Σ_v res_v(f · g)  -- Residue sum
+```
+Requires: 2000+ LOC of residue infrastructure, residue theorem, pole cancellation.
+
+**New approach** (general):
+```lean
+⟨f, ω⟩ = ω(f)  -- Just evaluation!
+```
+The residue theorem is *implicit* in the definition of WeilDifferential (vanishes on K).
+
+### Definition
+
+A **Weil differential** is a K-linear functional ω : A_K → k that vanishes on K embedded diagonally.
+
+```lean
+structure WeilDifferential (k R K K_infty : Type*) ... where
+  toLinearMap : FullAdeleRing R K K_infty →ₗ[k] k
+  vanishes_on_K : ∀ x : K, toLinearMap (fullDiagonalEmbedding x) = 0
+```
+
+### Key Properties to Prove
+
+1. **dim_K(WeilDifferential) = 1** - Space is 1-dimensional over K
+2. **Local components** - Extract ω_P from global ω at each place P
+3. **Valuation** - v_P(ω) = max n s.t. ω vanishes on A_K(nP) at P
+4. **Canonical divisor** - (ω) = Σ_P v_P(ω) · P
+5. **deg(K) = 2g - 2** - Follows from theory
+
+### Key References
+
+- [Rosen "Number Theory in Function Fields" Ch. 6](https://link.springer.com/chapter/10.1007/978-1-4757-6046-0_6)
+- [Stichtenoth "Algebraic Function Fields and Codes" §1.7](https://link.springer.com/book/10.1007/978-3-540-76878-4)
+- [Charles University Thesis](https://dspace.cuni.cz/bitstream/handle/20.500.11956/62611/DPTX_2012_2_11320_0_392289_0_137152.pdf)
 
 ---
 
@@ -60,17 +110,14 @@ theorem ell_ratfunc_projective_eq_deg_plus_one (D : DivisorV2 (Polynomial Fq))
 
 ---
 
-## Architectural Lessons (from Gemini Analysis)
+## Architectural Lessons
 
 ### 1. The Generator Trap
 
 **Problem**: P¹ works because `Polynomial Fq` is a PID (every prime ideal is principal).
 General curves have Dedekind but NOT PID coordinate rings.
 
-**Symptom**: Temptation to use `MonicIrreduciblePoly` as place generators.
-
 **Rule**: Keep infrastructure abstract. Use `uniformizerAt` (local uniformizers always exist).
-Concrete generators belong in instance files only.
 
 ```lean
 -- WRONG (in general infrastructure):
@@ -95,21 +142,20 @@ class HasUniformizer (v : HeightOneSpectrum R) where
 
 **Rule**: Any file proving `ℓ(D) = deg(D) + 1` is P¹-specific, not general.
 
-### 3. The Residue/Differential Trap
+### 3. The Residue/Differential Trap (Resolved by Phase 7)
 
 **Problem**: Residues are defined on *differentials*, not functions.
 For P¹, dt is a global differential, so we can identify functions with differentials.
-General curves have no global differential (canonical bundle is non-trivial for g ≠ 1).
+General curves have no global differential.
 
-**Rule**: For g > 0, use Weil Differentials (dual of adeles mod K), not function residues.
+**Solution**: Use Weil Differentials (dual of adeles mod K).
 
 ```lean
 -- For P¹: Functions work because dt trivializes Ω
 def residuePairing (f : RatFunc Fq) (a : Adele) : Fq := ...
 
--- For general curves: Need proper differential type
+-- For general curves: Use Weil differentials
 structure WeilDifferential (K : Type*) where
-  -- Linear functional on adeles vanishing on K
   toFun : Adele K → k
   vanishes_on_K : ∀ f : K, toFun (diagonal f) = 0
 ```
@@ -121,26 +167,10 @@ structure WeilDifferential (K : Type*) where
 **Current Axiom Stack**:
 | Axiom | Justification | Used For |
 |-------|---------------|----------|
-| `IsDedekindDomain CoordRing` | Hartshorne II.6 (smooth ⟹ Dedekind) | HeightOneSpectrum |
-| `StrongApprox K` | K dense in A_S (standard) | H¹ computations |
+| `IsDedekindDomain CoordRing` | Hartshorne II.6 | HeightOneSpectrum |
+| `StrongApprox K` | K dense in A_S | H¹ computations |
 | `h1_zero_eq_one` | Genus = 1 | Elliptic RR |
-| `h1_vanishing_positive` | Serre vanishing | Elliptic RR |
-| `serre_duality` | Residue pairing | Elliptic RR |
-
-**Example 1**: `IsDedekindDomain W.CoordinateRing` for smooth Weierstrass curves.
-- Mathematically: Textbook fact (Hartshorne II.6)
-- Formalization: Would require proving smoothness implies regular in codim 1
-- Decision: Axiom it. RR conditional on this is still a valid achievement.
-
-**Example 2**: `StrongApproximation` for elliptic function fields.
-- Mathematically: Standard (K is dense in restricted adeles)
-- Formalization: P¹ proof uses Euclidean division (PID-specific!)
-- Decision: Axiom it. Avoids circularity (SA proofs often use RR).
-
-```lean
-class StrongApproximation (K : Type*) [Field K] ... : Prop where
-  dense_in_finite_adeles : DenseRange (diagonalEmbedding K)
-```
+| `dim_K(WeilDiff) = 1` | Standard theory | Canonical class |
 
 **When NOT to axiom**: The actual RR content you're trying to prove.
 
@@ -148,26 +178,19 @@ class StrongApproximation (K : Type*) [Field K] ... : Prop where
 
 ## Heuristics
 
-### Weighted vs Unweighted Degree (Cycle 287, Updated 293)
-- `DivisorV2.deg` = Σ D(v) (unweighted, sum of coefficients)
-- `degWeighted` = Σ D(v) · deg(v) (weighted by place degree)
-- For algebraically closed fields: these are equal (all deg(v) = 1)
-- **Key Insight (Cycle 293)**: `IsLinearPlaceSupport` is NOT provable for finite Fq!
-  - It was a workaround to make unweighted = weighted
-  - Proper fix: either add `[IsAlgClosed Fq]` or refactor to weighted degrees
-  - The sorries in Abstract.lean are architectural, not proof gaps
+### Weighted vs Unweighted Degree (Cycle 287)
+- `DivisorV2.deg` = Σ D(v) (unweighted)
+- `degWeighted` = Σ D(v) · deg(v) (weighted)
+- For algebraically closed fields: these are equal
 
-### Coprimality Pattern (Cycle 284)
-```lean
-generator_not_mem_other_prime  -- gen_v ∉ w.asIdeal for v ≠ w
-Irreducible.coprime_iff_not_dvd -- coprimality from non-divisibility
-Finset.prod_dvd_of_coprime      -- product divides if pairwise coprime
-```
+### What We Keep vs Replace (Phase 7)
 
-### Affine vs Projective
-- `RRSpace_proj` (affine) gives ℓ(0) = ∞
-- `RRSpace_proj_ext` (projective) gives ℓ(0) = 1
-- **Rule**: Use `ProjectiveAdelicRRData` for projective curves
+| Component | P¹ Version | General Version |
+|-----------|------------|-----------------|
+| Adele ring | FullAdeleRing ✅ | Same (reuse) |
+| H¹(D) definition | Quotient ✅ | Same (reuse) |
+| Serre pairing | residueSumTotal | ω(f) evaluation |
+| Canonical divisor | -2[∞] (hardcoded) | div(ω) (intrinsic) |
 
 ---
 
@@ -178,19 +201,19 @@ Finset.prod_dvd_of_coprime      -- product divides if pairwise coprime
 **Good scope**:
 - Fill ONE sorry with a clean proof
 - Add ONE new definition + basic lemmas
-- Explore ONE new curve type (check Mathlib support)
+- Explore ONE new curve type
 
 **Bad scope**:
 - "Fill all sorries in this file"
-- "Implement elliptic curves completely"
+- "Implement general curves completely"
 
 ### Sorry Classification
 
 | Type | Example | Action |
 |------|---------|--------|
-| **Content** | Strong approximation proof | Must fill |
-| **Infrastructure** | `IsDedekindDomain W.CoordinateRing` | Can axiom |
-| **Edge case** | deg(D) < -1 with non-effective | Low priority |
+| **Content** | Serre duality proof | Must fill |
+| **Infrastructure** | `IsDedekindDomain` | Can axiom |
+| **Archived** | P¹ edge cases | Skip (PID-specific) |
 
 ---
 
@@ -215,10 +238,10 @@ lake build RrLean.RiemannRochV2.SerreDuality.General.AdelicH1Full
 |------|------------|
 | Understand P¹ proof | `P1Instance/P1VanishingLKD.lean` |
 | Understand Serre duality | `SerreDuality/General/Abstract.lean` |
-| See sorry locations | `SerreDuality/General/AdelicH1Full.lean` |
 | Understand adelic H¹ | `Adelic/AdelicH1v2.lean` |
+| **Start Phase 7** | `General/WeilDifferential.lean` (new) |
 | See what's proved | `state/PROOF_CHAIN.md` |
 
 ---
 
-*Updated Cycle 310. See ledger.md for current sorries and next steps.*
+*Updated Cycle 311. Phase 7 active. See ledger.md for current state and REFACTOR_PLAN.md for roadmap.*
