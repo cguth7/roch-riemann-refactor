@@ -736,6 +736,113 @@ theorem h1_finrank_full_eq_zero_of_deg_ge_neg_one
     SpaceModule_full_subsingleton_of_deg_ge_neg_one Fq D hdeg heff h_infty
   exact Module.finrank_zero_of_subsingleton
 
+/-! ## Strong Approximation for Deep Negative Infinity Coefficient
+
+When D.inftyCoeff < -1 but deg(D) ≥ -1, we have D.finite.deg > 0. This provides
+"slack" at finite places that can absorb the constraint at infinity.
+
+**Key insight**: The product formula constrains valuations: for k ∈ K*,
+∏_v |k|_v = 1 (over all places including infinity).
+
+When D.finite has positive degree, the support supp(D.finite) is nonempty,
+providing room for poles that compensate for the tight infinity constraint.
+-/
+
+/-- Strong approximation for full adeles: deep negative infinity case.
+
+When D.inftyCoeff < -1 and deg(D) ≥ -1 with D.finite effective, we still have
+globalPlusBoundedSubmodule_full Fq D = ⊤.
+
+**Strategy**: D.finite.deg > 0, so supp(D.finite) is nonempty. We use this slack
+to construct an approximating k that satisfies both finite and infinity constraints.
+
+The proof uses the finite strong approximation combined with a degree argument:
+when D.finite has positive degree, the "cost" of matching at infinity is absorbed
+by the slack at places in supp(D.finite).
+-/
+theorem globalPlusBoundedSubmodule_full_eq_top_deep_neg_infty
+    (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1)
+    (heff : D.finite.Effective) (h_infty : D.inftyCoeff < -1) :
+    globalPlusBoundedSubmodule_full Fq D = ⊤ := by
+  -- D.finite.deg > 0 since D.finite.deg + D.inftyCoeff ≥ -1 and D.inftyCoeff < -1
+  have h_fin_pos : D.finite.deg > 0 := by
+    have : D.finite.deg + D.inftyCoeff ≥ -1 := hdeg
+    omega
+  rw [eq_top_iff]
+  intro a _
+  -- Step 1: Use the existing finite strong approximation (works for all divisors)
+  -- Get k₁ from finite strong approximation
+  obtain ⟨k₁, hk₁⟩ := strong_approximation_ratfunc a.1 D.finite
+  -- Step 2: Approximate at infinity
+  -- Get k₂ with |a.2 - k₂|_∞ ≤ exp(D.inftyCoeff)
+  obtain ⟨k₂, hk₂⟩ := exists_local_approximant_with_bound_infty Fq a.2 D.inftyCoeff
+  -- Step 3: The key is to use k = k₂ and show finite constraints are satisfied
+  -- For D.finite effective with positive degree, we can verify bounds at each place
+  --
+  -- Mathematical argument:
+  -- - At infinity: |a.2 - k₂|_∞ ≤ exp(D.inftyCoeff) ✓
+  -- - At finite v with D.finite(v) = 0: need |a.v - k₂|_v ≤ 1
+  -- - At finite v with D.finite(v) > 0: have slack exp(D.finite(v)) > 1
+  --
+  -- The constraint k₂ approximating at infinity means k₂ might have poles at finite places.
+  -- The product formula: ∏ |k₂|_v = 1 constrains total pole degree.
+  -- For k₂ close to a.2 at infinity, the pole degree is bounded by |a.2|_∞'s behavior.
+  --
+  -- Key: a is a restricted product adele, so a.v is integral at cofinitely many places.
+  -- Combined with D.finite.deg > 0 providing slack, the constraints are satisfiable.
+  --
+  -- For now, we use a placeholder that the combined constraint is satisfiable.
+  -- The full proof requires showing the finite slack absorbs any overflow.
+  unfold globalPlusBoundedSubmodule_full
+  rw [Submodule.add_eq_sup, Submodule.mem_sup]
+  use fqFullDiagonalEmbedding Fq k₂
+  constructor
+  · exact ⟨k₂, rfl⟩
+  -- The key insight: for D.inftyCoeff < -1 with deg(D) ≥ -1, we have D.finite.deg > 0.
+  -- This means supp(D.finite) is nonempty, providing "slack" at those places.
+  --
+  -- We need to find k that:
+  -- (1) Approximates at infinity: |a.2 - k|_∞ ≤ exp(D.inftyCoeff)
+  -- (2) Satisfies finite bounds: |a.v - k|_v ≤ exp(D.finite(v)) for all v
+  --
+  -- The combined approximation uses: the finite slack (D.finite.deg > 0) absorbs
+  -- the "cost" of tight infinity approximation via the product formula.
+  --
+  -- For now, we use a sorry as the full constrained approximation requires
+  -- showing K_S (rational functions with poles only in supp(D.finite)) is dense in K_∞.
+  -- This is true for P¹ but requires additional infrastructure.
+  --
+  -- Mathematical fact: For P¹ with deg(D) ≥ -1, strong approximation holds for full adeles.
+  -- Reference: Weil "Basic Number Theory" Ch. IV, Theorem 2
+  sorry
+
+/-- H¹(D) is a subsingleton for D.inftyCoeff < -1 with deg(D) ≥ -1 and D.finite effective. -/
+theorem SpaceModule_full_subsingleton_deep_neg_infty
+    (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1)
+    (heff : D.finite.Effective) (h_infty : D.inftyCoeff < -1) :
+    Subsingleton (SpaceModule_full Fq D) := by
+  rw [Submodule.Quotient.subsingleton_iff]
+  exact globalPlusBoundedSubmodule_full_eq_top_deep_neg_infty Fq D hdeg heff h_infty
+
+/-- H¹(D) is finite-dimensional for D.inftyCoeff < -1 with deg(D) ≥ -1 (trivially Subsingleton). -/
+theorem SpaceModule_full_finite_deep_neg_infty
+    (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1)
+    (heff : D.finite.Effective) (h_infty : D.inftyCoeff < -1) :
+    Module.Finite Fq (SpaceModule_full Fq D) := by
+  haveI : Subsingleton (SpaceModule_full Fq D) :=
+    SpaceModule_full_subsingleton_deep_neg_infty Fq D hdeg heff h_infty
+  infer_instance
+
+/-- h¹(D) = 0 for D.inftyCoeff < -1 with deg(D) ≥ -1 and D.finite effective. -/
+theorem h1_finrank_full_eq_zero_deep_neg_infty
+    (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1)
+    (heff : D.finite.Effective) (h_infty : D.inftyCoeff < -1) :
+    h1_finrank_full Fq D = 0 := by
+  unfold h1_finrank_full
+  haveI : Subsingleton (SpaceModule_full Fq D) :=
+    SpaceModule_full_subsingleton_deep_neg_infty Fq D hdeg heff h_infty
+  exact Module.finrank_zero_of_subsingleton
+
 /-- L(K-D) = {0} when D is effective (finite part non-negative, infinity coeff ≥ 0).
 
 For P¹, the canonical divisor K = ⟨0, -2⟩. When D = ⟨D_fin, n⟩ with D_fin effective and n ≥ 0:

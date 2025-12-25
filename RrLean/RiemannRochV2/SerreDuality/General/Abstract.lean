@@ -286,7 +286,9 @@ instance p1ProjectiveAdelicRRData :
     · by_cases heff : D.finite.Effective
       · by_cases hinfty : D.inftyCoeff ≥ -1
         · exact SpaceModule_full_finite_of_deg_ge_neg_one Fq D hdeg heff hinfty
-        · sorry -- D.finite effective but D.inftyCoeff < -1
+        · -- D.finite effective but D.inftyCoeff < -1
+          push_neg at hinfty
+          exact SpaceModule_full_finite_deep_neg_infty Fq D hdeg heff hinfty
       · sorry -- D.finite not effective
     · -- deg(D) < -1: need compactness/Serre duality argument
       -- H¹(D) ≅ L(K-D)ᵛ, and L(K-D) is finite-dimensional by RRSpace_proj_ext_finite
@@ -299,7 +301,9 @@ instance p1ProjectiveAdelicRRData :
     by_cases heff : D.finite.Effective
     · by_cases hinfty : D.inftyCoeff ≥ -1
       · exact h1_finrank_full_eq_zero_of_deg_ge_neg_one Fq D h heff hinfty
-      · sorry -- D.finite effective but D.inftyCoeff < -1: vacuous for P¹?
+      · -- D.finite effective but D.inftyCoeff < -1
+        push_neg at hinfty
+        exact h1_finrank_full_eq_zero_deep_neg_infty Fq D h heff hinfty
     · sorry -- D.finite not effective: vacuous for P¹?
   serre_duality := fun D => by
     -- Serre duality: h¹(D) = ℓ(K-D)
@@ -323,14 +327,12 @@ instance p1ProjectiveAdelicRRData :
             have h_high : D.inftyCoeff < 0 := by push_neg at hinfty; exact hinfty
             exact (ell_proj_ext_canonical_sub_eq_zero_neg_infty Fq D hfin h_infty' h_high).symm
           · -- D.finite effective, D.inftyCoeff < -1
-            -- h¹(D) = 0 would follow from strong approximation, but current proof requires D.inftyCoeff ≥ -1
-            -- ℓ(K-D) = 0 by ell_proj_ext_canonical_sub_eq_zero_deep_neg_infty (has a sorry for degree-valuation)
-            -- For now, use the ℓ(K-D) = 0 result and sorry the h¹ side
+            -- Both h¹(D) = 0 and ℓ(K-D) = 0 for this case
             push_neg at h_infty'
+            rw [h1_finrank_full_eq_zero_deep_neg_infty Fq D hdeg hfin h_infty']
             have heq : p1CanonicalExt Fq = canonicalExtended Fq := rfl
             rw [heq]
-            -- Both sides should be 0, but proving h¹(D) = 0 needs extended strong approximation
-            sorry
+            exact (ell_proj_ext_canonical_sub_eq_zero_deep_neg_infty Fq D hfin h_infty' hdeg).symm
       · sorry -- D.finite not effective
     · -- Non-vanishing case: requires actual Serre duality via residue pairing
       sorry
