@@ -5,9 +5,42 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 312
+**Cycle**: 313
 **Phase**: 7 (Weil Differentials) - Active
 **Total Sorries**: 8 (2 archived P¹ edge cases + 6 axioms)
+
+---
+
+## Cycle 313 In Progress
+
+**Extended**: `RrLean/RiemannRochV2/General/WeilDifferential.lean`
+
+### Completed
+- [x] `finiteAdeleSingle` - construct finite adele with single component
+- [x] `embedFinitePlace` - embed local element into full adeles
+- [x] `hasOrderGe` - predicate for order ≥ n at a place
+- [x] `hasOrderGe_of_le` - monotonicity lemma
+- [x] `satisfiesDivisorConstraint` - divisor constraint predicate
+- [x] `DivisorDifferentials D` - Ω(D) as k-submodule
+
+### Deferred (typeclass issues)
+- [ ] `divisorDifferentials_antitone` - D ≤ E ⟹ Ω(E) ≤ Ω(D)
+- [ ] `divisorDifferentials_zero_iff` - characterization of Ω(0)
+
+### Technical Note
+The antitone lemma has typeclass resolution issues with `Algebra ? K_infty`.
+Fix: Either add explicit section variables or restructure the proof to
+provide explicit type annotations. The `open Classical in` pattern works
+for the definition but the lemmas need careful handling.
+
+---
+
+## Cycle 314 Target
+
+**Continue Ω(D) properties**:
+1. Fix typeclass issues in `divisorDifferentials_antitone`
+2. Add `divisorDifferentials_zero_iff`
+3. Start Serre pairing: `⟨f, ω⟩ = ω(diag(f))`
 
 ---
 
