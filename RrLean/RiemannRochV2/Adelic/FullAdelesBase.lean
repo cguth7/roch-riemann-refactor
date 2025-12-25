@@ -80,6 +80,9 @@ instance instAddCommGroup : AddCommGroup (FullAdeleRing R K K_infty) :=
 instance instRing : Ring (FullAdeleRing R K K_infty) :=
   Prod.instRing
 
+instance instCommRing : CommRing (FullAdeleRing R K K_infty) :=
+  Prod.instCommRing
+
 -- Simp lemmas for FullAdeleRing projections
 -- These are needed because FullAdeleRing is a def, not an abbrev,
 -- so Prod.fst_sub etc. don't apply directly

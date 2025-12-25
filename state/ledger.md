@@ -5,9 +5,30 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 311
+**Cycle**: 312
 **Phase**: 7 (Weil Differentials) - Active
 **Total Sorries**: 8 (2 archived P¹ edge cases + 6 axioms)
+
+---
+
+## Cycle 312 Completed
+
+**Created**: `RrLean/RiemannRochV2/General/WeilDifferential.lean`
+
+### Deliverables
+- [x] `WeilDifferential` structure (linear functional on adeles vanishing on K)
+- [x] `AddCommGroup` instance
+- [x] `Module k` instance (k-vector space structure)
+- [x] `Module K` instance with action `(c · ω)(a) = ω(c · a)`
+- [x] `IsScalarTower k K WeilDifferential` (compatibility)
+- [x] `CommRing` instance on `FullAdeleRing` (added to FullAdelesBase.lean)
+
+### Key Definitions
+```lean
+structure WeilDifferential where
+  toLinearMap : FullAdeleRing R K K_infty →ₗ[k] k
+  vanishes_on_K : ∀ x : K, toLinearMap (fullDiagonalEmbedding R K K_infty x) = 0
+```
 
 ---
 
@@ -22,10 +43,11 @@
 | DVR properties | 100 | ✅ **PROVED** |
 | H¹(D) framework | 550 | ✅ DONE |
 | Dimension machinery | 600 | ✅ PROVED |
+| WeilDifferential | ~350 | ✅ **NEW** |
 
 **The P¹ sorries are edge cases we BYPASS with Weil differentials.**
 
-Estimated remaining: **~15-20 cycles** (not 50-70).
+Estimated remaining: **~12-18 cycles** (down from 15-20).
 
 ---
 
@@ -59,40 +81,46 @@ Estimated remaining: **~15-20 cycles** (not 50-70).
 | Kernel characterization | KernelProof.lean | ✅ PROVED |
 | Local gap bounds | DimensionCounting.lean | ✅ PROVED |
 | Module length additivity | DimensionCounting.lean | ✅ PROVED |
+| WeilDifferential k-module | WeilDifferential.lean | ✅ **NEW** |
+| WeilDifferential K-module | WeilDifferential.lean | ✅ **NEW** |
 
 ---
 
-## Phase 7: Weil Differentials (Revised Plan)
+## Phase 7: Weil Differentials (Updated Plan)
 
-### The Key Insight
-The P¹ sorries are about strong approximation edge cases.
-Weil differential pairing `⟨f, ω⟩ = ω(f)` **bypasses** that machinery entirely.
+### Completed
+| Cycle | Task | Status |
+|-------|------|--------|
+| 312 | WeilDifferential structure + K-module | ✅ DONE |
 
-### Revised Cycle Plan
-
+### Remaining
 | Cycle | Task | Difficulty | Est. |
 |-------|------|------------|------|
-| 312 | Define `WeilDifferential` structure | Medium | 1 cycle |
-| 313 | K-module structure + basic lemmas | Medium | 1-2 cycles |
-| 314 | Define pairing `⟨f, ω⟩ = ω(f)` | Easy | 1 cycle |
-| 315 | **Prove non-degeneracy** | **HARD** | 5-10 cycles |
-| 316 | Prove dim(Ω) = g (or deg(K) = 2g-2) | Medium | 2-3 cycles |
-| 317 | Instantiate FullRRData | Easy | 1 cycle |
-| 318 | Assembly + cleanup | Medium | 2-3 cycles |
-| **Total** | | | **~15-20 cycles** |
-
-### Cycle 312 Target
-**File**: `RrLean/RiemannRochV2/General/WeilDifferential.lean` (new)
-
-```lean
-structure WeilDifferential (k R K K_infty : Type*) ... where
-  toLinearMap : FullAdeleRing R K K_infty →ₗ[k] k
-  vanishes_on_K : ∀ x : K, toLinearMap (fullDiagonalEmbedding x) = 0
-```
+| 313 | Divisor-constrained differentials Ω(D) | Medium | 1-2 cycles |
+| 314 | Define pairing `⟨f, ω⟩ = ω(embed f)` | Easy | 1 cycle |
+| 315-320 | **Prove non-degeneracy** | **HARD** | 5-8 cycles |
+| 321-323 | Prove dim(Ω) = g (or deg(K) = 2g-2) | Medium | 2-3 cycles |
+| 324 | Instantiate FullRRData | Easy | 1 cycle |
+| 325-327 | Assembly + cleanup | Medium | 2-3 cycles |
+| **Total** | | | **~12-18 cycles** |
 
 ---
 
-## The Crux: Non-Degeneracy (Cycle 315)
+## Cycle 313 Target
+
+**File**: `RrLean/RiemannRochV2/General/WeilDifferential.lean` (extend)
+
+Add divisor-constrained differentials:
+```lean
+/-- Ω(D) = Weil differentials with poles bounded by D -/
+def DivisorDifferentials (D : DivisorV2 R) : Submodule K (WeilDifferential k R K K_infty) := ...
+```
+
+This requires defining "local order" of a differential at each place.
+
+---
+
+## The Crux: Non-Degeneracy (Cycle 315-320)
 
 This is where the real work is. Need to prove:
 ```
@@ -115,7 +143,7 @@ RrLean/RiemannRochV2/
 ├── Adelic/            - Full adeles (reusable) ✅
 ├── SerreDuality/      - H¹ framework (reusable) ✅
 ├── Elliptic/          - Axiomatized
-└── General/           - NEW: Weil differentials
+└── General/           - WeilDifferential.lean ✅ NEW
 ```
 
 ---
@@ -124,8 +152,8 @@ RrLean/RiemannRochV2/
 
 - [Rosen Ch. 6](https://link.springer.com/chapter/10.1007/978-1-4757-6046-0_6) - Weil Differentials
 - [Stichtenoth §1.7](https://link.springer.com/book/10.1007/978-3-540-76878-4) - Local Components
-- INVENTORY_REPORT.md - Asset inventory showing 3,700 lines reusable
+- INVENTORY_REPORT.md - Asset inventory showing 3,700+ lines reusable
 
 ---
 
-*Updated Cycle 311 (corrected assessment). ~15-20 cycles to complete.*
+*Updated Cycle 312. WeilDifferential structure complete. ~12-18 cycles to complete.*
