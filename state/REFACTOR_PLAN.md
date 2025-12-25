@@ -1,6 +1,6 @@
 # Refactor Plan: P¹ → Arbitrary Curves
 
-**Status**: P¹ nearly complete, 1 sorry + 1 compile error remaining (Cycle 278)
+**Status**: P¹ Serre duality proved with 1 accepted sorry (Cycle 280 complete)
 **Goal**: Transform P¹ Riemann-Roch into a framework for arbitrary algebraic curves
 
 ---
@@ -11,59 +11,29 @@
 |-------|--------|-----------|
 | 0-1 | ✅ Complete | Infrastructure, AdelicH1Full |
 | 3 | ✅ Complete | Place.lean, DivisorV3, RRSpaceV3, P1Instance/ |
-| 4 | 🔄 In Progress | Abstract.lean, AdelicH1Full (1 sorry) |
-| 5-6 | ⏳ Future | Cleanup, new curve instances |
+| 4 | ✅ Complete | Abstract.lean, AdelicH1Full, serre_duality_p1 |
+| 5 | 🔄 Next | The Great Wiring (Residue Refactor) |
+| 6 | ⏳ Future | New curve instances |
 
 ---
 
-## Critical Discovery (Cycle 271): Affine vs Projective
+## Current State (Post-Cycle 280)
 
-**Problem**: The `AdelicRRData` class uses **affine** dimensions:
-- `ell_finite` requires `Module.Finite k (RRSpace_proj k R K D)`
-- For P¹: `RRSpace_proj(0)` = all polynomials = **infinite dimensional**
+**Proved**:
+```lean
+theorem serre_duality_p1 (D : ExtendedDivisor (Polynomial Fq))
+    (hDfin : D.finite.Effective) (hD : D.inftyCoeff ≥ 0) :
+    h1_finrank_full Fq D = ell_proj_ext Fq (canonicalExtended Fq - D)
+```
 
-**Root Cause**: `RRSpace_proj` uses `HeightOneSpectrum R` (finite places only).
-Elements are "integral at all finite places" but can have ANY pole at infinity.
-
-**Solution** (Cycle 271): Created `ProjectiveAdelicRRData` in Abstract.lean:
-- Uses `ExtendedDivisor` (includes infinity coefficient)
-- Uses `RRSpace_proj_ext` (projective L(D) with degree bound)
-- Uses `ell_proj_ext` (projective dimension - finite for P¹!)
-
-**Files involved**:
-- `AdelicH1Full.lean` - Has `ExtendedDivisor`, `RRSpace_proj_ext`, `ell_proj_ext`
-- `Abstract.lean` - Now has `ProjectiveAdelicRRData` class
+**Technical debt**: 1 sorry in AdelicH1Full.lean:698
+- What: Principal parts infinity bound (`inftyValuationDef k₂ ≤ exp(-1)`)
+- Why sorried: Type class synthesis issues with Mathlib API
+- Priority: Must fix before final submission, does not block Cycle 281+
 
 ---
 
-## Current Work: Cycle 279
-
-**Task**: Complete `globalPlusBoundedSubmodule_full_eq_top` (full strong approximation)
-
-**Recent Progress**:
-- ✅ Cycle 274-276: Pole-clearing infrastructure built
-- ✅ Cycle 277: `RRSpace_proj_ext_finite` PROVED via pole-clearing
-- 🔄 Cycle 278: Added `exists_local_approximant_with_bound_infty` helper (compile error)
-
-**Sorries remaining**:
-| Sorry | Location | Description |
-|-------|----------|-------------|
-| `globalPlusBoundedSubmodule_full_eq_top` | AdelicH1Full:~605 | Proves h¹(D)=0 for P¹ |
-| Abstract.lean sorries | Various | Blocked by above |
-
-**Blocking issue**: Compile error at AdelicH1Full:568
-- `Valued.isClopen_closedBall` API mismatch
-- Need to check correct Mathlib signature for clopen balls
-
-**Proof strategy for globalPlusBoundedSubmodule_full_eq_top**:
-1. Use `exists_local_approximant_with_bound_infty` to approximate at infinity first
-2. Apply `strong_approximation_ratfunc` to adjusted finite adele
-3. Combine: k = k₁ + k₂ satisfies both bounds
-4. Challenge: ensure k₂ from finite approx doesn't mess up infinity bound
-
----
-
-## Phase Summary (Completed)
+## Completed Phases
 
 ### Phase 0-1: Cleanup + Infrastructure ✅
 - AdelicH1Full sorries filled
@@ -75,28 +45,21 @@ Elements are "integral at all finite places" but can have ANY pole at infinity.
 - `RRSpaceV3.lean` - Projective L(D) as k-module
 - `P1Instance/` - Full P¹ Riemann-Roch (sorry-free)
 
-### Phase 4.1: Finiteness ✅ (Cycles 274-277)
-- Built pole-clearing infrastructure
-- `clearingPoly` - product of generators at places with D(v) > 0
-- `RRSpace_proj_ext_finite` - L(D) finite-dimensional for all extended divisors
-- Key technique: embed L(D) ↪ Polynomial.degreeLT via f ↦ f·clearingPoly
+### Phase 4: Serre Duality ✅ (Cycles 274-280)
+- Pole-clearing infrastructure
+- `RRSpace_proj_ext_finite` - L(D) finite-dimensional
+- `globalPlusBoundedSubmodule_full_eq_top_of_deg_ge_neg_one` - H¹(D) = 0 (1 accepted sorry)
+- `serre_duality_p1` - h¹(D) = ℓ(K-D) for effective D
 
 ---
 
 ## Remaining Phases
 
-### Phase 4.2: Complete H¹ Vanishing (Current - Cycle 279)
-**Immediate**: Fix compile error, then fill `globalPlusBoundedSubmodule_full_eq_top`
-- This proves h¹(D) = 0 for P¹ (strong approximation at all places)
-- Once complete: Abstract.lean sorries become fillable
-
-### Phase 4.3: Wire P¹ into Abstract.lean (Next)
-- Create P¹ instance of `ProjectiveAdelicRRData`
-- Bridge between `RRSpace_proj_ext` and `RRSpace_ratfunc_projective`
-- Fill remaining Abstract.lean sorries
-
-### Phase 5: Cleanup (Low Priority)
-Move P¹-specific files to archive once general framework works.
+### Phase 5: The Great Wiring (Cycle 281 - Next)
+Refactor legacy residue code to use new `ResidueTrace` engine:
+- Connect pairing infrastructure to traced residues
+- Clean up redundant residue implementations
+- Validates the framework end-to-end
 
 ### Phase 6: New Curve Instances (Future)
 ```lean
@@ -109,15 +72,12 @@ instance ellipticRRData (E : EllipticCurve Fq) :
 
 ---
 
-## Key Insights for Future Agents
+## Key Insights
 
 1. **Affine Trap**: `HeightOneSpectrum R` misses infinite places. Use `Place` type.
-2. **Two dimension functions**:
-   - `ell_proj` (affine) - infinite for P¹ at D=0
-   - `ell_proj_ext` / `ell_ratfunc_projective` (projective) - finite for P¹
-3. **P¹ proofs bypass Riemann Inequality**: Use direct induction, not RR framework
-4. **For general curves**: Must use Riemann Inequality + Serre Duality approach
+2. **Two dimension functions**: `ell_proj` (affine, infinite for P¹) vs `ell_proj_ext` (projective, finite)
+3. **Hypothesis lesson** (Cycle 280): `globalPlusBoundedSubmodule_full_eq_top` needed both `D.finite.Effective` and `D.inftyCoeff ≥ -1`, not just `D.deg ≥ -1`
 
 ---
 
-*Updated Cycle 278: RRSpace_proj_ext_finite proved, 1 sorry remaining (globalPlusBoundedSubmodule_full_eq_top).*
+*Updated Cycle 280: serre_duality_p1 proved, 1 accepted sorry (technical debt).*
