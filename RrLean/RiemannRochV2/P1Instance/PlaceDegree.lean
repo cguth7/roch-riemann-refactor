@@ -5,6 +5,8 @@ import RrLean.RiemannRochV2.Definitions.Infrastructure
 import Mathlib.RingTheory.AdjoinRoot
 import Mathlib.RingTheory.Polynomial.Quotient
 import Mathlib.RingTheory.Coprime.Lemmas
+import Mathlib.RingTheory.UniqueFactorizationDomain.Multiplicity
+import Mathlib.Algebra.Polynomial.FieldDivision
 
 /-!
 # Place Degree for Polynomial Rings
@@ -626,6 +628,104 @@ lemma ord_generator_other (v w : HeightOneSpectrum (Polynomial k)) (hw : w ≠ v
   have heq' : @Nat.find _ (Classical.decPred _) (exists_pow_generator_not_dvd k w (generator k v) hgen_v_ne) = 1 := by
     convert heq using 2
   rw [heq']
+
+/-! ## Normalized Factors and Ord -/
+
+/-- Generators are normalized (monic polynomials are normalized). -/
+lemma generator_normalize (v : HeightOneSpectrum (Polynomial k)) :
+    normalize (generator k v) = generator k v :=
+  (generator_monic k v).normalize_eq_self
+
+/-- generator(v)^n divides p iff n ≤ ord(v, p).
+
+This is the key divisibility characterization of ord. The proof uses Nat.find properties
+but requires careful Nat arithmetic that's deferred to a later cycle. -/
+lemma pow_generator_dvd_iff_le_ord (v : HeightOneSpectrum (Polynomial k))
+    (p : Polynomial k) (hp : p ≠ 0) (n : ℕ) :
+    generator k v ^ n ∣ p ↔ n ≤ ord k v p := by
+  -- The proof relies on Nat.find properties:
+  -- ord = (Nat.find ...) - 1, so n ≤ ord iff n < Nat.find iff gen^n | p
+  -- This is straightforward but requires careful Nat subtraction handling
+  sorry
+
+/-- The ord equals the count of the generator in normalized factors.
+
+This connects our divisibility-based definition to Mathlib's normalized factor machinery. -/
+lemma ord_eq_count_normalizedFactors (v : HeightOneSpectrum (Polynomial k))
+    (p : Polynomial k) (hp : p ≠ 0) :
+    ord k v p = (UniqueFactorizationMonoid.normalizedFactors p).count (generator k v) := by
+  -- Use count_normalizedFactors_eq: count = n iff p^n | x and p^{n+1} ∤ x
+  symm
+  apply UniqueFactorizationMonoid.count_normalizedFactors_eq
+  · exact generator_irreducible k v
+  · exact generator_normalize k v
+  · exact (pow_generator_dvd_iff_le_ord k v p hp _).mpr le_rfl
+  · rw [pow_generator_dvd_iff_le_ord k v p hp]
+    omega
+
+/-- For each monic irreducible q, there exists a unique place v with generator k v = q. -/
+lemma exists_place_with_generator (q : Polynomial k) (hq_monic : q.Monic) (hq_irr : Irreducible q) :
+    ∃! v : HeightOneSpectrum (Polynomial k), generator k v = q := by
+  -- The place is the one with asIdeal = span{q}
+  have hq_ne : q ≠ 0 := hq_monic.ne_zero
+  have hq_prime : Prime q := hq_irr.prime
+  -- span{q} is a prime ideal (since q is prime)
+  have hprime_ideal : (Ideal.span {q}).IsPrime := by
+    rwa [Ideal.span_singleton_prime hq_ne]
+  -- span{q} ≠ ⊥ since q ≠ 0
+  have hne_bot : Ideal.span {q} ≠ ⊥ := by
+    simp only [ne_eq, Ideal.span_singleton_eq_bot, hq_ne, not_false_eq_true]
+  -- In a PID, nonzero prime ideals are height-one (maximal among proper)
+  have hmaximal : (Ideal.span {q}).IsMaximal := by
+    apply Ideal.IsPrime.isMaximal hprime_ideal
+    exact hne_bot
+  -- Construct the HeightOneSpectrum
+  let v : HeightOneSpectrum (Polynomial k) := ⟨Ideal.span {q}, hprime_ideal, hne_bot⟩
+  use v
+  constructor
+  · -- generator k v = q
+    -- generator k v generates the same ideal: span{generator k v} = v.asIdeal = span{q}
+    have hgen_span := asIdeal_eq_span_generator k v
+    -- So generator k v and q are associates (both generate span{q})
+    have hassoc : Associated (generator k v) q := by
+      rw [← Ideal.span_singleton_eq_span_singleton]
+      exact hgen_span.symm
+    -- Both are monic, so they're equal
+    exact eq_of_monic_of_associated (generator_monic k v) hq_monic hassoc
+  · -- Uniqueness: if generator k w = q, then w = v
+    intro w hw
+    apply HeightOneSpectrum.ext
+    rw [asIdeal_eq_span_generator k w, hw]
+
+/-- The natDegree of the product of normalized factors equals the natDegree of p. -/
+lemma natDegree_normalizedFactors_prod (p : Polynomial k) (hp : p ≠ 0) :
+    (UniqueFactorizationMonoid.normalizedFactors p).prod.natDegree = p.natDegree := by
+  -- prod(normalizedFactors p) = normalize p (by prod_normalizedFactors_eq)
+  have hprod := UniqueFactorizationMonoid.prod_normalizedFactors_eq hp
+  -- hprod : (normalizedFactors p).prod = normalize p
+  rw [hprod]
+  -- Use leadingCoeff_mul_prod_normalizedFactors: C a.leadingCoeff * (normalizedFactors a).prod = a
+  haveI : DecidableEq (Polynomial k) := Classical.decEq _
+  -- degree (normalize p) = degree p, so natDegree as well
+  simp only [natDegree_eq_of_degree_eq Polynomial.degree_normalize]
+
+/-- Normalized factors of a polynomial are monic. -/
+lemma monic_of_mem_normalizedFactors (p : Polynomial k) {q : Polynomial k}
+    (hq : q ∈ UniqueFactorizationMonoid.normalizedFactors p) : q.Monic := by
+  have hnorm := UniqueFactorizationMonoid.normalize_normalized_factor q hq
+  -- hnorm : normalize q = q
+  -- For polynomials, normalize q = q iff q is monic (when q ≠ 0)
+  have hq_ne : q ≠ 0 := (UniqueFactorizationMonoid.irreducible_of_normalized_factor q hq).ne_zero
+  haveI : DecidableEq (Polynomial k) := Classical.decEq _
+  rwa [← Polynomial.normalize_eq_self_iff_monic hq_ne]
+
+/-- The natDegree of the product of normalized factors equals the sum of natDegrees. -/
+lemma natDegree_normalizedFactors_prod_eq_sum (p : Polynomial k) (hp : p ≠ 0) :
+    (UniqueFactorizationMonoid.normalizedFactors p).prod.natDegree =
+    ((UniqueFactorizationMonoid.normalizedFactors p).map Polynomial.natDegree).sum := by
+  apply Polynomial.natDegree_multiset_prod_of_monic
+  intro q hq
+  exact monic_of_mem_normalizedFactors k p hq
 
 /-- The intValuation relates to ord via exp(-ord).
 

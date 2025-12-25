@@ -5,20 +5,21 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 304
-**Total Sorries**: 12 (3 new infrastructure + 3 high-level + 6 axioms)
+**Cycle**: 305
+**Total Sorries**: 13 (4 new infrastructure + 3 high-level + 6 axioms)
 **Elliptic Axioms**: 8
 
 ---
 
 ## Sorry Classification
 
-### Content Sorries - New Infrastructure (3)
+### Content Sorries - New Infrastructure (4)
 | Location | Line | Description | Difficulty |
 |----------|------|-------------|------------|
-| PlaceDegree | 633 | `intValuation_eq_exp_neg_ord` | Medium ← NEXT |
-| PlaceDegree | 652 | `natDegree_eq_sum_ord_mul_degree` | Medium (UFD) |
-| PlaceDegree | 682 | `intDegree_ge_deg_of_valuation_bounds_and_linear_support` | Blocked on above |
+| PlaceDegree | 643 | `pow_generator_dvd_iff_le_ord` | Easy (Nat arithmetic) ← NEXT |
+| PlaceDegree | 733 | `intValuation_eq_exp_neg_ord` | Medium (valuation API) |
+| PlaceDegree | 752 | `natDegree_eq_sum_ord_mul_degree` | Medium (UFD, blocked) |
+| PlaceDegree | 782 | `intDegree_ge_deg_of_valuation_bounds_and_linear_support` | Blocked on above |
 
 ### Content Sorries - High Level (3)
 | Location | Line | Description | Difficulty |
@@ -59,37 +60,37 @@
 |-------|------|--------|
 | 303 | Fill `linear_of_degree_eq_one` + add ord infrastructure | ✅ DONE |
 | 304 | Fill `ord_generator_self` and `ord_generator_other` | ✅ DONE |
-| 305 | Fill `natDegree_eq_sum_ord_mul_degree` (UFD) | **NEXT** (Medium) |
-| 306 | Fill `intValuation_eq_exp_neg_ord` | Deferred (valuation API) |
-| 307 | Fill `intDegree_ge_deg...` using above | Blocked |
-| 308+ | High-level AdelicH1Full sorries | Blocked |
+| 305 | Add UFD infrastructure + ord lemmas | ✅ DONE |
+| 306 | Fill `pow_generator_dvd_iff_le_ord` (Nat arithmetic) | **NEXT** (Easy) |
+| 307 | Fill `natDegree_eq_sum_ord_mul_degree` using above | Blocked on 306 |
+| 308 | Fill `intValuation_eq_exp_neg_ord` | Medium (valuation API) |
+| 309+ | High-level AdelicH1Full sorries | Blocked |
 
-### Cycle 304 Summary
+### Cycle 305 Summary
 **Completed**:
-- Fixed `ord` definition (was off-by-one: added `- 1` to Nat.find result)
-- Proved `ord_generator_self`: gen² ∤ gen for irreducible gen, so ord = 1
-- Proved `ord_generator_other`: gen(w) ∤ gen(v) for v ≠ w by coprimality, so ord = 0
+- Added UFD/normalization imports
+- Proved `generator_normalize`: generators are monic hence normalized
+- Added `pow_generator_dvd_iff_le_ord` (sorry - blocked on Nat arithmetic)
+- Proved `ord_eq_count_normalizedFactors`: ord = count in normalized factors
+- Proved `exists_place_with_generator`: bijection monic irreducibles ↔ places
+- Proved `natDegree_normalizedFactors_prod`: product of factors has same natDegree
+- Proved `monic_of_mem_normalizedFactors`: normalized factors are monic
+- Proved `natDegree_normalizedFactors_prod_eq_sum`: natDegree = sum over multiset
 
-**Proof Techniques**:
-- Used `Nat.find_min'` for upper bounds
-- Used `Nat.le_find_iff` for lower bounds
-- Handled DecidablePred instance mismatch with `convert ... using 2`
+**Blocked on**: `pow_generator_dvd_iff_le_ord` - Nat.find subtraction arithmetic
+The proof requires showing `gen^n | p ↔ n ≤ (Nat.find ... - 1)` which needs
+careful handling of Nat subtraction. The logic is clear but Lean's Nat omega
+struggles with `m - 1` patterns.
 
-### Cycle 305 Target
-**File**: PlaceDegree.lean:652
-**Lemma**: `natDegree_eq_sum_ord_mul_degree` (UFD approach)
-**Goal**: Express polynomial degree as sum of multiplicities:
-```lean
-p.natDegree = ∑ v ∈ S, ord k v p * degree k v
-```
-**Proof sketch** (direct UFD, bypasses valuation bridge):
-1. Use unique factorization: `p = c * ∏ gen(v)^{ord_v(p)}`
-2. `natDegree` is multiplicative: `natDegree(a*b) = natDegree(a) + natDegree(b)`
-3. `natDegree(gen(v)) = degree(v)` by definition
-4. `natDegree(c) = 0` for constants
-5. Use `ord_generator_self` and `ord_generator_other` to identify multiplicities
-
-**Alternative** (deferred): `intValuation_eq_exp_neg_ord` bridges valuation to `ord` via Mathlib's `Associates.count`. More complex, requires diving into valuation internals.
+### Cycle 306 Target
+**File**: PlaceDegree.lean:643
+**Lemma**: `pow_generator_dvd_iff_le_ord`
+**Goal**: `generator k v ^ n ∣ p ↔ n ≤ ord k v p`
+**Approach**:
+- `ord k v p = Nat.find(...) - 1` where Nat.find gives first m with gen^m ∤ p
+- If gen^n | p, then n < Nat.find, so n ≤ Nat.find - 1 = ord
+- If n ≤ ord, then n < Nat.find, so by Nat.find_min, gen^n | p
+- Needs: `Nat.sub_add_cancel`, `Nat.succ_le_of_lt`, `Nat.lt_succ_self`
 
 ---
 
