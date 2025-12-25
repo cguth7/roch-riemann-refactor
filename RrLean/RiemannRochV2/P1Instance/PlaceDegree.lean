@@ -419,10 +419,65 @@ lemma natDegree_ge_degWeighted_of_valuation_bounds (D : DivisorV2 (Polynomial k)
     rw [hDv_eq] at hval_v
     rw [v.intValuation_le_pow_iff_mem, mem_asIdeal_pow_iff_generator_pow_dvd] at hval_v
     exact hval_v
-  -- Generators at different places are coprime, so product divides p
-  -- Product has degree = degWeighted k D
-  -- Full proof requires IsCoprime infrastructure - accept as sorry for now
-  sorry
+  -- Generators at different places are coprime
+  have hcoprime_gen : ∀ v ∈ D.support, ∀ w ∈ D.support, v ≠ w →
+      IsCoprime (generator k v) (generator k w) := by
+    intro v _ w _ hvw
+    -- generator k v ∉ w.asIdeal, so generator k w ∤ generator k v
+    have hnotdvd : ¬(generator k w ∣ generator k v) := by
+      intro hdvd
+      have hmem : generator k v ∈ w.asIdeal := by
+        rw [asIdeal_eq_span_generator k w, Ideal.mem_span_singleton]
+        exact hdvd
+      exact generator_not_mem_other_prime k v w hvw.symm hmem
+    -- Distinct irreducibles are coprime
+    exact isCoprime_comm.mp ((generator_irreducible k w).coprime_iff_not_dvd.mpr hnotdvd)
+  -- Powers of coprime elements are coprime
+  have hcoprime_pow : (D.support : Set (HeightOneSpectrum (Polynomial k))).Pairwise
+      (fun v w => IsCoprime (generator k v ^ (D v).toNat) (generator k w ^ (D w).toNat)) := by
+    intro v hv w hw hvw
+    exact (hcoprime_gen v hv w hw hvw).pow
+  -- Product of coprime divisors divides p
+  have hprod_dvd : (∏ v ∈ D.support, generator k v ^ (D v).toNat) ∣ p :=
+    Finset.prod_dvd_of_coprime hcoprime_pow hdvd_each
+  -- Product is monic
+  have hprod_monic : (∏ v ∈ D.support, generator k v ^ (D v).toNat).Monic :=
+    monic_prod_of_monic _ _ (fun v _ => (generator_monic k v).pow (D v).toNat)
+  -- Degree of product = sum of degrees
+  have hdeg_prod : (∏ v ∈ D.support, generator k v ^ (D v).toNat).natDegree =
+      ∑ v ∈ D.support, (generator k v ^ (D v).toNat).natDegree :=
+    natDegree_prod_of_monic _ _ (fun v _ => (generator_monic k v).pow (D v).toNat)
+  -- Each term: natDegree(gen^n) = n * natDegree(gen) = n * deg(v)
+  have hdeg_pow : ∀ v ∈ D.support, (generator k v ^ (D v).toNat).natDegree =
+      (D v).toNat * degree k v := fun v _ => natDegree_pow _ _
+  -- Sum of natDegrees = degWeighted (via cast to ℤ)
+  have hprod_deg : ((∏ v ∈ D.support, generator k v ^ (D v).toNat).natDegree : ℤ) =
+      degWeighted k D := by
+    rw [hdeg_prod]
+    unfold degWeighted
+    rw [Finsupp.sum]
+    simp only [Nat.cast_sum]
+    apply Finset.sum_congr rfl
+    intro v hv
+    rw [hdeg_pow v hv]
+    have hDv_pos : D v ≥ 0 := hD_eff v
+    simp only [Nat.cast_mul, Int.toNat_of_nonneg hDv_pos]
+  -- Final bound: p.natDegree ≥ product.natDegree = degWeighted
+  obtain ⟨q, hpq⟩ := hprod_dvd
+  have hq_ne : q ≠ 0 := by
+    intro hq0
+    rw [hq0, mul_zero] at hpq
+    exact hp_ne hpq
+  have hprod_ne : (∏ v ∈ D.support, generator k v ^ (D v).toNat) ≠ 0 := hprod_monic.ne_zero
+  have hge : p.natDegree ≥ (∏ v ∈ D.support, generator k v ^ (D v).toNat).natDegree := by
+    calc p.natDegree
+        = ((∏ v ∈ D.support, generator k v ^ (D v).toNat) * q).natDegree := by rw [← hpq]
+      _ = (∏ v ∈ D.support, generator k v ^ (D v).toNat).natDegree + q.natDegree := by
+          rw [natDegree_mul hprod_ne hq_ne]
+      _ ≥ (∏ v ∈ D.support, generator k v ^ (D v).toNat).natDegree := Nat.le_add_right _ _
+  calc (p.natDegree : ℤ)
+      ≥ (∏ v ∈ D.support, generator k v ^ (D v).toNat).natDegree := by exact_mod_cast hge
+    _ = degWeighted k D := hprod_deg
 
 end PlaceDegree
 

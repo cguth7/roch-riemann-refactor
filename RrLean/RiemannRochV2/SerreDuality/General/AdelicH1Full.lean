@@ -982,21 +982,28 @@ theorem RRSpace_proj_ext_canonical_sub_eq_bot_deep_neg_infty
       -- Contradiction!
       -- For this, we need: ord constraints translate to degree constraints
       -- This requires showing: if val_v(p) ≤ exp(-n), then p has n zeros at v (counting multiplicity)
-      -- For polynomial p, val_v(p) = exp(-ord_v(p))
-      -- val_v(p) ≤ exp(-n) iff exp(-ord_v(p)) ≤ exp(-n) iff ord_v(p) ≥ n
-      -- Total zeros (weighted by place degree): Σ ord_v(p) ⋅ deg(v) ≤ deg(p)
-      -- Required: ord_v(p) ≥ D.finite(v) for v ∈ supp(D.finite)
-      -- So deg(p) ≥ Σ_{v ∈ supp} ord_v(p) ⋅ deg(v) ≥ Σ_{v ∈ supp} D.finite(v) ⋅ deg(v) = D.finite.deg
-      -- But deg(p) ≤ -2 - D.inftyCoeff < -1 - D.inftyCoeff ≤ D.finite.deg (from hdeg)
-      -- Contradiction!
-      -- Let me formalize this step by step.
-      -- First need: for polynomial p, val_v(p) = exp(-ord_v(p))
-      -- Second: ord_v(p) ⋅ deg(v) ≤ natDegree(p), summed over v ∈ supp(p)
-      -- Actually, deg(p) = Σ_{roots α} multiplicity(α) = Σ_v ord_v(p) ⋅ deg(v) where v are places/irreds
-      -- So deg(p) ≥ Σ_{v ∈ S} ord_v(p) ⋅ deg(v) for any finite set S
-      -- This is a nontrivial fact about polynomials and places.
-      -- For now, let me use a simpler sorry-based argument since the full proof is complex.
-      sorry
+      -- Use the valuation-degree relationship from PlaceDegree.lean
+      -- Step 1: Convert valuation constraints on f to constraints on p
+      have hval_p : ∀ v ∈ D.finite.support,
+          v.intValuation p ≤ WithZero.exp (-(D.finite v : ℤ)) := by
+        intro v _
+        have hf_val_v := hf_val v
+        have h_coeff : (canonicalExtended Fq - D).finite v = -D.finite v := by
+          simp only [ExtendedDivisor.sub_finite, canonicalExtended, zero_sub, Finsupp.neg_apply]
+        rw [h_coeff] at hf_val_v
+        -- Convert: v.valuation (RatFunc Fq) (algebraMap p) = v.intValuation p
+        rw [v.valuation_of_algebraMap] at hf_val_v
+        exact hf_val_v
+      -- Step 2: Apply natDegree_ge_degWeighted_of_valuation_bounds
+      have hdeg_ge_weighted : (p.natDegree : ℤ) ≥ PlaceDegree.degWeighted Fq D.finite :=
+        PlaceDegree.natDegree_ge_degWeighted_of_valuation_bounds Fq D.finite hDfin p hp_ne hval_p
+      -- Step 3: Apply degWeighted_ge_deg for effective divisors
+      have hweighted_ge_deg : PlaceDegree.degWeighted Fq D.finite ≥ D.finite.deg :=
+        PlaceDegree.degWeighted_ge_deg Fq D.finite hDfin
+      -- Step 4: Chain inequalities: p.natDegree ≥ degWeighted ≥ D.finite.deg
+      have hdeg_ge : (p.natDegree : ℤ) ≥ D.finite.deg := le_trans hweighted_ge_deg hdeg_ge_weighted
+      -- Step 5: Contradiction with p.natDegree < D.finite.deg
+      omega
   · intro hf; rw [hf]; exact Or.inl rfl
 
 /-- ℓ(K-D) = 0 when D.finite is effective, D.inftyCoeff < -1, and deg(D) ≥ -1. -/

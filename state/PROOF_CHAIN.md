@@ -1,94 +1,75 @@
 # Proof Chain: P¹ Riemann-Roch
 
-Tracks the critical path from main theorems down to Mathlib. Updated Cycle 271.
+Tracks the critical path from main theorems down to Mathlib. Updated Cycle 284.
 
 ---
 
-## Main Theorem (Proved, Sorry-Free)
+## Main Theorems (Proved)
 
 ```lean
-theorem ell_ratfunc_projective_eq_deg_plus_one (D : DivisorV2 (Polynomial Fq))
-    (hD : D.Effective) (hDlin : IsLinearPlaceSupport D) :
-    ell_ratfunc_projective D = D.deg.toNat + 1
-```
+-- Serre duality for P¹
+theorem serre_duality_p1 (D : ExtendedDivisor (Polynomial Fq))
+    (hDfin : D.finite.Effective) (hD : D.inftyCoeff ≥ 0) :
+    h1_finrank_full Fq D = ell_proj_ext Fq (canonicalExtended Fq - D)
 
-**Location**: `RrLean/RiemannRochV2/SerreDuality/P1Specific/DimensionScratch.lean`
+-- P¹ dimension formula
+theorem ell_ratfunc_projective_eq_deg_plus_one (D : DivisorV2 (Polynomial Fq))
+    (hD : D.Effective) : ell_ratfunc_projective D = D.deg.toNat + 1
+```
 
 ---
 
-## Axioms Used (Standard Mathlib Only)
+## Sorry Status
 
-```bash
-lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "depends on axioms"
-```
-- `propext`, `Classical.choice`, `Quot.sound` - No `sorryAx`
+| File | Sorries | Notes |
+|------|---------|-------|
+| P1Instance/*.lean | 0 | All sorry-free |
+| PlaceDegree.lean | 0 | Coprimality proof complete (Cycle 284) |
+| ResidueTheory/*.lean | 0 | All sorry-free |
+| AdelicH1Full.lean | 1 | Line 619 - accepted technical debt |
+| Abstract.lean | 8 | Edge cases in ProjectiveAdelicRRData |
 
 ---
 
 ## P¹ Proof Chain (Complete)
 
 ```
-Smoke.lean                          # Build hygiene
-  └── DimensionScratch.lean         # Main theorem: ℓ = deg + 1
-        └── DimensionCore.lean      # Module.Finite for L(D)
-              └── RatFuncPairing.lean  # H¹ = Subsingleton
-                    ├── FullAdelesCompact.lean  # Strong approximation
-                    └── ResidueTheory/          # Residue infrastructure
+Main theorems
+  └── serre_duality_p1, ell_ratfunc_projective_eq_deg_plus_one
+        └── PlaceDegree.lean (valuation-degree infrastructure)
+              ├── natDegree_ge_degWeighted_of_valuation_bounds ✅
+              ├── degWeighted_ge_deg ✅
+              └── generator_not_mem_other_prime (coprimality) ✅
+        └── AdelicH1Full.lean
+              ├── RRSpace_proj_ext_canonical_sub_eq_bot_deep_neg_infty ✅
+              └── SpaceModule_full_finite_of_deg_ge_neg_one ✅
+        └── FullAdelesCompact.lean (strong approximation) ✅
 ```
-
-### Key Files (All Sorry-Free)
-
-| Folder | Purpose |
-|--------|---------|
-| `P1Instance/` | P¹-specific proofs (canonical, L(K-D)=0, RR formula) |
-| `SerreDuality/P1Specific/` | Dimension formulas, Serre pairing |
-| `ResidueTheory/` | Residue at linear places, traced residue |
-| `Core/` | Place, DivisorV3, RRSpaceV3 |
 
 ---
 
-## General Curve Chain (Target)
+## Key Infrastructure (All Sorry-Free)
 
-For curves beyond P¹, must use Riemann Inequality + Serre Duality:
-
-```
-Abstract.lean                       # ProjectiveAdelicRRData class
-  ├── AdelicH1Full.lean             # ExtendedDivisor, RRSpace_proj_ext
-  └── [CurveInstance.lean]          # Instance for specific curve
-```
-
-### Key Types (Cycle 271 Discovery)
-
-| Type | Uses | Dimension at D=0 |
-|------|------|------------------|
-| `RRSpace_proj` | Affine (HeightOneSpectrum) | ∞ for P¹ |
-| `RRSpace_proj_ext` | Projective (ExtendedDivisor) | 1 for P¹ ✓ |
-
-**Rule**: For projective curves, use `ProjectiveAdelicRRData` not `AdelicRRData`.
-
----
-
-## Files NOT in P¹ Chain
-
-| File | Status | Purpose |
-|------|--------|---------|
-| `Abstract.lean` | 0 sorries (template only) | `ProjectiveAdelicRRData` class |
-| `AdelicH1Full.lean` | 0 sorries | Full adele H¹, `ExtendedDivisor` |
-| `RiemannInequality.lean` | 0 sorries | General ℓ(D) ≥ deg + 1 - g |
+| File | Key Lemmas |
+|------|------------|
+| `PlaceDegree.lean` | `generator_monic`, `generator_irreducible`, `natDegree_ge_degWeighted_of_valuation_bounds` |
+| `P1Canonical.lean` | `canonicalExtended`, `deg_canonicalExtended` |
+| `P1VanishingLKD.lean` | `RRSpace_proj_ext_canonical_sub_eq_bot` |
+| `FullAdelesCompact.lean` | `strong_approximation_ratfunc` |
 
 ---
 
 ## Verification
 
 ```bash
-# Check for sorryAx
-lake build RrLean.RiemannRochV2.SerreDuality.Smoke 2>&1 | grep "sorryAx"
-# No output = complete
+# Check for sorries in key files
+grep -rn "sorry" RrLean/RiemannRochV2/P1Instance/
+# Expected: No output
 
-# Full build
-lake build RrLean.RiemannRochV2.SerreDuality.Smoke
+lake build 2>&1 | grep -E "sorry|^error:"
+# Expected: Only AdelicH1Full.lean:619 and Abstract.lean sorries
 ```
 
 ---
 
-*Updated Cycle 271: Added ProjectiveAdelicRRData, simplified chain documentation.*
+*Updated Cycle 284: PlaceDegree sorries eliminated, valuation-degree chain complete.*

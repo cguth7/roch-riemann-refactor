@@ -1,6 +1,6 @@
 # Playbook
 
-Strategic guide for formalizing Riemann-Roch. Updated Cycle 280.
+Strategic guide for formalizing Riemann-Roch. Updated Cycle 284.
 
 ---
 
@@ -50,53 +50,12 @@ Each Claude cycle has ~50k usable tokens of context. This means:
 - "Implement the full residue theorem"
 - "Refactor the adelic infrastructure"
 
-### When to Slow Down for Infrastructure
-
-If you're about to write a proof and find yourself saying:
-- "I need a helper lemma for X"
-- "This would be cleaner if Y existed"
-- "I'm pattern-matching on the same thing repeatedly"
-
-**STOP.** That cycle should become an infrastructure cycle:
-1. Write the helper/abstraction
-2. Prove basic properties
-3. Leave the original goal for NEXT cycle
-
 ### Ledger Discipline
 
-The "Next Steps" section should contain:
-1. **Immediate** (this cycle): ONE specific task with clear success criteria
-2. **Context**: 1-2 sentences on WHY this task matters
-3. **After**: Brief note on what unlocks after this task
-
-Example:
-```
-## Next Steps
-
-**Immediate**: Fill `smul_mem_boundedSubset_full` sorry (line 230)
-- Show k-scalar multiplication preserves valuation bounds
-- Success: `lake build AdelicH1Full` with no sorries
-
-**Context**: This unblocks `SpaceModule_full` as the correct H¹(D) for arbitrary curves.
-
-**After**: Complete the second sorry (line 234), then move to Place type definition.
-```
-
-### Refactor Plan Discipline
-
-Update `REFACTOR_PLAN.md` when:
-1. **Completing a phase**: Mark phase complete, note actual vs planned cycles
-2. **Discovering blockers**: Add notes about unexpected dependencies
-3. **Changing scope**: If a phase needs more/fewer cycles than planned, update estimates
-4. **Learning insights**: Add lessons that affect future phases
-
-Example update after completing Phase 1:
-```
-## Phase 1: Complete Incomplete Infrastructure
-**Status**: COMPLETE (Cycles 243-247, originally estimated 243-249)
-**Actual work**: AdelicH1Full sorries filled, RRSpace_proj_ext degree proofs added
-**Lessons**: Degree bounds needed more infrastructure than expected
-```
+The ledger should contain:
+1. **Current state**: Build status, sorry count, cycle number
+2. **Cycle summary**: What was done, what was proved
+3. **Next steps**: Options for next cycle
 
 ---
 
@@ -108,411 +67,118 @@ Formalize the **Riemann-Roch theorem** for **arbitrary smooth projective curves*
 ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
 ```
 
-Where:
-- `ℓ(D)` = dimension of L(D) over the base field k
-- `K` = canonical divisor (from differentIdeal)
-- `g` = genus of the curve
-- `deg(D)` = degree of divisor D
+### Current Status (Cycle 284)
 
-### Scope
+| Component | Status | Sorries |
+|-----------|--------|---------|
+| P¹ Riemann-Roch formula | ✅ Complete | 0 |
+| P¹ Serre duality (effective D) | ✅ Complete | 0 |
+| Valuation-degree infrastructure | ✅ Complete | 0 |
+| AdelicH1Full.lean | ⚠️ 1 accepted debt | 1 |
+| Abstract.lean edge cases | ⚠️ Low priority | 8 |
 
-| Curve Type | Genus | Status |
-|------------|-------|--------|
-| P¹ (projective line) | 0 | ✅ COMPLETE (all effective divisors) |
-| Elliptic curves | 1 | Future (Phase 6) |
-| Hyperelliptic curves | (deg f - 1)/2 | Future (Phase 6) |
-| General smooth projective | any g | Architecture supports it |
-
-The core infrastructure (~3,700 lines) is **curve-agnostic**. Only the `AdelicRRData` instance needs to be provided for each curve family.
+**Total sorries**: 9 (1 technical debt + 8 edge cases)
 
 ---
 
-## Mathematical Strategy: Adelic Serre Duality
-
-We prove Serre duality `h¹(D) = ℓ(K-D)` via the adelic approach, using only Mathlib primitives.
-
-### Why Not Trace Dual Directly?
-
-The naive approach fails because:
-```
-div(dual I) = K - div(I)
-→ dual(I_{-D}) gives I_{K+D}, hence L(K+D)
-→ But we need L(K-D) for Serre duality
-```
-
-### The Correct Approach
-
-Construct a perfect pairing via residues:
-```
-⟨·,·⟩ : H¹(D) × L(K-D) → k
-⟨[a], f⟩ := ∑_v res_v(a_v · f)
-```
-
-**Step 1: Construct the pairing**
-- Define local residue `res_v : K_v → k` at each place
-- Sum over all places to get global pairing
-
-**Step 2: Show well-defined**
-- If `a ∈ K`, then `∑_v res_v(a·f) = 0` (residue theorem)
-- If `a ∈ A_K(D)` and `f ∈ L(K-D)`, product has no poles
-
-**Step 3: Show non-degenerate**
-- Left: `⟨[a], f⟩ = 0` for all f ⟹ `[a] = 0`
-- Right: `⟨[a], f⟩ = 0` for all [a] ⟹ `f = 0`
-- Uses: `FractionalIdeal.dual_dual`, `differentIdeal_ne_bot`
-
-**Step 4: Conclude dimension equality**
-- Perfect pairing ⟹ `dim H¹(D) = dim L(K-D)`
-- Therefore: `h¹(D) = ℓ(K-D)`
-
-### Key Mathlib Resources
-
-| Component | Import | Key Definitions |
-|-----------|--------|-----------------|
-| Laurent series | `RingTheory.LaurentSeries` | `LaurentSeries`, `HahnSeries.coeff` |
-| Trace dual | `RingTheory.DedekindDomain.Different` | `Submodule.traceDual`, `differentIdeal` |
-| Fractional ideal dual | `RingTheory.DedekindDomain.Different` | `FractionalIdeal.dual`, `dual_dual` |
-| Finite adeles | `RingTheory.DedekindDomain.FiniteAdeleRing` | `FiniteAdeleRing`, `adicCompletion` |
-| RatFunc coercion | `RingTheory.LaurentSeries` | `RatFunc F → LaurentSeries F` |
-
-### Critical Definitions
+## What's Proved
 
 ```lean
--- Trace dual: x such that Tr(x·y) ∈ A for all y ∈ I
-def Submodule.traceDual (I : Submodule B L) : Submodule B L :=
-  {x : L | ∀ y ∈ I, Algebra.trace A L (x * y) ∈ A}
+-- Main Serre duality for P¹ (effective divisors with non-negative inftyCoeff)
+theorem serre_duality_p1 (D : ExtendedDivisor (Polynomial Fq))
+    (hDfin : D.finite.Effective) (hD : D.inftyCoeff ≥ 0) :
+    h1_finrank_full Fq D = ell_proj_ext Fq (canonicalExtended Fq - D)
 
--- Different ideal: inverse of trace dual of 1
-def differentIdeal : Ideal B :=
-  (1 / Submodule.traceDual A K 1).comap (algebraMap B L)
+-- Full P¹ Riemann-Roch formula
+theorem ell_ratfunc_projective_eq_deg_plus_one (D : DivisorV2 (Polynomial Fq))
+    (hD : D.Effective) : ell_ratfunc_projective D = D.deg.toNat + 1
 
--- Key property
-lemma coeIdeal_differentIdeal :
-  ↑(differentIdeal A B) = (FractionalIdeal.dual A K 1)⁻¹
+-- Valuation-degree relationship (key infrastructure)
+lemma natDegree_ge_degWeighted_of_valuation_bounds (D : DivisorV2 (Polynomial k))
+    (hD_eff : D.Effective) (p : Polynomial k) (hp_ne : p ≠ 0)
+    (hval : ∀ v ∈ D.support, v.intValuation p ≤ exp(-(D v))) :
+    (p.natDegree : ℤ) ≥ degWeighted k D
 ```
 
 ---
 
 ## Architecture
 
-### Design Philosophy
-
-The codebase is split into **curve-agnostic infrastructure** and **curve-specific instances**:
-
-- **Infrastructure** (general): Divisors, L(D), adeles, H¹(D), Serre pairing machinery
-- **Instances** (specific): P¹ over Fq, elliptic curves, hyperelliptic curves, etc.
-
-To add a new curve, you provide an `AdelicRRData` instance. The RR theorem follows automatically.
-
-### Type Hierarchy
-```
-k : Field                    -- base field (e.g., Fq)
-R : CommRing, IsDedekindDomain  -- coordinate ring (e.g., Fq[X], or k[x,y]/(f))
-K : Field, IsFractionRing R K   -- function field (e.g., RatFunc Fq, or Frac(R))
-
-HeightOneSpectrum R          -- finite places (prime ideals of R)
-K∞ : Valued field            -- completion at infinity
-
-FiniteAdeleRing R K          -- restricted product ∏'_v K_v
-FullAdeleRing := FiniteAdeleRing × K∞
-```
-
-### Key Constructions
-```
-DivisorV2 R := v →₀ ℤ           -- divisor as Finsupp
-L(D) := {f ∈ K | v(f) ≥ -D(v)}  -- Riemann-Roch space
-ℓ(D) := finrank k L(D)          -- dimension
-
-A_K(D) := {a ∈ 𝔸_K | v(a_v) ≥ -D(v)}  -- bounded adeles
-H¹(D) := 𝔸_K / (K + A_K(D))           -- adelic H¹
-
-canonical := -div(differentIdeal)
-```
-
-### Architectural Shortcut: FiniteAdeleRing for H¹
-
-**Decision (Cycle 188)**: Use `FiniteAdeleRing` (not `FullAdeleRing`) for H¹(D).
-
-**Issue**: The residue theorem requires summing over ALL places (finite + ∞), but
-`AdelicH1v2.SpaceModule` uses `FiniteAdeleRing` which excludes infinity.
-
-**Workaround for genus 0** (RatFunc Fq):
-- Canonical divisor K = -2[∞] has K(v) = 0 at all finite v
-- So L(K-D) functions have no poles at finite places
-- Finite residue sum vanishes for bounded × L(K-D) by pole cancellation
-- For diagonal K: use `residueSumFinite = -residueAtInfty` (residue theorem)
-- Pairing: extract diagonal part, compute via `-residueAtInfty(k·f)`
-
-**Limitation**: This shortcut relies on genus 0. For higher genus curves, may need
-to refactor to use `FullAdeleRing` or extend `DivisorV2` to include infinity.
-
-### File Structure
+### Key File Structure
 ```
 RrLean/RiemannRochV2/
-├── Basic.lean              # Shared imports
-├── Divisor.lean            # DivisorV2, deg, Effective
-├── RRSpace.lean            # L(D), ℓ(D)
-├── Typeclasses.lean        # LocalGapBound, SinglePointBound
-├── RiemannInequality.lean  # ℓ(D) ≥ deg(D) + 1 - g ✅
-├── Infrastructure.lean     # Residue field, uniformizer
-├── RRDefinitions.lean      # DVR-valuation bridge
-├── FullAdelesBase.lean     # Full adele ring definition
-├── FullAdelesCompact.lean  # Compactness, discreteness ✅
-├── DifferentIdealBridge.lean  # L(D) ↔ FractionalIdeal ✅
-├── AdelicH1v2.lean         # H¹(D), AdelicRRData ✅
-├── ResidueTheory/          # Residue infrastructure (split Cycle 266)
-│   ├── ResidueAtX.lean         # X-adic residue via Laurent series
-│   ├── ResidueAtInfinity.lean  # Residue at ∞ via polynomial remainder
-│   ├── ResidueAtLinear.lean    # Direct residue at linear places
-│   ├── ResidueLinearCorrect.lean # Translation-based residue (truly linear)
-│   └── ResidueTheorem.lean     # Global residue theorem
-├── SerreDuality.lean       # residuePairing, serrePairing (in progress)
-└── FullRRData.lean         # Full RR theorem (pending)
+├── Core/                   # Basic types
+│   ├── Basic.lean
+│   └── Divisor.lean
+├── Definitions/            # Infrastructure
+│   ├── Infrastructure.lean
+│   └── RRDefinitions.lean
+├── Adelic/                 # Adele ring theory
+│   ├── FullAdelesBase.lean
+│   ├── FullAdelesCompact.lean
+│   └── AdelicH1v2.lean
+├── P1Instance/             # P¹-specific (all sorry-free)
+│   ├── PlaceDegree.lean    # ✅ Valuation-degree lemmas
+│   ├── P1Place.lean
+│   ├── P1Canonical.lean
+│   └── P1VanishingLKD.lean
+├── SerreDuality/
+│   ├── General/
+│   │   ├── AdelicH1Full.lean  # 1 accepted sorry
+│   │   └── Abstract.lean      # 8 edge case sorries
+│   └── P1Specific/
+│       └── RatFuncPairing.lean
+└── ResidueTheory/          # All sorry-free
 ```
 
 ---
 
 ## Heuristics
 
-### General Lean Advice
-- Prefer `finrank k` for dimensions; avoid Nat-based dims
-- Keep lemma statements small: fewer binders, fewer coercions
-- When stuck on coercions, introduce explicit `let` bindings
+### Coprimality Pattern (Cycle 284 Lesson)
+For proving products divide in k[X]:
+```lean
+-- Use these lemmas from PlaceDegree.lean:
+generator_not_mem_other_prime  -- gen_v ∉ w.asIdeal for v ≠ w
+Irreducible.coprime_iff_not_dvd -- coprimality from non-divisibility
+IsCoprime.pow                   -- lift to powers
+Finset.prod_dvd_of_coprime      -- product divides if pairwise coprime
+```
 
-### Archaeology-First Rule
-Before writing a new proof, spend 15+ min searching Mathlib:
-- `*_iff_*` for characterizations
-- `exists_*` for existence lemmas
-- Check specific module APIs (`ValuationSubring`, `IsFractionRing`, etc.)
+### Valuation-Degree Pattern (Cycle 284 Lesson)
+For polynomial degree bounds from valuation constraints:
+```lean
+-- Key chain:
+valuation_of_algebraMap         -- v.valuation(algebraMap p) = v.intValuation p
+natDegree_ge_degWeighted_of_valuation_bounds  -- valuation → degree bound
+degWeighted_ge_deg              -- weighted ≥ unweighted for effective D
+```
 
-### Frontier Freeze Rule
-Don't add new sorry candidates while a key blocker is stuck. Sorry count creeping up without progress on the hard lemma is a warning sign.
-
-### DVR/Valuation Anti-Pattern
-Avoid constructing uniformizers manually. The moment you say "find π with v(π)=...", you're in for `Associates`, `Irreducible`, `UniqueFactorizationMonoid` juggling. Instead:
-- Use localization universal properties
-- Work inside the DVR where API is cleanest, then transport
-- Look for `exists_lift_of_le_one` patterns
-
-### Reframing Rule
-If a "converse" lemma is hard, check if there's a higher-level equivalence giving both directions for free.
-
-### WithZero Valuation Anti-Pattern (Cycle 255 Lesson)
+### WithZero Valuation Anti-Pattern
 When proving properties about valuations in `WithZero (Multiplicative ℤ)`:
-- **DON'T**: Try to compute with valuation outputs (division, inverse inequalities)
-- **DO**: Work with polynomial structure (num/denom, coprimality, divisibility)
+- **DON'T**: Try to compute with valuation outputs
+- **DO**: Work with polynomial structure and divisibility
 
-Example: To show "v(f) ≤ 1 at all finite places ⟹ f is polynomial":
-- Bad: Try to prove `1/v(denom) > 1` when `v(denom) < 1` using WithZero lemmas
-- Good: Use `IsCoprime`, `WfDvdMonoid.exists_irreducible_factor`, and `intValuation_lt_one_iff_mem`
-
-The valuation API is designed for membership tests (`< 1 ↔ ∈ ideal`), not arithmetic.
-
-### Abstract Uniformizer vs Generator (Cycle 262 Lesson)
-In k[X], the abstract `uniformizerAt v` (from Infrastructure.lean) is ANY element with
-v.intValuation = exp(-1). This could be `generator(v) * other_irreducible`, which belongs
-to multiple prime ideals!
-
-- ❌ `uniformizerAt_not_mem_other_prime` is FALSE in general (unprovable)
-- ✅ `generator_not_mem_other_prime` is TRUE (monic irreducible)
-- **Rule**: Always use `generator` for coprimality arguments in k[X], not abstract uniformizer
-
-### Affine vs Projective Trap (Cycle 271 Lesson)
-The `AdelicRRData` class uses `ell_proj` which is **affine** (HeightOneSpectrum only).
-For P¹, `ell_proj(0)` = ∞ (all polynomials are integral at finite places)!
-
-**Two dimension functions exist**:
-| Function | Type | Dimension at D=0 for P¹ |
-|----------|------|-------------------------|
-| `ell_proj` | Affine | ∞ (unusable!) |
-| `ell_proj_ext` | Projective | 1 (correct) |
-
-**Solution**: Use `ProjectiveAdelicRRData` (in Abstract.lean) which uses:
-- `ExtendedDivisor` - includes infinity coefficient
-- `RRSpace_proj_ext` - projective L(D) with degree bound
-- `ell_proj_ext` - projective dimension
-
-**Rule**: For projective curves, always use `ProjectiveAdelicRRData` not `AdelicRRData`.
-
-### Valued Ring API Pattern (Cycle 278 Lesson)
-When working with `Valued` rings (like FqtInfty, adicCompletion):
-- **Clopen balls**: Use `Valued.isClopen_ball` not `Valued.isClopen_closedBall`
-- **Extension to completion**: Use `Valued.extension_extends` to relate completion valuation to original
-- **Density**: RatFunc is dense in FqtInfty via `denseRange_inftyRingHom`
-
-For approximation at infinity:
-```lean
--- Key pattern: density + clopen balls → local approximation
-obtain ⟨k, hk⟩ := (denseRange_inftyRingHom Fq).exists_mem_open hopen ⟨a, hne⟩
-```
-
-Check Mathlib for exact signatures - the API has changed across versions.
-
-### Serre Duality "Both Zero" Trap (Cycle 273 Lesson)
-The naive approach to Serre duality for P¹:
-- "h¹(D) = 0 by strong approximation"
-- "ℓ(K-D) = 0 because K-D has negative degree"
-- "Therefore 0 = 0, Serre duality proved!"
-
-**Problem**: This is ONLY true for effective D with deg(D) > -2:
-- For D = ⟨0, -3⟩ (non-effective), K-D = ⟨0, 1⟩
-- L(K-D) = polynomials of degree ≤ 1 = dimension 2
-- So ℓ(K-D) = 2 ≠ 0, and h¹(D) = 2 as well!
-
-**Rule**: For Serre duality with arbitrary divisors:
-- Cannot use "both = 0" strategy
-- Must use actual residue pairing: h¹(D) = ℓ(K-D) via perfect pairing
-- OR restrict to effective divisors only (covers main RR use case)
+### Affine vs Projective Trap
+- `RRSpace_proj` (affine) gives ℓ(0) = ∞ for P¹
+- `RRSpace_proj_ext` (projective) gives ℓ(0) = 1 for P¹
+- **Rule**: For projective curves, use `ProjectiveAdelicRRData`
 
 ---
 
-## What's Proved (Milestones)
-
-### Phase 1: Riemann Inequality ✅ (Curve-Agnostic)
-```lean
-lemma riemann_inequality_affine [BaseDim R K] {D : DivisorV2 R} (hD : D.Effective) :
-    (ellV2_real R K D : ℤ) ≤ D.deg + bd.basedim
-```
-- Works for ANY Dedekind domain R with fraction field K
-- Tag: `v1.0-riemann-inequality` (2025-12-18)
-- Cycles 1-75
-
-### Phase 2: Adelic Infrastructure ✅ (Curve-Agnostic)
-- K discrete in full adeles
-- K closed in full adeles
-- Integral adeles compact
-- Weak approximation
-- Cycles 76-155
-
-### Phase 3: Projective Framework - ✅ COMPLETE (Cycle 255)
-
-**Status**: P¹ projective infrastructure complete and sorry-free.
-
-**Completed** (Cycles 249-255):
-- `Place.lean` ✅ - Unified Place type (finite + infinite)
-- `DivisorV3.lean` ✅ - Projective divisors over all places
-- `RRSpaceV3.lean` ✅ - Projective L(D) as k-module
-- `P1Place.lean` ✅ - P¹ infinite place and ConstantsValuationBound
-- `P1Canonical.lean` ✅ - Canonical divisor K = -2[∞]
-- `P1VanishingLKD.lean` ✅ - L(K-D) = 0 for effective D
-
-**Key Discovery** (Cycle 248): The "Affine Trap" - `HeightOneSpectrum R` only gives
-finite places. Projective RR requires adding infinite places. See REFACTOR_PLAN.md.
-
-**Next**: Wire P¹ projective infrastructure into Abstract.lean to fill remaining sorries.
-
----
-
-## ⚠️ POST-MORTEM: The Cycle 232-236 Disconnect
-
-### What Happened
-
-**Cycle 232** claimed "RIEMANN-ROCH FOR P¹ PROVED! 🎉" in the git commit. This was **incorrect**.
-
-What was actually true:
-- Theorem *statements* existed and type-checked
-- There were sorries in the proof chain
-- The claim conflated "compiles with sorries" with "proved"
-
-**Cycles 233-235** attempted to fill those sorries and made things worse:
-- Tried to prove `Module.Finite` using `finrank` (circular: finrank needs Module.Finite)
-- Broke the build entirely - DimensionScratch.lean had compilation errors, not just sorries
-- Each cycle added more attempted fixes, creating technical debt
-
-**Cycle 236** fixed the architecture:
-- Created DimensionCore.lean with correct finiteness approach (embedding into finite-dim space)
-- Build compiles again
-- Added Smoke.lean for build hygiene verification
-
-### Root Cause Analysis
-
-1. **Premature victory declaration**: Cycle 232 claimed completion without checking `#print axioms`
-2. **Circular reasoning trap**: Cycles 233-235 attempted the same broken pattern repeatedly
-3. **No mechanical verification**: No smoke test to catch when "proved" theorems used `sorryAx`
-
-### Lessons Learned
-
-1. **Never claim "proved" without `#print axioms` showing no `sorryAx`**
-2. **Finiteness must come from embeddings, not from finrank bounds**
-3. **Add smoke tests that mechanically verify proof completeness**
-4. **Don't use static sorry audits** - Cycle 236's "Honest Sorry Audit" table wasn't updated when sorries were filled (Cycles 237-240), causing stale info to propagate through Cycle 247. Use `grep -rn sorry` or the Smoke test instead of manually-maintained tables.
-
----
-
-## Honest Sorry Audit (Cycle 280)
-
-### Total: 1 accepted sorry (technical debt)
-
-**P1Instance/** - ✅ SORRY-FREE
-**ResidueTrace.lean** - ✅ SORRY-FREE
-**AdelicH1Full.lean** - ✅ BUILD PASSES (1 accepted sorry at line 698)
-**Abstract.lean** - 5 sorries (abstract infrastructure)
-
-**Accepted Technical Debt**:
-- `AdelicH1Full.lean:698` - Principal parts infinity bound
-- Why: Type class synthesis issues with `inftyValuationDef`
-- Status: Documented in ledger.md, must fix before final submission
-
-**Cycle 280 achievement**: `serre_duality_p1` PROVED!
-```lean
-theorem serre_duality_p1 (D : ExtendedDivisor (Polynomial Fq))
-    (hDfin : D.finite.Effective) (hD : D.inftyCoeff ≥ 0) :
-    h1_finrank_full Fq D = ell_proj_ext Fq (canonicalExtended Fq - D)
-```
-
-**Strategic Direction (Post-Cycle 280)**:
-- **Next**: Cycle 281 - The Great Wiring (Residue Refactor)
-- **Later**: Return to fix accepted sorry when Mathlib API is clearer
-
-### What's Proved (no sorryAx, except 1 accepted sorry)
-
-- ✅ `ell_ratfunc_projective_eq_degWeighted_plus_one` - ℓ(D) = degWeighted(D) + 1 for all effective D
-- ✅ `ell_ratfunc_projective_gap_eq` - ℓ(D+[v]) = ℓ(D) + deg(v) (tight gap bound)
-- ✅ `evaluationMapAt_surj_projective` - evaluation map surjective from projective space
-- ✅ `RRSpace_ratfunc_projective_effective_finite` - L(D) finite-dimensional for effective D
-- ✅ `ellV3_p1Canonical_sub_ofAffine_eq_zero` - ℓ(K-D) = 0 for effective D on P¹
-- ✅ `riemann_roch_p1` - Full P¹ Riemann-Roch formula
-- ✅ `tracedResidueAtPlace_eq_residueAt_linear` - traced residue = classical residue for linear places
-- ✅ `serre_duality_p1` - h¹(D) = ℓ(K-D) for effective D on P¹ (Cycle 280)
-
-### Verification Command
+## Verification Commands
 
 ```bash
-grep -rn "sorry" RrLean/RiemannRochV2/P1Instance/
-grep -rn "sorry" RrLean/RiemannRochV2/ResidueTheory/ResidueTrace.lean
-# Expected: No output (all sorries filled!)
+# Check sorry count
+lake build 2>&1 | grep -E "sorry|^error:"
+
+# Check specific file
+grep -n "sorry" RrLean/RiemannRochV2/P1Instance/PlaceDegree.lean
+
+# Full build
+lake build
 ```
 
 ---
 
-## Technical Reference: Strong Approximation (PROVED - Cycle 204)
-
-The key infrastructure for strong approximation is complete. For reference:
-
-### FiniteAdeleRing Structure
-```lean
-def FiniteAdeleRing : Type _ :=
-  Πʳ v : HeightOneSpectrum R, [v.adicCompletion K, v.adicCompletionIntegers K]
-```
-- `a v` - component at place v
-- `a.2` - proof of eventual integrality
-
-### Key Proved Lemmas
-- `linearPlaces_pairwise_coprime` - Coprimality of (X - α) ideals
-- `crt_linear_places` - CRT for distinct places
-- `exists_principal_part_at_spec` - Principal part extraction
-- `exists_polyRep_of_integral_mod_pow` - Polynomial representatives
-- `exists_global_approximant_from_local` - Gluing local to global
-- `strong_approximation_ratfunc` ✅ - Main theorem
-
----
-
-## Key References
-
-- Mathlib: `RingTheory.DedekindDomain.Different` (trace dual, different ideal)
-- Mathlib: `RingTheory.DedekindDomain.FiniteAdeleRing` (adeles)
-- Mathlib: `RingTheory.DedekindDomain.Ideal.Lemmas` (CRT: `exists_forall_sub_mem_ideal`)
-- Mathlib: `RingTheory.Ideal.Quotient.Operations` (general CRT)
-- Mathlib: `RingTheory.Length` (Module.length for exact sequences)
-- Mathlib: `Algebra.Trace` (trace form)
-- Stacks Project: Tag 0BXE (Serre duality for curves)
+*Updated Cycle 284: PlaceDegree coprimality proof complete, AdelicH1Full degree-valuation sorry filled.*
