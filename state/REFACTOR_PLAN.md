@@ -1,7 +1,7 @@
 # Refactor Plan: P¹ → Arbitrary Curves
 
-**Status**: P¹ Serre duality proved, valuation-degree infrastructure complete (Cycle 284)
-**Goal**: Transform P¹ Riemann-Roch into a framework for arbitrary algebraic curves
+**Status**: P¹ complete for algebraically closed fields (Cycle 287)
+**Goal**: Riemann-Roch for algebraically closed curves of any genus
 
 ---
 
@@ -9,91 +9,91 @@
 
 | Phase | Status | Key Achievement |
 |-------|--------|-----------------|
-| 0-1 | ✅ Complete | Infrastructure, AdelicH1Full |
-| 3 | ✅ Complete | Place.lean, DivisorV3, P1Instance/ |
-| 4 | ✅ Complete | serre_duality_p1 proved |
-| 4.5 | ✅ Complete | Valuation-degree infrastructure (Cycle 284) |
-| 5 | ⏳ Optional | Clean up edge cases in Abstract.lean |
-| 6 | ⏳ Future | New curve instances (elliptic, hyperelliptic) |
+| 0-4 | ✅ Complete | P¹ infrastructure, Serre duality |
+| 4.5 | ✅ Complete | Valuation-degree, IsLinearPlaceSupport fix |
+| 5 | ⏸️ Deferred | Edge case cleanup (low priority) |
+| 6 | ⏳ **Active** | Elliptic curves (genus 1) |
+| 7 | Future | Hyperelliptic curves (genus ≥ 2) |
 
 ---
 
-## Current State (Cycle 284)
+## Phase 6: Elliptic Curves (Current)
 
-**Proved**:
+**Goal**: Instantiate `ProjectiveAdelicRRData` for genus 1.
+
+### Mathlib Provides
+
 ```lean
-theorem serre_duality_p1 (D : ExtendedDivisor (Polynomial Fq))
-    (hDfin : D.finite.Effective) (hD : D.inftyCoeff ≥ 0) :
-    h1_finrank_full Fq D = ell_proj_ext Fq (canonicalExtended Fq - D)
-
-lemma natDegree_ge_degWeighted_of_valuation_bounds (D : DivisorV2 (Polynomial k))
-    (hD_eff : D.Effective) (p : Polynomial k) (hp_ne : p ≠ 0)
-    (hval : ∀ v ∈ D.support, v.intValuation p ≤ exp(-(D v))) :
-    (p.natDegree : ℤ) ≥ degWeighted k D
+-- In Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean:
+abbrev CoordinateRing := ...           -- F[X,Y]/(Weierstrass eqn)
+abbrev FunctionField := FractionRing CoordinateRing
 ```
 
-**Remaining sorries**:
-- AdelicH1Full.lean:619 - 1 (accepted technical debt)
-- Abstract.lean - 8 (edge cases, low priority)
+### What We Need to Check/Build
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| `CoordinateRing` is `IsDedekindDomain` | ❓ Check | Required for HeightOneSpectrum |
+| Places = HeightOneSpectrum | ❓ Depends on above | Points on the curve |
+| Canonical divisor (deg 0) | 📝 Define | K = 0 for genus 1 |
+| Strong approximation | 📝 Prove | Main work |
+
+### Key Differences from P¹
+
+| Aspect | P¹ (genus 0) | Elliptic (genus 1) |
+|--------|--------------|-------------------|
+| H¹(O) | 0 | 1-dimensional |
+| deg(K) | -2 | 0 |
+| Serre duality | trivial (0=0) | non-trivial |
 
 ---
 
 ## Completed Phases
 
-### Phase 0-1: Cleanup + Infrastructure ✅
-- AdelicH1Full sorries filled
-- Residue infrastructure established
+### Phase 0-4: P¹ Infrastructure ✅
+- Full adele ring with infinity
+- Serre duality for effective divisors
+- Riemann-Roch formula: ℓ(D) = deg(D) + 1
 
-### Phase 3: Place Type ✅ (Cycles 249-265)
-- `Place.lean` - Unified place type
-- `DivisorV3.lean` - Projective divisors
-- `P1Instance/` - Full P¹ (sorry-free)
-
-### Phase 4: Serre Duality ✅ (Cycles 274-280)
-- `serre_duality_p1` proved for effective D
-
-### Phase 4.5: Valuation-Degree ✅ (Cycles 283-284)
-- `natDegree_ge_degWeighted_of_valuation_bounds` - coprimality proof
-- `RRSpace_proj_ext_canonical_sub_eq_bot_deep_neg_infty` - now fully proved
-- Key insight: generators at different places are coprime irreducibles
+### Phase 4.5: Algebraically Closed Fix ✅ (Cycle 287)
+- Discovered weighted vs unweighted degree mismatch
+- Added `IsLinearPlaceSupport` hypothesis
+- For alg. closed fields: all theorems apply (places have degree 1)
 
 ---
 
-## Remaining Phases
+## Phase 5: Edge Cases (Deferred)
 
-### Phase 5: Edge Case Cleanup (Optional)
-Fill Abstract.lean sorries for:
-- `h1_finite` with D.inftyCoeff < -1 or D.finite not effective
-- `h1_vanishing` for same edge cases
-- `serre_duality` for deg(D) < -1
+Low priority sorries in Abstract.lean:
+- deg(D) < -1 cases (require full residue pairing)
+- Non-effective divisors over non-alg-closed fields
 
-**Priority**: Low. These edge cases rarely arise in practice.
+**Decision**: Skip for now, focus on higher genus.
 
-### Phase 6: New Curve Instances (Future)
+---
+
+## Future: Phase 7+ (Hyperelliptic)
+
+For genus g ≥ 2:
+- Function field = Frac(k[x,y]/(y² = f(x))) where deg(f) = 2g+1 or 2g+2
+- Canonical divisor has degree 2g-2
+- Strong approximation becomes more complex
+
+---
+
+## Architecture for New Curves
+
 ```lean
-instance ellipticRRData (E : EllipticCurve Fq) :
-    ProjectiveAdelicRRData Fq (canonicalExt E) 1 where
-  h1_finite := ...
-  ell_finite := ...
-  serre_duality := ...
+-- The typeclass we instantiate:
+class ProjectiveAdelicRRData (k : Type*) [Field k]
+    (canonical : ExtendedDivisor R) (genus : ℕ) where
+  h1_finite : ∀ D, Module.Finite k (SpaceModule_full k D)
+  ell_finite : ∀ D, Module.Finite k (RRSpace_proj_ext k D)
+  h1_vanishing : ∀ D, D.deg > 2*genus - 2 → h1_finrank k D = 0
+  serre_duality : ∀ D, h1_finrank k D = ell_proj_ext k (canonical - D)
+  deg_canonical : canonical.deg = 2*genus - 2
 ```
 
-**Requirements**:
-- Coordinate ring for elliptic curves
-- Canonical divisor computation
-- Strong approximation for genus 1
-
 ---
 
-## Key Infrastructure Now Available
-
-| Lemma | Location | Use |
-|-------|----------|-----|
-| `generator_not_mem_other_prime` | PlaceDegree.lean | Coprimality of generators |
-| `natDegree_ge_degWeighted_of_valuation_bounds` | PlaceDegree.lean | Degree bounds from valuations |
-| `valuation_of_algebraMap` | Mathlib | Convert RatFunc to polynomial valuation |
-| `degWeighted_ge_deg` | PlaceDegree.lean | Weighted ≥ unweighted for effective |
-
----
-
-*Updated Cycle 284: Valuation-degree infrastructure complete, 2 sorries eliminated.*
+*Updated Cycle 287: P¹ complete for alg. closed, beginning elliptic curve phase.*

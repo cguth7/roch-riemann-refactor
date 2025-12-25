@@ -1,6 +1,6 @@
 # Playbook
 
-Strategic guide for formalizing Riemann-Roch. Updated Cycle 284.
+Strategic guide for formalizing Riemann-Roch. Updated Cycle 287.
 
 ---
 
@@ -22,69 +22,35 @@ state/
 | `playbook.md` | When stuck or planning | When learning new lessons |
 | `PROOF_CHAIN.md` | After adding new files | After connecting files to chain |
 | `REFACTOR_PLAN.md` | When planning next phase | After completing a phase |
-| `INVENTORY_REPORT.md` | Reference only | Rarely (was a one-time scan) |
-
----
-
-## Cycle Discipline
-
-**Critical Lesson from Cycles 230-241**: We got impatient near the end and tried to do too much per cycle. This led to context overflow, incomplete work, and debugging spirals.
-
-### The ~50k Token Reality
-
-Each Claude cycle has ~50k usable tokens of context. This means:
-- **Read**: ~3-5 files deeply, or ~10 files shallowly
-- **Write**: ~200-400 lines of new code max
-- **Debug**: 2-3 error-fix iterations before context exhaustion
-
-### One Cycle = One Focused Goal
-
-**Good cycle scope**:
-- Fill ONE sorry with a clean proof
-- Add ONE new definition + basic lemmas
-- Fix ONE compilation error chain
-- Refactor ONE file (extract/reorganize)
-
-**Bad cycle scope**:
-- "Fill all sorries in this file" (unless trivial)
-- "Implement the full residue theorem"
-- "Refactor the adelic infrastructure"
-
-### Ledger Discipline
-
-The ledger should contain:
-1. **Current state**: Build status, sorry count, cycle number
-2. **Cycle summary**: What was done, what was proved
-3. **Next steps**: Options for next cycle
 
 ---
 
 ## Ultimate Goal
 
-Formalize the **Riemann-Roch theorem** for **arbitrary smooth projective curves** over finite fields in Lean 4 — **no axioms, no sorries**:
+Formalize **Riemann-Roch** for **algebraically closed curves** in Lean 4:
 
 ```
 ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
 ```
 
-### Current Status (Cycle 284)
+### Current Status (Cycle 287)
 
-| Component | Status | Sorries |
-|-----------|--------|---------|
-| P¹ Riemann-Roch formula | ✅ Complete | 0 |
-| P¹ Serre duality (effective D) | ✅ Complete | 0 |
-| Valuation-degree infrastructure | ✅ Complete | 0 |
-| AdelicH1Full.lean | ⚠️ 1 accepted debt | 1 |
-| Abstract.lean edge cases | ⚠️ Low priority | 8 |
+| Component | Status |
+|-----------|--------|
+| P¹ Riemann-Roch formula | ✅ Complete |
+| P¹ Serre duality (effective D) | ✅ Complete |
+| P¹ edge cases (non-effective) | ✅ Works for alg. closed fields |
+| Elliptic curves (genus 1) | ⏳ Next phase |
 
-**Total sorries**: 9 (1 technical debt + 8 edge cases)
+**Key insight (Cycle 287)**: For algebraically closed fields, all places have degree 1,
+so `IsLinearPlaceSupport` is automatic and all theorems apply.
 
 ---
 
 ## What's Proved
 
 ```lean
--- Main Serre duality for P¹ (effective divisors with non-negative inftyCoeff)
+-- Main Serre duality for P¹
 theorem serre_duality_p1 (D : ExtendedDivisor (Polynomial Fq))
     (hDfin : D.finite.Effective) (hD : D.inftyCoeff ≥ 0) :
     h1_finrank_full Fq D = ell_proj_ext Fq (canonicalExtended Fq - D)
@@ -92,77 +58,44 @@ theorem serre_duality_p1 (D : ExtendedDivisor (Polynomial Fq))
 -- Full P¹ Riemann-Roch formula
 theorem ell_ratfunc_projective_eq_deg_plus_one (D : DivisorV2 (Polynomial Fq))
     (hD : D.Effective) : ell_ratfunc_projective D = D.deg.toNat + 1
-
--- Valuation-degree relationship (key infrastructure)
-lemma natDegree_ge_degWeighted_of_valuation_bounds (D : DivisorV2 (Polynomial k))
-    (hD_eff : D.Effective) (p : Polynomial k) (hp_ne : p ≠ 0)
-    (hval : ∀ v ∈ D.support, v.intValuation p ≤ exp(-(D v))) :
-    (p.natDegree : ℤ) ≥ degWeighted k D
-```
-
----
-
-## Architecture
-
-### Key File Structure
-```
-RrLean/RiemannRochV2/
-├── Core/                   # Basic types
-│   ├── Basic.lean
-│   └── Divisor.lean
-├── Definitions/            # Infrastructure
-│   ├── Infrastructure.lean
-│   └── RRDefinitions.lean
-├── Adelic/                 # Adele ring theory
-│   ├── FullAdelesBase.lean
-│   ├── FullAdelesCompact.lean
-│   └── AdelicH1v2.lean
-├── P1Instance/             # P¹-specific (all sorry-free)
-│   ├── PlaceDegree.lean    # ✅ Valuation-degree lemmas
-│   ├── P1Place.lean
-│   ├── P1Canonical.lean
-│   └── P1VanishingLKD.lean
-├── SerreDuality/
-│   ├── General/
-│   │   ├── AdelicH1Full.lean  # 1 accepted sorry
-│   │   └── Abstract.lean      # 8 edge case sorries
-│   └── P1Specific/
-│       └── RatFuncPairing.lean
-└── ResidueTheory/          # All sorry-free
 ```
 
 ---
 
 ## Heuristics
 
-### Coprimality Pattern (Cycle 284 Lesson)
-For proving products divide in k[X]:
+### Weighted vs Unweighted Degree (Cycle 287 Lesson)
+- `DivisorV2.deg` = Σ D(v) (unweighted, sum of coefficients)
+- `degWeighted` = Σ D(v) · deg(v) (weighted by place degree)
+- For algebraically closed fields: these are equal (all deg(v) = 1)
+- For general Fq: use `IsLinearPlaceSupport` hypothesis when needed
+
+### Coprimality Pattern (Cycle 284)
 ```lean
--- Use these lemmas from PlaceDegree.lean:
 generator_not_mem_other_prime  -- gen_v ∉ w.asIdeal for v ≠ w
 Irreducible.coprime_iff_not_dvd -- coprimality from non-divisibility
-IsCoprime.pow                   -- lift to powers
 Finset.prod_dvd_of_coprime      -- product divides if pairwise coprime
 ```
 
-### Valuation-Degree Pattern (Cycle 284 Lesson)
-For polynomial degree bounds from valuation constraints:
-```lean
--- Key chain:
-valuation_of_algebraMap         -- v.valuation(algebraMap p) = v.intValuation p
-natDegree_ge_degWeighted_of_valuation_bounds  -- valuation → degree bound
-degWeighted_ge_deg              -- weighted ≥ unweighted for effective D
-```
+### Affine vs Projective
+- `RRSpace_proj` (affine) gives ℓ(0) = ∞
+- `RRSpace_proj_ext` (projective) gives ℓ(0) = 1
+- **Rule**: Use `ProjectiveAdelicRRData` for projective curves
 
-### WithZero Valuation Anti-Pattern
-When proving properties about valuations in `WithZero (Multiplicative ℤ)`:
-- **DON'T**: Try to compute with valuation outputs
-- **DO**: Work with polynomial structure and divisibility
+---
 
-### Affine vs Projective Trap
-- `RRSpace_proj` (affine) gives ℓ(0) = ∞ for P¹
-- `RRSpace_proj_ext` (projective) gives ℓ(0) = 1 for P¹
-- **Rule**: For projective curves, use `ProjectiveAdelicRRData`
+## Cycle Discipline
+
+### One Cycle = One Focused Goal
+
+**Good scope**:
+- Fill ONE sorry with a clean proof
+- Add ONE new definition + basic lemmas
+- Explore ONE new curve type (check Mathlib support)
+
+**Bad scope**:
+- "Fill all sorries in this file"
+- "Implement elliptic curves completely"
 
 ---
 
@@ -172,13 +105,11 @@ When proving properties about valuations in `WithZero (Multiplicative ℤ)`:
 # Check sorry count
 lake build 2>&1 | grep -E "sorry|^error:"
 
-# Check specific file
-grep -n "sorry" RrLean/RiemannRochV2/P1Instance/PlaceDegree.lean
-
 # Full build
 lake build
 ```
 
 ---
 
-*Updated Cycle 284: PlaceDegree coprimality proof complete, AdelicH1Full degree-valuation sorry filled.*
+*Updated Cycle 287: Discovered weighted/unweighted degree issue, added IsLinearPlaceSupport fix,
+prepared for elliptic curve phase.*

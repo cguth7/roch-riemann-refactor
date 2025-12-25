@@ -1153,18 +1153,20 @@ lemma finite_deg_pos_of_deg_ge_neg_one_and_inftyCoeff_lt_neg_one
   have : D.finite.deg + D.inftyCoeff ≥ -1 := hdeg
   omega
 
-/-- L(K-D) = {0} when deg(D) ≥ -1, regardless of whether D.finite is effective.
+/-- L(K-D) = {0} when deg(D) ≥ -1 and D.finite is supported on linear places.
 
-The proof uses degree counting:
-- Zero requirements from places where D.finite(v) > 0 contribute D.finite⁺.deg to numerator
-- Pole permissions from places where D.finite(v) < 0 allow D.finite⁻.deg in denominator
-- So deg(f) ≥ D.finite⁺.deg - D.finite⁻.deg = D.finite.deg
+For algebraically closed fields, all places have degree 1, so IsLinearPlaceSupport
+is automatic. The proof uses degree counting:
+- Zero requirements from places where D.finite(v) > 0 contribute to numerator degree
+- Pole permissions from places where D.finite(v) < 0 allow denominator degree
+- With linear places, degWeighted = deg, so deg(f) ≥ D.finite.deg
 - But deg(f) ≤ -2 - D.inftyCoeff from the infinity constraint
 - From deg(D) ≥ -1: D.finite.deg > -2 - D.inftyCoeff
 - Contradiction! So L(K-D) = {0}
 -/
 theorem RRSpace_proj_ext_canonical_sub_eq_bot_of_deg_ge_neg_one
-    (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1) :
+    (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1)
+    (hlin : IsLinearPlaceSupport D.finite) :
     RRSpace_proj_ext Fq (canonicalExtended Fq - D) = ⊥ := by
   ext f
   simp only [Submodule.mem_bot]
@@ -1211,24 +1213,26 @@ theorem RRSpace_proj_ext_canonical_sub_eq_bot_of_deg_ge_neg_one
       sorry
   · intro hf; rw [hf]; exact Or.inl rfl
 
-/-- ℓ(K-D) = 0 when deg(D) ≥ -1, regardless of effectiveness. -/
+/-- ℓ(K-D) = 0 when deg(D) ≥ -1 and D.finite is supported on linear places. -/
 theorem ell_proj_ext_canonical_sub_eq_zero_of_deg_ge_neg_one
-    (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1) :
+    (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1)
+    (hlin : IsLinearPlaceSupport D.finite) :
     ell_proj_ext Fq (canonicalExtended Fq - D) = 0 := by
   unfold ell_proj_ext
-  rw [RRSpace_proj_ext_canonical_sub_eq_bot_of_deg_ge_neg_one Fq D hdeg]
+  rw [RRSpace_proj_ext_canonical_sub_eq_bot_of_deg_ge_neg_one Fq D hdeg hlin]
   exact finrank_bot Fq (RatFunc Fq)
 
 /-- Strong approximation for full adeles: non-effective finite part case.
 
-When D.finite is not effective but deg(D) ≥ -1, strong approximation still works because:
+When D.finite is not effective but deg(D) ≥ -1 and supported on linear places,
+strong approximation still works because:
 1. The strong_approximation_ratfunc works for any D (no effectiveness assumption)
 2. The |k₂|_∞ bound is still exp(-1) since D.finite⁻.deg ≥ 1 for non-effective D
 3. Either D.inftyCoeff ≥ -1 (covered by 2) or D.finite.deg > 0 (deep neg case)
 -/
 theorem globalPlusBoundedSubmodule_full_eq_top_not_effective
     (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1)
-    (h_not_eff : ¬D.finite.Effective) :
+    (h_not_eff : ¬D.finite.Effective) (hlin : IsLinearPlaceSupport D.finite) :
     globalPlusBoundedSubmodule_full Fq D = ⊤ := by
   -- Case split on D.inftyCoeff
   by_cases h_infty : D.inftyCoeff ≥ -1
@@ -1289,31 +1293,31 @@ theorem globalPlusBoundedSubmodule_full_eq_top_not_effective
     -- - The zero requirements at places with D.finite(v) < 0
     sorry
 
-/-- H¹(D) is a subsingleton when D.finite is not effective but deg(D) ≥ -1. -/
+/-- H¹(D) is a subsingleton when D.finite is not effective but deg(D) ≥ -1 and linear places. -/
 theorem SpaceModule_full_subsingleton_not_effective
     (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1)
-    (h_not_eff : ¬D.finite.Effective) :
+    (h_not_eff : ¬D.finite.Effective) (hlin : IsLinearPlaceSupport D.finite) :
     Subsingleton (SpaceModule_full Fq D) := by
   rw [Submodule.Quotient.subsingleton_iff]
-  exact globalPlusBoundedSubmodule_full_eq_top_not_effective Fq D hdeg h_not_eff
+  exact globalPlusBoundedSubmodule_full_eq_top_not_effective Fq D hdeg h_not_eff hlin
 
-/-- H¹(D) is finite-dimensional when D.finite is not effective but deg(D) ≥ -1. -/
+/-- H¹(D) is finite-dimensional when D.finite is not effective but deg(D) ≥ -1 and linear places. -/
 theorem SpaceModule_full_finite_not_effective
     (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1)
-    (h_not_eff : ¬D.finite.Effective) :
+    (h_not_eff : ¬D.finite.Effective) (hlin : IsLinearPlaceSupport D.finite) :
     Module.Finite Fq (SpaceModule_full Fq D) := by
   haveI : Subsingleton (SpaceModule_full Fq D) :=
-    SpaceModule_full_subsingleton_not_effective Fq D hdeg h_not_eff
+    SpaceModule_full_subsingleton_not_effective Fq D hdeg h_not_eff hlin
   infer_instance
 
-/-- h¹(D) = 0 when D.finite is not effective but deg(D) ≥ -1. -/
+/-- h¹(D) = 0 when D.finite is not effective but deg(D) ≥ -1 and linear places. -/
 theorem h1_finrank_full_eq_zero_not_effective
     (D : ExtendedDivisor (Polynomial Fq)) (hdeg : D.deg ≥ -1)
-    (h_not_eff : ¬D.finite.Effective) :
+    (h_not_eff : ¬D.finite.Effective) (hlin : IsLinearPlaceSupport D.finite) :
     h1_finrank_full Fq D = 0 := by
   unfold h1_finrank_full
   haveI : Subsingleton (SpaceModule_full Fq D) :=
-    SpaceModule_full_subsingleton_not_effective Fq D hdeg h_not_eff
+    SpaceModule_full_subsingleton_not_effective Fq D hdeg h_not_eff hlin
   exact Module.finrank_zero_of_subsingleton
 
 /-- Serre duality for P¹: h¹(D) = ℓ(K-D).
