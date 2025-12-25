@@ -7,7 +7,7 @@ Tactical tracking for Riemann-Roch formalization.
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 293 (Complete)
+**Cycle**: 294 (In Progress)
 **Total Sorries**: 10 (4 AdelicH1Full + 1 Abstract + 1 EllipticSetup + 2 StrongApproximation + 2 EllipticH1)
 **Elliptic Axioms**: 8 (in addition to sorries: 3 in EllipticH1 + 3 in EllipticRRData + 1 in EllipticPlaces + 1 h1_zero_finite)
 
@@ -81,7 +81,46 @@ theorem h1_finrank_full_eq_zero_of_deg_ge_neg_one ...
 
 ---
 
-## Cycle 293: EllipticRRData (Current)
+## Cycle 294: Infinity Valuation Bound (In Progress)
+
+**Goal**: Prove `|k₂|_∞ ≤ exp(-1)` at AdelicH1Full.lean:698
+
+### Progress Made
+1. ✅ Investigated sorry context - k₂ comes from `strong_approximation_ratfunc`
+2. ✅ Traced structure: when D.finite effective, k₂ = sum of principal parts
+3. ✅ Added key lemmas to RatFuncPairing.lean (lines 1002-1061):
+
+```lean
+-- Principal parts have negative intDegree
+lemma intDegree_div_lt_zero_of_deg_lt {r d : Polynomial Fq}
+    (hr : r ≠ 0) (hd : d ≠ 0) (hdeg : r.degree < d.degree) :
+    (algebraMap r / algebraMap d).intDegree < 0
+
+lemma intDegree_div_le_neg_one_of_deg_lt ...  -- intDegree ≤ -1
+
+lemma inftyValuationDef_le_exp_neg_one_of_deg_lt [DecidableEq (RatFunc Fq)]
+    {r d : Polynomial Fq} (hr : r ≠ 0) (hd : d ≠ 0) (hdeg : r.degree < d.degree) :
+    FunctionField.inftyValuationDef Fq (r/d) ≤ WithZero.exp (-1)
+```
+
+### What Remains
+**Fill sorry at AdelicH1Full.lean:698** using the new lemmas.
+
+The key insight:
+- k₂ from `strong_approximation_ratfunc b D.finite` with effective D.finite
+- Returns k_pole = sum of principal parts (from `exists_global_approximant_from_local`)
+- Each principal part has form `r₁/π^m` with `deg(r₁) < m*deg(π)`
+- Therefore `intDegree ≤ -1` for each, and by ultrametric for sum
+- Thus `inftyValuationDef k₂ = exp(intDegree k₂) ≤ exp(-1)`
+
+### Technical Notes
+- Need `[DecidableEq (RatFunc Fq)]` for inftyValuationDef lemmas
+- Use `@FunctionField.inftyValuation_of_nonzero Fq _ _ _ hrd_ne` with explicit args
+- The sorry is inside a calc block at line 691-698
+
+---
+
+## Cycle 293: EllipticRRData (Complete)
 
 **Achievement**: Created `AdelicRRData` instance for elliptic curves and proved RR theorems.
 

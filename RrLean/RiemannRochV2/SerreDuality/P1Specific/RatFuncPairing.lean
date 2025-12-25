@@ -999,6 +999,67 @@ lemma exists_principal_part_at_spec (v : HeightOneSpectrum (Polynomial Fq)) (y :
         _ ≤ max 1 1 := max_le_max hq_val hr₂R_val
         _ = 1 := max_self 1
 
+/-! ### Infinity Valuation Bounds for Principal Parts
+
+Principal parts have negative intDegree, which bounds their infinity valuation.
+This is key for strong approximation: sums of principal parts have |·|_∞ ≤ exp(-1).
+-/
+
+/-- A polynomial fraction r/d with deg(r) < deg(d) has intDegree < 0 (when r ≠ 0).
+
+When r ≠ 0 and deg(r) < deg(d), we have:
+- intDegree(r/d) = natDegree(r) - natDegree(d) < 0
+
+This is the key property of principal parts: they have negative intDegree.
+-/
+lemma intDegree_div_lt_zero_of_deg_lt {r d : Polynomial Fq}
+    (hr : r ≠ 0) (hd : d ≠ 0) (hdeg : r.degree < d.degree) :
+    (algebraMap (Polynomial Fq) (RatFunc Fq) r /
+     algebraMap (Polynomial Fq) (RatFunc Fq) d).intDegree < 0 := by
+  -- For the quotient r/d as a RatFunc, intDegree = natDegree(num) - natDegree(denom)
+  have hr_map : algebraMap (Polynomial Fq) (RatFunc Fq) r ≠ 0 := RatFunc.algebraMap_ne_zero hr
+  have hd_map : algebraMap (Polynomial Fq) (RatFunc Fq) d ≠ 0 := RatFunc.algebraMap_ne_zero hd
+  -- intDegree(r/d) = intDegree(r) + intDegree(d⁻¹) = intDegree(r) - intDegree(d)
+  rw [div_eq_mul_inv, RatFunc.intDegree_mul hr_map (inv_ne_zero hd_map)]
+  rw [RatFunc.intDegree_inv, RatFunc.intDegree_polynomial, RatFunc.intDegree_polynomial]
+  -- Need: (r.natDegree : ℤ) + -(d.natDegree : ℤ) < 0
+  -- i.e., r.natDegree < d.natDegree
+  have hnat : r.natDegree < d.natDegree := Polynomial.natDegree_lt_natDegree hr hdeg
+  omega
+
+/-- A polynomial fraction r/d with deg(r) < deg(d) has intDegree ≤ -1 (when r ≠ 0).
+
+This strengthens `intDegree_div_lt_zero_of_deg_lt` to give the precise bound.
+-/
+lemma intDegree_div_le_neg_one_of_deg_lt {r d : Polynomial Fq}
+    (hr : r ≠ 0) (hd : d ≠ 0) (hdeg : r.degree < d.degree) :
+    (algebraMap (Polynomial Fq) (RatFunc Fq) r /
+     algebraMap (Polynomial Fq) (RatFunc Fq) d).intDegree ≤ -1 := by
+  have hlt := intDegree_div_lt_zero_of_deg_lt hr hd hdeg
+  omega
+
+/-- A nonzero polynomial fraction r/d with deg(r) < deg(d) has inftyValuationDef ≤ exp(-1).
+
+This is the key bound for strong approximation: principal parts have small infinity valuation.
+-/
+lemma inftyValuationDef_le_exp_neg_one_of_deg_lt [DecidableEq (RatFunc Fq)] {r d : Polynomial Fq}
+    (hr : r ≠ 0) (hd : d ≠ 0) (hdeg : r.degree < d.degree) :
+    FunctionField.inftyValuationDef Fq (algebraMap (Polynomial Fq) (RatFunc Fq) r /
+     algebraMap (Polynomial Fq) (RatFunc Fq) d) ≤ WithZero.exp (-1 : ℤ) := by
+  have hr_map : algebraMap (Polynomial Fq) (RatFunc Fq) r ≠ 0 := RatFunc.algebraMap_ne_zero hr
+  have hd_map : algebraMap (Polynomial Fq) (RatFunc Fq) d ≠ 0 := RatFunc.algebraMap_ne_zero hd
+  have hrd_ne : algebraMap (Polynomial Fq) (RatFunc Fq) r /
+      algebraMap (Polynomial Fq) (RatFunc Fq) d ≠ 0 := div_ne_zero hr_map hd_map
+  -- Use inftyValuation_of_nonzero: for x ≠ 0, inftyValuationDef x = exp(intDegree x)
+  rw [@FunctionField.inftyValuation_of_nonzero Fq _ _ _ hrd_ne]
+  exact WithZero.exp_le_exp.mpr (intDegree_div_le_neg_one_of_deg_lt hr hd hdeg)
+
+/-- Zero has infinity valuation 0, which is ≤ exp(-1). -/
+lemma inftyValuationDef_zero_le_exp_neg_one [DecidableEq (RatFunc Fq)] :
+    FunctionField.inftyValuationDef Fq 0 ≤ WithZero.exp (-1 : ℤ) := by
+  simp only [FunctionField.InftyValuation.map_zero']
+  exact WithZero.zero_le _
+
 /-- The sum of principal parts at distinct places has valuation ≤ 1 at any other place (general version). -/
 lemma sum_principal_parts_valuation_le_one_spec
     (S : Finset (HeightOneSpectrum (Polynomial Fq))) (p : S → RatFunc Fq)
