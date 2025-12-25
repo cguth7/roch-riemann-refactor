@@ -639,14 +639,51 @@ lemma generator_normalize (v : HeightOneSpectrum (Polynomial k)) :
 /-- generator(v)^n divides p iff n ≤ ord(v, p).
 
 This is the key divisibility characterization of ord. The proof uses Nat.find properties
-but requires careful Nat arithmetic that's deferred to a later cycle. -/
+and the key insight that ord = Nat.find - 1, so n ≤ ord ↔ n < Nat.find ↔ gen^n | p. -/
 lemma pow_generator_dvd_iff_le_ord (v : HeightOneSpectrum (Polynomial k))
     (p : Polynomial k) (hp : p ≠ 0) (n : ℕ) :
     generator k v ^ n ∣ p ↔ n ≤ ord k v p := by
-  -- The proof relies on Nat.find properties:
-  -- ord = (Nat.find ...) - 1, so n ≤ ord iff n < Nat.find iff gen^n | p
-  -- This is straightforward but requires careful Nat subtraction handling
-  sorry
+  -- Key insight: ord = Nat.find(...) - 1 where Nat.find gives first m with gen^m ∤ p
+  -- So: gen^n | p ↔ n < Nat.find ↔ n ≤ Nat.find - 1 = ord
+  -- Use the definition of ord directly
+  rw [ord, dif_neg hp]
+  -- The goal is: gen^n | p ↔ n ≤ @Nat.find _ (Classical.decPred _) hex - 1
+  -- where hex = exists_pow_generator_not_dvd k v p hp
+  -- Generalize the Nat.find in the goal to a variable F
+  generalize hF_def : @Nat.find _ (Classical.decPred _) (exists_pow_generator_not_dvd k v p hp) = F
+  -- Now goal is: gen^n | p ↔ n ≤ F - 1
+  -- F ≥ 1 because gen^0 = 1 always divides nonzero p
+  have hF_ge_one : F ≥ 1 := by
+    by_contra h_lt
+    push_neg at h_lt
+    have hF_zero : F = 0 := Nat.lt_one_iff.mp h_lt
+    rw [← hF_def] at hF_zero
+    have hcontra := @Nat.find_spec _ (Classical.decPred _) (exists_pow_generator_not_dvd k v p hp)
+    rw [hF_zero, pow_zero] at hcontra
+    exact hcontra (one_dvd p)
+  -- Extract the spec and min properties (using the same Nat.find)
+  have hspec : ¬(generator k v ^ F ∣ p) := by
+    have := @Nat.find_spec _ (Classical.decPred _) (exists_pow_generator_not_dvd k v p hp)
+    rwa [hF_def] at this
+  have hmin : ∀ m < F, generator k v ^ m ∣ p := fun m hm => by
+    rw [← hF_def] at hm
+    exact not_not.mp (@Nat.find_min _ (Classical.decPred _) (exists_pow_generator_not_dvd k v p hp) m hm)
+  -- Now prove the iff
+  constructor
+  · -- (→) gen^n | p → n ≤ F - 1
+    intro hdvd
+    -- Prove by contradiction: if n > F - 1, then n ≥ F
+    by_contra h_not_le
+    push_neg at h_not_le
+    -- h_not_le : F - 1 < n, so F ≤ n (using hF_ge_one)
+    have h_ge : F ≤ n := Nat.lt_succ_iff.mp
+      ((Nat.sub_lt_iff_lt_add hF_ge_one).mp h_not_le)
+    -- gen^F | gen^n | p, contradicting hspec
+    exact hspec (dvd_trans (pow_dvd_pow _ h_ge) hdvd)
+  · -- (←) n ≤ F - 1 → gen^n | p
+    intro hle
+    -- n ≤ F - 1 < F (using hF_ge_one)
+    exact hmin n (Nat.lt_of_le_pred hF_ge_one hle)
 
 /-- The ord equals the count of the generator in normalized factors.
 

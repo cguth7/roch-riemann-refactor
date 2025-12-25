@@ -5,36 +5,37 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 305
-**Total Sorries**: 13 (4 new infrastructure + 3 high-level + 6 axioms)
+**Cycle**: 306
+**Total Sorries**: 12 (3 new infrastructure + 3 high-level + 6 axioms)
 **Elliptic Axioms**: 8
 
 ---
 
 ## Sorry Classification
 
-### Content Sorries - New Infrastructure (4)
+### Content Sorries - New Infrastructure (3)
 | Location | Line | Description | Difficulty |
 |----------|------|-------------|------------|
-| PlaceDegree | 643 | `pow_generator_dvd_iff_le_ord` | Easy (Nat arithmetic) ← NEXT |
-| PlaceDegree | 733 | `intValuation_eq_exp_neg_ord` | Medium (valuation API) |
-| PlaceDegree | 752 | `natDegree_eq_sum_ord_mul_degree` | Medium (UFD, blocked) |
-| PlaceDegree | 782 | `intDegree_ge_deg_of_valuation_bounds_and_linear_support` | Blocked on above |
+| PlaceDegree | 770 | `intValuation_eq_exp_neg_ord` | Medium (valuation API) ← NEXT |
+| PlaceDegree | 789 | `natDegree_eq_sum_ord_mul_degree` | Medium (UFD) |
+| PlaceDegree | 819 | `intDegree_ge_deg_of_valuation_bounds_and_linear_support` | Blocked on above |
 
 ### Content Sorries - High Level (3)
 | Location | Line | Description | Difficulty |
 |----------|------|-------------|------------|
-| AdelicH1Full | 757 | Deep negative inftyCoeff | High |
-| AdelicH1Full | 1328 | Degree gap lemma | Medium (blocked) |
-| AdelicH1Full | 1460 | Non-effective strong approx | High |
+| AdelicH1Full | 757 | `globalPlusBoundedSubmodule_full_eq_top_deep_neg_infty` | High |
+| AdelicH1Full | 1328 | `intDegree_ge_deg_of_valuation_bounds_and_linear_support_ratfunc` | Medium (blocked on PlaceDegree) |
+| AdelicH1Full | 1460 | `globalPlusBoundedSubmodule_full_eq_top_not_effective` | High |
 
 ### Axiom Sorries (6) - Intentional
-| Location | Description |
-|----------|-------------|
-| Abstract | `h1_zero_finite` - H¹ finite-dimensionality |
-| StrongApproximation (2) | Strong approximation for function fields |
-| EllipticH1 (2) | Elliptic-specific H¹ computations |
-| EllipticSetup | Elliptic setup axiom |
+| Location | Line | Description |
+|----------|------|-------------|
+| Abstract | 277 | `h1_zero_finite` - H¹ finite-dimensionality |
+| StrongApproximation | 115 | Strong approximation instance (1) |
+| StrongApproximation | 164 | Strong approximation instance (2) |
+| EllipticH1 | 206 | Elliptic H¹ axiom (1) |
+| EllipticH1 | 219 | Elliptic H¹ axiom (2) |
+| EllipticSetup | 105 | `IsDedekindDomain` for elliptic coordinate ring |
 
 ---
 
@@ -61,36 +62,30 @@
 | 303 | Fill `linear_of_degree_eq_one` + add ord infrastructure | ✅ DONE |
 | 304 | Fill `ord_generator_self` and `ord_generator_other` | ✅ DONE |
 | 305 | Add UFD infrastructure + ord lemmas | ✅ DONE |
-| 306 | Fill `pow_generator_dvd_iff_le_ord` (Nat arithmetic) | **NEXT** (Easy) |
-| 307 | Fill `natDegree_eq_sum_ord_mul_degree` using above | Blocked on 306 |
-| 308 | Fill `intValuation_eq_exp_neg_ord` | Medium (valuation API) |
+| 306 | Fill `pow_generator_dvd_iff_le_ord` (Nat arithmetic) | ✅ DONE |
+| 307 | Fill `intValuation_eq_exp_neg_ord` | **NEXT** (Medium - valuation API) |
+| 308 | Fill `natDegree_eq_sum_ord_mul_degree` | Medium (UFD) |
 | 309+ | High-level AdelicH1Full sorries | Blocked |
 
-### Cycle 305 Summary
+### Cycle 306 Summary
 **Completed**:
-- Added UFD/normalization imports
-- Proved `generator_normalize`: generators are monic hence normalized
-- Added `pow_generator_dvd_iff_le_ord` (sorry - blocked on Nat arithmetic)
-- Proved `ord_eq_count_normalizedFactors`: ord = count in normalized factors
-- Proved `exists_place_with_generator`: bijection monic irreducibles ↔ places
-- Proved `natDegree_normalizedFactors_prod`: product of factors has same natDegree
-- Proved `monic_of_mem_normalizedFactors`: normalized factors are monic
-- Proved `natDegree_normalizedFactors_prod_eq_sum`: natDegree = sum over multiset
+- Filled `pow_generator_dvd_iff_le_ord` - key divisibility characterization of ord
+- Proof uses `generalize` to capture Nat.find from goal and work with unified decidability instance
+- Used `Nat.find_spec` and `Nat.find_min` with the generalized Nat.find
+- Key insight: `n ≤ ord ↔ n < Nat.find ↔ gen^n | p`
+- Nat arithmetic: `Nat.sub_lt_iff_lt_add`, `Nat.lt_of_le_pred`
 
-**Blocked on**: `pow_generator_dvd_iff_le_ord` - Nat.find subtraction arithmetic
-The proof requires showing `gen^n | p ↔ n ≤ (Nat.find ... - 1)` which needs
-careful handling of Nat subtraction. The logic is clear but Lean's Nat omega
-struggles with `m - 1` patterns.
+**Unblocked**: `ord_eq_count_normalizedFactors` now uses `pow_generator_dvd_iff_le_ord`
 
-### Cycle 306 Target
-**File**: PlaceDegree.lean:643
-**Lemma**: `pow_generator_dvd_iff_le_ord`
-**Goal**: `generator k v ^ n ∣ p ↔ n ≤ ord k v p`
+### Cycle 307 Target
+**File**: PlaceDegree.lean:770
+**Lemma**: `intValuation_eq_exp_neg_ord`
+**Goal**: `v.intValuation p = WithZero.exp (-(ord k v p : ℤ))`
 **Approach**:
-- `ord k v p = Nat.find(...) - 1` where Nat.find gives first m with gen^m ∤ p
-- If gen^n | p, then n < Nat.find, so n ≤ Nat.find - 1 = ord
-- If n ≤ ord, then n < Nat.find, so by Nat.find_min, gen^n | p
-- Needs: `Nat.sub_add_cancel`, `Nat.succ_le_of_lt`, `Nat.lt_succ_self`
+- Both definitions count the same thing (multiplicity of generator)
+- `intValuation` uses Associates.count on ideals
+- `ord` uses divisibility of generator
+- Bridge: `v.asIdeal = span{generator(v)}`
 
 ---
 
@@ -110,4 +105,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 304. See ledger_archive.md for historical cycles.*
+*Updated Cycle 306. See ledger_archive.md for historical cycles.*
