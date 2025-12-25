@@ -1147,6 +1147,79 @@ lemma finite_deg_pos_of_deg_ge_neg_one_and_inftyCoeff_lt_neg_one
   have : D.finite.deg + D.inftyCoeff ≥ -1 := hdeg
   omega
 
+/-- At places where D.finite(v) ≥ 0, the valuation constraint implies val_v(f) ≤ 1.
+This means denom can only have zeros at places where D.finite(v) < 0. -/
+lemma denom_not_mem_of_valuation_constraint
+    (D : DivisorV2 (Polynomial Fq)) (f : RatFunc Fq) (hf : f ≠ 0)
+    (hf_val : ∀ v, v.valuation (RatFunc Fq) f ≤ WithZero.exp (-D v))
+    (v : HeightOneSpectrum (Polynomial Fq)) (hDv : 0 ≤ D v) :
+    f.denom ∉ v.asIdeal := by
+  intro hdenom_mem
+  -- If denom ∈ v.asIdeal, then val_v(denom) < 1
+  have hval_denom : v.intValuation f.denom < 1 :=
+    (intValuation_lt_one_iff_mem v f.denom).mpr hdenom_mem
+  -- By coprimality of num and denom, num ∉ v.asIdeal
+  have hcop : IsCoprime f.num f.denom := f.isCoprime_num_denom
+  have hprime : Prime (PlaceDegree.generator Fq v) := (PlaceDegree.generator_irreducible Fq v).prime
+  have hgen_mem : PlaceDegree.generator Fq v ∈ v.asIdeal := by
+    rw [PlaceDegree.asIdeal_eq_span_generator Fq v]
+    exact Ideal.mem_span_singleton_self _
+  have hgen_dvd_denom : PlaceDegree.generator Fq v ∣ f.denom := by
+    rw [PlaceDegree.asIdeal_eq_span_generator Fq v] at hdenom_mem
+    exact Ideal.mem_span_singleton.mp hdenom_mem
+  have hnum_not_mem : f.num ∉ v.asIdeal := by
+    intro hnum_mem
+    have hgen_dvd_num : PlaceDegree.generator Fq v ∣ f.num := by
+      rw [PlaceDegree.asIdeal_eq_span_generator Fq v] at hnum_mem
+      exact Ideal.mem_span_singleton.mp hnum_mem
+    exact hprime.not_unit (hcop.isUnit_of_dvd' hgen_dvd_num hgen_dvd_denom)
+  have hval_num : v.intValuation f.num = 1 := intValuation_eq_one_iff.mpr hnum_not_mem
+  -- val_v(f) = val_v(num) / val_v(denom) = 1 / val_v(denom) > 1
+  have hval_f : v.valuation (RatFunc Fq) f > 1 := by
+    have hdenom_ne := f.denom_ne_zero
+    have hval_denom_ne : v.intValuation f.denom ≠ 0 := v.intValuation_ne_zero' ⟨f.denom, mem_nonZeroDivisors_of_ne_zero hdenom_ne⟩
+    have hval_denom_pos : 0 < v.intValuation f.denom := zero_lt_iff.mpr hval_denom_ne
+    conv_lhs => rw [(f.num_div_denom).symm]
+    rw [Valuation.map_div, v.valuation_of_algebraMap, v.valuation_of_algebraMap, hval_num, one_div]
+    exact one_lt_inv_iff₀.mpr ⟨hval_denom_pos, hval_denom⟩
+  -- But constraint says val_v(f) ≤ exp(-D(v)) ≤ exp(0) = 1
+  have hval_bound : v.valuation (RatFunc Fq) f ≤ 1 := by
+    calc v.valuation (RatFunc Fq) f
+        ≤ WithZero.exp (-D v) := hf_val v
+      _ ≤ WithZero.exp 0 := by apply WithZero.exp_le_exp.mpr; omega
+      _ = 1 := WithZero.exp_zero
+  exact not_lt.mpr hval_bound hval_f
+
+/-- The positive part of a divisor (coefficients clamped to ≥ 0). -/
+def DivisorV2.posPart (D : DivisorV2 (Polynomial Fq)) : DivisorV2 (Polynomial Fq) :=
+  D.mapRange (fun n => max n 0) (by simp)
+
+/-- The negative part of a divisor (absolute values of negative coefficients). -/
+def DivisorV2.negPart (D : DivisorV2 (Polynomial Fq)) : DivisorV2 (Polynomial Fq) :=
+  D.mapRange (fun n => max (-n) 0) (by simp)
+
+/-- The positive part is effective. -/
+lemma DivisorV2.posPart_effective (D : DivisorV2 (Polynomial Fq)) : D.posPart.Effective := by
+  intro v
+  unfold posPart
+  simp only [Finsupp.mapRange_apply]
+  exact le_max_right _ _
+
+/-- D = posPart - negPart. -/
+lemma DivisorV2.eq_posPart_sub_negPart (D : DivisorV2 (Polynomial Fq)) :
+    D = D.posPart - D.negPart := by
+  ext v
+  unfold posPart negPart
+  simp only [Finsupp.mapRange_apply, Finsupp.coe_sub, Pi.sub_apply]
+  omega
+
+/-- deg(D) = deg(posPart) - deg(negPart). -/
+lemma DivisorV2.deg_eq_posPart_sub_negPart (D : DivisorV2 (Polynomial Fq)) :
+    D.deg = D.posPart.deg - D.negPart.deg := by
+  conv_lhs => rw [D.eq_posPart_sub_negPart]
+  rw [sub_eq_add_neg, DivisorV2.deg_add, DivisorV2.deg_neg]
+  ring
+
 /-- L(K-D) = {0} when deg(D) ≥ -1 and D.finite is supported on linear places.
 
 For algebraically closed fields, all places have degree 1, so IsLinearPlaceSupport
@@ -1195,15 +1268,54 @@ theorem RRSpace_proj_ext_canonical_sub_eq_bot_of_deg_ge_neg_one
         rw [h_KD_infty] at hf_deg
         have hf_deg' : (f.num.natDegree : ℤ) ≤ (f.denom.natDegree : ℤ) + (-2 - D.inftyCoeff) := hf_deg
         linarith
-      -- We need: (f.num.natDegree : ℤ) - f.denom.natDegree ≥ D.finite.deg
-      -- This would contradict hdeg_f and h_deg_gap
-      -- The valuation constraints from hf_val give this bound:
-      -- - For v with D.finite(v) > 0: f must have zeros of multiplicity ≥ D.finite(v)
-      --   This contributes D.finite(v) · deg(v) to num degree
-      -- - For v with D.finite(v) < 0: f can have poles of multiplicity ≤ |D.finite(v)|
-      --   This contributes |D.finite(v)| · deg(v) to denom degree
-      -- Sum: deg(num) - deg(denom) ≥ D.finite⁺.deg - D.finite⁻.deg = D.finite.deg
-      -- We defer the full formalization to a future cycle
+      -- Key: The constraint is val_v(f) ≤ exp((K-D).finite v) = exp(-D.finite v)
+      -- Convert hf_val to use D.finite instead of (K-D).finite
+      have hf_val' : ∀ v, v.valuation (RatFunc Fq) f ≤ WithZero.exp (-D.finite v) := by
+        intro v
+        have h : (canonicalExtended Fq - D).finite v = -D.finite v := by
+          simp only [ExtendedDivisor.sub_finite, canonicalExtended, zero_sub, Finsupp.neg_apply]
+        rw [← h]; exact hf_val v
+      -- The proof strategy:
+      -- 1. At places v with D.finite(v) > 0: val_v(f) ≤ exp(-D.finite(v)) forces zeros
+      -- 2. At places v with D.finite(v) < 0: val_v(f) ≤ exp(|D.finite(v)|) allows poles
+      -- 3. At places v with D.finite(v) ≥ 0: denom has no zeros (by coprimality)
+      -- 4. Therefore: deg(f) = num.natDegree - denom.natDegree ≥ D.finite.deg
+      -- 5. But deg(f) ≤ -2 - D.inftyCoeff < D.finite.deg, contradiction!
+      --
+      -- The full formalization requires infrastructure for:
+      -- - Relating polynomial degree to sum of valuations
+      -- - Bounding num.natDegree from below (zeros at positive places)
+      -- - Bounding denom.natDegree from above (zeros only at negative places)
+      --
+      -- For now, we use the helper lemma to establish that denom zeros are
+      -- restricted to negative places, then apply a degree counting argument.
+      --
+      -- Key fact: With IsLinearPlaceSupport, all places in D.finite.support have degree 1,
+      -- so weighted degree equals unweighted degree for the divisor parts.
+      --
+      -- Step 1: denom zeros only at places where D.finite(v) < 0
+      have hdenom_only_neg : ∀ v, f.denom ∈ v.asIdeal → D.finite v < 0 := by
+        intro v hv_mem
+        by_contra h; push_neg at h
+        have := denom_not_mem_of_valuation_constraint Fq D.finite f hf_ne hf_val' v h
+        exact this hv_mem
+      -- Step 2: The degree argument
+      -- For non-effective D.finite with deg(D) ≥ -1 and IsLinearPlaceSupport:
+      -- - num must have zeros at positive places (contributing to num.natDegree)
+      -- - denom can only have zeros at negative places (bounded denom.natDegree)
+      -- - Combined: deg(f) ≥ D.finite.deg > -2 - D.inftyCoeff ≥ deg(f), contradiction!
+      --
+      -- The detailed degree bound requires formalizing:
+      -- 1. val_v(f) ≤ exp(-n) for n > 0 implies f has zeros of multiplicity ≥ n at v
+      -- 2. In reduced form num/denom: if f has zeros at v, num has them, denom doesn't
+      -- 3. Sum of zero multiplicities × place degrees = polynomial degree
+      --
+      -- This infrastructure exists partially in PlaceDegree.lean for effective divisors.
+      -- For non-effective, we need to extend it to handle both positive and negative parts.
+      --
+      -- For now, this sorry represents the degree counting argument which is mathematically
+      -- complete (as outlined above) but requires additional PlaceDegree infrastructure.
+      -- The sorry is localized to the degree bound: deg(f) ≥ D.finite.deg
       sorry
   · intro hf; rw [hf]; exact Or.inl rfl
 
