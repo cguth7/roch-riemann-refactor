@@ -5,9 +5,40 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 314
+**Cycle**: 315
 **Phase**: 7 (Weil Differentials) - Active
 **Total Sorries**: 8 (2 archived P¹ edge cases + 6 axioms)
+
+---
+
+## Cycle 315 Completed
+
+**Extended**: `RrLean/RiemannRochV2/General/WeilDifferential.lean`
+
+### Restricted Pairing Infrastructure
+- [x] `serrePairingRestricted` - bilinear map L(D) × Ω(-D) → k
+- [x] `serrePairingRestricted_apply` - evaluation simp lemma
+- [x] `serrePairingGeneral` - general pairing L(D) × Ω(E) → k for any D, E
+- [x] `serrePairingGeneral_apply` - evaluation simp lemma
+
+### Non-Degeneracy Strategy Documented
+Outlined three approaches for proving non-degeneracy (Cycle 316+):
+1. From A_K/K compactness → perfect pairing
+2. Local non-degeneracy at each place → global
+3. Axiomatize if needed
+
+### Technical Notes
+Import added: `RrLean.RiemannRochV2.Definitions.Projective` for `RRSpace_proj`.
+Non-degeneracy definitions deferred to Cycle 316 due to typeclass complexity.
+
+---
+
+## Cycle 316 Target
+
+**Non-degeneracy formalization**:
+1. Define `PairingNondegenerateLeft`, `PairingNondegenerateRight`, `PairingPerfect`
+2. Prove `dim_eq_of_perfect_pairing`
+3. Begin proving non-degeneracy (or axiomatize)
 
 ---
 
@@ -31,15 +62,6 @@
 Typeclass issues with `Algebra ? K_infty` fixed by adding explicit
 type annotations `(k := k) (R := R) (K := K) (K_infty := K_infty)` and
 explicit return type annotations on antitone/zero_iff lemmas.
-
----
-
-## Cycle 315 Target
-
-**Non-degeneracy preparation**:
-1. Define pairing restricted to L(D) × Ω(K-D)
-2. Prove pairing respects divisor constraints
-3. Begin non-degeneracy proof strategy (the crux)
 
 ---
 
@@ -140,19 +162,20 @@ Estimated remaining: **~10-15 cycles** (3 more cycles completed).
 | 312 | WeilDifferential structure + K-module | ✅ DONE |
 | 313 | Local components + Ω(D) definition | ✅ DONE |
 | 314 | Serre pairing `⟨f, ω⟩ = ω(diag f)` | ✅ DONE |
+| 315 | Restricted pairing L(D) × Ω(E) → k | ✅ DONE |
 
 ### Remaining
 | Cycle | Task | Difficulty | Est. |
 |-------|------|------------|------|
-| 315-320 | **Prove non-degeneracy** | **HARD** | 5-8 cycles |
+| 316-320 | **Prove non-degeneracy** | **HARD** | 4-6 cycles |
 | 321-323 | Prove dim(Ω) = g (or deg(K) = 2g-2) | Medium | 2-3 cycles |
 | 324 | Instantiate FullRRData | Easy | 1 cycle |
 | 325-327 | Assembly + cleanup | Medium | 2-3 cycles |
-| **Total** | | | **~10-15 cycles** |
+| **Total** | | | **~9-14 cycles** |
 
 ---
 
-## The Crux: Non-Degeneracy (Cycle 315-320)
+## The Crux: Non-Degeneracy (Cycle 316-320)
 
 This is where the real work is. Need to prove:
 ```

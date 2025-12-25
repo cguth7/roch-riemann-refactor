@@ -40,6 +40,7 @@ Cycle 313: Module K instance (deferred - requires careful handling).
 -/
 
 import RrLean.RiemannRochV2.Adelic.FullAdelesBase
+import RrLean.RiemannRochV2.Definitions.Projective
 
 noncomputable section
 
@@ -676,6 +677,128 @@ lemma serrePairingF_vanishes_on_K (f : K) (ω : WeilDifferential k R K K_infty) 
 -- vanishing condition on Weil differentials. The pairing
 -- ⟨f, ω⟩ = ω(diag(f)) is automatically zero when f is a constant
 -- that lies in the image of K, by the defining property of ω.
+
+/-! ### Restricted Pairing: L(D) × Ω(-D) → k
+
+The Serre duality pairing restricts to a well-defined pairing between
+L(D) and Ω(-D). The key constraint is:
+
+* f ∈ L(D) means ord_v(f) ≥ -D(v) at all places
+* ω ∈ Ω(-D) means ord_v(ω) ≥ D(v) at all places (by definition with -(-D) = D)
+
+The compatibility: when evaluating ω(diag(f)), we need the local behavior
+to be controlled. The pairing respects divisor constraints when:
+
+  f ∈ L(D), ω ∈ Ω(-D) ⟹ ⟨f, ω⟩ well-defined in k
+
+### Cycle 315: Setting Up the Restricted Pairing
+-/
+
+section RestrictedPairing
+
+variable [Nonempty (HeightOneSpectrum R)]
+
+/-- The restricted Serre pairing as a bilinear map from L(D) × Ω(-D) to k.
+
+For f ∈ L(D) and ω ∈ Ω(-D), the pairing is ⟨f, ω⟩ = ω(diag(f)).
+
+Mathematical justification:
+* f ∈ L(D): ord_v(f) ≥ -D(v), i.e., v(f) ≤ exp(D(v))
+* ω ∈ Ω(-D): ord_v(ω) ≥ D(v) at all places
+
+The evaluation ω(diag(f)) extracts the "residue" of the product fω,
+which is finite when the orders are compatible. -/
+def serrePairingRestricted (D : DivisorV2 R) :
+    RRSpace_proj k R K D →ₗ[k] DivisorDifferentials (k := k) (R := R) (K := K) (K_infty := K_infty) (-D) →ₗ[k] k where
+  toFun f :=
+    { toFun := fun ω => serrePairingF (f : K) (ω : WeilDifferential k R K K_infty)
+      map_add' := fun ω₁ ω₂ => by
+        simp only [Submodule.coe_add, serrePairingF_add_right]
+      map_smul' := fun c ω => by
+        simp only [SetLike.val_smul, serrePairingF_smul_right, RingHom.id_apply] }
+  map_add' f₁ f₂ := by
+    ext ω
+    simp only [LinearMap.coe_mk, AddHom.coe_mk, Submodule.coe_add, serrePairingF_add_left,
+      LinearMap.add_apply]
+  map_smul' c f := by
+    ext ω
+    simp only [LinearMap.coe_mk, AddHom.coe_mk, SetLike.val_smul, serrePairingF_smul_left,
+      RingHom.id_apply, LinearMap.smul_apply]
+
+@[simp]
+lemma serrePairingRestricted_apply (D : DivisorV2 R)
+    (f : RRSpace_proj k R K D)
+    (ω : DivisorDifferentials (k := k) (R := R) (K := K) (K_infty := K_infty) (-D)) :
+    serrePairingRestricted D f ω = serrePairingF (f : K) (ω : WeilDifferential k R K K_infty) := rfl
+
+/-! ### Pairing with General Divisor Constraint
+
+More generally, for any divisors D and E, we can pair L(D) with Ω(E).
+The "compatibility" condition D + E ≥ 0 ensures the pairing is meaningful,
+though the pairing itself is defined for any D, E.
+
+For Serre duality, we'll use E = K - D (canonical minus D), giving:
+  L(D) × Ω(K - D) → k
+-/
+
+/-- General restricted pairing: L(D) × Ω(E) → k for any divisors D, E.
+
+This is always well-defined as a bilinear map - the divisor constraints
+affect non-degeneracy rather than well-definedness. -/
+def serrePairingGeneral (D E : DivisorV2 R) :
+    RRSpace_proj k R K D →ₗ[k]
+    DivisorDifferentials (k := k) (R := R) (K := K) (K_infty := K_infty) E →ₗ[k] k where
+  toFun f :=
+    { toFun := fun ω => serrePairingF (f : K) (ω : WeilDifferential k R K K_infty)
+      map_add' := fun ω₁ ω₂ => by
+        simp only [Submodule.coe_add, serrePairingF_add_right]
+      map_smul' := fun c ω => by
+        simp only [SetLike.val_smul, serrePairingF_smul_right, RingHom.id_apply] }
+  map_add' f₁ f₂ := by
+    ext ω
+    simp only [LinearMap.coe_mk, AddHom.coe_mk, Submodule.coe_add, serrePairingF_add_left,
+      LinearMap.add_apply]
+  map_smul' c f := by
+    ext ω
+    simp only [LinearMap.coe_mk, AddHom.coe_mk, SetLike.val_smul, serrePairingF_smul_left,
+      RingHom.id_apply, LinearMap.smul_apply]
+
+@[simp]
+lemma serrePairingGeneral_apply (D E : DivisorV2 R)
+    (f : RRSpace_proj k R K D)
+    (ω : DivisorDifferentials (k := k) (R := R) (K := K) (K_infty := K_infty) E) :
+    serrePairingGeneral D E f ω = serrePairingF (f : K) (ω : WeilDifferential k R K K_infty) := rfl
+
+end RestrictedPairing
+
+/-! ## Non-Degeneracy Setup (Cycle 316+)
+
+The crux of Serre duality is proving the pairing is non-degenerate:
+
+  ∀ f ∈ L(D), f ≠ 0 → ∃ ω ∈ Ω(K-D), ⟨f, ω⟩ ≠ 0
+
+This requires:
+1. Canonical divisor K with deg(K) = 2g - 2
+2. Existence of "enough" differentials
+3. A local-to-global argument or compactness argument
+
+### Strategy Options
+
+1. **From A_K/K compactness**: The quotient is compact, hence finite-dimensional.
+   The dual pairing is perfect by finite-dimensionality.
+
+2. **Local non-degeneracy**: At each place v, the local pairing is non-degenerate.
+   Combine via strong approximation to get global non-degeneracy.
+
+3. **Axiomatize**: If proofs are too hard, axiomatize and verify for examples.
+
+### Definitions (to be formalized in Cycle 316+)
+
+* `PairingNondegenerateLeft D K` - For f ≠ 0 in L(D), ∃ ω in Ω(K-D) with ⟨f, ω⟩ ≠ 0
+* `PairingNondegenerateRight D K` - For ω ≠ 0 in Ω(K-D), ∃ f in L(D) with ⟨f, ω⟩ ≠ 0
+* `PairingPerfect D K` - Both left and right non-degeneracy
+* `dim_eq_of_perfect_pairing` - Perfect pairing ⟹ dim L(D) = dim Ω(K-D)
+-/
 
 end SerrePairing
 
