@@ -771,7 +771,7 @@ lemma serrePairingGeneral_apply (D E : DivisorV2 R)
 
 end RestrictedPairing
 
-/-! ## Non-Degeneracy Setup (Cycle 316+)
+/-! ## Non-Degeneracy Definitions (Cycle 318)
 
 The crux of Serre duality is proving the pairing is non-degenerate:
 
@@ -791,16 +791,156 @@ This requires:
    Combine via strong approximation to get global non-degeneracy.
 
 3. **Axiomatize**: If proofs are too hard, axiomatize and verify for examples.
-
-### Definitions (to be formalized in Cycle 316+)
-
-* `PairingNondegenerateLeft D K` - For f ≠ 0 in L(D), ∃ ω in Ω(K-D) with ⟨f, ω⟩ ≠ 0
-* `PairingNondegenerateRight D K` - For ω ≠ 0 in Ω(K-D), ∃ f in L(D) with ⟨f, ω⟩ ≠ 0
-* `PairingPerfect D K` - Both left and right non-degeneracy
-* `dim_eq_of_perfect_pairing` - Perfect pairing ⟹ dim L(D) = dim Ω(K-D)
 -/
 
+section NonDegeneracy
+
+variable [Nonempty (HeightOneSpectrum R)]
+
+/-- Left non-degeneracy: for every nonzero f ∈ L(D), there exists ω ∈ Ω(E)
+such that the pairing ⟨f, ω⟩ ≠ 0.
+
+For Serre duality, we use E = K - D where K is the canonical divisor. -/
+def PairingNondegenerateLeft (D E : DivisorV2 R) : Prop :=
+  ∀ f : RRSpace_proj k R K D, (f : K) ≠ 0 →
+    ∃ ω : DivisorDifferentials (k := k) (R := R) (K := K) (K_infty := K_infty) E,
+      serrePairingGeneral D E f ω ≠ 0
+
+/-- Right non-degeneracy: for every nonzero ω ∈ Ω(E), there exists f ∈ L(D)
+such that the pairing ⟨f, ω⟩ ≠ 0.
+
+For Serre duality, we use E = K - D where K is the canonical divisor. -/
+def PairingNondegenerateRight (D E : DivisorV2 R) : Prop :=
+  ∀ ω : DivisorDifferentials (k := k) (R := R) (K := K) (K_infty := K_infty) E,
+    (ω : WeilDifferential k R K K_infty) ≠ 0 →
+    ∃ f : RRSpace_proj k R K D, serrePairingGeneral D E f ω ≠ 0
+
+/-- A perfect pairing is non-degenerate on both sides.
+
+For Serre duality with canonical divisor K:
+- L(D) × Ω(K-D) → k is a perfect pairing
+- This implies dim L(D) = dim Ω(K-D) -/
+def PairingPerfect (D E : DivisorV2 R) : Prop :=
+  PairingNondegenerateLeft (k := k) (R := R) (K := K) (K_infty := K_infty) D E ∧
+  PairingNondegenerateRight (k := k) (R := R) (K := K) (K_infty := K_infty) D E
+
+/-- Left non-degeneracy is symmetric in D and E (via the pairing structure). -/
+lemma pairingNondegenerateLeft_symm {D E : DivisorV2 R} :
+    PairingNondegenerateLeft (k := k) (R := R) (K := K) (K_infty := K_infty) D E ↔
+    PairingNondegenerateRight (k := k) (R := R) (K := K) (K_infty := K_infty) E D := by
+  constructor
+  · intro hL ω hω_ne
+    -- For ω ≠ 0 in Ω(E), we need f in L(D) with pairing ≠ 0
+    -- This follows from left non-degeneracy of E, D pairing (if symmetric)
+    -- For now, this is a placeholder showing the structure
+    sorry
+  · intro hR f hf_ne
+    -- Symmetric argument
+    sorry
+
+/-- Perfect pairing is symmetric in D and E. -/
+lemma pairingPerfect_symm {D E : DivisorV2 R} :
+    PairingPerfect (k := k) (R := R) (K := K) (K_infty := K_infty) D E ↔
+    PairingPerfect (k := k) (R := R) (K := K) (K_infty := K_infty) E D := by
+  simp only [PairingPerfect]
+  rw [pairingNondegenerateLeft_symm, pairingNondegenerateLeft_symm]
+  tauto
+
+end NonDegeneracy
+
 end SerrePairing
+
+/-! ## Canonical Divisor Infrastructure (Cycle 318)
+
+The canonical divisor K is fundamental to Riemann-Roch:
+  ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
+
+We define a structure `CanonicalData` that packages:
+1. The canonical divisor K
+2. The genus g
+3. deg(K) = 2g - 2
+4. (Optional) Infinite place degree for P¹ compatibility
+
+### Design Decision: infiniteDegree
+
+For P¹ over F_q, the canonical divisor is K = -2∞ where ∞ is the place at infinity.
+However, our DivisorV2 only tracks finite places. The `infiniteDegree` field captures
+the contribution of the infinite place to the degree calculation.
+
+For most curves, infiniteDegree = 0 (all places are finite in the model).
+For P¹ with our affine Dedekind model, infiniteDegree = -2 (the canonical has
+degree -2 at infinity).
+-/
+
+section CanonicalDivisor
+
+/-- Data packaging a canonical divisor for Riemann-Roch.
+
+The canonical divisor K satisfies:
+- deg(K) + infiniteDegree = 2 * genus - 2
+- ℓ(K) = genus (the space of holomorphic differentials)
+- The Serre pairing L(D) × Ω(K-D) → k is perfect
+
+The `infiniteDegree` field handles cases like P¹ where the infinite place
+contributes to the degree but isn't captured by finite divisors. -/
+structure CanonicalData (R : Type*) [CommRing R] [IsDomain R] [IsDedekindDomain R] where
+  /-- The canonical divisor K, encoding poles/zeros of differentials. -/
+  canonical : DivisorV2 R
+  /-- The genus of the curve. -/
+  genus : ℕ
+  /-- Degree contribution from infinite places (0 for most curves, -2 for P¹). -/
+  infiniteDegree : ℤ := 0
+  /-- deg(K) + infiniteDegree = 2g - 2 -/
+  deg_canonical : canonical.deg + infiniteDegree = 2 * (genus : ℤ) - 2
+
+namespace CanonicalData
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
+variable (cd : CanonicalData R)
+
+/-- The full degree of the canonical divisor including infinite contribution. -/
+def fullDeg : ℤ := cd.canonical.deg + cd.infiniteDegree
+
+/-- The full canonical degree equals 2g - 2. -/
+lemma fullDeg_eq : cd.fullDeg = 2 * (cd.genus : ℤ) - 2 := cd.deg_canonical
+
+/-- For curves with infiniteDegree = 0, the canonical divisor degree is 2g - 2. -/
+lemma deg_canonical_of_no_infinite (h : cd.infiniteDegree = 0) :
+    cd.canonical.deg = 2 * (cd.genus : ℤ) - 2 := by
+  have := cd.deg_canonical
+  simp [h] at this
+  exact this
+
+end CanonicalData
+
+/-- Canonical data for P¹: genus 0, canonical = 0 (finite part), infiniteDegree = -2.
+
+For P¹ = Spec k[T] ∪ {∞}, the canonical divisor is K = -2∞.
+Since our DivisorV2 only tracks finite places, we set:
+- canonical = 0 (no finite poles/zeros)
+- infiniteDegree = -2 (the ∞ contribution)
+- genus = 0
+
+Then deg(K) + infiniteDegree = 0 + (-2) = -2 = 2(0) - 2 ✓ -/
+def CanonicalData.p1 (R : Type*) [CommRing R] [IsDomain R] [IsDedekindDomain R] :
+    CanonicalData R where
+  canonical := 0
+  genus := 0
+  infiniteDegree := -2
+  deg_canonical := by simp [DivisorV2.deg]
+
+/-- Canonical data for genus 1 (elliptic): canonical = 0, infiniteDegree = 0.
+
+For an elliptic curve, the canonical divisor is K = 0 (the invariant differential
+has no zeros or poles). Then deg(K) = 0 = 2(1) - 2 ✓ -/
+def CanonicalData.elliptic (R : Type*) [CommRing R] [IsDomain R] [IsDedekindDomain R] :
+    CanonicalData R where
+  canonical := 0
+  genus := 1
+  infiniteDegree := 0
+  deg_canonical := by simp [DivisorV2.deg]
+
+end CanonicalDivisor
 
 end WeilDifferential
 

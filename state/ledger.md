@@ -5,50 +5,56 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 317
+**Cycle**: 318
 **Phase**: 7 (Weil Differentials) - Active
-**Total Sorries**: 8 (2 archived P¹ edge cases + 6 axioms)
+**Total Sorries**: 9 (2 archived P¹ edge cases + 6 axioms + 1 symmetry lemma)
 
 ---
 
-## Cycle 317 Completed
+## Cycle 318 Completed
 
-**Issue**: WeilDifferential.lean was not hooked into the build system, so Cycle 316 changes
-were committed without being compiled. The full build passed because nothing imports this file.
+**Goal**: Hook WeilDifferential.lean into build, add non-degeneracy infrastructure.
 
-### Key Discovery
-- `lake build` succeeds but `lake env lean WeilDifferential.lean` fails on Cycle 316 code
-- Cycle 315 is the last compiling version
-- Cycle 316 added non-degeneracy defs with type parameter issues (missing `R := R`, `K := K`)
+### Deliverables
 
-### Resolution
-- **Reverted** WeilDifferential.lean to Cycle 315 (last compiling version)
-- The Cycle 315 code includes:
-  - WeilDifferential structure with k-module and K-module actions
-  - DivisorDifferentials Ω(D) submodule
-  - serrePairingGeneral L(D) × Ω(E) → k bilinear pairing
+1. **Build Integration**:
+   - Created `RrLean/RiemannRochV2/General.lean` (imports WeilDifferential)
+   - Added `import RrLean.RiemannRochV2.General` to `RiemannRochV2.lean`
+   - WeilDifferential.lean now compiles with full build (2844 jobs)
 
-### Architecture Note for P¹ Validation
-P¹ already has a working Riemann-Roch theorem in `P1RiemannRoch.lean` using:
-- `ell_ratfunc_projective` - dimension formula for L(D)
-- `ellV3` - dimension formula using DivisorV3 (projective divisors)
+2. **Non-Degeneracy Definitions**:
+   - `PairingNondegenerateLeft D E` - ∀ f ≠ 0 in L(D), ∃ ω in Ω(E) with ⟨f, ω⟩ ≠ 0
+   - `PairingNondegenerateRight D E` - ∀ ω ≠ 0 in Ω(E), ∃ f in L(D) with ⟨f, ω⟩ ≠ 0
+   - `PairingPerfect D E` - both left and right non-degeneracy
+   - `pairingNondegenerateLeft_symm` - symmetry (sorry, placeholder)
+   - `pairingPerfect_symm` - perfect pairing is symmetric
 
-The WeilDifferential framework is for **general curves**. P¹ validation of the
-abstract framework requires:
-1. Defining a completion K_infty at the infinite place
-2. Connecting the abstract Ω(D) to the concrete P¹ dimension computations
+3. **CanonicalData Structure**:
+   - `CanonicalData R` - packages canonical divisor K, genus g, infiniteDegree
+   - `deg_canonical : canonical.deg + infiniteDegree = 2g - 2`
+   - `CanonicalData.p1` - P¹ instance (genus 0, infiniteDegree = -2)
+   - `CanonicalData.elliptic` - elliptic instance (genus 1, infiniteDegree = 0)
+
+### Architecture Note
+The `infiniteDegree` field handles P¹ compatibility:
+- For P¹ = Spec k[T] ∪ {∞}, canonical K = -2∞
+- DivisorV2 tracks finite places only, so infiniteDegree = -2
+- deg(K) + infiniteDegree = 0 + (-2) = -2 = 2(0) - 2 ✓
 
 ---
 
-## Cycle 318 Target
+## Cycle 319 Target
 
-**Priority**: Hook up WeilDifferential.lean to the build system before adding more code.
+**Priority**: Bridge WeilDifferential to FullRRData for final assembly.
 
 **Steps**:
-1. Add `import RrLean.RiemannRochV2.General.WeilDifferential` to a top-level file
-2. Verify the file compiles with `lake build`
-3. Re-add non-degeneracy definitions (fixing type parameter issues)
-4. Add HasCanonicalDivisor with `infiniteDegree` field for P¹ support
+1. Add dimension theorems from perfect pairing
+2. Create typeclass `HasPerfectPairing` connecting L(D) and Ω(K-D)
+3. Begin instantiating `FullRRData` with Weil differential infrastructure
+
+---
+
+## Cycle 317 Summary (Archived)
 
 ---
 
