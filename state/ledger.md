@@ -7,27 +7,30 @@ Tactical tracking for Riemann-Roch formalization.
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 299 (Degree Gap Refactoring)
-**Total Sorries**: 9 (4 AdelicH1Full + 1 Abstract + 1 EllipticSetup + 2 StrongApproximation + 2 EllipticH1)
+**Cycle**: 300 (Degree Gap Infrastructure)
+**Total Sorries**: 9 (3 AdelicH1Full + 1 Abstract + 1 EllipticSetup + 2 StrongApproximation + 2 EllipticH1)
 **Elliptic Axioms**: 8 (in addition to sorries: 3 in EllipticH1 + 3 in EllipticRRData + 1 in EllipticPlaces + 1 h1_zero_finite)
 
-**Note**: Cycle 299 refactored the degree gap sorry into a well-documented helper lemma with clear mathematical proof.
+**Note**: Cycle 300 added helper lemmas for the degree gap proof and documented the infrastructure still needed.
 
 ---
 
 ## Sorry Classification
 
-### Content Sorries (4) - Actual proof work needed
+### Content Sorries (3) - Actual proof work needed
 | Location | Line | Description | Priority | Difficulty |
 |----------|------|-------------|----------|------------|
-| AdelicH1Full | 811 | Deep negative inftyCoeff (effective D.finite) | Medium | High |
-| AdelicH1Full | 1266 | Degree gap: `intDegree_ge_deg_of_valuation_and_denom_constraint` | Medium | Medium |
-| AdelicH1Full | 1433 | Non-effective strong approx (h_infty case) | Low | High |
-| AdelicH1Full | 1444 | Non-effective strong approx (¬h_infty case) | Low | High |
+| AdelicH1Full | 757 | Deep negative inftyCoeff (effective D.finite) | Medium | High |
+| AdelicH1Full | 1328 | Degree gap: `intDegree_ge_deg_of_valuation_and_denom_constraint` | Medium | Medium |
+| AdelicH1Full | 1460 | Non-effective strong approx | Low | High |
 
-**Note on Line 1266**: This sorry is in a helper lemma `intDegree_ge_deg_of_valuation_and_denom_constraint`
-with a complete mathematical proof in its docstring. The theorem `RRSpace_proj_ext_canonical_sub_eq_bot_of_deg_ge_neg_one`
-now uses this lemma and is otherwise complete. Formalizing requires PlaceDegree infrastructure for non-effective divisors.
+**Note on Line 1328**: This sorry is in a helper lemma `intDegree_ge_deg_of_valuation_and_denom_constraint`
+with a complete mathematical proof in its docstring. Cycle 300 added helper lemmas:
+- `num_intValuation_eq_valuation_of_nonneg`: At D(v) ≥ 0, val_v(num) = val_v(f)
+- `num_intValuation_le_of_nonneg`: At D(v) ≥ 0, val_v(num) ≤ exp(-D(v))
+- `posPart_support_subset`, `posPart_eq_of_mem_support`, `posPart_pos_of_mem_support`
+
+Still needs: `polynomial.natDegree = Σ_v ord_v(p) * deg(v)` (from unique factorization).
 
 ### Infrastructure Sorries (5) - Trivial for algebraically closed fields
 | Location | Description | Status |
@@ -84,6 +87,45 @@ theorem h1_finrank_full_eq_zero_of_deg_ge_neg_one ...
 - **Core/** (2K LOC) - Place, Divisor, RRSpace definitions
 - **Support/** (600 LOC) - DVR properties
 - **Dimension/** (650 LOC) - Gap bounds, inequalities
+
+---
+
+## Cycle 300: Degree Gap Infrastructure (Complete)
+
+**Goal**: Add helper lemmas for the degree gap proof to enable future formalization
+
+### Achievement
+Added helper lemmas that connect valuations of numerators to valuation bounds,
+plus posPart infrastructure. These prepare the ground for formalizing
+`intDegree_ge_deg_of_valuation_and_denom_constraint`.
+
+### Changes Made
+1. **Added `num_intValuation_eq_valuation_of_nonneg`** (AdelicH1Full.lean:1197-1206):
+   - At places where D(v) ≥ 0, val_v(num) = val_v(f)
+   - Uses `denom_not_mem_of_valuation_constraint` (denom coprime to v when D ≥ 0)
+
+2. **Added `num_intValuation_le_of_nonneg`** (AdelicH1Full.lean:1212-1218):
+   - At places where D(v) ≥ 0, val_v(num) ≤ exp(-D(v))
+   - Key for applying `natDegree_ge_degWeighted_of_valuation_bounds` to numerator
+
+3. **Added posPart helper lemmas** (AdelicH1Full.lean:1235-1266):
+   - `posPart_support_subset`: posPart.support ⊆ D.support
+   - `posPart_eq_of_mem_support`: posPart(v) = D(v) when v ∈ posPart.support
+   - `posPart_pos_of_mem_support`: D(v) > 0 when v ∈ posPart.support
+
+4. **Enhanced docstring for `intDegree_ge_deg_of_valuation_and_denom_constraint`**:
+   - Documented infrastructure added in this cycle
+   - Documented infrastructure still needed (polynomial degree = sum of orders)
+
+### Result
+- **Sorry count unchanged** (9)
+- Helper lemmas compile and are ready for use
+- Clear documentation of what infrastructure is still needed
+
+### Infrastructure Still Needed for Line 1328
+1. `polynomial.natDegree = Σ_v ord_v(p) * deg(v)` (sum over zeros, from unique factorization)
+2. Extension of `natDegree_ge_degWeighted_of_valuation_bounds` to count contributions at negative places
+3. `ord_v(f) = ord_v(num) - ord_v(denom)` formalized for rational functions
 
 ---
 
@@ -504,7 +546,7 @@ structure LocalUniformizer (v : EllipticPlace W) where
 
 ---
 
-## Next Steps: Cycles 300+ (Sorry Cleanup)
+## Next Steps: Cycles 301+ (Sorry Cleanup)
 
 ### Updated Plan
 
@@ -517,9 +559,10 @@ structure LocalUniformizer (v : EllipticPlace W) where
 | 297 | Analyze remaining sorries | ✅ Complete (analysis only) |
 | 298 | Degree gap helper lemmas | ✅ Complete (helpers proved, sorry localized) |
 | 299 | Refactor degree gap into helper lemma | ✅ Complete (theorem uses helper, sorry in lemma) |
-| 300 | Fill `intDegree_ge_deg_of_valuation_and_denom_constraint` | **Next** (needs PlaceDegree for non-effective D) |
-| 301 | Fix AdelicH1Full:811,1433,1444 (infinity bounds) | Blocked (needs new approach) |
-| 302 | IsLinearPlaceSupport: add [IsAlgClosed] OR refactor | Cleanup |
+| 300 | Add numerator/posPart infrastructure | ✅ Complete (helper lemmas for future proof) |
+| 301 | Add polynomial degree = sum of orders lemma | **Next** (key PlaceDegree infrastructure) |
+| 302 | Fill `intDegree_ge_deg_of_valuation_and_denom_constraint` | Blocked on 301 |
+| 303 | Fix AdelicH1Full:757,1460 (infinity bounds) | Blocked (needs new approach) |
 
 ### Sorry Cleanup Strategy
 
@@ -542,20 +585,26 @@ structure LocalUniformizer (v : EllipticPlace W) where
 - Cycle 299: Created `intDegree_ge_deg_of_valuation_and_denom_constraint` with math proof in docstring
 - Theorem `RRSpace_proj_ext_canonical_sub_eq_bot_of_deg_ge_neg_one` is complete modulo helper lemma
 
-**Phase 5: Fill Helper Lemma (Cycle 300) - NEXT**
-- Target: `intDegree_ge_deg_of_valuation_and_denom_constraint` (line 1266)
-- Mathematical proof is complete (see docstring)
-- Needs: Extension of PlaceDegree infrastructure to non-effective divisors
+**Phase 5: Degree Gap Infrastructure (Cycle 300) - ✅ DONE**
+- Added `num_intValuation_eq_valuation_of_nonneg` and `num_intValuation_le_of_nonneg`
+- Added `posPart_support_subset`, `posPart_eq_of_mem_support`, `posPart_pos_of_mem_support`
+- Enhanced docstring with infrastructure still needed
+- **Blocked**: Needs `polynomial.natDegree = Σ_v ord_v(p) * deg(v)` from unique factorization
 
-**Phase 6: Infinity Bound Sorries (Cycle 301+) - BLOCKED**
-- Targets: Lines 811, 1433, 1444
+**Phase 6: PlaceDegree for Unique Factorization (Cycle 301) - NEXT**
+- Target: Add lemma `natDegree_eq_sum_ord_times_deg` to PlaceDegree.lean
+- This connects polynomial degree to sum of orders at all places
+- Once proved, can fill `intDegree_ge_deg_of_valuation_and_denom_constraint`
+
+**Phase 7: Infinity Bound Sorries (Cycle 303+) - BLOCKED**
+- Targets: Lines 757, 1460
 - **Problem**: `strong_approximation_ratfunc` uses CRT polynomial correction, no infinity bound
 - **Options**:
   1. Create new `strong_approximation_ratfunc_general` with infinity bound for all D
   2. Add `[IsAlgClosed Fq]` hypothesis (makes IsLinearPlaceSupport automatic)
   3. Use different approach for non-effective cases
 
-**Phase 6: IsLinearPlaceSupport Resolution (Cycle 300)**
+**Phase 8: IsLinearPlaceSupport Resolution**
 - Target: Abstract.lean line 277
 - **Key Insight**: `IsLinearPlaceSupport` is NOT provable for finite Fq!
 - **Options**:

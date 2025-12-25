@@ -1190,6 +1190,33 @@ lemma denom_not_mem_of_valuation_constraint
       _ = 1 := WithZero.exp_zero
   exact not_lt.mpr hval_bound hval_f
 
+/-- At places where D(v) ≥ 0, the valuation of the numerator equals the valuation of f.
+
+This is because denom ∉ v.asIdeal (from coprimality + valuation constraint),
+so v.intValuation(denom) = 1 and val_v(f) = val_v(num)/1 = val_v(num). -/
+lemma num_intValuation_eq_valuation_of_nonneg
+    (D : DivisorV2 (Polynomial Fq)) (f : RatFunc Fq) (hf : f ≠ 0)
+    (hf_val : ∀ v, v.valuation (RatFunc Fq) f ≤ WithZero.exp (-D v))
+    (v : HeightOneSpectrum (Polynomial Fq)) (hDv : 0 ≤ D v) :
+    v.intValuation f.num = v.valuation (RatFunc Fq) f := by
+  have hdenom_not_mem := denom_not_mem_of_valuation_constraint Fq D f hf hf_val v hDv
+  have hdenom_ne := f.denom_ne_zero
+  have hdenom_val_one : v.intValuation f.denom = 1 := intValuation_eq_one_iff.mpr hdenom_not_mem
+  conv_rhs => rw [(f.num_div_denom).symm]
+  rw [Valuation.map_div, v.valuation_of_algebraMap, v.valuation_of_algebraMap, hdenom_val_one, div_one]
+
+/-- At places where D(v) ≥ 0, the intValuation of num satisfies the bound from the constraint.
+
+This is the key lemma for applying PlaceDegree.natDegree_ge_degWeighted_of_valuation_bounds
+to the numerator. -/
+lemma num_intValuation_le_of_nonneg
+    (D : DivisorV2 (Polynomial Fq)) (f : RatFunc Fq) (hf : f ≠ 0)
+    (hf_val : ∀ v, v.valuation (RatFunc Fq) f ≤ WithZero.exp (-D v))
+    (v : HeightOneSpectrum (Polynomial Fq)) (hDv : 0 ≤ D v) :
+    v.intValuation f.num ≤ WithZero.exp (-D v) := by
+  rw [num_intValuation_eq_valuation_of_nonneg Fq D f hf hf_val v hDv]
+  exact hf_val v
+
 /-- The positive part of a divisor (coefficients clamped to ≥ 0). -/
 def DivisorV2.posPart (D : DivisorV2 (Polynomial Fq)) : DivisorV2 (Polynomial Fq) :=
   D.mapRange (fun n => max n 0) (by simp)
@@ -1204,6 +1231,39 @@ lemma DivisorV2.posPart_effective (D : DivisorV2 (Polynomial Fq)) : D.posPart.Ef
   unfold posPart
   simp only [Finsupp.mapRange_apply]
   exact le_max_right _ _
+
+/-- posPart.support ⊆ D.support for places where D > 0. -/
+lemma DivisorV2.posPart_support_subset (D : DivisorV2 (Polynomial Fq)) :
+    (DivisorV2.posPart Fq D).support ⊆ D.support := by
+  intro v hv
+  unfold DivisorV2.posPart at hv
+  simp only [Finsupp.mapRange_apply, Finsupp.mem_support_iff, ne_eq] at hv ⊢
+  intro hDv_eq
+  rw [hDv_eq] at hv
+  simp at hv
+
+/-- At places in posPart.support, we have posPart(v) = D(v). -/
+lemma DivisorV2.posPart_eq_of_mem_support (D : DivisorV2 (Polynomial Fq))
+    (v : HeightOneSpectrum (Polynomial Fq)) (hv : v ∈ (DivisorV2.posPart Fq D).support) :
+    (DivisorV2.posPart Fq D) v = D v := by
+  unfold DivisorV2.posPart at hv ⊢
+  simp only [Finsupp.mapRange_apply, Finsupp.mem_support_iff, ne_eq] at hv ⊢
+  have hmax : max (D v) 0 ≠ 0 := hv
+  have hpos : D v > 0 := by
+    by_contra h
+    push_neg at h
+    simp [max_eq_right h] at hmax
+  exact max_eq_left (le_of_lt hpos)
+
+/-- At places in posPart.support, we have D(v) > 0. -/
+lemma DivisorV2.posPart_pos_of_mem_support (D : DivisorV2 (Polynomial Fq))
+    (v : HeightOneSpectrum (Polynomial Fq)) (hv : v ∈ (DivisorV2.posPart Fq D).support) :
+    D v > 0 := by
+  unfold DivisorV2.posPart at hv
+  simp only [Finsupp.mapRange_apply, Finsupp.mem_support_iff, ne_eq] at hv
+  by_contra h
+  push_neg at h
+  simp [max_eq_right h] at hv
 
 /-- D = posPart - negPart. -/
 lemma DivisorV2.eq_posPart_sub_negPart (D : DivisorV2 (Polynomial Fq)) :
@@ -1254,6 +1314,16 @@ With IsLinearPlaceSupport (deg(v) = 1 for v ∈ D.support):
 
 This infrastructure requires lemmas relating polynomial degree to sum of multiplicities
 at all places, which is partially in PlaceDegree.lean for effective divisors.
+
+**Infrastructure Added (Cycle 300)**:
+- `num_intValuation_eq_valuation_of_nonneg`: At D(v) ≥ 0, val_v(num) = val_v(f)
+- `num_intValuation_le_of_nonneg`: At D(v) ≥ 0, val_v(num) ≤ exp(-D(v))
+- `posPart_support_subset`, `posPart_eq_of_mem_support`, `posPart_pos_of_mem_support`
+
+**Infrastructure Still Needed**:
+1. `polynomial.natDegree = Σ_v ord_v(p) * deg(v)` (sum over zeros, from unique factorization)
+2. Extension of `natDegree_ge_degWeighted_of_valuation_bounds` to count contributions at negative places
+3. `ord_v(f) = ord_v(num) - ord_v(denom)` formalized for rational functions
 -/
 lemma intDegree_ge_deg_of_valuation_and_denom_constraint
     (D : DivisorV2 (Polynomial Fq)) (f : RatFunc Fq) (hf_ne : f ≠ 0)
@@ -1261,8 +1331,15 @@ lemma intDegree_ge_deg_of_valuation_and_denom_constraint
     (hdenom_only_neg : ∀ v, f.denom ∈ v.asIdeal → D v < 0)
     (hlin : IsLinearPlaceSupport D) :
     f.intDegree ≥ D.deg := by
-  -- The full formalization requires PlaceDegree infrastructure for non-effective divisors.
-  -- The mathematical proof is outlined in the docstring above.
+  -- Proof strategy:
+  -- 1. At D > 0 places: num has zeros (ord_v(num) ≥ D(v)), denom coprime to v
+  -- 2. At D < 0 places: constraint gives ord_v(num) - ord_v(denom) ≥ D(v)
+  -- 3. At D = 0 places: denom coprime to v (from hdenom_only_neg)
+  -- 4. intDegree = Σ(ord_v(num) - ord_v(denom)) * deg(v)
+  --              ≥ Σ_{D.support} (ord_v(num) - ord_v(denom)) (since deg(v) = 1 by hlin)
+  --              ≥ D.deg (by cases 1-2 above)
+  --
+  -- The proof requires `polynomial.natDegree = Σ ord_v * deg(v)` which we don't have yet.
   sorry
 
 /-- L(K-D) = {0} when deg(D) ≥ -1 and D.finite is supported on linear places.
