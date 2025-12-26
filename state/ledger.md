@@ -5,57 +5,72 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 320
+**Cycle**: 321
 **Phase**: 7 (Weil Differentials) - Active
 **Total Sorries**: 8 (2 archived P¹ edge cases + 6 axioms)
 
 ---
 
-## Cycle 320 Completed
+## Cycle 321 Completed
+
+**Goal**: Bridge WeilRRData' to FullRRData.
+
+### Deliverables
+
+1. **FullRRBridge Structure**:
+   - Captures the axioms needed beyond perfect pairing
+   - `serre_duality_eq` - the RR equation (to be discharged)
+   - `ell_zero_of_neg_deg` - vanishing for negative degree
+   - `deg_canonical_finite` - canonical degree formula
+
+2. **toFullRRData Definition**:
+   - Constructs `FullRRData` from `WeilRRData'` + `FullRRBridge` + `ProperCurve`
+   - Clean type-theoretic bridge between approaches
+
+3. **riemann_roch_from_weil Theorem**:
+   - Shows RR follows from the bridge axioms
+   - Clear statement: given bridge, RR holds
+
+4. **Gap Analysis Documentation**:
+   - Documented why dimension theorem ≠ RR equation
+   - Explained: dim equality is circular, RR requires degree relation
+   - Outlined path to derive RR from Riemann inequality
+
+5. **Linter Cleanup**:
+   - Fixed 4 unused simp arg warnings in WeilDifferential.lean
+
+### Key Insight
+The dimension theorem from perfect pairing gives `ℓ(D) = dim Ω(K-D)`.
+Combined with `dim_omega_eq`, this gives `ℓ(D) = ℓ(D)` (circular!).
+
+The RR equation relates dimensions to DEGREE, which requires:
+- Euler characteristic formula, OR
+- Riemann inequality + vanishing
+
+The bridge axiomatizes this gap cleanly for future discharge.
+
+---
+
+## Cycle 322 Target
+
+**Priority**: Prove `ell_zero_of_neg_deg` (vanishing for negative degree).
+
+**Strategy**: If f ∈ L(D) is nonzero, then div(f) + D ≥ 0 is effective.
+Since deg(div(f)) = 0 (principal divisors), deg(D) = deg(div(f) + D) ≥ 0.
+Contrapositive: deg(D) < 0 ⟹ L(D) = 0.
+
+**Alternative**: Attack full RR via Riemann inequality + symmetry.
+
+---
+
+## Cycle 320 Summary (Archived)
 
 **Goal**: Prove dimension theorem, clean up unused lemmas.
 
 ### Deliverables
-
-1. **Dimension Theorem PROVED**:
-   - `finrank_eq_of_perfect_pairing` - if pairing is perfect, dim L(D) = dim Ω(E)
-   - **Now sorry-free!** Uses:
-     - Left non-degeneracy → injection L(D) → Ω(E)* via `serrePairingGeneral`
-     - Right non-degeneracy → injection Ω(E) → L(D)* via `(serrePairingGeneral).flip`
-     - `LinearMap.finrank_le_finrank_of_injective` for dimension bounds
-     - `Subspace.dual_finrank_eq` for `dim(V*) = dim(V)`
-     - Antisymmetry from ≤ in both directions
-
-2. **Cleanup**:
-   - Removed unused `pairingNondegenerateLeft_symm` (incorrectly stated)
-   - Removed unused `pairingPerfect_symm`
-   - Added imports: `Mathlib.LinearAlgebra.Dual.Lemmas`, `Mathlib.LinearAlgebra.Dimension.StrongRankCondition`
-
-3. **Sorry Count Reduced**: 10 → 8
-   - Removed 1 sorry: `finrank_eq_of_perfect_pairing` now proved
-   - Removed 1 sorry: deleted unused symmetry lemma
-
-### Architecture Note
-WeilDifferential.lean is now **sorry-free**! All remaining sorries are:
-- 2 archived P¹ edge cases (bypassed by Weil approach)
-- 6 intentional axioms (function field density, elliptic-specific)
-
----
-
-## Cycle 321 Target
-
-**Priority**: Bridge WeilRRData' to FullRRData or prove RR directly.
-
-**Analysis**:
-The dimension theorem proves `ℓ(D) = dim Ω(K-D)` via perfect pairing.
-The RR equation `ℓ(D) - ℓ(K-D) = deg(D) + 1 - g` requires more:
-- Either apply Riemann inequality twice (to D and K-D)
-- Or connect h¹(D) definition from AdelicH1v2 to Ω(K-D)
-
-**Options**:
-1. **Direct Proof**: Use Riemann inequality + vanishing lemmas
-2. **Cohomology Bridge**: Connect AdelicH1 definition to Weil differentials
-3. **Axiomatize**: Keep serre_duality_eq as axiom in FullRRData
+- `finrank_eq_of_perfect_pairing` - PROVED
+- Cleanup of unused lemmas
+- Sorry count reduced 10 → 8
 
 ---
 

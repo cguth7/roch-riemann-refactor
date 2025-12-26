@@ -41,6 +41,7 @@ Cycle 313: Module K instance (deferred - requires careful handling).
 
 import RrLean.RiemannRochV2.Adelic.FullAdelesBase
 import RrLean.RiemannRochV2.Definitions.Projective
+import RrLean.RiemannRochV2.Definitions.FullRRData
 import Mathlib.LinearAlgebra.Dual.Lemmas
 import Mathlib.LinearAlgebra.Dimension.StrongRankCondition
 
@@ -387,14 +388,14 @@ open Classical in
 lemma finiteAdeleSingle_apply_same (v : HeightOneSpectrum R) (x : v.adicCompletion K) :
     (finiteAdeleSingle v x) v = x := by
   show (finiteAdeleSingle v x).1 v = x
-  simp only [finiteAdeleSingle, dif_pos rfl, dite_true]
+  simp only [finiteAdeleSingle, dite_true]
 
 open Classical in
 @[simp]
 lemma finiteAdeleSingle_apply_ne (v w : HeightOneSpectrum R) (x : v.adicCompletion K)
     (h : w ≠ v) : (finiteAdeleSingle v x) w = 0 := by
   show (finiteAdeleSingle v x).1 w = 0
-  simp only [finiteAdeleSingle, dif_neg h, dite_false]
+  simp only [finiteAdeleSingle, dif_neg h]
 
 /-- Embed a local element at finite place v into the full adele ring.
 The element is placed at position v in the finite part, with 0 at all other
@@ -422,7 +423,7 @@ lemma embedFinitePlace_zero (v : HeightOneSpectrum R) :
     intro w
     show (finiteAdeleSingle v 0).1 w = (0 : FiniteAdeleRing R K) w
     by_cases h : w = v
-    · subst h; simp only [finiteAdeleSingle, dif_pos rfl]; rfl
+    · subst h; simp only [finiteAdeleSingle]; rfl
     · simp only [finiteAdeleSingle, dif_neg h]; rfl
   · rfl
 
@@ -603,7 +604,7 @@ def serrePairingF (f : K) (ω : WeilDifferential k R K K_infty) : k :=
 @[simp]
 lemma serrePairingF_zero_left (ω : WeilDifferential k R K K_infty) :
     serrePairingF (0 : K) ω = 0 := by
-  simp only [serrePairingF, map_zero, zero_apply]
+  simp only [serrePairingF, map_zero]
 
 @[simp]
 lemma serrePairingF_zero_right (f : K) :
@@ -1150,12 +1151,137 @@ And by perfect pairing: ℓ(D) = dim Ω(K-D)
 
 So this is consistent. -/
 theorem ell_via_omega' {cd : CanonicalData R}
-    (wrd : WeilRRData' (k := k) (K := K) (K_infty := K_infty) cd)
+    (_wrd : WeilRRData' (k := k) (K := K) (K_infty := K_infty) cd)
     (D : DivisorV2 R) :
     ell_proj k R K D = ell_proj k R K (cd.canonical - (cd.canonical - D)) := by
   -- This follows from substitution K - (K - D) = D
   congr 1
   simp only [sub_sub_cancel]
+
+/-! ## Bridge to FullRRData (Cycle 321)
+
+This section provides the bridge from WeilRRData' to FullRRData.
+
+### The Gap Analysis
+
+**What WeilRRData' provides:**
+1. `CanonicalData` - canonical divisor K, genus g, deg(K) = 2g-2
+2. `HasPerfectPairing'` - perfect pairing L(D) × Ω(K-D) → k
+3. `dim_omega_eq` - dim Ω(E) = ℓ(K-E) (Serre duality for differentials)
+
+**What FullRRData requires:**
+1. `canonical` - ✅ from CanonicalData
+2. `genus` - ✅ from CanonicalData
+3. `deg_canonical` - ✅ from CanonicalData (when infiniteDegree = 0)
+4. `serre_duality_eq` - ❌ REQUIRES THE RR EQUATION
+5. `ell_zero_of_neg_deg` - ❌ vanishing theorem needed
+
+**The fundamental gap:**
+The dimension theorem from perfect pairing gives: ℓ(D) = dim Ω(K-D)
+Combined with dim_omega_eq: dim Ω(K-D) = ℓ(K-(K-D)) = ℓ(D)
+
+This is CIRCULAR - it says ℓ(D) = ℓ(D), which is trivially true.
+
+The RR equation ℓ(D) - ℓ(K-D) = deg(D) + 1 - g relates DIMENSION to DEGREE,
+which requires additional input beyond dimension equalities.
+
+### Bridge Options
+
+**Option 1: Axiomatize the gap**
+Take `serre_duality_eq` and `ell_zero_of_neg_deg` as additional hypotheses.
+This is pragmatic and keeps the Weil differential machinery as the foundation.
+
+**Option 2: Derive from Riemann inequality**
+For large deg(D), ℓ(K-D) = 0
+
+, so RR follows from Riemann inequality.
+For general D, need to combine Riemann inequality on D and K-D.
+This requires more work but is more satisfying mathematically.
+
+We implement Option 1 below, documenting what's needed for Option 2.
+-/
+
+/-- Additional axioms needed to complete the bridge to FullRRData.
+
+These axioms capture the properties that don't follow directly from
+the perfect pairing and dimension theorem. -/
+structure FullRRBridge (cd : CanonicalData R) : Prop where
+  /-- The Riemann-Roch equation. This is the core result we want to prove.
+      Currently axiomatized; see comments above for proof strategy. -/
+  serre_duality_eq : ∀ D : DivisorV2 R,
+    (ell_proj k R K D : ℤ) - ell_proj k R K (cd.canonical - D) = D.deg + 1 - cd.genus
+  /-- Vanishing for negative degree. Follows from: if f ∈ L(D) is nonzero,
+      then div(f) + D is effective with deg = deg(D). So deg(D) < 0 implies L(D) = 0. -/
+  ell_zero_of_neg_deg : ∀ D : DivisorV2 R, D.deg < 0 → ell_proj k R K D = 0
+  /-- The canonical degree equals 2g-2 (needed when infiniteDegree ≠ 0). -/
+  deg_canonical_finite : cd.canonical.deg = 2 * (cd.genus : ℤ) - 2 - cd.infiniteDegree
+
+/-- Construct FullRRData from WeilRRData' and additional bridge axioms.
+
+This definition shows that the Weil differential approach is compatible with
+the axiom package in FullRRData. Given:
+- `WeilRRData'` (perfect pairing, dimension theorems)
+- `FullRRBridge` (RR equation and vanishing)
+
+we obtain a full `FullRRData` instance.
+
+The `hpc` hypothesis provides the proper curve structure (ℓ(0) = 1). -/
+def toFullRRData {cd : CanonicalData R}
+    (_wrd : WeilRRData' (k := k) (K := K) (K_infty := K_infty) cd)
+    (bridge : FullRRBridge (k := k) (R := R) (K := K) cd)
+    (hpc : ProperCurve k R K)
+    (h_inf : cd.infiniteDegree = 0 := by rfl) :
+    FullRRData k R K where
+  ell_zero_eq_one := hpc.ell_zero_eq_one
+  canonical := cd.canonical
+  genus := cd.genus
+  deg_canonical := by
+    have := bridge.deg_canonical_finite
+    simp [h_inf] at this
+    exact this
+  serre_duality_eq := bridge.serre_duality_eq
+  ell_zero_of_neg_deg := bridge.ell_zero_of_neg_deg
+
+/-- Corollary: If we have WeilRRData', FullRRBridge, and ProperCurve,
+    then the full Riemann-Roch theorem holds. -/
+theorem riemann_roch_from_weil {cd : CanonicalData R}
+    (_wrd : WeilRRData' (k := k) (K := K) (K_infty := K_infty) cd)
+    (bridge : FullRRBridge (k := k) (R := R) (K := K) cd)
+    (_hpc : ProperCurve k R K)
+    (_h_inf : cd.infiniteDegree = 0 := by rfl)
+    (D : DivisorV2 R) :
+    (ell_proj k R K D : ℤ) - ell_proj k R K (cd.canonical - D) = D.deg + 1 - cd.genus :=
+  bridge.serre_duality_eq D
+
+/-! ### Towards Deriving serre_duality_eq (Future Work)
+
+To derive the RR equation rather than axiomatizing it, we would need:
+
+1. **Riemann Inequality**: ℓ(D) ≥ deg(D) + 1 - g for effective D
+   - Already proved in RiemannInequality.lean
+   - Key theorem: `riemann_inequality_real`
+
+2. **Vanishing at Extremes**:
+   - For deg(D) < 0: ℓ(D) = 0 (axiom `ell_zero_of_neg_deg`)
+   - For deg(K-D) < 0: ℓ(K-D) = 0 (same axiom applied to K-D)
+
+3. **Combining with Serre Duality**:
+   - From perfect pairing: ℓ(D) = dim Ω(K-D)
+   - From dim_omega_eq: dim Ω(K-D) = ℓ(K - (K-D)) = ℓ(D)
+   - This confirms dimension consistency but doesn't give the formula.
+
+4. **The Key Insight**:
+   For deg(D) > 2g-2:
+   - deg(K-D) = (2g-2) - deg(D) < 0
+   - So ℓ(K-D) = 0 (vanishing)
+   - Riemann inequality gives ℓ(D) ≥ deg(D) + 1 - g
+   - RR gives ℓ(D) - 0 = deg(D) + 1 - g
+   - So Riemann inequality is EQUALITY for large degree.
+
+   For general D, use the symmetry D ↔ K-D and the induction principle.
+
+See PROOF_CHAIN.md for the dependency graph of these results.
+-/
 
 end WeilRRDataBridge
 
