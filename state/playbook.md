@@ -1,6 +1,6 @@
 # Playbook
 
-Strategic guide for formalizing Riemann-Roch. Updated Cycle 325.
+Strategic guide for formalizing Riemann-Roch. Updated Cycle 326.
 
 ---
 
@@ -45,7 +45,7 @@ Formalize **Riemann-Roch** for smooth projective curves:
 ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
 ```
 
-### Current Status (Cycle 325)
+### Current Status (Cycle 326)
 
 | Component | Status |
 |-----------|--------|
@@ -54,6 +54,7 @@ Formalize **Riemann-Roch** for smooth projective curves:
 | AdelicRRData → FullRRData bridge | ✅ **DONE** |
 | Elliptic FullRRData instance | ✅ **DONE** (Cycle 323) |
 | Connecting homomorphism δ | ✅ **CONSTRUCTED** (Cycle 325) |
+| Technical lemmas for δ | ✅ **PROVED** (Cycle 326) |
 | Euler characteristic formula | ⏳ **NEXT** (needs exactness proofs) |
 | Serre duality | ⏳ After χ formula |
 

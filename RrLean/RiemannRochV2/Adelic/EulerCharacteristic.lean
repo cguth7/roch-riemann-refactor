@@ -3,7 +3,7 @@ import RrLean.RiemannRochV2.Dimension.KernelProof
 import RrLean.RiemannRochV2.Definitions.Infrastructure
 
 /-!
-# Euler Characteristic via Exact Sequence (Cycle 325)
+# Euler Characteristic via Exact Sequence (Cycle 326)
 
 This file proves the Euler characteristic formula χ(D) = deg(D) + 1 - g via the
 6-term exact sequence:
@@ -110,16 +110,29 @@ lemma finiteAdeleSingleHere_apply_ne (v w : HeightOneSpectrum R) (x : v.adicComp
 @[simp]
 lemma finiteAdeleSingleHere_zero (v : HeightOneSpectrum R) :
     finiteAdeleSingleHere R K v (0 : v.adicCompletion K) = 0 := by
-  -- Technical: at each place, we get 0 = 0
-  sorry
+  apply FiniteAdeleRing.ext K
+  intro w
+  show (finiteAdeleSingleHere R K v 0).1 w = (0 : FiniteAdeleRing R K) w
+  by_cases h : w = v
+  · subst h; simp only [finiteAdeleSingleHere]; rfl
+  · simp only [finiteAdeleSingleHere, dif_neg h]; rfl
 
 /-- The single-place adele respects addition. -/
 lemma finiteAdeleSingleHere_add (v : HeightOneSpectrum R)
     (x y : v.adicCompletion K) :
     finiteAdeleSingleHere R K v (x + y) =
     finiteAdeleSingleHere R K v x + finiteAdeleSingleHere R K v y := by
-  -- Technical: at v we get x+y = x+y; at other places, 0+0 = 0
-  sorry
+  apply Subtype.ext
+  funext w
+  -- Need to show: (LHS).1 w = ((finiteAdeleSingleHere x) + (finiteAdeleSingleHere y)).1 w
+  -- The RHS's .1 equals (finiteAdeleSingleHere x).1 + (finiteAdeleSingleHere y).1 by subtype add
+  have h_add : ((finiteAdeleSingleHere R K v x) + (finiteAdeleSingleHere R K v y)).1 =
+               (finiteAdeleSingleHere R K v x).1 + (finiteAdeleSingleHere R K v y).1 := rfl
+  simp only [h_add, Pi.add_apply]
+  by_cases h : w = v
+  · subst h
+    simp only [finiteAdeleSingleHere, dite_true]
+  · simp only [finiteAdeleSingleHere, dif_neg h, add_zero]
 
 /-- The uniformizer in K (as an element of the fraction field). -/
 def uniformizerInK (v : HeightOneSpectrum R) : K :=
@@ -149,6 +162,46 @@ The result satisfies: residueMapAtPrime v (liftToR α) represents the same class
 def liftToR (v : HeightOneSpectrum R) (α : residueFieldAtPrime R v) : R :=
   let α_quot : R ⧸ v.asIdeal := (residueFieldAtPrime.linearEquiv (R := R) v).symm α
   Quotient.out α_quot
+
+/-- The lifted element projects back to the original residue class. -/
+lemma liftToR_proj (v : HeightOneSpectrum R) (α : residueFieldAtPrime R v) :
+    Ideal.Quotient.mk v.asIdeal (liftToR R v α) =
+    (residueFieldAtPrime.linearEquiv (R := R) v).symm α := by
+  simp only [liftToR]
+  exact Quotient.out_eq _
+
+/-- When α = 0, the lift is in v.asIdeal. -/
+lemma liftToR_zero_mem_ideal (v : HeightOneSpectrum R) :
+    liftToR R v 0 ∈ v.asIdeal := by
+  simp only [liftToR]
+  have h : (residueFieldAtPrime.linearEquiv (R := R) v).symm 0 = 0 := by
+    simp only [map_zero]
+  rw [h]
+  exact Ideal.Quotient.eq_zero_iff_mem.mp (Quotient.out_eq (0 : R ⧸ v.asIdeal))
+
+/-- The lift of a sum differs from the sum of lifts by an element in v.asIdeal. -/
+lemma liftToR_add_diff_mem_ideal (v : HeightOneSpectrum R)
+    (α β : residueFieldAtPrime R v) :
+    liftToR R v (α + β) - (liftToR R v α + liftToR R v β) ∈ v.asIdeal := by
+  rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, map_add]
+  simp only [liftToR_proj, map_add, sub_self]
+
+/-- The lift respects scalar multiplication up to an element in v.asIdeal.
+For c ∈ k ⊆ R, the lift of c•α differs from c * liftToR(α) by an element in v.asIdeal.
+
+The proof uses that the k-action on residueFieldAtPrime factors through k → R → R/v.asIdeal,
+so the scalar multiplication in the residue field matches the quotient multiplication. -/
+lemma liftToR_smul_diff_mem_ideal (v : HeightOneSpectrum R)
+    (c : k) (α : residueFieldAtPrime R v) :
+    liftToR R v (c • α) - algebraMap k R c * liftToR R v α ∈ v.asIdeal := by
+  rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, map_mul, liftToR_proj, liftToR_proj]
+  -- The k-action on residueFieldAtPrime R v = R/v.asIdeal is via algebraMap k R → R/v.asIdeal
+  -- So (residueFieldAtPrime.linearEquiv v).symm (c • α) = (algebraMap k (R ⧸ v)) c * α_quot
+  -- and the subtraction gives 0
+  convert sub_self _
+  -- Need: (linearEquiv v).symm (c • α) = (algebraMap k R c mod v) * (linearEquiv v).symm α
+  -- This is how the module structure is defined
+  sorry
 
 /-- The connecting homomorphism function δ: κ(v) → H¹(D).
 

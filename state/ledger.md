@@ -5,9 +5,54 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 325
+**Cycle**: 326
 **Phase**: 7 (Weil Differentials) - Active
-**Total Sorries**: 18 (10 in EulerCharacteristic + 8 existing axioms)
+**Total Sorries**: 17 (9 in EulerCharacteristic + 8 existing axioms)
+
+---
+
+## Cycle 326 Completed
+
+**Goal**: Prove technical lemmas for connecting homomorphism.
+
+### Deliverables
+
+1. **Proved `finiteAdeleSingleHere_zero`**: Single-place adele respects zero
+2. **Proved `finiteAdeleSingleHere_add`**: Single-place adele respects addition
+3. **Helper lemmas for `liftToR`** (all proved except one):
+   - `liftToR_proj`: lifted element projects back to original class
+   - `liftToR_zero_mem_ideal`: lift of 0 is in v.asIdeal
+   - `liftToR_add_diff_mem_ideal`: lift of sum differs from sum of lifts by v.asIdeal element
+   - `liftToR_smul_diff_mem_ideal`: scalar multiplication (1 sorry - algebra structure)
+
+### Remaining Sorries in EulerCharacteristic.lean (9 total)
+
+| Lemma | Description | Type |
+|-------|-------------|------|
+| `liftToR_smul_diff_mem_ideal` | Scalar mult compatibility | Technical |
+| `connectingHomFun_zero` | δ(0) = 0 | Valuation |
+| `connectingHomFun_add` | δ(α+β) = δ(α) + δ(β) | Valuation |
+| `connectingHomFun_smul` | δ(c·α) = c·δ(α) | Valuation |
+| `exactness_at_kappa_set` | image(eval) = ker(δ) | Exactness |
+| `exactness_at_H1` | image(δ) = ker(proj) | Exactness |
+| `kappa_dim_one` | dim_k(κ(v)) = 1 | Standard fact |
+| `chi_additive` | χ(D+v) = χ(D) + 1 | Dimension |
+| `euler_characteristic` | χ(D) = deg(D) + 1 - g | Main theorem |
+
+### Key Insight
+
+The helper lemmas establish that:
+- Quotient.out lifts in a way that respects the quotient structure
+- Differences between lift(α+β) and lift(α)+lift(β) are in v.asIdeal
+- These differences become bounded (in A_K(D)) after the construction
+
+This is the mathematical basis for proving linearity of δ.
+
+### Next Steps (Cycle 327)
+
+1. Fill valuation-based sorries (connectingHomFun_zero/add/smul)
+2. Prove exactness theorems
+3. Complete chi_additive via dimension counting
 
 ---
 
@@ -22,38 +67,6 @@
    - `liftToR`: lift residue field element to R via linear equivalence
    - `uniformizerInK`, `uniformizerInvPow`: uniformizer infrastructure
    - `connectingHomFun`: the real construction δ: κ(v) → H¹(D)
-     - Lifts α ∈ κ(v) to r ∈ R
-     - Computes r · π^(-(D(v)+1)) ∈ K
-     - Embeds into single-place adele
-     - Projects to H¹(D)
-
-2. **Sorries in EulerCharacteristic.lean** (10 total):
-   - `finiteAdeleSingleHere_zero`: technical lemma
-   - `finiteAdeleSingleHere_add`: technical lemma
-   - `connectingHomFun_zero`: δ(0) = 0
-   - `connectingHomFun_add`: δ(α+β) = δ(α) + δ(β)
-   - `connectingHomFun_smul`: δ(c·α) = c·δ(α)
-   - `exactness_at_kappa_set`: image(eval) = ker(δ)
-   - `exactness_at_H1`: image(δ) = ker(proj)
-   - `kappa_dim_one`: dim_k(κ(v)) = 1
-   - `chi_additive`: χ(D+v) = χ(D) + 1
-   - `euler_characteristic`: χ(D) = deg(D) + 1 - g
-
-### Key Insight
-
-The construction is mathematically correct:
-- For α = 0: lift r ∈ v.asIdeal, so r·π^(-(D(v)+1)) has valuation ≤ exp(D(v)),
-  putting the adele in A_K(D), hence mapping to 0 in H¹(D).
-- For α ≠ 0: lift r ∉ v.asIdeal, so v(r·π^(-(D(v)+1))) = exp(D(v)+1) > exp(D(v)),
-  hence NOT in A_K(D), giving nonzero in H¹(D).
-- Well-defined: different lifts differ by elements of v.asIdeal,
-  and after construction these become bounded elements that quotient out.
-
-### Next Steps (Cycle 326)
-
-1. Prove the technical lemmas (finiteAdeleSingleHere_zero/add)
-2. Prove connectingHomFun linearity (zero, add, smul)
-3. Work toward exactness proofs
 
 ---
 

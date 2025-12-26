@@ -1,6 +1,6 @@
 # Proof Chain: Riemann-Roch Formalization
 
-Tracks what's **already proved** and what remains. Updated Cycle 325.
+Tracks what's **already proved** and what remains. Updated Cycle 326.
 
 ---
 
@@ -11,7 +11,7 @@ Tracks what's **already proved** and what remains. Updated Cycle 325.
 
 The key remaining theorem: **χ(D) = deg(D) + 1 - g**
 
-**NEW (Cycle 325)**: Real connecting homomorphism δ: κ(v) → H¹(D) constructed!
+**NEW (Cycle 326)**: Technical lemmas for connecting homomorphism proved!
 
 ---
 
@@ -99,16 +99,25 @@ This is **half of Riemann-Roch**, already done!
    (ker=range)                    (surjection exists)
 ```
 
-### Cycle 325 Progress: Real Connecting Homomorphism Constructed
+### Cycle 326 Progress: Technical Lemmas Proved
 
 ```
 File: Adelic/EulerCharacteristic.lean
-├── finiteAdeleSingleHere                [NEW - single-place adele constructor]
-├── liftToR                              [NEW - lift κ(v) → R]
-├── uniformizerInK, uniformizerInvPow    [NEW - uniformizer infrastructure]
-├── connectingHomFun                     [NEW - real construction]
+├── finiteAdeleSingleHere                [single-place adele constructor]
+├── finiteAdeleSingleHere_zero           [PROVED Cycle 326]
+├── finiteAdeleSingleHere_add            [PROVED Cycle 326]
+├── liftToR                              [lift κ(v) → R]
+├── liftToR_proj                         [PROVED Cycle 326]
+├── liftToR_zero_mem_ideal               [PROVED Cycle 326]
+├── liftToR_add_diff_mem_ideal           [PROVED Cycle 326]
+├── liftToR_smul_diff_mem_ideal          [sorry - algebra structure]
+├── uniformizerInK, uniformizerInvPow    [uniformizer infrastructure]
+├── connectingHomFun                     [real construction]
 │   └── Lifts α to r, computes r·π^(-(D(v)+1)), embeds as adele, projects to H¹
-├── connectingHom: κ(v) →ₗ[k] H¹(D)      [REAL construction, linearity sorries]
+├── connectingHomFun_zero                [sorry - needs valuation analysis]
+├── connectingHomFun_add                 [sorry - needs valuation analysis]
+├── connectingHomFun_smul                [sorry - needs valuation analysis]
+├── connectingHom: κ(v) →ₗ[k] H¹(D)      [REAL construction, uses above sorries]
 ├── H1Projection: H¹(D) →ₗ[k] H¹(D+v)   [PROVED]
 ├── exactness_at_LDv                     [PROVED, uses KernelProof]
 ├── exactness_at_kappa_set               [sorry - needs valuation analysis]
