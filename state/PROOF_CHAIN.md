@@ -1,13 +1,15 @@
 # Proof Chain: Riemann-Roch Formalization
 
-Tracks what's **already proved** and what remains. Updated Cycle 311 (corrected).
+Tracks what's **already proved** and what remains. Updated Cycle 323.
 
 ---
 
 ## Critical Insight
 
 **3,700 lines of curve-agnostic infrastructure is DONE.**
-**~15-20 cycles to sorry-free RR.**
+**~8-10 cycles to sorry-free RR via Euler characteristic approach.**
+
+The key remaining theorem: **χ(D) = deg(D) + 1 - g**
 
 ---
 
@@ -63,7 +65,7 @@ This is **half of Riemann-Roch**, already done!
                     Mathlib
 ```
 
-### What Remains
+### What Remains: The Euler Characteristic Path
 
 ```
         ┌─────────────────────────────────────┐
@@ -73,17 +75,41 @@ This is **half of Riemann-Roch**, already done!
                          │
         ┌────────────────┴────────────────────┐
         ▼                                     ▼
-   Riemann Inequality              Serre Duality
-   ✅ PROVED                       ⏳ Need pairing
-                                          │
-                         ┌────────────────┴────────────────┐
-                         ▼                                 ▼
-                  WeilDifferential              Non-Degeneracy
-                  ⏳ Cycle 312                  ⏳ Cycle 315-320
-                         │                                 │
-                         ▼                                 ▼
-                  FullAdeleRing ✅            Compactness of A/K ✅
-                  (already done)              (AdelicTopology.lean)
+   Euler Characteristic              Serre Duality
+   χ(D) = deg(D) + 1 - g             h¹(D) = ℓ(K-D)
+   ⏳ Cycle 324-328                  ✅ From pairing
+        │                                     │
+        └────────────────┬────────────────────┘
+                         ▼
+        ┌─────────────────────────────────────┐
+        │       6-TERM EXACT SEQUENCE         │
+        │  0→L(D)→L(D+v)→κ(v)→H¹(D)→H¹(D+v)→0 │
+        └─────────────────────────────────────┘
+                         │
+        ┌────────────────┴────────────────────┐
+        ▼                                     ▼
+   First half ✅                      Second half ⏳
+   L(D)→L(D+v)→κ(v)                  κ(v)→H¹(D)→H¹(D+v)
+   KernelProof.lean                   Need: connecting hom δ
+        │                                     │
+        ▼                                     ▼
+   Exactness PROVED               h1_anti_mono PROVED
+   (ker=range)                    (surjection exists)
+```
+
+### Key: Connecting Homomorphism
+
+```
+δ: κ(v) → H¹(D) = A_K / (K + A_K(D))
+
+Construction:
+1. Take α ∈ κ(v) = R/v.asIdeal
+2. Lift to adele: a_v = π⁻¹·α, a_w = 0 for w ≠ v
+3. Map to quotient H¹(D)
+
+Once δ is defined and exactness proved:
+χ(D+v) - χ(D) = dim(κ(v)) = 1
+By induction: χ(D) = deg(D) + 1 - g
 ```
 
 ---
@@ -100,14 +126,15 @@ This is **half of Riemann-Roch**, already done!
 | H¹ definition | 1 | ✅ Done |
 | FullRRData | 1 | ✅ Framework done |
 
-### ⏳ Phase 7 (New)
+### ⏳ Phase 7: Euler Characteristic
 
 | File | Cycle | Status |
 |------|-------|--------|
-| WeilDifferential.lean | 312-313 | Not started |
-| SerrePairing.lean | 314 | Not started |
-| NonDegeneracy.lean | 315-320 | Not started |
-| Canonical.lean | 321-325 | Not started |
+| EulerCharacteristic.lean | 324 | **NEXT**: Connecting hom δ |
+| EulerCharacteristic.lean | 325-326 | Exactness proofs |
+| EulerCharacteristic.lean | 327 | χ(D+v) = χ(D) + 1 |
+| EulerCharacteristic.lean | 328 | Full χ formula |
+| Assembly | 329-330 | Serre duality + RR |
 
 ### ⏸️ Archived (P¹-Specific)
 
@@ -146,25 +173,25 @@ This is **half of Riemann-Roch**, already done!
 2. ✅ H¹(D) as adelic quotient
 3. ✅ FullRRData framework
 4. ✅ Compactness infrastructure
+5. ✅ AdelicRRData → FullRRData bridge
+6. ✅ Elliptic FullRRData instance (Cycle 323)
+7. ✅ First half of exact sequence (L(D) → L(D+v) → κ(v))
+8. ✅ H¹ surjection (h1_anti_mono)
 
 ### Remaining Work
-5. ⏳ WeilDifferential definition (Cycle 312)
-6. ⏳ Serre pairing (Cycle 314)
-7. ⏳ **Non-degeneracy** (Cycle 315-320) - THE CRUX
-8. ⏳ Canonical class (Cycle 321-325)
-9. ⏳ Assembly (Cycle 326-330)
+9. ⏳ Connecting homomorphism δ: κ(v) → H¹(D) (Cycle 324)
+10. ⏳ Exactness proofs (Cycle 325-326)
+11. ⏳ Dimension formula: χ(D+v) = χ(D) + 1 (Cycle 327)
+12. ⏳ Full Euler characteristic (Cycle 328)
+13. ⏳ Serre duality + Assembly (Cycle 329-330)
 
-### Non-Degeneracy Strategy
+### The Strategy: Dimension Counting
 
-We need:
-```lean
-∀ f ∈ L(D), f ≠ 0 → ∃ ω ∈ Ω(K-D), ω(f) ≠ 0
-```
-
-Options:
-1. **From compactness** - A_K/K compact → pairing is perfect (infrastructure exists)
-2. **Local-to-global** - Non-degenerate at each place
-3. **Axiomatize** - Acceptable fallback
+We don't need full category-theoretic exact sequences. Just:
+1. Define δ explicitly (lift residue class to adele)
+2. Prove the isomorphisms that give dimension counting
+3. Use Rank-Nullity to get χ(D+v) = χ(D) + 1
+4. Induction from χ(0) = 1 - g gives χ(D) = deg(D) + 1 - g
 
 ---
 
@@ -199,4 +226,4 @@ done
 
 ---
 
-*Updated Cycle 311 (corrected). Riemann Inequality is PROVED. ~15-20 cycles to RR.*
+*Updated Cycle 323. Euler characteristic approach. ~8-10 cycles to RR.*

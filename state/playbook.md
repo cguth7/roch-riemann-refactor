@@ -1,20 +1,25 @@
 # Playbook
 
-Strategic guide for formalizing Riemann-Roch. Updated Cycle 311 (corrected).
+Strategic guide for formalizing Riemann-Roch. Updated Cycle 323.
 
 ---
 
 ## Critical Status Update
 
-**We are ~15-20 cycles from completion**, not 50-70.
+**We are ~10-15 cycles from full RR for arbitrary curves.**
 
-Per INVENTORY_REPORT.md, we have **3,700 lines of curve-agnostic infrastructure** already done:
+### Completed Infrastructure
 - Riemann Inequality: **PROVED**
 - DVR properties: **PROVED**
 - H¹(D) framework: **DONE**
 - Dimension machinery: **PROVED**
+- Elliptic FullRRData: **INSTANTIATED** (Cycle 323)
+- AdelicRRData → FullRRData bridge: **DONE**
 
-The P¹ sorries are edge cases we **bypass** with Weil differentials.
+### The Key Remaining Piece
+**Euler characteristic formula**: χ(D) = deg(D) + 1 - g
+
+This is the ONE theorem we need to prove. Once we have it, full RR follows.
 
 ---
 
@@ -40,15 +45,16 @@ Formalize **Riemann-Roch** for smooth projective curves:
 ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
 ```
 
-### Current Status (Cycle 311)
+### Current Status (Cycle 323)
 
 | Component | Status |
 |-----------|--------|
 | Riemann Inequality | ✅ **PROVED** |
 | H¹(D) as adelic quotient | ✅ DONE |
-| Serre pairing (abstract) | ✅ Framework done |
-| WeilDifferential definition | ⏳ Cycle 312 |
-| Non-degeneracy proof | ⏳ Cycle 315 (crux) |
+| AdelicRRData → FullRRData bridge | ✅ **DONE** |
+| Elliptic FullRRData instance | ✅ **DONE** (Cycle 323) |
+| Euler characteristic formula | ⏳ **NEXT** (Cycle 324) |
+| Serre duality | ⏳ After χ formula |
 
 ---
 
@@ -66,46 +72,62 @@ These are **sorry-free**, not axiomatized:
 
 ---
 
-## Phase 7: The Final Push
+## Phase 7: The Final Push - Euler Characteristic
 
-### Why Weil Differentials Work
+### The Key Insight
 
-**Old approach (P¹)**: Residue sum pairing
-- Tied to polynomial factorization
-- Only works for linear places
-- The sorries are about edge cases here
+The core of Riemann-Roch is the **Euler characteristic formula**:
+```
+χ(D) = ℓ(D) - h¹(D) = deg(D) + 1 - g
+```
 
-**New approach (general)**: Weil differential pairing
-- `⟨f, ω⟩ = ω(f)` is just evaluation
-- Residue theorem is built into definition (ω vanishes on K)
-- **Bypasses** the P¹ sorries entirely
+Once we prove this, combined with Serre duality h¹(D) = ℓ(K-D), we get full RR.
+
+### Strategy: 6-Term Exact Sequence
+
+For each place v, there's an exact sequence:
+```
+0 → L(D) → L(D+v) → κ(v) → H¹(D) → H¹(D+v) → 0
+```
+
+Taking alternating sum of dimensions gives: χ(D+v) = χ(D) + 1
+
+**What we already have**:
+| Piece | Status | Location |
+|-------|--------|----------|
+| L(D) → L(D+v) inclusion | ✅ PROVED | RRSpace.lean |
+| L(D+v) → κ(v) evaluation | ✅ PROVED | KernelProof.lean |
+| Exactness at L(D+v) | ✅ PROVED | KernelProof.lean |
+| H¹(D) → H¹(D+v) surjection | ✅ PROVED | AdelicH1v2.lean (h1_anti_mono) |
+| ℓ(D+v) ≤ ℓ(D) + 1 | ✅ PROVED | DimensionCounting.lean |
+
+**What we need to build**:
+| Piece | Cycle | Notes |
+|-------|-------|-------|
+| Connecting map δ: κ(v) → H¹(D) | 324 | Lift residue class to adele |
+| Exactness at κ(v) | 324-325 | image(eval) = ker(δ) |
+| Exactness at H¹(D) | 325-326 | image(δ) = ker(surj) |
+| Dimension formula | 326 | Rank-Nullity |
+
+### Implementation (No Category Theory)
+
+We don't need formal exact sequence objects. Just:
+1. Define δ: κ(v) → H¹(D) explicitly
+2. Prove the isomorphisms that give dimension counting
+3. Conclude χ(D+v) = χ(D) + 1
 
 ### Revised Timeline
 
 | Cycle | Task | Notes |
 |-------|------|-------|
-| 312 | WeilDifferential structure | Define + K-module |
-| 313 | Local components | May be simpler than feared |
-| 314 | Pairing definition | Straightforward |
-| 315 | **Non-degeneracy** | THE crux - 5-10 cycles |
-| 316 | Canonical class | deg(K) = 2g-2 |
-| 317-318 | Assembly | Instantiate FullRRData |
+| 324 | Connecting homomorphism δ | The key construction |
+| 325-326 | Exactness proofs | Verify kernel/image relations |
+| 327 | Dimension formula | χ(D+v) = χ(D) + 1 |
+| 328 | Induction to full χ | χ(D) = deg(D) + 1 - g |
+| 329-330 | Serre duality cleanup | h¹(D) = ℓ(K-D) |
+| 331 | Assembly | Prove full RR |
 
-**Total: ~15-20 cycles**
-
-### The Crux: Non-Degeneracy
-
-To prove h¹(D) = ℓ(K-D), need the pairing to be perfect:
-```
-∀ f ≠ 0 in L(D), ∃ ω in Ω(K-D) with ω(f) ≠ 0
-```
-
-Options:
-1. **Prove from compactness** - A_K/K compact → perfect pairing
-2. **Prove locally** - Non-degeneracy at each place → global
-3. **Axiomatize** - Acceptable if needed
-
-We have compactness infrastructure (AdelicTopology.lean), so option 1 is viable.
+**Total: ~8-10 cycles**
 
 ---
 
@@ -159,12 +181,13 @@ grep -n "sorry" RrLean/RiemannRochV2/RiemannInequality.lean
 
 | Goal | File |
 |------|------|
-| See what's proved | INVENTORY_REPORT.md |
+| Dimension counting | Dimension/DimensionCounting.lean |
+| Kernel proof | Dimension/KernelProof.lean |
 | H¹ definition | Adelic/AdelicH1v2.lean |
-| Full adeles | Adelic/FullAdelesBase.lean |
-| Abstract RR axioms | FullRRData.lean |
-| **Start here** | General/WeilDifferential.lean (new) |
+| FullRRData bridge | Adelic/AdelicH1v2.lean (adelicRRData_to_FullRRData) |
+| Elliptic instance | Elliptic/EllipticRRData.lean |
+| **Next work** | Adelic/EulerCharacteristic.lean (new) |
 
 ---
 
-*Updated Cycle 311 (corrected). ~15-20 cycles to sorry-free RR.*
+*Updated Cycle 323. ~8-10 cycles to sorry-free RR via Euler characteristic.*

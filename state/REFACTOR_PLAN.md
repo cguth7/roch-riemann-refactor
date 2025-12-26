@@ -1,13 +1,13 @@
 # Refactor Plan: P¹ → General Curves
 
-**Status**: Phase 7 Active. **~15-20 cycles to completion.**
+**Status**: Phase 7 Active. **~8-10 cycles to completion.**
 **Goal**: Sorry-free Riemann-Roch for smooth projective curves.
 
 ---
 
-## Critical Insight (Cycle 311)
+## Critical Insight (Cycle 323)
 
-Per INVENTORY_REPORT.md, we have **3,700 lines of curve-agnostic infrastructure**:
+We have **3,700 lines of curve-agnostic infrastructure** + key bridges:
 
 | Asset | Status |
 |-------|--------|
@@ -16,8 +16,10 @@ Per INVENTORY_REPORT.md, we have **3,700 lines of curve-agnostic infrastructure*
 | H¹(D) framework | ✅ DONE |
 | Dimension machinery | ✅ PROVED |
 | FullRRData axiom package | ✅ DONE |
+| AdelicRRData → FullRRData bridge | ✅ **DONE** |
+| Elliptic FullRRData instance | ✅ **DONE** (Cycle 323) |
 
-**The P¹ sorries are edge cases we BYPASS with Weil differentials.**
+**The key remaining work**: Prove the Euler characteristic formula χ(D) = deg(D) + 1 - g.
 
 ---
 
@@ -32,92 +34,86 @@ Per INVENTORY_REPORT.md, we have **3,700 lines of curve-agnostic infrastructure*
 
 ---
 
-## Phase 7: Weil Differentials (Revised)
+## Phase 7: Euler Characteristic (Revised Cycle 323)
 
-### Why This Approach
+### The Core Strategy
 
-The P¹ sorries are about strong approximation for edge cases.
-Weil differential pairing `⟨f, ω⟩ = ω(f)` **bypasses** that entirely.
+The key to Riemann-Roch is the **Euler characteristic formula**:
+```
+χ(D) = ℓ(D) - h¹(D) = deg(D) + 1 - g
+```
 
-We already have:
-- H¹(D) as quotient of adeles ✅
-- Riemann Inequality ✅
-- Gap bounds ✅
-- FullRRData framework ✅
+We prove this via the **6-term exact sequence**:
+```
+0 → L(D) → L(D+v) → κ(v) → H¹(D) → H¹(D+v) → 0
+```
 
-We need:
-- WeilDifferential definition
-- Pairing is perfect (non-degeneracy)
-- deg(K) = 2g-2
+### What We Already Have
+
+| Component | Status | File |
+|-----------|--------|------|
+| L(D) → L(D+v) inclusion | ✅ PROVED | RRSpace.lean |
+| L(D+v) → κ(v) evaluation | ✅ PROVED | KernelProof.lean |
+| Exactness at L(D+v) | ✅ PROVED | KernelProof.lean |
+| H¹(D) → H¹(D+v) surjection | ✅ PROVED | AdelicH1v2.lean |
+| ℓ(D+v) ≤ ℓ(D) + 1 | ✅ PROVED | DimensionCounting.lean |
+| h¹(D+v) ≤ h¹(D) | ✅ PROVED | AdelicH1v2.lean |
+| AdelicRRData → FullRRData | ✅ DONE | AdelicH1v2.lean |
+| Elliptic FullRRData | ✅ DONE | EllipticRRData.lean |
 
 ### Implementation Plan
 
-#### Cycle 312: WeilDifferential Structure
-**File**: `RrLean/RiemannRochV2/General/WeilDifferential.lean`
+#### Cycle 324: Connecting Homomorphism
+**File**: `RrLean/RiemannRochV2/Adelic/EulerCharacteristic.lean`
 
 ```lean
-/-- A Weil differential is a linear functional on adeles vanishing on K -/
-structure WeilDifferential (k R K K_infty : Type*)
-    [Field k] [CommRing R] [IsDedekindDomain R] [Field K]
-    [Algebra R K] [IsFractionRing R K] [Field K_infty] [Algebra K K_infty] where
-  toLinearMap : FullAdeleRing R K K_infty →ₗ[k] k
-  vanishes_on_K : ∀ x : K, toLinearMap (fullDiagonalEmbedding R K K_infty x) = 0
+/-- The connecting homomorphism δ: κ(v) → H¹(D).
+Takes a residue class, lifts to an adele supported at v,
+maps to the quotient A_K / (K + A_K(D)). -/
+def connectingHom (v : HeightOneSpectrum R) (D : DivisorV2 R) :
+    residueFieldAtPrime R v →ₗ[k] SpaceModule k R K D := ...
 ```
 
-**Deliverables**:
-- [x] Define structure
-- [ ] Prove AddCommGroup instance
-- [ ] Prove Module K instance
+**Construction**:
+1. Take α ∈ κ(v) = R/v.asIdeal
+2. Choose uniformizer π at v
+3. Construct adele a with: a_v = π⁻¹ · (lift of α), a_w = 0 for w ≠ v
+4. Map to H¹(D) = A_K / (K + A_K(D))
 
-#### Cycle 313: K-Module Structure
-- Prove `WeilDifferential` is a K-vector space
-- Scalar multiplication: `(c • ω)(a) = ω(c⁻¹ • a)`
-- Basic lemmas
+#### Cycle 325-326: Exactness Proofs
 
-#### Cycle 314: Serre Pairing
-**File**: `RrLean/RiemannRochV2/General/SerrePairing.lean`
+Need to verify:
+1. **At κ(v)**: image(eval) = ker(δ)
+2. **At H¹(D)**: image(δ) = ker(H¹(D) → H¹(D+v))
 
+These follow from adelic manipulations.
+
+#### Cycle 327: Dimension Formula
+
+Using Rank-Nullity on the exact sequence:
 ```lean
-/-- The Serre pairing is just evaluation -/
-def serrePairing (D : DivisorV2 R) :
-    RRSpace_proj k R K D →ₗ[k] WeilDifferential k R K K_infty →ₗ[k] k :=
-  fun f => fun ω => ω.toLinearMap (embed_to_adele f)
+theorem chi_additive (v : HeightOneSpectrum R) (D : DivisorV2 R) :
+    (ell_proj k R K (D + single v 1) : ℤ) - h1_finrank k R K (D + single v 1)
+    = (ell_proj k R K D : ℤ) - h1_finrank k R K D + 1
 ```
 
-This is straightforward once WeilDifferential exists.
+This says: χ(D+v) = χ(D) + 1
 
-#### Cycle 315-320: Non-Degeneracy (THE CRUX)
+#### Cycle 328: Full Euler Characteristic
 
-Need to prove:
+By induction from χ(0) = 1 - g:
 ```lean
-theorem serrePairing_nondegenerate :
-    ∀ f ∈ L(D), f ≠ 0 → ∃ ω ∈ Ω(K-D), serrePairing D f ω ≠ 0
+theorem euler_characteristic (D : DivisorV2 R) :
+    (ell_proj k R K D : ℤ) - h1_finrank k R K D = D.deg + 1 - genus
 ```
 
-**Strategy options**:
-1. **From compactness**: A_K/K is compact → quotient is finite-dim → pairing is perfect
-2. **Local-to-global**: Non-degenerate at each place → global non-degeneracy
-3. **Axiomatize**: If proofs are too hard, acceptable to axiomatize
+#### Cycle 329-330: Serre Duality + Assembly
 
-We have compactness infrastructure in `AdelicTopology.lean`, so option 1 is viable.
-
-#### Cycle 321-325: Canonical Class
-
+With Euler characteristic proved, Serre duality h¹(D) = ℓ(K-D) gives:
 ```lean
-/-- Canonical divisor as divisor of any nonzero differential -/
-def canonicalDivisor (ω : WeilDifferential k R K K_infty) (hω : ω ≠ 0) : DivisorV2 R := ...
-
-theorem deg_canonical : (canonicalDivisor ω hω).deg = 2 * genus - 2 := ...
+theorem riemann_roch (D : DivisorV2 R) :
+    (ell_proj k R K D : ℤ) - ell_proj k R K (canonical - D) = D.deg + 1 - genus
 ```
-
-#### Cycle 326-330: Assembly
-
-Instantiate `FullRRData` with:
-- `canonical := canonicalDivisor ω hω`
-- `genus := g`
-- `serre_duality_eq` from non-degeneracy
-
-Then `riemann_roch_full` gives us RR!
 
 ---
 
@@ -165,12 +161,12 @@ These don't block general RR.
 
 | Phase | Cycles | Confidence |
 |-------|--------|------------|
-| WeilDifferential basics | 3 | High |
-| Pairing definition | 1 | High |
-| Non-degeneracy | 5-10 | Medium |
-| Canonical class | 3-5 | Medium |
-| Assembly | 2-3 | High |
-| **Total** | **~15-20** | **Medium-High** |
+| Connecting homomorphism δ | 1 | High |
+| Exactness proofs | 2 | Medium-High |
+| Dimension formula (χ additive) | 1 | High |
+| Full Euler characteristic | 1 | High |
+| Serre duality + Assembly | 2-3 | Medium |
+| **Total** | **~8-10** | **High** |
 
 ---
 
@@ -179,14 +175,14 @@ These don't block general RR.
 Sorry-free proof of:
 ```lean
 theorem riemann_roch (D : DivisorV2 R) :
-    ell_proj D - ell_proj (canonical - D) = D.deg + 1 - genus
+    (ell_proj k R K D : ℤ) - ell_proj k R K (canonical - D) = D.deg + 1 - genus
 ```
 
 With:
-- `canonical` defined via WeilDifferential
-- `genus` defined as dim(Ω) or from deg(K) = 2g-2
-- Non-degeneracy proved (not axiomatized) if possible
+- Euler characteristic χ(D) = deg(D) + 1 - g **proved** via exact sequence
+- Serre duality h¹(D) = ℓ(K-D) from residue pairing
+- No new axioms beyond existing AdelicRRData structure
 
 ---
 
-*Updated Cycle 311 (corrected). ~15-20 cycles remaining.*
+*Updated Cycle 323. ~8-10 cycles remaining via Euler characteristic approach.*

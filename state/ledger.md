@@ -51,14 +51,52 @@ correctly for specific curve types.
 
 ---
 
-## Cycle 324 Target
+## Cycle 324 Target: Euler Characteristic via Exact Sequence
 
-**Priority**: Document architecture completion + explore P¹ instantiation.
+**Goal**: Prove χ(D) = deg(D) + 1 - g for arbitrary curves.
 
-**Options**:
-1. **P¹ instantiation**: Similar bridge for P¹ curves (genus 0)
-2. **Architecture documentation**: Update PROOF_CHAIN.md with new bridges
-3. **Weil differential instantiation**: Use WeilRRData' + FullRRBridge path
+This is THE key to proving full Riemann-Roch. Once we have this, everything else follows.
+
+### Strategy: Dimension Counting on 6-Term Exact Sequence
+
+```
+0 → L(D) → L(D+v) → κ(v) → H¹(D) → H¹(D+v) → 0
+```
+
+**What we already have**:
+- L(D) → L(D+v) is inclusion (kernel of evaluation)
+- L(D+v) → κ(v) is evaluation map (`evaluationMapAt_complete`)
+- Exactness at L(D+v): ker(eval) = range(incl) (KernelProof.lean)
+- H¹(D) → H¹(D+v) is surjective (`h1_anti_mono` in AdelicH1v2.lean)
+- Gap bound: ℓ(D+v) ≤ ℓ(D) + 1 (DimensionCounting.lean)
+
+**What we need to build**:
+1. Connecting homomorphism δ: κ(v) → H¹(D)
+2. Exactness at κ(v) and H¹(D)
+3. Dimension formula via Rank-Nullity
+
+### Implementation Plan (No Category Theory Needed)
+
+Per Gemini's suggestion, we don't need formal exact sequence objects:
+
+1. **Define** the map L(D+v)/L(D) → κ(v) (quotient of evaluation)
+2. **Define** the map κ(v) → ker(H¹(D) → H¹(D+v))
+3. **Prove** alternating sum of dimensions = 0 (Rank-Nullity)
+4. **Conclude** χ(D+v) = χ(D) + 1
+
+### Induction to Full Formula
+
+- Base case: χ(0) = ℓ(0) - h¹(0) = 1 - g (definition of genus)
+- Inductive step: χ(D+v) = χ(D) + 1 (from exact sequence)
+- Conclusion: χ(D) = deg(D) + 1 - g for all D
+
+### Then Full RR Follows
+
+With:
+- Euler characteristic: ℓ(D) - h¹(D) = deg(D) + 1 - g
+- Serre duality: h¹(D) = ℓ(K - D)
+
+We get: ℓ(D) - ℓ(K - D) = deg(D) + 1 - g ✓
 
 ---
 
