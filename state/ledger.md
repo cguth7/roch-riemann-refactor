@@ -5,9 +5,51 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 323
+**Cycle**: 324
 **Phase**: 7 (Weil Differentials) - Active
-**Total Sorries**: 8 (2 archived P¹ edge cases + 6 axioms)
+**Total Sorries**: 14 (5 new in EulerCharacteristic + 9 existing axioms)
+
+---
+
+## Cycle 324 Completed
+
+**Goal**: Create Euler Characteristic framework for proving χ(D) = deg(D) + 1 - g.
+
+### Deliverables
+
+1. **`EulerCharacteristic.lean`** (new file in Adelic/):
+   - Defines `connectingHom`: κ(v) →ₗ[k] H¹(D) (placeholder with correct types)
+   - Defines `H1Projection`: H¹(D) →ₗ[k] H¹(D+v)
+   - States exactness theorems for the 6-term sequence
+   - Defines `eulerChar`: χ(D) = ℓ(D) - h¹(D)
+   - States key theorems: `chi_additive`, `euler_characteristic`
+
+2. **Structure established** (5 sorries to be filled):
+   - `exactness_at_kappa_set`: image(eval) = ker(δ)
+   - `exactness_at_H1`: image(δ) = ker(proj)
+   - `kappa_dim_one`: dim_k(κ(v)) = 1
+   - `chi_additive`: χ(D+v) = χ(D) + 1
+   - `euler_characteristic`: χ(D) = deg(D) + 1 - g
+
+3. **Proved**:
+   - `H1_surjection`: H¹(D) → H¹(D+v) is surjective
+   - Reuses `exactness_at_LDv` from KernelProof.lean
+
+### Key Insight
+
+The 6-term exact sequence approach is sound:
+```
+0 → L(D) → L(D+v) → κ(v) → H¹(D) → H¹(D+v) → 0
+```
+
+Once the 5 sorries are filled via dimension counting on this sequence,
+full Riemann-Roch follows automatically from Serre duality.
+
+### Next Steps (Cycle 325)
+
+1. Implement real `connectingHom` via single-place adele embedding
+2. Prove exactness theorems using adelic structure
+3. Apply Rank-Nullity to derive dimension formulas
 
 ---
 

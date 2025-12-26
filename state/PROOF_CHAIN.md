@@ -1,15 +1,17 @@
 # Proof Chain: Riemann-Roch Formalization
 
-Tracks what's **already proved** and what remains. Updated Cycle 323.
+Tracks what's **already proved** and what remains. Updated Cycle 324.
 
 ---
 
 ## Critical Insight
 
-**3,700 lines of curve-agnostic infrastructure is DONE.**
-**~8-10 cycles to sorry-free RR via Euler characteristic approach.**
+**3,700+ lines of curve-agnostic infrastructure is DONE.**
+**~5-7 cycles to sorry-free RR via Euler characteristic approach.**
 
 The key remaining theorem: **χ(D) = deg(D) + 1 - g**
+
+**NEW (Cycle 324)**: EulerCharacteristic.lean defines the full structure with 5 sorries.
 
 ---
 
@@ -95,6 +97,23 @@ This is **half of Riemann-Roch**, already done!
         ▼                                     ▼
    Exactness PROVED               h1_anti_mono PROVED
    (ker=range)                    (surjection exists)
+```
+
+### Cycle 324 Progress: EulerCharacteristic.lean Created
+
+```
+File: Adelic/EulerCharacteristic.lean (NEW)
+├── connectingHom: κ(v) →ₗ[k] H¹(D)     [placeholder, sorry needed for real construction]
+├── H1Projection: H¹(D) →ₗ[k] H¹(D+v)   [PROVED]
+├── exactness_at_LDv                     [PROVED, uses KernelProof]
+├── exactness_at_kappa_set               [sorry - needs real δ construction]
+├── exactness_at_H1                      [sorry - needs real δ construction]
+├── H1_surjection                        [PROVED]
+├── eulerChar: χ(D) = ℓ(D) - h¹(D)       [DEFINITION]
+├── kappa_dim_one                        [sorry - standard fact]
+├── chi_additive: χ(D+v) = χ(D) + 1      [sorry - from exactness]
+├── euler_characteristic                 [sorry - from chi_additive + base case]
+└── riemann_roch_from_euler              [PROVED - just uses riemann_roch_from_adelic]
 ```
 
 ### Key: Connecting Homomorphism
