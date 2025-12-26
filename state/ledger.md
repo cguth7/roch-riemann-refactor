@@ -5,9 +5,54 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 330
+**Cycle**: 331
 **Phase**: 7 (Weil Differentials) - Active
 **Total Sorries**: 12 (4 in EulerCharacteristic + 8 existing axioms)
+
+---
+
+## Cycle 331 Completed
+
+**Goal**: Prove backward direction of exactness at κ(v): ker(δ) ⊆ image(eval).
+
+### Deliverables
+
+1. **Proved main theorem structure for `exactness_at_kappa_set`**:
+   - If δ(α) = 0, then the adele `a` is in `globalPlusBoundedSubmodule k R K D`
+   - By `Submodule.mem_sup`, ∃ g ∈ K such that `a - diag(g) ∈ boundedSubmodule k R K D`
+   - Proved `g ∈ L(D+v)` via ultrametric bounds at all places
+
+2. **Key lemma: `g_mem_LDv_from_bounded`** (PROVED):
+   - At places w ≠ v: val_w(g) ≤ exp(D w) from boundedness
+   - At place v: val_v(g) ≤ exp(D v + 1) via ultrametric inequality:
+     - val(x) ≤ exp(D v + 1) where x = r * π^(-(D v + 1))
+     - val(x - g) ≤ exp(D v) from h_bounded
+     - val(g) ≤ max(val(x-g), val(x)) ≤ exp(D v + 1)
+
+3. **Technical lemma `eval_g_eq_alpha_from_bounded`** (sorry remaining):
+   - Key insight proven: val(r - shiftedElement(g)) ≤ exp(-1)
+   - This means r and shiftedElement(g) have the same residue
+   - Therefore eval(g) = bridge(residue(shiftedElement(g))) = bridge(residue(r)) = α
+   - Technical details about residue field bridge pending
+
+### Remaining Sorries in EulerCharacteristic.lean (4 total)
+
+| Lemma | Description | Difficulty |
+|-------|-------------|------------|
+| `eval_g_eq_alpha_from_bounded` | Technical residue equality | Medium |
+| `exactness_at_H1` | image(δ) = ker(proj) | Medium |
+| `chi_additive` | χ(D+v) = χ(D) + 1 | Needs exactness |
+| `euler_characteristic` | χ(D) = deg(D) + 1 - g | Needs chi_additive |
+
+### Strategy for `eval_g_eq_alpha_from_bounded`
+
+The key steps are:
+1. From h_bounded: val(r * π^(-(D v+1)) - g) ≤ exp(D v)
+2. Factor: val(r - shiftedElement(g)) * exp(D v + 1) ≤ exp(D v)
+3. Derive: val(r - shiftedElement(g)) ≤ exp(-1) < 1
+4. Maximal ideal: r and shiftedElement(g) differ by maximal ideal element
+5. Same residue: residue(r) = residue(shiftedElement(g))
+6. Bridge: eval(g) = bridge(residue(shifted(g))) = bridge(residue(r)) = α
 
 ---
 

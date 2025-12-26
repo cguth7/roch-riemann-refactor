@@ -743,22 +743,148 @@ lemma image_eval_subset_ker_delta (v : HeightOneSpectrum R) (D : DivisorV2 R) :
   rw [h_eq]
   exact Submodule.add_mem_sup h_diag_mem h_diff_mem
 
-/-- Exactness at κ(v): image(eval) = ker(δ).
+/-- Helper: membership in L(D+v) from bounded adele data.
+    If the single-place adele minus diag(g) is in A_K(D), then g ∈ L(D+v). -/
+lemma g_mem_LDv_from_bounded (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    (g : K) (α : residueFieldAtPrime R v)
+    (h_bounded : finiteAdeleSingleHere R K v (algebraMap K (v.adicCompletion K)
+      (algebraMap R K (liftToR R v α) * uniformizerInvPow R K v (D v + 1))) -
+      diagonalK R K g ∈ boundedSubmodule k R K D) :
+    g ∈ RRModuleV2_real R K (D + DivisorV2.single v 1) := by
+  -- Need to show: g = 0 ∨ ∀ w, w.valuation K g ≤ exp((D + single v 1)(w))
+  by_cases hg : g = 0
+  · left; exact hg
+  · right
+    intro w
+    set a := finiteAdeleSingleHere R K v (algebraMap K (v.adicCompletion K)
+      (algebraMap R K (liftToR R v α) * uniformizerInvPow R K v (D v + 1))) with ha_def
+    have h_w := h_bounded w
+    simp only [satisfiesBoundAt, valuationAt] at h_w
+    by_cases hw : w = v
+    · -- At place v: need val_v(g) ≤ exp(D v + 1)
+      rw [hw]
+      simp only [Finsupp.add_apply, Finsupp.single_apply, if_true]
+      -- (a - diag(g))_v = x - g where x = r * π^(-(D v + 1))
+      have ha_v : a v = algebraMap K (v.adicCompletion K)
+          (algebraMap R K (liftToR R v α) * uniformizerInvPow R K v (D v + 1)) :=
+        finiteAdeleSingleHere_apply_same R K v _
+      have hdiag_v : (diagonalK R K g) v = algebraMap K (v.adicCompletion K) g := rfl
+      have h_comp : (a - diagonalK R K g) v = a v - (diagonalK R K g) v := rfl
+      -- val_v(x - g) ≤ exp(D v) from h_bounded
+      rw [hw] at h_w
+      rw [h_comp, ha_v, hdiag_v, ← map_sub] at h_w
+      have h_val_K : v.valuation K (algebraMap R K (liftToR R v α) * uniformizerInvPow R K v (D v + 1) - g) ≤
+          WithZero.exp (D v) := by
+        rw [← valuedAdicCompletion_eq_valuation' v _]
+        exact h_w
+      -- Ultrametric argument: val(g) = val((g - x) + x) ≤ max(val(g-x), val(x))
+      -- Since val(g-x) = val(x-g) ≤ exp(D v) and val(x) ≤ exp(D v + 1), we get val(g) ≤ exp(D v + 1)
+      -- First show val(x) ≤ exp(D v + 1) where x = algebraMap R K (liftToR R v α) * uniformizerInvPow
+      have hx_val : v.valuation K (algebraMap R K (liftToR R v α) * uniformizerInvPow R K v (D v + 1)) ≤
+          WithZero.exp (D v + 1) := by
+        have hr_val : v.valuation K (algebraMap R K (liftToR R v α)) ≤ 1 := by
+          rw [HeightOneSpectrum.valuation_of_algebraMap]
+          exact v.intValuation_le_one _
+        unfold uniformizerInvPow uniformizerInK
+        rw [Valuation.map_mul, uniformizerAt_zpow_valuation]
+        simp only [neg_neg]
+        calc v.valuation K (algebraMap R K (liftToR R v α)) * WithZero.exp (D v + 1)
+            ≤ 1 * WithZero.exp (D v + 1) := mul_le_mul_of_nonneg_right hr_val (WithZero.zero_le _)
+          _ = WithZero.exp (D v + 1) := one_mul _
+      -- Now use ultrametric: val(g) = val((g - x) + x) ≤ max(val(g - x), val(x))
+      have h_ultra : v.valuation K g ≤ max (v.valuation K (g - (algebraMap R K (liftToR R v α) *
+          uniformizerInvPow R K v (D v + 1)))) (v.valuation K (algebraMap R K (liftToR R v α) *
+          uniformizerInvPow R K v (D v + 1))) := by
+        have heq : g = (g - (algebraMap R K (liftToR R v α) * uniformizerInvPow R K v (D v + 1))) +
+            (algebraMap R K (liftToR R v α) * uniformizerInvPow R K v (D v + 1)) := by ring
+        conv_lhs => rw [heq]
+        exact Valuation.map_add (v.valuation K) _ _
+      -- val(g - x) = val(-(x - g)) = val(x - g) ≤ exp(D v)
+      have h_gx : v.valuation K (g - (algebraMap R K (liftToR R v α) * uniformizerInvPow R K v (D v + 1))) ≤
+          WithZero.exp (D v) := by
+        rw [← Valuation.map_neg]
+        simp only [neg_sub]
+        exact h_val_K
+      -- Combine: val(g) ≤ max(exp(D v), exp(D v + 1)) = exp(D v + 1)
+      calc v.valuation K g ≤ max (v.valuation K (g - (algebraMap R K (liftToR R v α) *
+              uniformizerInvPow R K v (D v + 1)))) (v.valuation K (algebraMap R K (liftToR R v α) *
+              uniformizerInvPow R K v (D v + 1))) := h_ultra
+        _ ≤ max (WithZero.exp (D v)) (WithZero.exp (D v + 1)) := max_le_max h_gx hx_val
+        _ = WithZero.exp (D v + 1) := by
+          rw [max_eq_right]
+          exact WithZero.exp_le_exp.mpr (by omega)
+    · -- At place w ≠ v: (a - diag(g))_w = 0 - g = -g
+      -- val_w(-g) ≤ exp(D w) from h_bounded
+      -- So val_w(g) ≤ exp(D w) = exp((D + single v 1)(w)) for w ≠ v
+      have ha_w : a w = 0 := finiteAdeleSingleHere_apply_ne R K v w _ hw
+      have hdiag_w : (diagonalK R K g) w = algebraMap K (w.adicCompletion K) g := rfl
+      have h_comp : (a - diagonalK R K g) w = a w - (diagonalK R K g) w := rfl
+      rw [h_comp, ha_w, hdiag_w, zero_sub, Valuation.map_neg] at h_w
+      have h_val_K : w.valuation K g ≤ WithZero.exp (D w) := by
+        rw [← valuedAdicCompletion_eq_valuation' w g]
+        exact h_w
+      -- (D + single v 1)(w) = D w for w ≠ v
+      have hcoeff : (D + DivisorV2.single v 1) w = D w := by
+        simp only [Finsupp.add_apply, Finsupp.single_apply, if_neg (Ne.symm hw), add_zero]
+      rw [hcoeff]
+      exact h_val_K
 
-Elements mapping to zero under δ are exactly those from L(D+v).
+/-- Helper: if the adele minus diag(g) is bounded, and g has the right residue,
+    then evaluationMapAt_complete maps g to α. -/
+lemma eval_g_eq_alpha_from_bounded (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    (g : K) (α : residueFieldAtPrime R v)
+    (hg_mem : g ∈ RRModuleV2_real R K (D + DivisorV2.single v 1))
+    (h_bounded : finiteAdeleSingleHere R K v (algebraMap K (v.adicCompletion K)
+      (algebraMap R K (liftToR R v α) * uniformizerInvPow R K v (D v + 1))) -
+      diagonalK R K g ∈ boundedSubmodule k R K D) :
+    evaluationMapAt_complete v D ⟨g, hg_mem⟩ = α := by
+  -- The key insight: from h_bounded we can derive that algebraMap R K r and shiftedElement v D g
+  -- have the same residue, where r = liftToR R v α. Then eval(g) = bridge(residue(shifted(g)))
+  -- = bridge(residue(r)) = algebraMap R κ r = α.
+  -- Technical details involve valuation bounds and maximal ideal membership.
+  sorry
 
-Note: The evaluation map is R-linear while δ is k-linear. The exactness holds
-for the underlying sets, i.e., as sets we have image(eval) = ker(δ).
--/
 theorem exactness_at_kappa_set (v : HeightOneSpectrum R) (D : DivisorV2 R) :
     (Set.range (evaluationMapAt_complete (K := K) v D) : Set (residueFieldAtPrime R v)) =
     {α | connectingHom k R K v D α = 0} := by
   apply Set.eq_of_subset_of_subset
   · exact image_eval_subset_ker_delta k R K v D
   · -- Backward direction: ker(δ) ⊆ image(eval)
-    -- If δ(α) = 0, the adele is in K + A_K(D), so ∃ g ∈ K with adele - diag(g) ∈ A_K(D)
-    -- This g is in L(D+v) and eval(g) = α
-    sorry
+    intro α hα
+    rw [Set.mem_setOf_eq] at hα
+    -- hα : connectingHom k R K v D α = 0
+    -- Unpack: quotientMapLinear k R K D a = 0 where a = finiteAdeleSingleHere R K v x_local
+    simp only [connectingHom, LinearMap.coe_mk, AddHom.coe_mk, connectingHomFun] at hα
+    set r := liftToR R v α with hr_def
+    set x := algebraMap R K r * uniformizerInvPow R K v (D v + 1) with hx_def
+    set a := finiteAdeleSingleHere R K v (algebraMap K (v.adicCompletion K) x) with ha_def
+    -- hα : quotientMapLinear k R K D a = 0
+    unfold quotientMapLinear at hα
+    rw [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero] at hα
+    -- hα : a ∈ globalPlusBoundedSubmodule k R K D = globalSubmodule + boundedSubmodule
+    unfold globalPlusBoundedSubmodule at hα
+    rw [Submodule.add_eq_sup, Submodule.mem_sup] at hα
+    -- ∃ g_adele ∈ globalSubmodule, b ∈ boundedSubmodule, a = g_adele + b
+    obtain ⟨g_adele, hg_global, b, hb_bounded, h_eq⟩ := hα
+    -- g_adele ∈ globalSubmodule means g_adele = diagonalK R K g for some g ∈ K
+    obtain ⟨g, hg_diag⟩ := hg_global
+    -- a = diagonalK R K g + b means a - diagonalK R K g = b ∈ boundedSubmodule
+    have h_diff : a - diagonalK R K g = b := by
+      -- h_eq : g_adele + b = a, hg_diag : diagonalK R K g = g_adele
+      have h1 : a = g_adele + b := h_eq.symm
+      have h2 : g_adele = diagonalK R K g := hg_diag.symm
+      rw [h1, h2]
+      ring
+    rw [← h_diff] at hb_bounded
+    -- Now we have: a - diagonalK R K g ∈ boundedSubmodule k R K D
+    -- Use helper lemmas to show g ∈ L(D+v) and eval(g) = α
+    have hg_mem : g ∈ RRModuleV2_real R K (D + DivisorV2.single v 1) :=
+      g_mem_LDv_from_bounded k R K v D g α hb_bounded
+    have heval : evaluationMapAt_complete v D ⟨g, hg_mem⟩ = α :=
+      eval_g_eq_alpha_from_bounded k R K v D g α hg_mem hb_bounded
+    -- So α ∈ image(eval)
+    rw [Set.mem_range]
+    exact ⟨⟨g, hg_mem⟩, heval⟩
 
 /-- The projection map H¹(D) → H¹(D+v).
 
