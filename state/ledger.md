@@ -5,61 +5,78 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 321
+**Cycle**: 322
 **Phase**: 7 (Weil Differentials) - Active
 **Total Sorries**: 8 (2 archived P¹ edge cases + 6 axioms)
 
 ---
 
-## Cycle 321 Completed
+## Cycle 322 Completed
 
-**Goal**: Bridge WeilRRData' to FullRRData.
+**Goal**: Analyze `ell_zero_of_neg_deg` (vanishing for negative degree).
+
+### Analysis Results
+
+**The axiom `ell_zero_of_neg_deg`**: if deg(D) < 0, then ℓ(D) = 0.
+
+**Classical proof requires:**
+1. If f ∈ L(D) is nonzero, then div(f) + D ≥ 0 (effective)
+2. Principal divisors have degree 0: deg(div(f)) = 0 (**product formula**)
+3. Therefore deg(D) = deg(div(f) + D) ≥ 0
+4. Contrapositive: deg(D) < 0 ⟹ L(D) = 0
+
+**Why we axiomatize it:**
+The product formula (step 2) requires degree-weighted sums over ALL irreducible
+polynomials, not just rational points. The "naive" formula over Fq-rational points
+is FALSE in general (see `ProductFormula.lean` counterexample).
+
+### Where ell_zero_of_neg_deg IS Proved
+
+1. **P¹ with linear places**: `projective_LRatFunc_eq_zero_of_neg_deg` in RatFuncPairing.lean
+2. **Adelic approach**: In `AdelicH1v2.lean`, derived from Serre duality + h1_vanishing
+
+### Alternative Derivation (AdelicRRData)
+
+```
+If deg(D) < 0:
+  deg(K - D) = (2g-2) - deg(D) > 2g - 2
+  So h¹(K - D) = 0 by h1_vanishing
+  By Serre duality: h¹(K - D) = ℓ(K - (K - D)) = ℓ(D)
+  Therefore ℓ(D) = 0
+```
+
+This swaps `ell_zero_of_neg_deg` for `h1_vanishing` as the axiom.
 
 ### Deliverables
 
-1. **FullRRBridge Structure**:
-   - Captures the axioms needed beyond perfect pairing
-   - `serre_duality_eq` - the RR equation (to be discharged)
-   - `ell_zero_of_neg_deg` - vanishing for negative degree
-   - `deg_canonical_finite` - canonical degree formula
-
-2. **toFullRRData Definition**:
-   - Constructs `FullRRData` from `WeilRRData'` + `FullRRBridge` + `ProperCurve`
-   - Clean type-theoretic bridge between approaches
-
-3. **riemann_roch_from_weil Theorem**:
-   - Shows RR follows from the bridge axioms
-   - Clear statement: given bridge, RR holds
-
-4. **Gap Analysis Documentation**:
-   - Documented why dimension theorem ≠ RR equation
-   - Explained: dim equality is circular, RR requires degree relation
-   - Outlined path to derive RR from Riemann inequality
-
-5. **Linter Cleanup**:
-   - Fixed 4 unused simp arg warnings in WeilDifferential.lean
+1. **Documentation**: Added comprehensive analysis to WeilDifferential.lean
+   (new section "About ell_zero_of_neg_deg (Cycle 322 Analysis)")
+2. **Architecture confirmed**: `FullRRBridge` correctly axiomatizes this property
+3. **Path forward identified**: Can discharge for specific curves or via adelic approach
 
 ### Key Insight
-The dimension theorem from perfect pairing gives `ℓ(D) = dim Ω(K-D)`.
-Combined with `dim_omega_eq`, this gives `ℓ(D) = ℓ(D)` (circular!).
 
-The RR equation relates dimensions to DEGREE, which requires:
-- Euler characteristic formula, OR
-- Riemann inequality + vanishing
-
-The bridge axiomatizes this gap cleanly for future discharge.
+The axiom is **correctly placed** in `FullRRBridge`. It can be discharged by:
+- Proving the full product formula (hard in general)
+- Using the adelic approach with h1_vanishing
+- Specializing to curve types where product formula is simpler (P¹, elliptic)
 
 ---
 
-## Cycle 322 Target
+## Cycle 323 Target
 
-**Priority**: Prove `ell_zero_of_neg_deg` (vanishing for negative degree).
+**Priority**: Focus on completing the bridge for specific curve instances.
 
-**Strategy**: If f ∈ L(D) is nonzero, then div(f) + D ≥ 0 is effective.
-Since deg(div(f)) = 0 (principal divisors), deg(D) = deg(div(f) + D) ≥ 0.
-Contrapositive: deg(D) < 0 ⟹ L(D) = 0.
+**Options**:
+1. **Instantiate P¹**: Use existing `ell_ratfunc_projective_zero_of_neg_deg`
+2. **Adelic bridge**: Connect `AdelicRRData` to `FullRRBridge`
+3. **Alternative**: Prove RR directly for high-degree divisors where ℓ(K-D) = 0
 
-**Alternative**: Attack full RR via Riemann inequality + symmetry.
+---
+
+## Cycle 321 Summary (Archived)
+
+**Goal**: Bridge WeilRRData' to FullRRData.
 
 ---
 

@@ -1281,6 +1281,38 @@ To derive the RR equation rather than axiomatizing it, we would need:
    For general D, use the symmetry D ↔ K-D and the induction principle.
 
 See PROOF_CHAIN.md for the dependency graph of these results.
+
+### About ell_zero_of_neg_deg (Cycle 322 Analysis)
+
+The axiom `ell_zero_of_neg_deg` states: if deg(D) < 0, then ℓ(D) = 0.
+
+**Classical proof outline:**
+1. If f ∈ L(D) is nonzero, then div(f) + D ≥ 0 (effective)
+2. Principal divisors have degree 0: deg(div(f)) = 0 (product formula)
+3. Therefore deg(D) = deg(div(f) + D) ≥ 0
+4. Contrapositive: deg(D) < 0 ⟹ L(D) = 0
+
+**Why we axiomatize it:**
+The product formula (step 2) requires degree-weighted sums over ALL irreducible polynomials,
+not just rational points. The "naive" formula over Fq-rational points is FALSE in general
+(see `ProductFormula.lean` for counterexample documentation).
+
+**Where it IS proved:**
+- For P¹ with linear place support: `projective_LRatFunc_eq_zero_of_neg_deg` in RatFuncPairing.lean
+- Via adelic approach: In `AdelicH1v2.lean`, derived from Serre duality + h1_vanishing
+
+**Alternative derivation (in AdelicRRData):**
+```
+If deg(D) < 0:
+  deg(K - D) = (2g-2) - deg(D) > 2g - 2
+  So h¹(K - D) = 0 by h1_vanishing
+  By Serre duality: h¹(K - D) = ℓ(K - (K - D)) = ℓ(D)
+  Therefore ℓ(D) = 0
+```
+This uses h1_vanishing as an axiom instead.
+
+**Status:** Correctly axiomatized in `FullRRBridge`. Can be discharged for specific
+curve types where the product formula is available or via the adelic approach.
 -/
 
 end WeilRRDataBridge
