@@ -1,17 +1,17 @@
 # Proof Chain: Riemann-Roch Formalization
 
-Tracks what's **already proved** and what remains. Updated Cycle 324.
+Tracks what's **already proved** and what remains. Updated Cycle 325.
 
 ---
 
 ## Critical Insight
 
 **3,700+ lines of curve-agnostic infrastructure is DONE.**
-**~5-7 cycles to sorry-free RR via Euler characteristic approach.**
+**~4-6 cycles to sorry-free RR via Euler characteristic approach.**
 
 The key remaining theorem: **χ(D) = deg(D) + 1 - g**
 
-**NEW (Cycle 324)**: EulerCharacteristic.lean defines the full structure with 5 sorries.
+**NEW (Cycle 325)**: Real connecting homomorphism δ: κ(v) → H¹(D) constructed!
 
 ---
 
@@ -99,15 +99,20 @@ This is **half of Riemann-Roch**, already done!
    (ker=range)                    (surjection exists)
 ```
 
-### Cycle 324 Progress: EulerCharacteristic.lean Created
+### Cycle 325 Progress: Real Connecting Homomorphism Constructed
 
 ```
-File: Adelic/EulerCharacteristic.lean (NEW)
-├── connectingHom: κ(v) →ₗ[k] H¹(D)     [placeholder, sorry needed for real construction]
+File: Adelic/EulerCharacteristic.lean
+├── finiteAdeleSingleHere                [NEW - single-place adele constructor]
+├── liftToR                              [NEW - lift κ(v) → R]
+├── uniformizerInK, uniformizerInvPow    [NEW - uniformizer infrastructure]
+├── connectingHomFun                     [NEW - real construction]
+│   └── Lifts α to r, computes r·π^(-(D(v)+1)), embeds as adele, projects to H¹
+├── connectingHom: κ(v) →ₗ[k] H¹(D)      [REAL construction, linearity sorries]
 ├── H1Projection: H¹(D) →ₗ[k] H¹(D+v)   [PROVED]
 ├── exactness_at_LDv                     [PROVED, uses KernelProof]
-├── exactness_at_kappa_set               [sorry - needs real δ construction]
-├── exactness_at_H1                      [sorry - needs real δ construction]
+├── exactness_at_kappa_set               [sorry - needs valuation analysis]
+├── exactness_at_H1                      [sorry - needs valuation analysis]
 ├── H1_surjection                        [PROVED]
 ├── eulerChar: χ(D) = ℓ(D) - h¹(D)       [DEFINITION]
 ├── kappa_dim_one                        [sorry - standard fact]

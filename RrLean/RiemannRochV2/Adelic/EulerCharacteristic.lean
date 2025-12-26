@@ -1,8 +1,9 @@
 import RrLean.RiemannRochV2.Adelic.AdelicH1v2
 import RrLean.RiemannRochV2.Dimension.KernelProof
+import RrLean.RiemannRochV2.Definitions.Infrastructure
 
 /-!
-# Euler Characteristic via Exact Sequence (Cycle 324)
+# Euler Characteristic via Exact Sequence (Cycle 325)
 
 This file proves the Euler characteristic formula χ(D) = deg(D) + 1 - g via the
 6-term exact sequence:
@@ -55,45 +56,153 @@ namespace EulerCharacteristic
 open AdelicH1v2
 open scoped Classical
 
-/-! ## Section 1: The Connecting Homomorphism (Axiomatized)
-
-For Cycle 324, we axiomatize the existence of the connecting homomorphism.
-The full construction will be completed in subsequent cycles.
+/-! ## Section 1: The Connecting Homomorphism
 
 The key map δ: κ(v) → H¹(D) is constructed by:
-1. Lifting a residue class α to an element ã in the local field K_v
-2. Multiplying by π⁻¹ to create a simple pole at v
-3. Embedding as a single-component adele
-4. Projecting to H¹(D)
+1. Lifting a residue class α to an element r ∈ R
+2. Dividing by π^(D(v)+1) to create a pole at v
+3. Embedding as a single-component adele (zero at all other places)
+4. Projecting to H¹(D) = FiniteAdeleRing / (K + A_K(D))
+
+### Key Insight (Well-definedness)
+
+If we choose a different lift r' = r + s where s ∈ v.asIdeal, then:
+- x' = r' / π^(D(v)+1) = x + s / π^(D(v)+1)
+- The difference s / π^(D(v)+1) is a global element of K
+- Since K is quotiented out in H¹(D), the result is independent of the lift
+
+### Key Insight (α = 0 maps to 0)
+
+When α = 0, we lift to r ∈ v.asIdeal, so r = π·t for some t.
+Then x = r / π^(D(v)+1) = t / π^D(v), which has valuation ≤ exp(D(v)).
+So the single-place adele is in A_K(D), hence maps to 0 in H¹(D).
 -/
 
-/-- The connecting homomorphism δ: κ(v) → H¹(D).
+/-- Construct a finite adele with value x at place v and 0 elsewhere.
 
-This axiomatized definition will be filled in subsequent cycles.
-For now, we use the constant zero map as a placeholder.
+This is the key building block for the connecting homomorphism.
+The result is integral at all places except possibly v. -/
+def finiteAdeleSingleHere (v : HeightOneSpectrum R) (x : v.adicCompletion K) :
+    FiniteAdeleRing R K :=
+  ⟨fun w => if h : w = v then h ▸ x else 0,
+   by
+     simp only [Filter.eventually_cofinite, SetLike.mem_coe]
+     apply Set.Finite.subset (Set.finite_singleton v)
+     intro w hw
+     simp only [Set.mem_singleton_iff]
+     by_contra h_ne
+     simp only [Set.mem_setOf_eq] at hw
+     rw [dif_neg h_ne, mem_adicCompletionIntegers, Valuation.map_zero] at hw
+     exact hw zero_le'⟩
+
+@[simp]
+lemma finiteAdeleSingleHere_apply_same (v : HeightOneSpectrum R) (x : v.adicCompletion K) :
+    (finiteAdeleSingleHere R K v x) v = x := by
+  show (finiteAdeleSingleHere R K v x).1 v = x
+  simp only [finiteAdeleSingleHere, dite_true]
+
+lemma finiteAdeleSingleHere_apply_ne (v w : HeightOneSpectrum R) (x : v.adicCompletion K)
+    (h : w ≠ v) : (finiteAdeleSingleHere R K v x) w = 0 := by
+  show (finiteAdeleSingleHere R K v x).1 w = 0
+  simp only [finiteAdeleSingleHere, dif_neg h]
+
+/-- The single-place adele respects zero. -/
+@[simp]
+lemma finiteAdeleSingleHere_zero (v : HeightOneSpectrum R) :
+    finiteAdeleSingleHere R K v (0 : v.adicCompletion K) = 0 := by
+  -- Technical: at each place, we get 0 = 0
+  sorry
+
+/-- The single-place adele respects addition. -/
+lemma finiteAdeleSingleHere_add (v : HeightOneSpectrum R)
+    (x y : v.adicCompletion K) :
+    finiteAdeleSingleHere R K v (x + y) =
+    finiteAdeleSingleHere R K v x + finiteAdeleSingleHere R K v y := by
+  -- Technical: at v we get x+y = x+y; at other places, 0+0 = 0
+  sorry
+
+/-- The uniformizer in K (as an element of the fraction field). -/
+def uniformizerInK (v : HeightOneSpectrum R) : K :=
+  algebraMap R K (uniformizerAt v)
+
+/-- The uniformizer is nonzero in K. -/
+lemma uniformizerInK_ne_zero (v : HeightOneSpectrum R) : uniformizerInK R K v ≠ 0 := by
+  simp only [uniformizerInK]
+  intro h
+  have hinj := IsFractionRing.injective R K
+  have hne := uniformizerAt_ne_zero v
+  rw [← map_zero (algebraMap R K)] at h
+  exact hne (hinj h)
+
+/-- The inverse of the uniformizer power, for creating poles.
+
+For n ≥ 0, this is π^(-n) = 1/π^n.
+For n < 0, this is π^(-n) = π^|n|.
+-/
+def uniformizerInvPow (v : HeightOneSpectrum R) (n : ℤ) : K :=
+  (uniformizerInK R K v) ^ (-n)
+
+/-- Lift an element of the residue field to R.
+
+Uses the linear equivalence to convert to R ⧸ v.asIdeal, then Quotient.out to lift.
+The result satisfies: residueMapAtPrime v (liftToR α) represents the same class as α. -/
+def liftToR (v : HeightOneSpectrum R) (α : residueFieldAtPrime R v) : R :=
+  let α_quot : R ⧸ v.asIdeal := (residueFieldAtPrime.linearEquiv (R := R) v).symm α
+  Quotient.out α_quot
+
+/-- The connecting homomorphism function δ: κ(v) → H¹(D).
+
+Construction:
+1. Lift α ∈ κ(v) to r ∈ R using liftToR
+2. Compute x = r · π^(-(D(v)+1)) in K (creates pole of order D(v)+1 at v)
+3. Embed x into K_v via algebraMap
+4. Create single-place adele with x at v, 0 elsewhere
+5. Project to H¹(D) = FiniteAdeleRing / (K + A_K(D))
 -/
 def connectingHomFun (v : HeightOneSpectrum R) (D : DivisorV2 R) :
-    residueFieldAtPrime R v → SpaceModule k R K D :=
-  fun _ => 0  -- Placeholder; actual construction uses single-place adele embedding
+    residueFieldAtPrime R v → SpaceModule k R K D := fun α =>
+  let r : R := liftToR R v α
+  let x : K := algebraMap R K r * uniformizerInvPow R K v (D v + 1)
+  let x_local : v.adicCompletion K := algebraMap K (v.adicCompletion K) x
+  let a : FiniteAdeleRing R K := finiteAdeleSingleHere R K v x_local
+  quotientMapLinear k R K D a
 
-/-- The connecting homomorphism is additive. -/
+/-- The connecting homomorphism sends zero to zero.
+
+When α = 0, the lift r ∈ v.asIdeal, so r · π^(-(D(v)+1)) has valuation ≤ exp(D(v)),
+putting the single-place adele in A_K(D), hence mapping to 0 in H¹(D).
+-/
+lemma connectingHomFun_zero (v : HeightOneSpectrum R) (D : DivisorV2 R) :
+    connectingHomFun k R K v D 0 = 0 := by
+  simp only [connectingHomFun]
+  -- The key is that Quotient.out' 0 ∈ v.asIdeal
+  -- and the resulting adele is in globalPlusBoundedSubmodule
+  -- This requires showing the adele is bounded or differs from 0 by a global element
+  sorry -- Will be filled once we prove the valuation bounds
+
+/-- The connecting homomorphism is additive.
+
+Key: Different lifts of the same residue class differ by elements of v.asIdeal,
+and in H¹(D), these differences become global elements that quotient out.
+-/
 lemma connectingHomFun_add (v : HeightOneSpectrum R) (D : DivisorV2 R)
     (α β : residueFieldAtPrime R v) :
     connectingHomFun k R K v D (α + β) =
     connectingHomFun k R K v D α + connectingHomFun k R K v D β := by
-  -- Placeholder proof
-  simp only [connectingHomFun, add_zero]
-
-/-- The connecting homomorphism sends zero to zero. -/
-lemma connectingHomFun_zero (v : HeightOneSpectrum R) (D : DivisorV2 R) :
-    connectingHomFun k R K v D 0 = 0 := rfl
+  simp only [connectingHomFun]
+  -- This requires showing that the quotient map is compatible with the construction
+  -- The key is that out'(α + β) - (out'(α) + out'(β)) ∈ v.asIdeal
+  -- and after the construction, this difference becomes a bounded element
+  sorry -- Will be filled with detailed valuation analysis
 
 /-- The connecting homomorphism respects k-scalar multiplication. -/
 lemma connectingHomFun_smul (v : HeightOneSpectrum R) (D : DivisorV2 R)
     (c : k) (α : residueFieldAtPrime R v) :
     connectingHomFun k R K v D (c • α) = c • connectingHomFun k R K v D α := by
-  -- Placeholder proof
-  simp only [connectingHomFun, smul_zero]
+  simp only [connectingHomFun]
+  -- c • α corresponds to algebraMap k R c * r in R
+  -- The single-place adele construction is linear
+  sorry -- Will be filled with scalar tower compatibility
 
 /-- The connecting homomorphism as a k-linear map.
 

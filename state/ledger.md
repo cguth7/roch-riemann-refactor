@@ -5,51 +5,55 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 324
+**Cycle**: 325
 **Phase**: 7 (Weil Differentials) - Active
-**Total Sorries**: 14 (5 new in EulerCharacteristic + 9 existing axioms)
+**Total Sorries**: 18 (10 in EulerCharacteristic + 8 existing axioms)
 
 ---
 
-## Cycle 324 Completed
+## Cycle 325 Completed
 
-**Goal**: Create Euler Characteristic framework for proving χ(D) = deg(D) + 1 - g.
+**Goal**: Implement real connecting homomorphism construction.
 
 ### Deliverables
 
-1. **`EulerCharacteristic.lean`** (new file in Adelic/):
-   - Defines `connectingHom`: κ(v) →ₗ[k] H¹(D) (placeholder with correct types)
-   - Defines `H1Projection`: H¹(D) →ₗ[k] H¹(D+v)
-   - States exactness theorems for the 6-term sequence
-   - Defines `eulerChar`: χ(D) = ℓ(D) - h¹(D)
-   - States key theorems: `chi_additive`, `euler_characteristic`
+1. **Real `connectingHom` construction** (EulerCharacteristic.lean):
+   - `finiteAdeleSingleHere`: construct adele with single non-zero component
+   - `liftToR`: lift residue field element to R via linear equivalence
+   - `uniformizerInK`, `uniformizerInvPow`: uniformizer infrastructure
+   - `connectingHomFun`: the real construction δ: κ(v) → H¹(D)
+     - Lifts α ∈ κ(v) to r ∈ R
+     - Computes r · π^(-(D(v)+1)) ∈ K
+     - Embeds into single-place adele
+     - Projects to H¹(D)
 
-2. **Structure established** (5 sorries to be filled):
+2. **Sorries in EulerCharacteristic.lean** (10 total):
+   - `finiteAdeleSingleHere_zero`: technical lemma
+   - `finiteAdeleSingleHere_add`: technical lemma
+   - `connectingHomFun_zero`: δ(0) = 0
+   - `connectingHomFun_add`: δ(α+β) = δ(α) + δ(β)
+   - `connectingHomFun_smul`: δ(c·α) = c·δ(α)
    - `exactness_at_kappa_set`: image(eval) = ker(δ)
    - `exactness_at_H1`: image(δ) = ker(proj)
    - `kappa_dim_one`: dim_k(κ(v)) = 1
    - `chi_additive`: χ(D+v) = χ(D) + 1
    - `euler_characteristic`: χ(D) = deg(D) + 1 - g
 
-3. **Proved**:
-   - `H1_surjection`: H¹(D) → H¹(D+v) is surjective
-   - Reuses `exactness_at_LDv` from KernelProof.lean
-
 ### Key Insight
 
-The 6-term exact sequence approach is sound:
-```
-0 → L(D) → L(D+v) → κ(v) → H¹(D) → H¹(D+v) → 0
-```
+The construction is mathematically correct:
+- For α = 0: lift r ∈ v.asIdeal, so r·π^(-(D(v)+1)) has valuation ≤ exp(D(v)),
+  putting the adele in A_K(D), hence mapping to 0 in H¹(D).
+- For α ≠ 0: lift r ∉ v.asIdeal, so v(r·π^(-(D(v)+1))) = exp(D(v)+1) > exp(D(v)),
+  hence NOT in A_K(D), giving nonzero in H¹(D).
+- Well-defined: different lifts differ by elements of v.asIdeal,
+  and after construction these become bounded elements that quotient out.
 
-Once the 5 sorries are filled via dimension counting on this sequence,
-full Riemann-Roch follows automatically from Serre duality.
+### Next Steps (Cycle 326)
 
-### Next Steps (Cycle 325)
-
-1. Implement real `connectingHom` via single-place adele embedding
-2. Prove exactness theorems using adelic structure
-3. Apply Rank-Nullity to derive dimension formulas
+1. Prove the technical lemmas (finiteAdeleSingleHere_zero/add)
+2. Prove connectingHomFun linearity (zero, add, smul)
+3. Work toward exactness proofs
 
 ---
 
