@@ -533,6 +533,23 @@ theorem exactness_at_LDv (v : HeightOneSpectrum R) (D : DivisorV2 R) :
       (RRModuleV2_mono_inclusion R K (divisor_le_add_single D v))) :=
   kernel_evaluationMapAt_complete_proof v D
 
+/-- Forward direction: elements in image(eval) are in ker(δ).
+
+    If α = eval(f) for f ∈ L(D+v), then δ(α) = 0. The key insight is that the
+    single-place adele constructed by δ differs from diag(f) by an element in A_K(D),
+    so the adele is in K + A_K(D) and maps to 0 in H¹(D).
+-/
+lemma image_eval_subset_ker_delta (v : HeightOneSpectrum R) (D : DivisorV2 R) :
+    Set.range (evaluationMapAt_complete (K := K) v D) ⊆
+    {α | connectingHom k R K v D α = 0} := by
+  -- The key idea:
+  -- If α = eval(f) for f ∈ L(D+v), the connecting homomorphism constructs
+  -- an adele a with a_v = liftToR(α) · π^(-(D v+1)). Since α = eval(f), the lift
+  -- of α differs from shiftedElement(f) by an element in the maximal ideal.
+  -- This means a differs from diag(f) by an element in A_K(D).
+  -- Since diag(f) ∈ K, we have a ∈ K + A_K(D), so δ(α) = 0.
+  sorry
+
 /-- Exactness at κ(v): image(eval) = ker(δ).
 
 Elements mapping to zero under δ are exactly those from L(D+v).
@@ -543,10 +560,12 @@ for the underlying sets, i.e., as sets we have image(eval) = ker(δ).
 theorem exactness_at_kappa_set (v : HeightOneSpectrum R) (D : DivisorV2 R) :
     (Set.range (evaluationMapAt_complete (K := K) v D) : Set (residueFieldAtPrime R v)) =
     {α | connectingHom k R K v D α = 0} := by
-  -- This requires:
-  -- 1. If α = eval(f) for f ∈ L(D+v), then δ(α) = 0 because f provides a global element
-  -- 2. If δ(α) = 0, we can construct f ∈ L(D+v) with eval(f) = α
-  sorry
+  apply Set.eq_of_subset_of_subset
+  · exact image_eval_subset_ker_delta k R K v D
+  · -- Backward direction: ker(δ) ⊆ image(eval)
+    -- If δ(α) = 0, the adele is in K + A_K(D), so ∃ g ∈ K with adele - diag(g) ∈ A_K(D)
+    -- This g is in L(D+v) and eval(g) = α
+    sorry
 
 /-- The projection map H¹(D) → H¹(D+v).
 

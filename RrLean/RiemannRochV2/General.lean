@@ -1,4 +1,5 @@
 import RrLean.RiemannRochV2.General.WeilDifferential
+import RrLean.RiemannRochV2.Adelic.EulerCharacteristic
 
 /-!
 # General Curve Infrastructure for Riemann-Roch

@@ -5,9 +5,42 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 328
+**Cycle**: 329
 **Phase**: 7 (Weil Differentials) - Active
-**Total Sorries**: 12 (4 in EulerCharacteristic + 8 existing axioms)
+**Total Sorries**: 13 (5 in EulerCharacteristic + 8 existing axioms)
+
+---
+
+## Cycle 329 In Progress
+
+**Goal**: Prove exactness properties for the 6-term exact sequence.
+
+### EulerCharacteristic.lean now wired up to main build
+
+The file was previously developed standalone. Now imported via General.lean.
+
+### Remaining Sorries in EulerCharacteristic.lean (5 total)
+
+| Lemma | Description | Difficulty |
+|-------|-------------|------------|
+| `image_eval_subset_ker_delta` | Forward: image(eval) ⊆ ker(δ) | Medium |
+| `exactness_at_kappa_set` | Backward: ker(δ) ⊆ image(eval) | Medium |
+| `exactness_at_H1` | image(δ) = ker(proj) | Medium |
+| `chi_additive` | χ(D+v) = χ(D) + 1 | Needs exactness |
+| `euler_characteristic` | χ(D) = deg(D) + 1 - g | Needs chi_additive |
+
+### Strategy for exactness_at_kappa_set
+
+**Forward (⊆)**: If α = eval(f) for f ∈ L(D+v), then δ(α) = 0
+- Key insight: single-place adele a differs from diag(f) by element in A_K(D)
+- At v: a_v - f = (r - shiftedElement)·π^(-(D(v)+1)) has valuation ≤ exp(D(v))
+- At w ≠ v: a_w - f = -f has valuation ≤ exp(D(w)) since f ∈ L(D+v)
+- Therefore a ∈ K + A_K(D), so quotientMapLinear(a) = 0
+
+**Backward (⊇)**: If δ(α) = 0, then α ∈ image(eval)
+- δ(α) = 0 means single-place adele a ∈ K + A_K(D)
+- So ∃ g ∈ K with a - diag(g) ∈ A_K(D)
+- Show g ∈ L(D+v) and eval(g) = α
 
 ---
 
@@ -25,21 +58,6 @@
    - Added `DegreeOnePlaces` class encoding that all places have degree 1
    - This is the geometric assumption that k is the full field of constants
    - Applies when k is algebraically closed or curve has only k-rational points
-
-### Remaining Sorries in EulerCharacteristic.lean (4 total)
-
-| Lemma | Description | Difficulty |
-|-------|-------------|------------|
-| `exactness_at_kappa_set` | image(eval) = ker(δ) | Medium |
-| `exactness_at_H1` | image(δ) = ker(proj) | Medium |
-| `chi_additive` | χ(D+v) = χ(D) + 1 | Needs exactness |
-| `euler_characteristic` | χ(D) = deg(D) + 1 - g | Needs chi_additive |
-
-### Next Steps (Cycle 329)
-
-1. Prove `exactness_at_kappa_set` (elements in ker(δ) lift to L(D+v))
-2. Prove `exactness_at_H1` (image(δ) = kernel of H¹ projection)
-3. Use Rank-Nullity for `chi_additive`
 
 ---
 
