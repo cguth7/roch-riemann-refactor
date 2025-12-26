@@ -1,6 +1,7 @@
 import RrLean.RiemannRochV2.Adelic.AdelicH1v2
 import RrLean.RiemannRochV2.Dimension.KernelProof
 import RrLean.RiemannRochV2.Definitions.Infrastructure
+import RrLean.RiemannRochV2.ResidueTheory.ResidueFieldIso
 
 /-!
 # Euler Characteristic via Exact Sequence (Cycle 326)
@@ -1077,24 +1078,125 @@ def H1Projection (v : HeightOneSpectrum R) (D : DivisorV2 R) :
     LinearMap.id
     (globalPlusBoundedSubmodule_mono k R K (divisor_le_add_single D v))
 
+/-- Forward direction: image(δ) ⊆ ker(proj).
+
+δ(α) produces a single-place adele with val ≤ exp(D v + 1) at v and 0 elsewhere,
+so it's in A_K(D+v), hence maps to 0 in H¹(D+v). -/
+lemma image_delta_subset_ker_proj (v : HeightOneSpectrum R) (D : DivisorV2 R) :
+    LinearMap.range (connectingHom k R K v D) ≤
+    LinearMap.ker (H1Projection k R K v D) := by
+  intro x ⟨α, hα⟩
+  rw [LinearMap.mem_ker]
+  subst hα
+  -- Goal: H1Projection (connectingHom α) = 0
+  -- Unpack definitions
+  simp only [connectingHom, LinearMap.coe_mk, AddHom.coe_mk, connectingHomFun]
+  set r := liftToR R v α with hr_def
+  set x_K := algebraMap R K r * uniformizerInvPow R K v (D v + 1) with hx_def
+  set a := finiteAdeleSingleHere R K v (algebraMap K (v.adicCompletion K) x_K) with ha_def
+  -- H1Projection sends quotientMapLinear(a) to the quotient in H¹(D+v)
+  -- It equals 0 iff a ∈ globalPlusBoundedSubmodule k R K (D + single v 1)
+  -- We'll show a is in boundedSubmodule k R K (D + single v 1) ⊆ globalPlusBoundedSubmodule
+  have h_a_bounded : a ∈ boundedSubmodule k R K (D + DivisorV2.single v 1) := by
+    intro w
+    simp only [satisfiesBoundAt, valuationAt]
+    by_cases hw : w = v
+    · -- At place w = v: val(x_K) ≤ exp(D v + 1)
+      have hr_val : v.valuation K (algebraMap R K r) ≤ 1 := by
+        rw [HeightOneSpectrum.valuation_of_algebraMap]
+        exact v.intValuation_le_one r
+      have hx_val : v.valuation K x_K ≤ WithZero.exp (D v + 1) := by
+        simp only [hx_def, uniformizerInvPow, uniformizerInK]
+        rw [Valuation.map_mul, uniformizerAt_zpow_valuation]
+        simp only [neg_neg]
+        calc v.valuation K (algebraMap R K r) * WithZero.exp (D v + 1)
+            ≤ 1 * WithZero.exp (D v + 1) := mul_le_mul_of_nonneg_right hr_val (WithZero.zero_le _)
+          _ = WithZero.exp (D v + 1) := one_mul _
+      have hcoeff : (D + DivisorV2.single v 1) v = D v + 1 := by
+        simp only [Finsupp.add_apply, Finsupp.single_eq_same]
+      -- Goal: Valued.v (a w) ≤ exp((D + single v 1)(w))
+      -- Use hw : w = v to substitute via cases
+      cases hw
+      rw [finiteAdeleSingleHere_apply_same, hcoeff]
+      -- Goal: Valued.v (algebraMap K (adicCompletion K v) x_K) ≤ exp(D v + 1)
+      -- Use valuedAdicCompletion_eq_valuation' to convert Valued.v to v.valuation K
+      convert hx_val using 1
+      exact valuedAdicCompletion_eq_valuation' v x_K
+    · -- At place w ≠ v: the adele is 0
+      rw [finiteAdeleSingleHere_apply_ne R K v w _ hw, Valuation.map_zero]
+      exact WithZero.zero_le _
+  -- Now show H1Projection maps to 0
+  -- H1Projection = mapQ from H¹(D) to H¹(D+v)
+  -- quotientMapLinear(a) maps to the class of a in H¹(D+v)
+  -- Since a ∈ boundedSubmodule(D+v) ⊆ globalPlusBoundedSubmodule(D+v), this class is 0
+  unfold H1Projection quotientMapLinear
+  simp only [Submodule.mkQ_apply]
+  rw [Submodule.mapQ_apply, LinearMap.id_apply, Submodule.Quotient.mk_eq_zero]
+  unfold globalPlusBoundedSubmodule
+  exact Submodule.mem_sup_right h_a_bounded
+
+/-- Helper: For any bounded adele b at D+v, we can find α such that
+    the single-place adele for α differs from b by something bounded for D.
+
+    Key insight: Use density of K in completion (exists_close_element) and
+    residue field surjectivity (toResidueField_surjective from ResidueFieldIso).
+
+    Proof sketch:
+    1. shifted_b := b(v) * π^(D v + 1) has val ≤ 1 in the completion
+    2. By toResidueField_surjective, ∃ r ∈ R with toResidueField(r) = residue(shifted_b)
+    3. Take α corresponding to r via the bridge isomorphisms
+    4. Then liftToR(α) has same residue as shifted_b, so difference is in maxIdeal
+    5. This gives val(a_α(v) - b(v)) ≤ exp(-1) * exp(D v + 1) = exp(D v)
+    6. At w ≠ v: val(-b(w)) ≤ exp(D w) since (D+v)(w) = D(w)  -/
+lemma exists_alpha_for_bounded (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    (b : FiniteAdeleRing R K) (hb : b ∈ boundedSubmodule k R K (D + DivisorV2.single v 1)) :
+    ∃ α : residueFieldAtPrime R v,
+      finiteAdeleSingleHere R K v (algebraMap K (v.adicCompletion K)
+        (algebraMap R K (liftToR R v α) * uniformizerInvPow R K v (D v + 1))) - b ∈
+      globalPlusBoundedSubmodule k R K D := by
+  -- The complete proof requires using infrastructure from ResidueFieldIso.lean:
+  -- exists_close_element, toResidueField_surjective, and residueFieldIso
+  sorry
+
 /-- Exactness at H¹(D): image(δ) = ker(proj).
 
 The kernel of H¹(D) → H¹(D+v) is exactly the image of δ.
 
 Proof sketch:
 - Forward (image(δ) ⊆ ker(proj)): δ(α) produces an adele with val ≤ exp(D v + 1) at v
-  and 0 elsewhere, so it's in A_K(D+v), hence maps to 0 in H¹(D+v).
+  and 0 elsewhere, so it's in A_K(D+v), hence maps to 0 in H¹(D+v). (PROVED)
 - Backward (ker(proj) ⊆ image(δ)): If [a] = 0 in H¹(D+v), then a = g + b with
   g ∈ K and b ∈ A_K(D+v). The "shifted residue" of b at v determines α ∈ κ(v),
-  and [a] = δ(α).
+  and [a] = δ(α). (Uses exists_alpha_for_bounded)
 -/
 theorem exactness_at_H1 (v : HeightOneSpectrum R) (D : DivisorV2 R)
     [hfin : Module.Finite k (SpaceModule k R K D)] :
     LinearMap.range (connectingHom k R K v D) =
     LinearMap.ker (H1Projection k R K v D) := by
-  -- The proof follows the structure: δ(α) ∈ A_K(D+v) gives forward direction,
-  -- and extracting α from ker element gives backward direction.
-  sorry
+  apply le_antisymm
+  · -- Forward direction: image(δ) ⊆ ker(proj)
+    exact image_delta_subset_ker_proj k R K v D
+  · -- Backward direction: ker(proj) ⊆ image(δ)
+    intro x hx
+    rw [LinearMap.mem_ker] at hx
+    -- Get a representative of x
+    obtain ⟨a, ha⟩ := Submodule.Quotient.mk_surjective _ x
+    -- x = 0 in H¹(D+v) means a ∈ globalPlusBoundedSubmodule(D+v)
+    have h_a_in : a ∈ globalPlusBoundedSubmodule k R K (D + DivisorV2.single v 1) := by
+      unfold H1Projection at hx
+      rw [← ha] at hx
+      simp only [Submodule.mapQ_apply, LinearMap.id_apply, Submodule.mkQ_apply,
+        Submodule.Quotient.mk_eq_zero] at hx
+      exact hx
+    -- Decompose a = diag(g) + b
+    unfold globalPlusBoundedSubmodule at h_a_in
+    rw [Submodule.add_eq_sup, Submodule.mem_sup] at h_a_in
+    obtain ⟨g_adele, hg_global, b, hb_bounded, h_eq⟩ := h_a_in
+    obtain ⟨g, hg_diag⟩ := hg_global
+    -- The rest of the proof uses exists_alpha_for_bounded to construct α
+    -- and shows quotientMapLinear b ∈ range(connectingHom)
+    -- x = [a]_D = [b]_D since diag(g) ∈ globalSubmodule, then use α from the lemma
+    sorry
 
 /-- H¹(D) → H¹(D+v) is surjective.
 

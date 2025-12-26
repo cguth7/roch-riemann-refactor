@@ -5,9 +5,51 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 332
+**Cycle**: 333
 **Phase**: 7 (Weil Differentials) - Active
-**Total Sorries**: 11 (3 in EulerCharacteristic + 8 existing axioms)
+**Total Sorries**: 12 (4 in EulerCharacteristic + 8 existing axioms)
+
+---
+
+## Cycle 333 Completed
+
+**Goal**: Prove forward direction of exactness at H¹(D) and structure backward direction.
+
+### Deliverables
+
+1. **Proved `image_delta_subset_ker_proj`** (COMPLETE):
+   - Forward direction: image(δ) ⊆ ker(H1Projection)
+   - Key insight: δ(α) produces single-place adele with val ≤ exp(D v + 1) at v, 0 elsewhere
+   - This adele is in boundedSubmodule(D+v) ⊆ globalPlusBoundedSubmodule(D+v)
+   - Hence H1Projection(δ(α)) = 0
+
+2. **Structured backward direction**:
+   - Added helper lemma `exists_alpha_for_bounded` (with sorry)
+   - Main theorem `exactness_at_H1` now depends on this helper
+   - Clear proof sketch documented using ResidueFieldIso infrastructure
+
+3. **Proof technique for backward direction** (documented):
+   - For b ∈ boundedSubmodule(D+v), define shifted_b = b(v) · π^(D v + 1) with val ≤ 1
+   - Use `toResidueField_surjective` to find r ∈ R with same residue as shifted_b
+   - Take α corresponding to r via the bridge isomorphisms
+   - Then liftToR(α) has same residue as shifted_b, so difference is in maxIdeal
+   - This gives val(a_α(v) - b(v)) ≤ exp(-1) * exp(D v + 1) = exp(D v)
+
+### Remaining Sorries in EulerCharacteristic.lean (4 total)
+
+| Lemma | Description | Difficulty |
+|-------|-------------|------------|
+| `exists_alpha_for_bounded` | Helper for backward exactness | Medium (needs ResidueFieldIso) |
+| `exactness_at_H1` | Uses helper, structured but needs helper | Easy once helper done |
+| `chi_additive` | χ(D+v) = χ(D) + 1 | Needs exactness |
+| `euler_characteristic` | χ(D) = deg(D) + 1 - g | Needs chi_additive |
+
+### Key Infrastructure Identified
+
+The backward direction uses infrastructure from `ResidueFieldIso.lean`:
+- `exists_close_element`: K is dense in adic completion
+- `toResidueField_surjective`: R surjects onto completion's residue field
+- `residueFieldIso`: R/v.asIdeal ≃+* completion's residue field
 
 ---
 
