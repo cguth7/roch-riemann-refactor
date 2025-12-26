@@ -134,6 +134,21 @@ lemma finiteAdeleSingleHere_add (v : HeightOneSpectrum R)
     simp only [finiteAdeleSingleHere, dite_true]
   · simp only [finiteAdeleSingleHere, dif_neg h, add_zero]
 
+/-- The single-place adele respects subtraction. -/
+lemma finiteAdeleSingleHere_sub (v : HeightOneSpectrum R)
+    (x y : v.adicCompletion K) :
+    finiteAdeleSingleHere R K v (x - y) =
+    finiteAdeleSingleHere R K v x - finiteAdeleSingleHere R K v y := by
+  apply Subtype.ext
+  funext w
+  have h_sub : ((finiteAdeleSingleHere R K v x) - (finiteAdeleSingleHere R K v y)).1 =
+               (finiteAdeleSingleHere R K v x).1 - (finiteAdeleSingleHere R K v y).1 := rfl
+  simp only [h_sub, Pi.sub_apply]
+  by_cases h : w = v
+  · subst h
+    simp only [finiteAdeleSingleHere, dite_true]
+  · simp only [finiteAdeleSingleHere, dif_neg h, sub_zero]
+
 /-- The uniformizer in K (as an element of the fraction field). -/
 def uniformizerInK (v : HeightOneSpectrum R) : K :=
   algebraMap R K (uniformizerAt v)
@@ -195,13 +210,21 @@ lemma liftToR_smul_diff_mem_ideal (v : HeightOneSpectrum R)
     (c : k) (α : residueFieldAtPrime R v) :
     liftToR R v (c • α) - algebraMap k R c * liftToR R v α ∈ v.asIdeal := by
   rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, map_mul, liftToR_proj, liftToR_proj]
-  -- The k-action on residueFieldAtPrime R v = R/v.asIdeal is via algebraMap k R → R/v.asIdeal
-  -- So (residueFieldAtPrime.linearEquiv v).symm (c • α) = (algebraMap k (R ⧸ v)) c * α_quot
-  -- and the subtraction gives 0
-  convert sub_self _
-  -- Need: (linearEquiv v).symm (c • α) = (algebraMap k R c mod v) * (linearEquiv v).symm α
-  -- This is how the module structure is defined
-  sorry
+  -- The k-action on residueFieldAtPrime R v factors through R via the scalar tower
+  -- So c • α = (algebraMap k R c) • α for the R-module action
+  have h_tower : c • α = (algebraMap k R c) • α := by
+    rw [← smul_one_smul R c α]
+    simp only [Algebra.smul_def, mul_one]
+  rw [h_tower]
+  -- The linear equivalence is R-linear, so it respects R-scalar multiplication
+  have h_smul : (residueFieldAtPrime.linearEquiv (R := R) v).symm ((algebraMap k R c) • α) =
+                (algebraMap k R c) • (residueFieldAtPrime.linearEquiv (R := R) v).symm α :=
+    (residueFieldAtPrime.linearEquiv (R := R) v).symm.map_smul (algebraMap k R c) α
+  rw [h_smul]
+  -- In the quotient R ⧸ v.asIdeal, scalar multiplication by r is: r • q = Quotient.mk r * q
+  simp only [Algebra.smul_def]
+  -- algebraMap R (R ⧸ v.asIdeal) = Ideal.Quotient.mk v.asIdeal
+  simp only [Ideal.Quotient.algebraMap_eq, sub_self]
 
 /-- The connecting homomorphism function δ: κ(v) → H¹(D).
 
@@ -228,10 +251,57 @@ putting the single-place adele in A_K(D), hence mapping to 0 in H¹(D).
 lemma connectingHomFun_zero (v : HeightOneSpectrum R) (D : DivisorV2 R) :
     connectingHomFun k R K v D 0 = 0 := by
   simp only [connectingHomFun]
-  -- The key is that Quotient.out' 0 ∈ v.asIdeal
-  -- and the resulting adele is in globalPlusBoundedSubmodule
-  -- This requires showing the adele is bounded or differs from 0 by a global element
-  sorry -- Will be filled once we prove the valuation bounds
+  -- The adele lands in globalPlusBoundedSubmodule, hence maps to 0
+  unfold quotientMapLinear
+  rw [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero]
+  -- globalPlusBoundedSubmodule = globalSubmodule + boundedSubmodule
+  -- It suffices to show the adele is in boundedSubmodule (⊆ globalPlusBounded)
+  unfold globalPlusBoundedSubmodule
+  apply Submodule.mem_sup_right
+  -- Show membership in boundedSubmodule k R K D
+  show _ ∈ boundedSubmodule k R K D
+  intro w
+  simp only [satisfiesBoundAt, valuationAt]
+  by_cases hw : w = v
+  · -- At place v: the lift r ∈ v.asIdeal gives valuation bound
+    subst hw
+    simp only [finiteAdeleSingleHere_apply_same]
+    -- r = liftToR R w 0 ∈ w.asIdeal
+    have hr_mem : liftToR R w 0 ∈ w.asIdeal := liftToR_zero_mem_ideal R w
+    -- w.intValuation r ≤ exp(-1) by membership in asIdeal (asIdeal^1)
+    have hr_val : w.intValuation (liftToR R w 0) ≤ WithZero.exp (-(1 : ℤ)) := by
+      have hmem1 : liftToR R w 0 ∈ w.asIdeal ^ 1 := by simp only [pow_one]; exact hr_mem
+      have hle := (w.intValuation_le_pow_iff_mem (liftToR R w 0) 1).mpr hmem1
+      simp only [Nat.cast_one] at hle
+      exact hle
+    -- Transfer to K valuation
+    have hr_val_K : w.valuation K (algebraMap R K (liftToR R w 0)) ≤ WithZero.exp (-1 : ℤ) := by
+      rw [HeightOneSpectrum.valuation_of_algebraMap]
+      exact hr_val
+    -- Compute valuation of x = r * π^(-(D w + 1))
+    -- Using uniformizerAt_zpow_valuation
+    have hx_val : w.valuation K (algebraMap R K (liftToR R w 0) *
+        uniformizerInvPow R K w (D w + 1)) ≤ WithZero.exp (D w) := by
+      unfold uniformizerInvPow uniformizerInK
+      rw [Valuation.map_mul, uniformizerAt_zpow_valuation]
+      simp only [neg_neg]
+      -- exp(-1) * exp(D w + 1) = exp(D w)
+      calc w.valuation K (algebraMap R K (liftToR R w 0)) * WithZero.exp (D w + 1)
+          ≤ WithZero.exp (-1) * WithZero.exp (D w + 1) := by
+            exact mul_le_mul_of_nonneg_right hr_val_K (WithZero.zero_le _)
+        _ = WithZero.exp (-1 + (D w + 1)) := by rw [← WithZero.exp_add]
+        _ = WithZero.exp (D w) := by ring_nf
+    -- Transfer to adicCompletion via valuedAdicCompletion_eq_valuation'
+    -- The algebraMap from K to adicCompletion preserves valuation
+    let x : K := algebraMap R K (liftToR R w 0) * uniformizerInvPow R K w (D w + 1)
+    -- algebraMap K (adicCompletion K w) = coe for the completion
+    have hcoe : algebraMap K (w.adicCompletion K) x = (x : w.adicCompletion K) := rfl
+    rw [hcoe, valuedAdicCompletion_eq_valuation' w x]
+    exact hx_val
+  · -- At place w ≠ v: the adele is 0
+    have hne : w ≠ v := hw
+    rw [finiteAdeleSingleHere_apply_ne R K v w _ hne, Valuation.map_zero]
+    exact WithZero.zero_le _
 
 /-- The connecting homomorphism is additive.
 
@@ -243,10 +313,81 @@ lemma connectingHomFun_add (v : HeightOneSpectrum R) (D : DivisorV2 R)
     connectingHomFun k R K v D (α + β) =
     connectingHomFun k R K v D α + connectingHomFun k R K v D β := by
   simp only [connectingHomFun]
-  -- This requires showing that the quotient map is compatible with the construction
-  -- The key is that out'(α + β) - (out'(α) + out'(β)) ∈ v.asIdeal
-  -- and after the construction, this difference becomes a bounded element
-  sorry -- Will be filled with detailed valuation analysis
+  -- Key: The difference r_sum - (r_α + r_β) ∈ v.asIdeal causes bounded adele difference
+  have hdiff : liftToR R v (α + β) - (liftToR R v α + liftToR R v β) ∈ v.asIdeal :=
+    liftToR_add_diff_mem_ideal R v α β
+  -- Define the adeles for clarity
+  let a_sum := finiteAdeleSingleHere R K v (algebraMap K (v.adicCompletion K)
+    (algebraMap R K (liftToR R v (α + β)) * uniformizerInvPow R K v (D v + 1)))
+  let a_α := finiteAdeleSingleHere R K v (algebraMap K (v.adicCompletion K)
+    (algebraMap R K (liftToR R v α) * uniformizerInvPow R K v (D v + 1)))
+  let a_β := finiteAdeleSingleHere R K v (algebraMap K (v.adicCompletion K)
+    (algebraMap R K (liftToR R v β) * uniformizerInvPow R K v (D v + 1)))
+  -- Goal: quotientMapLinear(a_sum) = quotientMapLinear(a_α) + quotientMapLinear(a_β)
+  -- Equivalently, a_sum - (a_α + a_β) ∈ ker(quotientMapLinear) = globalPlusBoundedSubmodule
+  rw [← map_add]
+  unfold quotientMapLinear
+  rw [Submodule.mkQ_apply, Submodule.mkQ_apply, Submodule.Quotient.eq]
+  -- Need: a_sum - (a_α + a_β) ∈ globalPlusBoundedSubmodule
+  unfold globalPlusBoundedSubmodule
+  apply Submodule.mem_sup_right
+  -- Show the difference is in boundedSubmodule
+  show _ ∈ boundedSubmodule k R K D
+  -- Simplify the adele difference using finiteAdeleSingleHere additivity
+  have hadele_diff : a_sum - (a_α + a_β) =
+    finiteAdeleSingleHere R K v (algebraMap K (v.adicCompletion K)
+      (algebraMap R K (liftToR R v (α + β) - (liftToR R v α + liftToR R v β)) *
+        uniformizerInvPow R K v (D v + 1))) := by
+    simp only [a_sum, a_α, a_β]
+    -- a_sum - (a_α + a_β) = finiteAdeleSingleHere(x_sum) - finiteAdeleSingleHere(x_α + x_β)
+    rw [← finiteAdeleSingleHere_add R K v, ← finiteAdeleSingleHere_sub R K v]
+    -- Now we need to show the K-elements are equal after algebraMap
+    -- LHS: algebraMap(x_sum) - algebraMap(x_α + x_β)
+    -- RHS: algebraMap(x_d)
+    simp only [← map_add, ← map_sub]
+    congr 1
+    -- Now in K: x_sum - (x_α + x_β) = x_d
+    simp only [(algebraMap R K).map_sub, (algebraMap R K).map_add]
+    ring_nf
+  rw [hadele_diff]
+  -- Now same argument as connectingHomFun_zero with d ∈ v.asIdeal
+  intro w
+  simp only [satisfiesBoundAt, valuationAt]
+  by_cases hw : w = v
+  · subst hw
+    simp only [finiteAdeleSingleHere_apply_same]
+    -- Use that d ∈ v.asIdeal gives valuation bound
+    have hr_val : w.intValuation (liftToR R w (α + β) - (liftToR R w α + liftToR R w β)) ≤
+        WithZero.exp (-(1 : ℤ)) := by
+      have hmem1 : liftToR R w (α + β) - (liftToR R w α + liftToR R w β) ∈ w.asIdeal ^ 1 := by
+        simp only [pow_one]; exact hdiff
+      have hle := (w.intValuation_le_pow_iff_mem _ 1).mpr hmem1
+      simp only [Nat.cast_one] at hle
+      exact hle
+    have hr_val_K : w.valuation K (algebraMap R K (liftToR R w (α + β) -
+        (liftToR R w α + liftToR R w β))) ≤ WithZero.exp (-1 : ℤ) := by
+      rw [HeightOneSpectrum.valuation_of_algebraMap]
+      exact hr_val
+    have hx_val : w.valuation K (algebraMap R K (liftToR R w (α + β) -
+        (liftToR R w α + liftToR R w β)) * uniformizerInvPow R K w (D w + 1)) ≤
+        WithZero.exp (D w) := by
+      unfold uniformizerInvPow uniformizerInK
+      rw [Valuation.map_mul, uniformizerAt_zpow_valuation]
+      simp only [neg_neg]
+      calc w.valuation K (algebraMap R K (liftToR R w (α + β) -
+            (liftToR R w α + liftToR R w β))) * WithZero.exp (D w + 1)
+          ≤ WithZero.exp (-1) * WithZero.exp (D w + 1) := by
+            exact mul_le_mul_of_nonneg_right hr_val_K (WithZero.zero_le _)
+        _ = WithZero.exp (-1 + (D w + 1)) := by rw [← WithZero.exp_add]
+        _ = WithZero.exp (D w) := by ring_nf
+    let x : K := algebraMap R K (liftToR R w (α + β) - (liftToR R w α + liftToR R w β)) *
+      uniformizerInvPow R K w (D w + 1)
+    have hcoe : algebraMap K (w.adicCompletion K) x = (x : w.adicCompletion K) := rfl
+    rw [hcoe, valuedAdicCompletion_eq_valuation' w x]
+    exact hx_val
+  · have hne : w ≠ v := hw
+    rw [finiteAdeleSingleHere_apply_ne R K v w _ hne, Valuation.map_zero]
+    exact WithZero.zero_le _
 
 /-- The connecting homomorphism respects k-scalar multiplication. -/
 lemma connectingHomFun_smul (v : HeightOneSpectrum R) (D : DivisorV2 R)

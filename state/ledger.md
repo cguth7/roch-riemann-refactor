@@ -5,9 +5,47 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 326
+**Cycle**: 327
 **Phase**: 7 (Weil Differentials) - Active
-**Total Sorries**: 17 (9 in EulerCharacteristic + 8 existing axioms)
+**Total Sorries**: 14 (6 in EulerCharacteristic + 8 existing axioms)
+
+---
+
+## Cycle 327 Completed
+
+**Goal**: Prove connecting homomorphism properties (linearity).
+
+### Deliverables
+
+1. **Proved `liftToR_smul_diff_mem_ideal`**: Scalar mult compatibility via scalar tower
+2. **Proved `finiteAdeleSingleHere_sub`**: Single-place adele respects subtraction
+3. **Proved `connectingHomFun_zero`**: δ(0) = 0 via valuation bounds
+4. **Proved `connectingHomFun_add`**: δ(α+β) = δ(α) + δ(β) via bounded adele differences
+
+### Key Technique
+
+The proofs use a common pattern:
+- Elements in `v.asIdeal` have `intValuation ≤ exp(-1)` (by `intValuation_le_pow_iff_mem`)
+- Multiplying by `π^(-(D(v)+1))` shifts valuation: `val(r·π^(-n)) ≤ exp(-1) · exp(n) = exp(n-1)`
+- For n = D(v)+1, this gives `val ≤ exp(D(v))`, satisfying the bound for `A_K(D)`
+- The `valuedAdicCompletion_eq_valuation'` lemma transfers K-valuations to completion
+
+### Remaining Sorries in EulerCharacteristic.lean (6 total)
+
+| Lemma | Description | Type |
+|-------|-------------|------|
+| `connectingHomFun_smul` | δ(c·α) = c·δ(α) | Valuation |
+| `exactness_at_kappa_set` | image(eval) = ker(δ) | Exactness |
+| `exactness_at_H1` | image(δ) = ker(proj) | Exactness |
+| `kappa_dim_one` | dim_k(κ(v)) = 1 | Standard fact |
+| `chi_additive` | χ(D+v) = χ(D) + 1 | Dimension |
+| `euler_characteristic` | χ(D) = deg(D) + 1 - g | Main theorem |
+
+### Next Steps (Cycle 328)
+
+1. Fill `connectingHomFun_smul` (similar pattern to `_add`)
+2. Prove exactness theorems (geometric arguments)
+3. Complete `kappa_dim_one` (standard DVR fact)
 
 ---
 
@@ -19,40 +57,10 @@
 
 1. **Proved `finiteAdeleSingleHere_zero`**: Single-place adele respects zero
 2. **Proved `finiteAdeleSingleHere_add`**: Single-place adele respects addition
-3. **Helper lemmas for `liftToR`** (all proved except one):
+3. **Helper lemmas for `liftToR`** (all proved):
    - `liftToR_proj`: lifted element projects back to original class
    - `liftToR_zero_mem_ideal`: lift of 0 is in v.asIdeal
    - `liftToR_add_diff_mem_ideal`: lift of sum differs from sum of lifts by v.asIdeal element
-   - `liftToR_smul_diff_mem_ideal`: scalar multiplication (1 sorry - algebra structure)
-
-### Remaining Sorries in EulerCharacteristic.lean (9 total)
-
-| Lemma | Description | Type |
-|-------|-------------|------|
-| `liftToR_smul_diff_mem_ideal` | Scalar mult compatibility | Technical |
-| `connectingHomFun_zero` | δ(0) = 0 | Valuation |
-| `connectingHomFun_add` | δ(α+β) = δ(α) + δ(β) | Valuation |
-| `connectingHomFun_smul` | δ(c·α) = c·δ(α) | Valuation |
-| `exactness_at_kappa_set` | image(eval) = ker(δ) | Exactness |
-| `exactness_at_H1` | image(δ) = ker(proj) | Exactness |
-| `kappa_dim_one` | dim_k(κ(v)) = 1 | Standard fact |
-| `chi_additive` | χ(D+v) = χ(D) + 1 | Dimension |
-| `euler_characteristic` | χ(D) = deg(D) + 1 - g | Main theorem |
-
-### Key Insight
-
-The helper lemmas establish that:
-- Quotient.out lifts in a way that respects the quotient structure
-- Differences between lift(α+β) and lift(α)+lift(β) are in v.asIdeal
-- These differences become bounded (in A_K(D)) after the construction
-
-This is the mathematical basis for proving linearity of δ.
-
-### Next Steps (Cycle 327)
-
-1. Fill valuation-based sorries (connectingHomFun_zero/add/smul)
-2. Prove exactness theorems
-3. Complete chi_additive via dimension counting
 
 ---
 
