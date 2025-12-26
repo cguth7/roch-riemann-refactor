@@ -5,9 +5,51 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 331
+**Cycle**: 332
 **Phase**: 7 (Weil Differentials) - Active
-**Total Sorries**: 12 (4 in EulerCharacteristic + 8 existing axioms)
+**Total Sorries**: 11 (3 in EulerCharacteristic + 8 existing axioms)
+
+---
+
+## Cycle 332 Completed
+
+**Goal**: Prove `eval_g_eq_alpha_from_bounded` - the final piece for backward exactness at κ(v).
+
+### Deliverables
+
+1. **Proved `eval_g_eq_alpha_from_bounded`** (COMPLETE):
+   - Key insight: from h_bounded we derive val(algebraMap R K r - shiftedElement v D g) ≤ exp(-1)
+   - This means the difference is in the maximal ideal of the valuation ring
+   - Therefore residue(algebraMap R K r) = residue(shiftedElement v D g)
+   - Bridge application: eval(g) = bridge(residue(shifted(g))) = bridge(residue(r)) = α
+
+2. **Proof technique**:
+   - Extract bound at place v from h_bounded membership
+   - Factor the difference: (r - shiftedElement(g)) * π^(-(D v + 1))
+   - Use WithZero.exp_sub for division: exp(D v) / exp(D v + 1) = exp(-1)
+   - Use IsLocalRing.residue_eq_zero_iff for maximal ideal ↔ zero residue
+   - Apply bridge_residue_algebraMap_clean and liftToR_proj for final step
+
+3. **Backward exactness complete**:
+   - `exactness_at_kappa_set` now fully proved (no sorries)
+   - This establishes: ker(δ) = image(eval) at κ(v) in the 6-term exact sequence
+
+### Remaining Sorries in EulerCharacteristic.lean (3 total)
+
+| Lemma | Description | Difficulty |
+|-------|-------------|------------|
+| `exactness_at_H1` | image(δ) = ker(proj) | Medium |
+| `chi_additive` | χ(D+v) = χ(D) + 1 | Needs exactness |
+| `euler_characteristic` | χ(D) = deg(D) + 1 - g | Needs chi_additive |
+
+### Strategy for `exactness_at_H1`
+
+The proof has two directions:
+- **Forward** (image(δ) ⊆ ker(proj)): δ(α) produces an adele with val ≤ exp(D v + 1) at v
+  and 0 elsewhere, so it's in A_K(D+v), hence maps to 0 in H¹(D+v).
+- **Backward** (ker(proj) ⊆ image(δ)): If [a] = 0 in H¹(D+v), then a = g + b with
+  g ∈ K and b ∈ A_K(D+v). The "shifted residue" of b at v determines α ∈ κ(v),
+  and [a] = δ(α).
 
 ---
 
@@ -24,35 +66,7 @@
 
 2. **Key lemma: `g_mem_LDv_from_bounded`** (PROVED):
    - At places w ≠ v: val_w(g) ≤ exp(D w) from boundedness
-   - At place v: val_v(g) ≤ exp(D v + 1) via ultrametric inequality:
-     - val(x) ≤ exp(D v + 1) where x = r * π^(-(D v + 1))
-     - val(x - g) ≤ exp(D v) from h_bounded
-     - val(g) ≤ max(val(x-g), val(x)) ≤ exp(D v + 1)
-
-3. **Technical lemma `eval_g_eq_alpha_from_bounded`** (sorry remaining):
-   - Key insight proven: val(r - shiftedElement(g)) ≤ exp(-1)
-   - This means r and shiftedElement(g) have the same residue
-   - Therefore eval(g) = bridge(residue(shiftedElement(g))) = bridge(residue(r)) = α
-   - Technical details about residue field bridge pending
-
-### Remaining Sorries in EulerCharacteristic.lean (4 total)
-
-| Lemma | Description | Difficulty |
-|-------|-------------|------------|
-| `eval_g_eq_alpha_from_bounded` | Technical residue equality | Medium |
-| `exactness_at_H1` | image(δ) = ker(proj) | Medium |
-| `chi_additive` | χ(D+v) = χ(D) + 1 | Needs exactness |
-| `euler_characteristic` | χ(D) = deg(D) + 1 - g | Needs chi_additive |
-
-### Strategy for `eval_g_eq_alpha_from_bounded`
-
-The key steps are:
-1. From h_bounded: val(r * π^(-(D v+1)) - g) ≤ exp(D v)
-2. Factor: val(r - shiftedElement(g)) * exp(D v + 1) ≤ exp(D v)
-3. Derive: val(r - shiftedElement(g)) ≤ exp(-1) < 1
-4. Maximal ideal: r and shiftedElement(g) differ by maximal ideal element
-5. Same residue: residue(r) = residue(shiftedElement(g))
-6. Bridge: eval(g) = bridge(residue(shifted(g))) = bridge(residue(r)) = α
+   - At place v: val_v(g) ≤ exp(D v + 1) via ultrametric inequality
 
 ---
 

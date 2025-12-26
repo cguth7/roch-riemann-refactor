@@ -838,11 +838,190 @@ lemma eval_g_eq_alpha_from_bounded (v : HeightOneSpectrum R) (D : DivisorV2 R)
       (algebraMap R K (liftToR R v α) * uniformizerInvPow R K v (D v + 1))) -
       diagonalK R K g ∈ boundedSubmodule k R K D) :
     evaluationMapAt_complete v D ⟨g, hg_mem⟩ = α := by
-  -- The key insight: from h_bounded we can derive that algebraMap R K r and shiftedElement v D g
-  -- have the same residue, where r = liftToR R v α. Then eval(g) = bridge(residue(shifted(g)))
-  -- = bridge(residue(r)) = algebraMap R κ r = α.
-  -- Technical details involve valuation bounds and maximal ideal membership.
-  sorry
+  -- Strategy:
+  -- 1. From h_bounded at v: val(r * π^(-(D v+1)) - g) ≤ exp(D v) where r = liftToR R v α
+  -- 2. Factor: (algebraMap R K r - shiftedElement v D g) * π^(-(D v+1))
+  -- 3. Derive: val(algebraMap R K r - shiftedElement v D g) ≤ exp(-1) < 1
+  -- 4. This means algebraMap R K r and shiftedElement v D g have the same residue
+  -- 5. So eval(g) = bridge(residue(shifted(g))) = bridge(residue(r)) = algebraMap R κ r = α
+  set r := liftToR R v α with hr_def
+  set a := finiteAdeleSingleHere R K v (algebraMap K (v.adicCompletion K)
+    (algebraMap R K r * uniformizerInvPow R K v (D v + 1))) with ha_def
+
+  -- Step 1: Extract the bound at place v from h_bounded
+  have h_v := h_bounded v
+  simp only [satisfiesBoundAt, valuationAt] at h_v
+  have ha_v : a v = algebraMap K (v.adicCompletion K)
+      (algebraMap R K r * uniformizerInvPow R K v (D v + 1)) :=
+    finiteAdeleSingleHere_apply_same R K v _
+  have hdiag_v : (diagonalK R K g) v = algebraMap K (v.adicCompletion K) g := rfl
+  have h_comp : (a - diagonalK R K g) v = a v - (diagonalK R K g) v := rfl
+  rw [h_comp, ha_v, hdiag_v, ← map_sub] at h_v
+  have h_val_K : v.valuation K (algebraMap R K r * uniformizerInvPow R K v (D v + 1) - g) ≤
+      WithZero.exp (D v) := by
+    rw [← valuedAdicCompletion_eq_valuation' v _]
+    exact h_v
+
+  -- Step 2: Factor the difference as (algebraMap R K r - shiftedElement v D g) * π^(-(D v+1))
+  have hfactor : algebraMap R K r * uniformizerInvPow R K v (D v + 1) - g =
+      (algebraMap R K r - shiftedElement v D g) * uniformizerInvPow R K v (D v + 1) := by
+    unfold shiftedElement uniformizerInvPow uniformizerInK
+    have hunif_ne := uniformizerAt_ne_zero v
+    have h_zpow : (algebraMap R K (uniformizerAt v)) ^ (D v + 1) *
+        (algebraMap R K (uniformizerAt v)) ^ (-(D v + 1)) = 1 := by
+      rw [← zpow_add₀]
+      · simp only [add_neg_cancel, zpow_zero]
+      · intro h
+        apply hunif_ne
+        rw [← map_zero (algebraMap R K)] at h
+        exact (IsFractionRing.injective R K) h
+    calc algebraMap R K r * (algebraMap R K (uniformizerAt v)) ^ (-(D v + 1)) - g
+        = algebraMap R K r * (algebraMap R K (uniformizerAt v)) ^ (-(D v + 1)) -
+          g * ((algebraMap R K (uniformizerAt v)) ^ (D v + 1) *
+          (algebraMap R K (uniformizerAt v)) ^ (-(D v + 1))) := by rw [h_zpow, mul_one]
+      _ = (algebraMap R K r - g * (algebraMap R K (uniformizerAt v)) ^ (D v + 1)) *
+          (algebraMap R K (uniformizerAt v)) ^ (-(D v + 1)) := by ring
+
+  -- Step 3: Derive valuation bound for the difference
+  rw [hfactor, Valuation.map_mul] at h_val_K
+  unfold uniformizerInvPow uniformizerInK at h_val_K
+  rw [uniformizerAt_zpow_valuation] at h_val_K
+  simp only [neg_neg] at h_val_K
+  -- We have: val(diff) * exp(D v + 1) ≤ exp(D v)
+  -- So val(diff) ≤ exp(-1) since exp(D v) ≤ exp(-1) * exp(D v + 1)
+  have h_diff_val : v.valuation K (algebraMap R K r - shiftedElement v D g) ≤
+      WithZero.exp (-1 : ℤ) := by
+    by_cases hdiff_zero : algebraMap R K r - shiftedElement v D g = 0
+    · simp only [hdiff_zero, Valuation.map_zero]
+      exact WithZero.zero_le _
+    · have hval_ne : v.valuation K (algebraMap R K r - shiftedElement v D g) ≠ 0 :=
+        (Valuation.ne_zero_iff _).mpr hdiff_zero
+      -- From val(diff) * exp(D v + 1) ≤ exp(D v), use step-down
+      -- val < exp(D v + 1) (else val * exp(D v + 1) > exp(D v)), so val ≤ exp(D v)
+      -- More precisely: val(diff) * exp(D v + 1) ≤ exp(D v) = exp(-1) * exp(D v + 1)
+      -- implies val(diff) ≤ exp(-1) by cancellation
+      -- h_val_K : val(diff) * exp(D v + 1) ≤ exp(D v)
+      -- Use discrete valuation step-down: if val * exp(D v + 1) ≤ exp(D v)
+      -- and val ≠ 0, then val ≤ exp(D v) / exp(D v + 1) = exp(-1)
+      -- This is because the value group is discrete (exp(ℤ))
+      -- Actually, we can use: if val ≠ 0 and val * exp(D v + 1) ≤ exp(D v),
+      -- then since val < exp(D v + 1) would give val ≤ exp(D v) after mult,
+      -- we use the step-down from Cycle 68's approach
+      have h_step := withzero_lt_exp_succ_imp_le_exp (v.valuation K (algebraMap R K r - shiftedElement v D g))
+        (D v) hval_ne
+      -- Need to show val < exp(D v + 1) = exp(D v) * exp(1)
+      -- If val * exp(D v + 1) ≤ exp(D v), then val ≤ exp(D v) / exp(D v + 1)
+      -- Since val ≠ 0 and exp(D v + 1) ≠ 0, and the value group is well-ordered in a sense...
+      -- Actually, let's think about it differently:
+      -- val * exp(D v + 1) ≤ exp(D v) < exp(D v + 1) (since D v < D v + 1)
+      -- Hmm, that's not quite right either. Let me use a different approach.
+      -- The simplest is: val(diff) = exp(n) for some n ≤ 0 (since diff might be in val ring or higher order)
+      -- If val(diff) * exp(D v + 1) ≤ exp(D v), then exp(n) * exp(D v + 1) ≤ exp(D v)
+      -- So exp(n + D v + 1) ≤ exp(D v), meaning n + D v + 1 ≤ D v, so n ≤ -1
+      -- Hence val(diff) = exp(n) ≤ exp(-1)
+      -- But we might have val(diff) < exp(n) for some n (could be zero)
+      -- Actually in discrete valuations, val ∈ {0} ∪ {exp(n) : n ∈ ℤ}
+      -- Let me look for a simpler inequality manipulation:
+      calc v.valuation K (algebraMap R K r - shiftedElement v D g)
+          ≤ v.valuation K (algebraMap R K r - shiftedElement v D g) * 1 := by rw [mul_one]
+        _ = v.valuation K (algebraMap R K r - shiftedElement v D g) *
+            (WithZero.exp (D v + 1) * (WithZero.exp (D v + 1))⁻¹) := by
+              rw [mul_inv_cancel₀ WithZero.exp_ne_zero]
+        _ = v.valuation K (algebraMap R K r - shiftedElement v D g) *
+            WithZero.exp (D v + 1) * (WithZero.exp (D v + 1))⁻¹ := by
+              rw [mul_assoc]
+        _ ≤ WithZero.exp (D v) * (WithZero.exp (D v + 1))⁻¹ := by
+              apply mul_le_mul_of_nonneg_right h_val_K (WithZero.zero_le _)
+        _ = WithZero.exp (D v) / WithZero.exp (D v + 1) := by
+              rw [div_eq_mul_inv]
+        _ = WithZero.exp (D v - (D v + 1)) := by
+              rw [WithZero.exp_sub]
+        _ = WithZero.exp (-1) := by
+              congr 1; omega
+
+  -- Step 4: Valuation < 1 means the difference is in the maximal ideal
+  -- v.valuation K x ≤ exp(-1) < 1 means x is in maximal ideal (val < 1)
+  have h_diff_lt_one : v.valuation K (algebraMap R K r - shiftedElement v D g) < 1 := by
+    calc v.valuation K (algebraMap R K r - shiftedElement v D g)
+        ≤ WithZero.exp (-1 : ℤ) := h_diff_val
+      _ < WithZero.exp (0 : ℤ) := by
+          apply WithZero.exp_lt_exp.mpr
+          omega
+      _ = 1 := WithZero.exp_zero
+
+  -- Step 5: The difference is in the maximal ideal of the valuation ring
+  -- Both algebraMap R K r and shiftedElement v D g are in the valuation ring
+  have hr_mem : algebraMap R K r ∈ valuationRingAt (R := R) (K := K) v :=
+    algebraMap_mem_valuationRingAt v r
+  have hg_shifted_mem : shiftedElement v D g ∈ valuationRingAt (R := R) (K := K) v :=
+    shiftedElement_mem_valuationRingAt v D ⟨g, hg_mem⟩
+  -- Their difference is in the valuation ring (it's a subring, closed under subtraction)
+  have hdiff_mem : algebraMap R K r - shiftedElement v D g ∈ valuationRingAt (R := R) (K := K) v := by
+    -- valuationRingAt is a valuation subring, hence a subring, closed under subtraction
+    unfold valuationRingAt
+    exact (v.valuation K).valuationSubring.sub_mem hr_mem hg_shifted_mem
+  -- Valuation < 1 implies membership in maximal ideal
+  have hmaximal : (⟨algebraMap R K r - shiftedElement v D g, hdiff_mem⟩ :
+      valuationRingAt (R := R) (K := K) v) ∈
+      IsLocalRing.maximalIdeal (valuationRingAt (R := R) (K := K) v) := by
+    unfold valuationRingAt
+    rw [Valuation.mem_maximalIdeal_iff]
+    exact h_diff_lt_one
+
+  -- Step 6: Elements in the maximal ideal have residue 0, so the residues of r and shifted(g) are equal
+  have hresidues_eq : (valuationRingAt.residue (R := R) (K := K) v)
+      ⟨algebraMap R K r, hr_mem⟩ =
+    (valuationRingAt.residue (R := R) (K := K) v)
+      ⟨shiftedElement v D g, hg_shifted_mem⟩ := by
+    -- residue(a - b) = residue(a) - residue(b) = 0 when a - b ∈ maximalIdeal
+    have h_sub_res : (valuationRingAt.residue (R := R) (K := K) v)
+        ⟨algebraMap R K r - shiftedElement v D g, hdiff_mem⟩ = 0 := by
+      -- valuationRingAt.residue is definitionally IsLocalRing.residue
+      unfold valuationRingAt.residue
+      rw [IsLocalRing.residue_eq_zero_iff]
+      exact hmaximal
+    have h_sub_eq : (⟨algebraMap R K r - shiftedElement v D g, hdiff_mem⟩ :
+        valuationRingAt (R := R) (K := K) v) =
+      ⟨algebraMap R K r, hr_mem⟩ - ⟨shiftedElement v D g, hg_shifted_mem⟩ := by
+      simp only [Subtype.ext_iff]
+      rfl
+    rw [h_sub_eq, map_sub] at h_sub_res
+    exact sub_eq_zero.mp h_sub_res
+
+  -- Step 7: Apply bridge to both sides of the residue equality
+  have hbridge_eq : (residueFieldBridge_explicit (R := R) (K := K) v)
+      ((valuationRingAt.residue (R := R) (K := K) v) ⟨algebraMap R K r, hr_mem⟩) =
+    (residueFieldBridge_explicit (R := R) (K := K) v)
+      ((valuationRingAt.residue (R := R) (K := K) v) ⟨shiftedElement v D g, hg_shifted_mem⟩) := by
+    rw [hresidues_eq]
+
+  -- Step 8: The RHS is exactly evaluationMapAt_complete v D ⟨g, hg_mem⟩
+  -- evaluationMapAt_complete = evaluationMapAt_complete_clean = evaluationFun_via_bridge_clean
+  -- which is bridge(residue(shifted(g)))
+  have heval_def : evaluationMapAt_complete v D ⟨g, hg_mem⟩ =
+    (residueFieldBridge_explicit (R := R) (K := K) v)
+      ((valuationRingAt.residue (R := R) (K := K) v) ⟨shiftedElement v D g, hg_shifted_mem⟩) := by
+    simp only [evaluationMapAt_complete, evaluationMapAt_complete_clean, LinearMap.coe_mk,
+      AddHom.coe_mk, evaluationFun_via_bridge_clean]
+    rfl
+
+  -- Step 9: The LHS is bridge(residue(algebraMap R K r)) = algebraMap R κ r = α
+  have hlhs_eq : (residueFieldBridge_explicit (R := R) (K := K) v)
+      ((valuationRingAt.residue (R := R) (K := K) v) ⟨algebraMap R K r, hr_mem⟩) = α := by
+    -- Use bridge_residue_algebraMap_clean
+    have h_bridge := bridge_residue_algebraMap_clean (R := R) (K := K) v r
+    -- residueFieldBridge_explicit = residueFieldBridge_explicit_clean
+    have h_eq : residueFieldBridge_explicit (R := R) (K := K) v =
+        residueFieldBridge_explicit_clean v := rfl
+    rw [h_eq, h_bridge]
+    -- algebraMap R κ r = linearEquiv (Quotient.mk r) = linearEquiv ((linearEquiv).symm α) = α
+    have h_alg : algebraMap R (residueFieldAtPrime R v) r =
+        (residueFieldAtPrime.linearEquiv (R := R) v) (Ideal.Quotient.mk v.asIdeal r) := rfl
+    rw [h_alg, liftToR_proj]
+    simp only [LinearEquiv.apply_symm_apply]
+
+  -- Combine
+  rw [heval_def, ← hbridge_eq, hlhs_eq]
 
 theorem exactness_at_kappa_set (v : HeightOneSpectrum R) (D : DivisorV2 R) :
     (Set.range (evaluationMapAt_complete (K := K) v D) : Set (residueFieldAtPrime R v)) =
@@ -901,13 +1080,20 @@ def H1Projection (v : HeightOneSpectrum R) (D : DivisorV2 R) :
 /-- Exactness at H¹(D): image(δ) = ker(proj).
 
 The kernel of H¹(D) → H¹(D+v) is exactly the image of δ.
+
+Proof sketch:
+- Forward (image(δ) ⊆ ker(proj)): δ(α) produces an adele with val ≤ exp(D v + 1) at v
+  and 0 elsewhere, so it's in A_K(D+v), hence maps to 0 in H¹(D+v).
+- Backward (ker(proj) ⊆ image(δ)): If [a] = 0 in H¹(D+v), then a = g + b with
+  g ∈ K and b ∈ A_K(D+v). The "shifted residue" of b at v determines α ∈ κ(v),
+  and [a] = δ(α).
 -/
 theorem exactness_at_H1 (v : HeightOneSpectrum R) (D : DivisorV2 R)
     [hfin : Module.Finite k (SpaceModule k R K D)] :
     LinearMap.range (connectingHom k R K v D) =
     LinearMap.ker (H1Projection k R K v D) := by
-  -- The kernel of proj consists of [a] where a ∈ K + A_K(D+v) but a ∉ K + A_K(D)
-  -- Such elements have a pole of order exactly 1 at v, which is the image of δ
+  -- The proof follows the structure: δ(α) ∈ A_K(D+v) gives forward direction,
+  -- and extracting α from ker element gives backward direction.
   sorry
 
 /-- H¹(D) → H¹(D+v) is surjective.
