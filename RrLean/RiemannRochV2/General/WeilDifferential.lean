@@ -41,6 +41,8 @@ Cycle 313: Module K instance (deferred - requires careful handling).
 
 import RrLean.RiemannRochV2.Adelic.FullAdelesBase
 import RrLean.RiemannRochV2.Definitions.Projective
+import Mathlib.LinearAlgebra.Dual.Lemmas
+import Mathlib.LinearAlgebra.Dimension.StrongRankCondition
 
 noncomputable section
 
@@ -824,28 +826,6 @@ def PairingPerfect (D E : DivisorV2 R) : Prop :=
   PairingNondegenerateLeft (k := k) (R := R) (K := K) (K_infty := K_infty) D E ∧
   PairingNondegenerateRight (k := k) (R := R) (K := K) (K_infty := K_infty) D E
 
-/-- Left non-degeneracy is symmetric in D and E (via the pairing structure). -/
-lemma pairingNondegenerateLeft_symm {D E : DivisorV2 R} :
-    PairingNondegenerateLeft (k := k) (R := R) (K := K) (K_infty := K_infty) D E ↔
-    PairingNondegenerateRight (k := k) (R := R) (K := K) (K_infty := K_infty) E D := by
-  constructor
-  · intro hL ω hω_ne
-    -- For ω ≠ 0 in Ω(E), we need f in L(D) with pairing ≠ 0
-    -- This follows from left non-degeneracy of E, D pairing (if symmetric)
-    -- For now, this is a placeholder showing the structure
-    sorry
-  · intro hR f hf_ne
-    -- Symmetric argument
-    sorry
-
-/-- Perfect pairing is symmetric in D and E. -/
-lemma pairingPerfect_symm {D E : DivisorV2 R} :
-    PairingPerfect (k := k) (R := R) (K := K) (K_infty := K_infty) D E ↔
-    PairingPerfect (k := k) (R := R) (K := K) (K_infty := K_infty) E D := by
-  simp only [PairingPerfect]
-  rw [pairingNondegenerateLeft_symm, pairingNondegenerateLeft_symm]
-  tauto
-
 end NonDegeneracy
 
 end SerrePairing
@@ -984,11 +964,75 @@ theorem finrank_eq_of_perfect_pairing {D E : DivisorV2 R}
     [Module.Finite k (DivisorDifferentials (k := k) (R := R) (K := K) (K_infty := K_infty) E)] :
     Module.finrank k (RRSpace_proj k R K D) =
     Module.finrank k (DivisorDifferentials (k := k) (R := R) (K := K) (K_infty := K_infty) E) := by
-  -- From left non-degeneracy: the pairing induces an injection L(D) → Ω(E)*
-  -- From right non-degeneracy: the pairing induces an injection Ω(E) → L(D)*
-  -- For finite-dimensional spaces, this gives equality of dimensions.
-  -- Technical proof deferred - this is a standard linear algebra fact.
-  sorry
+  -- Abbreviate the types
+  let L := RRSpace_proj k R K D
+  let Ω := DivisorDifferentials (k := k) (R := R) (K := K) (K_infty := K_infty) E
+  -- The pairing gives a linear map L → Dual k Ω
+  let φ : L →ₗ[k] Module.Dual k Ω := serrePairingGeneral D E
+  -- Left non-degeneracy: φ is injective
+  have hφ_inj : Function.Injective φ := by
+    rw [← LinearMap.ker_eq_bot]
+    ext f
+    simp only [LinearMap.mem_ker, Submodule.mem_bot]
+    constructor
+    · intro hf
+      -- If serrePairingGeneral D E f = 0, then ∀ ω, pairing f ω = 0
+      -- By left non-degeneracy contrapositive: f = 0
+      by_contra hf_ne
+      have hf_ne' : (f : K) ≠ 0 := by
+        intro h
+        apply hf_ne
+        exact Subtype.ext h
+      obtain ⟨ω, hω⟩ := hPerf.1 f hf_ne'
+      simp only [serrePairingGeneral_apply] at hω
+      have : φ f ω = 0 := by
+        change serrePairingGeneral D E f ω = 0
+        rw [hf]
+        rfl
+      exact hω this
+    · intro hf
+      simp only [hf, LinearMap.map_zero]
+  -- The flipped pairing gives a linear map Ω → Dual k L
+  let ψ : Ω →ₗ[k] Module.Dual k L := (serrePairingGeneral D E).flip
+  -- Right non-degeneracy: ψ is injective
+  have hψ_inj : Function.Injective ψ := by
+    rw [← LinearMap.ker_eq_bot]
+    ext ω
+    simp only [LinearMap.mem_ker, Submodule.mem_bot]
+    constructor
+    · intro hω
+      by_contra hω_ne
+      have hω_ne' : (ω : WeilDifferential k R K K_infty) ≠ 0 := by
+        intro h
+        apply hω_ne
+        exact Subtype.ext h
+      obtain ⟨f, hf⟩ := hPerf.2 ω hω_ne'
+      simp only [serrePairingGeneral_apply] at hf
+      have : ψ ω f = 0 := by
+        change (serrePairingGeneral D E).flip ω f = 0
+        rw [hω]
+        rfl
+      rw [LinearMap.flip_apply] at this
+      exact hf this
+    · intro hω
+      simp only [hω, LinearMap.map_zero]
+  -- From injectivity, get dimension bounds
+  -- finrank L ≤ finrank (Dual k Ω) = finrank Ω
+  have h1 : Module.finrank k L ≤ Module.finrank k (Module.Dual k Ω) :=
+    LinearMap.finrank_le_finrank_of_injective hφ_inj
+  have h2 : Module.finrank k (Module.Dual k Ω) = Module.finrank k Ω :=
+    Subspace.dual_finrank_eq
+  -- finrank Ω ≤ finrank (Dual k L) = finrank L
+  have h3 : Module.finrank k Ω ≤ Module.finrank k (Module.Dual k L) :=
+    LinearMap.finrank_le_finrank_of_injective hψ_inj
+  have h4 : Module.finrank k (Module.Dual k L) = Module.finrank k L :=
+    Subspace.dual_finrank_eq
+  -- Combine: finrank L ≤ finrank Ω and finrank Ω ≤ finrank L
+  -- h1 + h2 gives: finrank L ≤ finrank Ω
+  -- h3 + h4 gives: finrank Ω ≤ finrank L
+  have le1 : Module.finrank k L ≤ Module.finrank k Ω := h2 ▸ h1
+  have le2 : Module.finrank k Ω ≤ Module.finrank k L := h4 ▸ h3
+  exact le_antisymm le1 le2
 
 end DimensionTheorems
 

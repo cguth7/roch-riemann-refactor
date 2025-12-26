@@ -5,51 +5,69 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 319
+**Cycle**: 320
 **Phase**: 7 (Weil Differentials) - Active
-**Total Sorries**: 10 (2 archived P¹ edge cases + 6 axioms + 1 symmetry + 1 dimension theorem)
+**Total Sorries**: 8 (2 archived P¹ edge cases + 6 axioms)
 
 ---
 
-## Cycle 319 Completed
+## Cycle 320 Completed
+
+**Goal**: Prove dimension theorem, clean up unused lemmas.
+
+### Deliverables
+
+1. **Dimension Theorem PROVED**:
+   - `finrank_eq_of_perfect_pairing` - if pairing is perfect, dim L(D) = dim Ω(E)
+   - **Now sorry-free!** Uses:
+     - Left non-degeneracy → injection L(D) → Ω(E)* via `serrePairingGeneral`
+     - Right non-degeneracy → injection Ω(E) → L(D)* via `(serrePairingGeneral).flip`
+     - `LinearMap.finrank_le_finrank_of_injective` for dimension bounds
+     - `Subspace.dual_finrank_eq` for `dim(V*) = dim(V)`
+     - Antisymmetry from ≤ in both directions
+
+2. **Cleanup**:
+   - Removed unused `pairingNondegenerateLeft_symm` (incorrectly stated)
+   - Removed unused `pairingPerfect_symm`
+   - Added imports: `Mathlib.LinearAlgebra.Dual.Lemmas`, `Mathlib.LinearAlgebra.Dimension.StrongRankCondition`
+
+3. **Sorry Count Reduced**: 10 → 8
+   - Removed 1 sorry: `finrank_eq_of_perfect_pairing` now proved
+   - Removed 1 sorry: deleted unused symmetry lemma
+
+### Architecture Note
+WeilDifferential.lean is now **sorry-free**! All remaining sorries are:
+- 2 archived P¹ edge cases (bypassed by Weil approach)
+- 6 intentional axioms (function field density, elliptic-specific)
+
+---
+
+## Cycle 321 Target
+
+**Priority**: Bridge WeilRRData' to FullRRData or prove RR directly.
+
+**Analysis**:
+The dimension theorem proves `ℓ(D) = dim Ω(K-D)` via perfect pairing.
+The RR equation `ℓ(D) - ℓ(K-D) = deg(D) + 1 - g` requires more:
+- Either apply Riemann inequality twice (to D and K-D)
+- Or connect h¹(D) definition from AdelicH1v2 to Ω(K-D)
+
+**Options**:
+1. **Direct Proof**: Use Riemann inequality + vanishing lemmas
+2. **Cohomology Bridge**: Connect AdelicH1 definition to Weil differentials
+3. **Axiomatize**: Keep serre_duality_eq as axiom in FullRRData
+
+---
+
+## Cycle 319 Summary (Archived)
 
 **Goal**: Bridge WeilDifferential to FullRRData for final assembly.
 
 ### Deliverables
-
-1. **Dimension Theorem**:
-   - `finrank_eq_of_perfect_pairing` - if pairing is perfect, dim L(D) = dim Ω(E)
-   - Proof deferred (sorry) - standard linear algebra fact
-   - Uses: left non-deg → injection L(D) → Ω(E)*, right non-deg → injection Ω(E) → L(D)*
-
-2. **HasPerfectPairing' Structure**:
-   - `finite_rrspace` - L(D) finite-dimensional for all D
-   - `finite_differentials` - Ω(E) finite-dimensional for all E
-   - `pairing_perfect` - pairing L(D) × Ω(K-D) → k is perfect for all D
-   - `finrank_rrspace_eq_finrank_differentials'` - dimension equality theorem
-
-3. **WeilRRData' Structure**:
-   - `hasPerfectPairing : HasPerfectPairing'` - the pairing is perfect
-   - `dim_omega_eq` - dim Ω(E) = ℓ(K-E) (Ω interpretation axiom)
-   - `serre_duality_dim'` - ℓ(D) = dim Ω(K-D)
-   - `ell_via_omega'` - ℓ(D) = ℓ(K - (K-D)) = ℓ(D)
-
-### Architecture Note
-The bridge between Weil differentials and FullRRData is now established:
-- `CanonicalData` provides K, g, deg(K) = 2g-2
-- `HasPerfectPairing'` asserts the Serre pairing is perfect
-- `WeilRRData'` adds the dimension identification Ω(E) ↔ L(K-E)
-
----
-
-## Cycle 320 Target
-
-**Priority**: Complete bridge to FullRRData instance.
-
-**Steps**:
-1. Fill in `finrank_eq_of_perfect_pairing` sorry (standard linear algebra)
-2. Create FullRRData instance from WeilRRData'
-3. Begin validating with P¹ or elliptic examples
+- HasPerfectPairing' structure
+- WeilRRData' structure
+- serre_duality_dim' theorem
+- Dimension theorem (with sorry)
 
 ---
 
