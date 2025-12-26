@@ -5,42 +5,50 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 329
+**Cycle**: 330
 **Phase**: 7 (Weil Differentials) - Active
-**Total Sorries**: 13 (5 in EulerCharacteristic + 8 existing axioms)
+**Total Sorries**: 12 (4 in EulerCharacteristic + 8 existing axioms)
 
 ---
 
-## Cycle 329 In Progress
+## Cycle 330 Completed
 
-**Goal**: Prove exactness properties for the 6-term exact sequence.
+**Goal**: Prove forward direction of exactness at κ(v): image(eval) ⊆ ker(δ).
 
-### EulerCharacteristic.lean now wired up to main build
+### Deliverables
 
-The file was previously developed standalone. Now imported via General.lean.
+1. **Proved `image_eval_subset_ker_delta`**: Forward direction of exactness
+   - Key lemma: `lift_eq_shiftedElement_residue` - lift of α has same residue as shiftedElement(f)
+   - Key lemma: `algebraMap_sub_shiftedElement_mem_maxIdeal` - difference in maximal ideal
+   - Key lemma: `valuation_lt_one_imp_le_exp_neg_one` - discrete valuation step-down
+   - Key lemma: `diff_valuation_bound_at_v` - valuation bound for the difference at place v
 
-### Remaining Sorries in EulerCharacteristic.lean (5 total)
+2. **Proof strategy implemented**:
+   - If α = eval(f) for f ∈ L(D+v), show the adele from δ is in K + A_K(D)
+   - Write a = diag(f) + (a - diag(f)) where diag(f) ∈ K
+   - Show (a - diag(f)) ∈ A_K(D) by valuation bounds:
+     - At v: uses that liftToR(α) and shiftedElement(f) have same residue
+     - At w ≠ v: uses that f ∈ L(D+v) implies f ∈ L(D) at places w ≠ v
+
+### Remaining Sorries in EulerCharacteristic.lean (4 total)
 
 | Lemma | Description | Difficulty |
 |-------|-------------|------------|
-| `image_eval_subset_ker_delta` | Forward: image(eval) ⊆ ker(δ) | Medium |
-| `exactness_at_kappa_set` | Backward: ker(δ) ⊆ image(eval) | Medium |
+| `exactness_at_kappa_set` | Backward: ker(δ) ⊆ image(eval) | Medium-Hard |
 | `exactness_at_H1` | image(δ) = ker(proj) | Medium |
 | `chi_additive` | χ(D+v) = χ(D) + 1 | Needs exactness |
 | `euler_characteristic` | χ(D) = deg(D) + 1 - g | Needs chi_additive |
 
-### Strategy for exactness_at_kappa_set
-
-**Forward (⊆)**: If α = eval(f) for f ∈ L(D+v), then δ(α) = 0
-- Key insight: single-place adele a differs from diag(f) by element in A_K(D)
-- At v: a_v - f = (r - shiftedElement)·π^(-(D(v)+1)) has valuation ≤ exp(D(v))
-- At w ≠ v: a_w - f = -f has valuation ≤ exp(D(w)) since f ∈ L(D+v)
-- Therefore a ∈ K + A_K(D), so quotientMapLinear(a) = 0
+### Strategy for remaining exactness proofs
 
 **Backward (⊇)**: If δ(α) = 0, then α ∈ image(eval)
 - δ(α) = 0 means single-place adele a ∈ K + A_K(D)
 - So ∃ g ∈ K with a - diag(g) ∈ A_K(D)
 - Show g ∈ L(D+v) and eval(g) = α
+
+**exactness_at_H1**: image(δ) = ker(proj)
+- Need to show elements in ker(H¹(D) → H¹(D+v)) come from δ
+- These are exactly adeles with "extra pole at v"
 
 ---
 

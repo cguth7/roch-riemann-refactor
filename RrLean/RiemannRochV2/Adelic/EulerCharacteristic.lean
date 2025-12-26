@@ -533,22 +533,215 @@ theorem exactness_at_LDv (v : HeightOneSpectrum R) (D : DivisorV2 R) :
       (RRModuleV2_mono_inclusion R K (divisor_le_add_single D v))) :=
   kernel_evaluationMapAt_complete_proof v D
 
-/-- Forward direction: elements in image(eval) are in ker(δ).
+/-- Helper: if α = eval(f), then the lift of α and shiftedElement(f) have the same residue.
 
-    If α = eval(f) for f ∈ L(D+v), then δ(α) = 0. The key insight is that the
-    single-place adele constructed by δ differs from diag(f) by an element in A_K(D),
-    so the adele is in K + A_K(D) and maps to 0 in H¹(D).
--/
+    This is the key observation for proving that image(eval) ⊆ ker(δ). -/
+lemma lift_eq_shiftedElement_residue (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    (f : RRModuleV2_real R K (D + DivisorV2.single v 1)) :
+    (residueFieldBridge_explicit (R := R) (K := K) v)
+      ((valuationRingAt.residue (R := R) (K := K) v)
+        ⟨algebraMap R K (liftToR R v (evaluationMapAt_complete v D f)),
+          algebraMap_mem_valuationRingAt v _⟩) =
+    evaluationMapAt_complete v D f := by
+  -- By liftToR_proj: Quotient.mk (liftToR α) = (linearEquiv).symm α
+  -- By bridge_residue_algebraMap_clean: bridge(residue(algebraMap R K r)) = algebraMap R κ r
+  -- algebraMap R κ r = linearEquiv (Quotient.mk r) = linearEquiv ((linearEquiv).symm α) = α
+  -- Note: residueFieldBridge_explicit = residueFieldBridge_explicit_clean by definition
+  have h1 := bridge_residue_algebraMap_clean (R := R) (K := K) v (liftToR R v (evaluationMapAt_complete v D f))
+  -- residueFieldBridge_explicit and residueFieldBridge_explicit_clean are definitionally equal
+  change (residueFieldBridge_explicit_clean (R := R) (K := K) v) _ = _
+  rw [h1]
+  -- Now need: algebraMap R (residueFieldAtPrime R v) (liftToR ...) = evaluationMapAt_complete v D f
+  -- The residueFieldAtPrime R v has linearEquiv : R ⧸ v.asIdeal ≃ₗ[R] residueFieldAtPrime R v
+  -- algebraMap R (residueFieldAtPrime R v) r = linearEquiv (Quotient.mk r)
+  have h2 : algebraMap R (residueFieldAtPrime R v) (liftToR R v (evaluationMapAt_complete v D f)) =
+      (residueFieldAtPrime.linearEquiv (R := R) v) (Ideal.Quotient.mk v.asIdeal
+        (liftToR R v (evaluationMapAt_complete v D f))) := by
+    rfl
+  rw [h2, liftToR_proj]
+  -- Now: linearEquiv ((linearEquiv).symm α) = α
+  simp only [LinearEquiv.apply_symm_apply]
+
+/-- Helper: algebraMap R K r - shiftedElement f is in the maximal ideal when residues match. -/
+lemma algebraMap_sub_shiftedElement_mem_maxIdeal (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    (f : RRModuleV2_real R K (D + DivisorV2.single v 1))
+    (r : R) (hr : (residueFieldBridge_explicit (R := R) (K := K) v)
+      ((valuationRingAt.residue (R := R) (K := K) v) ⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩) =
+      evaluationMapAt_complete v D f) :
+    (⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩ : valuationRingAt (R := R) (K := K) v) -
+      ⟨shiftedElement v D f.val, shiftedElement_mem_valuationRingAt v D f⟩ ∈
+      IsLocalRing.maximalIdeal (valuationRingAt (R := R) (K := K) v) := by
+  -- residue maps to 0 iff element is in maximal ideal
+  rw [← IsLocalRing.residue_eq_zero_iff]
+  -- residue is a ring hom, so residue(a - b) = residue(a) - residue(b)
+  rw [map_sub]
+  -- By hr, bridge(residue(algebraMap R K r)) = eval(f) = bridge(residue(shiftedElement))
+  -- Since bridge is injective, residue(algebraMap R K r) = residue(shiftedElement)
+  have h_bridge_inj := (residueFieldBridge_explicit (R := R) (K := K) v).injective
+  apply h_bridge_inj
+  rw [map_sub, map_zero]
+  -- Now need: bridge(residue(algebraMap R K r)) - bridge(residue(shiftedElement)) = 0
+  -- valuationRingAt.residue is the same as IsLocalRing.residue on valuationRingAt
+  -- hr uses valuationRingAt.residue which is definitionally IsLocalRing.residue
+  have h_same : (valuationRingAt.residue (R := R) (K := K) v) = (IsLocalRing.residue (valuationRingAt (R := R) (K := K) v)) := rfl
+  rw [← h_same, hr]
+  -- eval(f) is defined as bridge(residue(shiftedElement))
+  -- residueFieldBridge_explicit = residueFieldBridge_explicit_clean definitionally
+  -- Need to show: eval(f) - bridge(residue(shifted)) = 0
+  -- But eval(f) = bridge_explicit_clean(residue(shifted))
+  -- And bridge_explicit = bridge_explicit_clean
+  have h_bridge_eq : residueFieldBridge_explicit (R := R) (K := K) v = residueFieldBridge_explicit_clean v := rfl
+  simp only [evaluationMapAt_complete, evaluationMapAt_complete_clean, LinearMap.coe_mk, AddHom.coe_mk,
+    evaluationFun_via_bridge_clean, h_bridge_eq, sub_self]
+
+/-- In a discrete valuation, val < exp(0) = 1 implies val ≤ exp(-1).
+This is because the value group is exp(ℤ) ∪ {0}. -/
+lemma valuation_lt_one_imp_le_exp_neg_one (v : HeightOneSpectrum R) (x : K)
+    (h : v.valuation K x < 1) :
+    v.valuation K x ≤ WithZero.exp (-1 : ℤ) := by
+  -- Either x = 0 (val = 0 ≤ exp(-1)) or x ≠ 0 (use step-down)
+  by_cases hx : x = 0
+  · simp only [hx, Valuation.map_zero]
+    exact WithZero.zero_le _
+  · -- x ≠ 0, so val ≠ 0, and val < 1 = exp(0) implies val ≤ exp(-1)
+    have hval_ne : v.valuation K x ≠ 0 := (Valuation.ne_zero_iff _).mpr hx
+    -- 1 = exp(0) = exp((-1)+1)
+    have hone_eq : (1 : WithZero (Multiplicative ℤ)) = WithZero.exp ((-1 : ℤ) + 1) := by
+      simp only [neg_add_cancel, WithZero.exp_zero]
+    rw [hone_eq] at h
+    -- Use the step-down lemma: x < exp(n+1) and x ≠ 0 implies x ≤ exp(n)
+    exact withzero_lt_exp_succ_imp_le_exp (v.valuation K x) (-1) hval_ne h
+
+/-- Helper: valuation bound for the difference at place v. -/
+lemma diff_valuation_bound_at_v (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    (f : RRModuleV2_real R K (D + DivisorV2.single v 1))
+    (r : R)
+    (hmem : (⟨algebraMap R K r, algebraMap_mem_valuationRingAt v r⟩ : valuationRingAt (R := R) (K := K) v) -
+      ⟨shiftedElement v D f.val, shiftedElement_mem_valuationRingAt v D f⟩ ∈
+      IsLocalRing.maximalIdeal (valuationRingAt (R := R) (K := K) v)) :
+    v.valuation K (algebraMap R K r * uniformizerInvPow R K v (D v + 1) - f.val) ≤ WithZero.exp (D v) := by
+  -- The difference can be factored as (algebraMap R K r - shiftedElement f) * π^(-(D v+1))
+  have hfactor : algebraMap R K r * uniformizerInvPow R K v (D v + 1) - f.val =
+      (algebraMap R K r - shiftedElement v D f.val) * uniformizerInvPow R K v (D v + 1) := by
+    unfold shiftedElement uniformizerInvPow uniformizerInK
+    -- f.val * π^(D v + 1) * π^(-(D v + 1)) = f.val since π^n * π^(-n) = 1
+    have hunif_ne := uniformizerAt_ne_zero v
+    have h_zpow : (algebraMap R K (uniformizerAt v)) ^ (D v + 1) * (algebraMap R K (uniformizerAt v)) ^ (-(D v + 1)) = 1 := by
+      rw [← zpow_add₀]
+      · simp only [add_neg_cancel, zpow_zero]
+      · intro h
+        apply hunif_ne
+        rw [← map_zero (algebraMap R K)] at h
+        exact (IsFractionRing.injective R K) h
+    calc algebraMap R K r * (algebraMap R K (uniformizerAt v)) ^ (-(D v + 1)) - f.val
+        = algebraMap R K r * (algebraMap R K (uniformizerAt v)) ^ (-(D v + 1)) -
+          f.val * ((algebraMap R K (uniformizerAt v)) ^ (D v + 1) * (algebraMap R K (uniformizerAt v)) ^ (-(D v + 1))) := by
+            rw [h_zpow, mul_one]
+      _ = algebraMap R K r * (algebraMap R K (uniformizerAt v)) ^ (-(D v + 1)) -
+          f.val * (algebraMap R K (uniformizerAt v)) ^ (D v + 1) * (algebraMap R K (uniformizerAt v)) ^ (-(D v + 1)) := by
+            ring
+      _ = (algebraMap R K r - f.val * (algebraMap R K (uniformizerAt v)) ^ (D v + 1)) *
+          (algebraMap R K (uniformizerAt v)) ^ (-(D v + 1)) := by ring
+  rw [hfactor, Valuation.map_mul]
+  -- The maximal ideal membership gives valuation < 1, hence ≤ exp(-1)
+  have h_diff_val : v.valuation K (algebraMap R K r - shiftedElement v D f.val) ≤ WithZero.exp (-1 : ℤ) := by
+    -- hmem says the subtype difference is in maximalIdeal
+    -- valuationRingAt is (v.valuation K).valuationSubring
+    -- maximalIdeal = {x | v(x) < 1}
+    unfold valuationRingAt at hmem
+    rw [Valuation.mem_maximalIdeal_iff] at hmem
+    -- Transfer from subtype to K element
+    have h_transfer : v.valuation K (algebraMap R K r - shiftedElement v D f.val) < 1 := hmem
+    exact valuation_lt_one_imp_le_exp_neg_one R K v _ h_transfer
+  -- v(π^(-(D v+1))) = exp(D v + 1) by uniformizerAt_zpow_valuation
+  unfold uniformizerInvPow uniformizerInK
+  rw [uniformizerAt_zpow_valuation]
+  simp only [neg_neg]
+  -- exp(-1) * exp(D v + 1) = exp(D v)
+  calc v.valuation K (algebraMap R K r - shiftedElement v D f.val) * WithZero.exp (D v + 1)
+      ≤ WithZero.exp (-1) * WithZero.exp (D v + 1) := mul_le_mul_of_nonneg_right h_diff_val (WithZero.zero_le _)
+    _ = WithZero.exp (-1 + (D v + 1)) := by rw [← WithZero.exp_add]
+    _ = WithZero.exp (D v) := by ring_nf
+
 lemma image_eval_subset_ker_delta (v : HeightOneSpectrum R) (D : DivisorV2 R) :
     Set.range (evaluationMapAt_complete (K := K) v D) ⊆
     {α | connectingHom k R K v D α = 0} := by
-  -- The key idea:
-  -- If α = eval(f) for f ∈ L(D+v), the connecting homomorphism constructs
-  -- an adele a with a_v = liftToR(α) · π^(-(D v+1)). Since α = eval(f), the lift
-  -- of α differs from shiftedElement(f) by an element in the maximal ideal.
-  -- This means a differs from diag(f) by an element in A_K(D).
-  -- Since diag(f) ∈ K, we have a ∈ K + A_K(D), so δ(α) = 0.
-  sorry
+  -- Take α = eval(f) for some f ∈ L(D+v)
+  intro α ⟨f, hf⟩
+  rw [Set.mem_setOf_eq]
+  subst hf
+  -- Goal: connectingHom k R K v D (evaluationMapAt_complete v D f) = 0
+  simp only [connectingHom, LinearMap.coe_mk, AddHom.coe_mk, connectingHomFun]
+  -- The adele a is finiteAdeleSingleHere R K v (algebraMap K (adicCompletion) x)
+  -- where x = algebraMap R K (liftToR ...) * uniformizerInvPow R K v (D v + 1)
+  -- We show a - diag(f) ∈ A_K(D), so a ∈ K + A_K(D)
+  set r := liftToR R v (evaluationMapAt_complete v D f) with hr_def
+  set x := algebraMap R K r * uniformizerInvPow R K v (D v + 1) with hx_def
+  set a := finiteAdeleSingleHere R K v (algebraMap K (v.adicCompletion K) x) with ha_def
+  -- Show quotientMapLinear a = 0, i.e., a ∈ globalPlusBoundedSubmodule
+  unfold quotientMapLinear
+  rw [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero]
+  -- a ∈ globalSubmodule + boundedSubmodule means ∃ g ∈ K, a - diag(g) ∈ A_K(D)
+  -- Take g = f
+  unfold globalPlusBoundedSubmodule
+  -- globalSubmodule + boundedSubmodule is sup of submodules
+  -- a = diag(f) + (a - diag(f)), where diag(f) ∈ globalSubmodule, (a - diag(f)) ∈ boundedSubmodule
+  have h_diag_mem : diagonalK R K f.val ∈ globalSubmodule k R K := ⟨f.val, rfl⟩
+  have h_diff_mem : a - diagonalK R K f.val ∈ boundedSubmodule k R K D := by
+    show a - diagonalK R K f.val ∈ boundedSubmodule k R K D
+    intro w
+    simp only [satisfiesBoundAt, valuationAt]
+    by_cases hw : w = v
+    · -- At place w = v
+      rw [hw]
+      -- (a - diag f) v = a v - (diag f) v = x_local - f
+      have h_a_v : a v = algebraMap K (v.adicCompletion K) x :=
+        finiteAdeleSingleHere_apply_same R K v _
+      -- diagonalK = FiniteAdeleRing.algebraMap, and at component v, this is algebraMap K (adicCompletion)
+      have h_diag_v : (diagonalK R K f.val) v = algebraMap K (v.adicCompletion K) f.val := rfl
+      -- The goal is: Valued.v ((a - diagonalK R K f.val) v) ≤ exp(D v)
+      -- Simplify the subtraction at component v
+      have h_comp : (a - diagonalK R K f.val) v = a v - (diagonalK R K f.val) v := rfl
+      rw [h_comp, h_a_v, h_diag_v]
+      -- Now have: Valued.v (algebraMap K (adicCompletion) x - algebraMap K (adicCompletion) f.val)
+      rw [← map_sub]
+      -- Goal is: Valued.v (algebraMap K (adicCompletion) (x - f.val)) ≤ exp(D v)
+      -- Use valuedAdicCompletion_eq_valuation' with explicit term
+      have hval : Valued.v (algebraMap K (v.adicCompletion K) (x - f.val)) = v.valuation K (x - f.val) :=
+        valuedAdicCompletion_eq_valuation' v (x - f.val)
+      rw [hval]
+      -- The key: liftToR produces r with same residue as shiftedElement(f)
+      have hr_residue := lift_eq_shiftedElement_residue R K v D f
+      have hmem := algebraMap_sub_shiftedElement_mem_maxIdeal R K v D f r hr_residue
+      exact diff_valuation_bound_at_v R K v D f r hmem
+    · -- At place w ≠ v
+      -- (a - diag f) w = 0 - f = -f
+      have h_a_w : a w = 0 := finiteAdeleSingleHere_apply_ne R K v w _ hw
+      have h_diag_w : (diagonalK R K f.val) w = algebraMap K (w.adicCompletion K) f.val := rfl
+      -- The goal is: Valued.v ((a - diagonalK R K f.val) w) ≤ exp(D w)
+      have h_comp : (a - diagonalK R K f.val) w = a w - (diagonalK R K f.val) w := rfl
+      rw [h_comp, h_a_w, h_diag_w, zero_sub, Valuation.map_neg]
+      -- Valued.v (algebraMap K (adicCompletion) f.val) = w.valuation K f.val
+      have hval : Valued.v (algebraMap K (w.adicCompletion K) f.val) = w.valuation K f.val :=
+        valuedAdicCompletion_eq_valuation' w f.val
+      rw [hval]
+      -- f ∈ L(D+v), so at w ≠ v, v(f) ≤ exp((D + single v 1) w) = exp(D w)
+      have hf_mem := f.property
+      rcases hf_mem with hf_zero | hf_bound
+      · -- f = 0 case
+        simp only [hf_zero, Valuation.map_zero]
+        exact WithZero.zero_le _
+      · -- f ≠ 0 case
+        have hf_w := hf_bound w
+        -- (D + single v 1) w = D w for w ≠ v
+        have hcoeff : (D + DivisorV2.single v 1) w = D w := by
+          simp only [Finsupp.add_apply, Finsupp.single_apply, if_neg (Ne.symm hw), add_zero]
+        rw [hcoeff] at hf_w
+        exact hf_w
+  -- Now assemble: a = diag(f) + (a - diag(f)) with diag(f) ∈ globalSubmodule, (a - diag(f)) ∈ boundedSubmodule
+  have h_eq : a = diagonalK R K f.val + (a - diagonalK R K f.val) := by ring
+  rw [h_eq]
+  exact Submodule.add_mem_sup h_diag_mem h_diff_mem
 
 /-- Exactness at κ(v): image(eval) = ker(δ).
 

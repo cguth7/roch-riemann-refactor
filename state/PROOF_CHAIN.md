@@ -1,6 +1,6 @@
 # Proof Chain: Riemann-Roch Formalization
 
-Tracks what's **already proved** and what remains. Updated Cycle 326.
+Tracks what's **already proved** and what remains. Updated Cycle 330.
 
 ---
 
@@ -99,7 +99,7 @@ This is **half of Riemann-Roch**, already done!
    (ker=range)                    (surjection exists)
 ```
 
-### Cycle 326 Progress: Technical Lemmas Proved
+### Cycle 330 Progress: Forward Exactness PROVED
 
 ```
 File: Adelic/EulerCharacteristic.lean
@@ -110,21 +110,26 @@ File: Adelic/EulerCharacteristic.lean
 ├── liftToR_proj                         [PROVED Cycle 326]
 ├── liftToR_zero_mem_ideal               [PROVED Cycle 326]
 ├── liftToR_add_diff_mem_ideal           [PROVED Cycle 326]
-├── liftToR_smul_diff_mem_ideal          [sorry - algebra structure]
+├── liftToR_smul_diff_mem_ideal          [PROVED Cycle 328]
 ├── uniformizerInK, uniformizerInvPow    [uniformizer infrastructure]
 ├── connectingHomFun                     [real construction]
 │   └── Lifts α to r, computes r·π^(-(D(v)+1)), embeds as adele, projects to H¹
-├── connectingHomFun_zero                [sorry - needs valuation analysis]
-├── connectingHomFun_add                 [sorry - needs valuation analysis]
-├── connectingHomFun_smul                [sorry - needs valuation analysis]
-├── connectingHom: κ(v) →ₗ[k] H¹(D)      [REAL construction, uses above sorries]
+├── connectingHomFun_zero                [PROVED Cycle 327]
+├── connectingHomFun_add                 [PROVED Cycle 327]
+├── connectingHomFun_smul                [PROVED Cycle 328]
+├── connectingHom: κ(v) →ₗ[k] H¹(D)      [PROVED - full construction]
 ├── H1Projection: H¹(D) →ₗ[k] H¹(D+v)   [PROVED]
 ├── exactness_at_LDv                     [PROVED, uses KernelProof]
-├── exactness_at_kappa_set               [sorry - needs valuation analysis]
+├── lift_eq_shiftedElement_residue       [PROVED Cycle 330 - key lemma]
+├── algebraMap_sub_shiftedElement_mem_maxIdeal [PROVED Cycle 330]
+├── valuation_lt_one_imp_le_exp_neg_one  [PROVED Cycle 330]
+├── diff_valuation_bound_at_v            [PROVED Cycle 330]
+├── image_eval_subset_ker_delta          [PROVED Cycle 330 - forward exactness!]
+├── exactness_at_kappa_set               [sorry - backward direction]
 ├── exactness_at_H1                      [sorry - needs valuation analysis]
 ├── H1_surjection                        [PROVED]
 ├── eulerChar: χ(D) = ℓ(D) - h¹(D)       [DEFINITION]
-├── kappa_dim_one                        [sorry - standard fact]
+├── kappa_dim_one                        [PROVED via DegreeOnePlaces]
 ├── chi_additive: χ(D+v) = χ(D) + 1      [sorry - from exactness]
 ├── euler_characteristic                 [sorry - from chi_additive + base case]
 └── riemann_roch_from_euler              [PROVED - just uses riemann_roch_from_adelic]
