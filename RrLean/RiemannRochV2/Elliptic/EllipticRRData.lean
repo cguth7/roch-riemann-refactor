@@ -248,6 +248,54 @@ For deg(D) > 0:
 The "+1" difference is the genus: 1 - g where g = 0 for P¹ and g = 1 for elliptic.
 -/
 
+/-! ## ProperCurve Instance (Cycle 323)
+
+Elliptic curves are proper, so L(0) = constants = 1-dimensional.
+This enables the bridge from AdelicRRData to FullRRData.
+-/
+
+/-- Elliptic curves are proper curves (L(0) = k).
+
+This follows from `ell_zero_eq_one` proved above. -/
+instance ellipticProperCurve : ProperCurve F (CoordRing W) (FuncField W) where
+  ell_zero_eq_one := by
+    have h := ell_zero_eq_one W
+    unfold zeroDivisor at h
+    exact h
+
+/-! ## FullRRData Instance (Cycle 323)
+
+With AdelicRRData and ProperCurve, we get FullRRData via the bridge.
+This completes the abstract Riemann-Roch infrastructure for elliptic curves.
+-/
+
+/-- The FullRRData instance for elliptic curves.
+
+This is the capstone result: combining AdelicRRData + ProperCurve via the
+bridge from AdelicH1v2.lean to get all FullRRData axioms.
+
+The full Riemann-Roch theorem is now available for elliptic curves:
+  ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
+where K = 0 (the zero divisor) and g = 1.
+-/
+instance ellipticFullRRData : FullRRData F (CoordRing W) (FuncField W) :=
+  AdelicH1v2.adelicRRData_to_FullRRData F (CoordRing W) (FuncField W)
+    (canonical := ellipticCanonical W) (genus := ellipticGenus)
+
+/-- The full Riemann-Roch theorem for elliptic curves via FullRRData.
+
+For any divisor D on an elliptic curve:
+  ℓ(D) - ℓ(-D) = deg(D)
+
+This is the genus-1 specialization of the general formula ℓ(D) - ℓ(K-D) = deg(D) + 1 - g.
+Since K = 0 and g = 1, this becomes ℓ(D) - ℓ(-D) = deg(D).
+-/
+theorem riemann_roch_fullRRData (D : DivisorV2 (CoordRing W)) :
+    (ell_proj F (CoordRing W) (FuncField W) D : ℤ) -
+    ell_proj F (CoordRing W) (FuncField W) (ellipticCanonical W - D) =
+    D.deg + 1 - ellipticGenus := by
+  exact (ellipticFullRRData W).serre_duality_eq D
+
 /-! ## Summary of Axiom Stack
 
 | Axiom | File | Purpose |

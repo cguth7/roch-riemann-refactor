@@ -5,72 +5,70 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 322
+**Cycle**: 323
 **Phase**: 7 (Weil Differentials) - Active
 **Total Sorries**: 8 (2 archived P¹ edge cases + 6 axioms)
 
 ---
 
-## Cycle 322 Completed
+## Cycle 323 Completed
 
-**Goal**: Analyze `ell_zero_of_neg_deg` (vanishing for negative degree).
-
-### Analysis Results
-
-**The axiom `ell_zero_of_neg_deg`**: if deg(D) < 0, then ℓ(D) = 0.
-
-**Classical proof requires:**
-1. If f ∈ L(D) is nonzero, then div(f) + D ≥ 0 (effective)
-2. Principal divisors have degree 0: deg(div(f)) = 0 (**product formula**)
-3. Therefore deg(D) = deg(div(f) + D) ≥ 0
-4. Contrapositive: deg(D) < 0 ⟹ L(D) = 0
-
-**Why we axiomatize it:**
-The product formula (step 2) requires degree-weighted sums over ALL irreducible
-polynomials, not just rational points. The "naive" formula over Fq-rational points
-is FALSE in general (see `ProductFormula.lean` counterexample).
-
-### Where ell_zero_of_neg_deg IS Proved
-
-1. **P¹ with linear places**: `projective_LRatFunc_eq_zero_of_neg_deg` in RatFuncPairing.lean
-2. **Adelic approach**: In `AdelicH1v2.lean`, derived from Serre duality + h1_vanishing
-
-### Alternative Derivation (AdelicRRData)
-
-```
-If deg(D) < 0:
-  deg(K - D) = (2g-2) - deg(D) > 2g - 2
-  So h¹(K - D) = 0 by h1_vanishing
-  By Serre duality: h¹(K - D) = ℓ(K - (K - D)) = ℓ(D)
-  Therefore ℓ(D) = 0
-```
-
-This swaps `ell_zero_of_neg_deg` for `h1_vanishing` as the axiom.
+**Goal**: Complete FullRRData infrastructure for elliptic curves.
 
 ### Deliverables
 
-1. **Documentation**: Added comprehensive analysis to WeilDifferential.lean
-   (new section "About ell_zero_of_neg_deg (Cycle 322 Analysis)")
-2. **Architecture confirmed**: `FullRRBridge` correctly axiomatizes this property
-3. **Path forward identified**: Can discharge for specific curves or via adelic approach
+1. **`ellipticProperCurve` instance** (EllipticRRData.lean):
+   - Proves elliptic curves are proper curves (L(0) = 1)
+   - Uses existing `ell_zero_eq_one` lemma
+   - Enables the bridge from AdelicRRData to FullRRData
+
+2. **`ellipticFullRRData` instance** (EllipticRRData.lean):
+   - Instantiates `FullRRData` for elliptic curves
+   - Uses the `adelicRRData_to_FullRRData` bridge from AdelicH1v2.lean
+   - Capstone result: all FullRRData axioms now hold for elliptic curves
+
+3. **`riemann_roch_fullRRData` theorem** (EllipticRRData.lean):
+   - Full Riemann-Roch theorem via FullRRData interface
+   - For any divisor D: ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
+   - Specializes to ℓ(D) - ℓ(-D) = deg(D) for elliptic (K = 0, g = 1)
 
 ### Key Insight
 
-The axiom is **correctly placed** in `FullRRBridge`. It can be discharged by:
-- Proving the full product formula (hard in general)
-- Using the adelic approach with h1_vanishing
-- Specializing to curve types where product formula is simpler (P¹, elliptic)
+The bridge architecture works beautifully:
+```
+EllipticH1 axioms
+    ↓
+ellipticAdelicRRData (AdelicRRData instance)
+    + ellipticProperCurve (ProperCurve instance)
+    ↓ (adelicRRData_to_FullRRData bridge)
+ellipticFullRRData (FullRRData instance)
+    ↓
+riemann_roch_fullRRData (Full RR theorem)
+```
+
+This demonstrates the axiom architecture is sound and instantiates
+correctly for specific curve types.
 
 ---
 
-## Cycle 323 Target
+## Cycle 324 Target
 
-**Priority**: Focus on completing the bridge for specific curve instances.
+**Priority**: Document architecture completion + explore P¹ instantiation.
 
 **Options**:
-1. **Instantiate P¹**: Use existing `ell_ratfunc_projective_zero_of_neg_deg`
-2. **Adelic bridge**: Connect `AdelicRRData` to `FullRRBridge`
-3. **Alternative**: Prove RR directly for high-degree divisors where ℓ(K-D) = 0
+1. **P¹ instantiation**: Similar bridge for P¹ curves (genus 0)
+2. **Architecture documentation**: Update PROOF_CHAIN.md with new bridges
+3. **Weil differential instantiation**: Use WeilRRData' + FullRRBridge path
+
+---
+
+## Cycle 322 Summary (Archived)
+
+**Goal**: Analyze `ell_zero_of_neg_deg` (vanishing for negative degree).
+
+**Key Result**: The axiom is correctly placed in `FullRRBridge`. It can be discharged by:
+- Using the adelic approach (h1_vanishing)
+- Specializing to curve types with simpler product formula
 
 ---
 
