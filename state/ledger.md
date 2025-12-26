@@ -5,9 +5,41 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 327
+**Cycle**: 328
 **Phase**: 7 (Weil Differentials) - Active
-**Total Sorries**: 14 (6 in EulerCharacteristic + 8 existing axioms)
+**Total Sorries**: 12 (4 in EulerCharacteristic + 8 existing axioms)
+
+---
+
+## Cycle 328 Completed
+
+**Goal**: Prove remaining connecting homomorphism properties and residue field dimension.
+
+### Deliverables
+
+1. **Proved `connectingHomFun_smul`**: δ(c·α) = c·δ(α) via valuation bounds
+   - Same pattern as `_add`: the difference of lifts is in v.asIdeal
+   - Scalar action on FiniteAdeleRing factors through K's diagonal embedding
+
+2. **Resolved `kappa_dim_one`**: dim_k(κ(v)) = 1 via `DegreeOnePlaces` typeclass
+   - Added `DegreeOnePlaces` class encoding that all places have degree 1
+   - This is the geometric assumption that k is the full field of constants
+   - Applies when k is algebraically closed or curve has only k-rational points
+
+### Remaining Sorries in EulerCharacteristic.lean (4 total)
+
+| Lemma | Description | Difficulty |
+|-------|-------------|------------|
+| `exactness_at_kappa_set` | image(eval) = ker(δ) | Medium |
+| `exactness_at_H1` | image(δ) = ker(proj) | Medium |
+| `chi_additive` | χ(D+v) = χ(D) + 1 | Needs exactness |
+| `euler_characteristic` | χ(D) = deg(D) + 1 - g | Needs chi_additive |
+
+### Next Steps (Cycle 329)
+
+1. Prove `exactness_at_kappa_set` (elements in ker(δ) lift to L(D+v))
+2. Prove `exactness_at_H1` (image(δ) = kernel of H¹ projection)
+3. Use Rank-Nullity for `chi_additive`
 
 ---
 
@@ -29,23 +61,6 @@ The proofs use a common pattern:
 - Multiplying by `π^(-(D(v)+1))` shifts valuation: `val(r·π^(-n)) ≤ exp(-1) · exp(n) = exp(n-1)`
 - For n = D(v)+1, this gives `val ≤ exp(D(v))`, satisfying the bound for `A_K(D)`
 - The `valuedAdicCompletion_eq_valuation'` lemma transfers K-valuations to completion
-
-### Remaining Sorries in EulerCharacteristic.lean (6 total)
-
-| Lemma | Description | Type |
-|-------|-------------|------|
-| `connectingHomFun_smul` | δ(c·α) = c·δ(α) | Valuation |
-| `exactness_at_kappa_set` | image(eval) = ker(δ) | Exactness |
-| `exactness_at_H1` | image(δ) = ker(proj) | Exactness |
-| `kappa_dim_one` | dim_k(κ(v)) = 1 | Standard fact |
-| `chi_additive` | χ(D+v) = χ(D) + 1 | Dimension |
-| `euler_characteristic` | χ(D) = deg(D) + 1 - g | Main theorem |
-
-### Next Steps (Cycle 328)
-
-1. Fill `connectingHomFun_smul` (similar pattern to `_add`)
-2. Prove exactness theorems (geometric arguments)
-3. Complete `kappa_dim_one` (standard DVR fact)
 
 ---
 

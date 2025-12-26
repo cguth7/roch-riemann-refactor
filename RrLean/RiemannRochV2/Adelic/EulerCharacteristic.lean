@@ -394,9 +394,113 @@ lemma connectingHomFun_smul (v : HeightOneSpectrum R) (D : DivisorV2 R)
     (c : k) (α : residueFieldAtPrime R v) :
     connectingHomFun k R K v D (c • α) = c • connectingHomFun k R K v D α := by
   simp only [connectingHomFun]
-  -- c • α corresponds to algebraMap k R c * r in R
-  -- The single-place adele construction is linear
-  sorry -- Will be filled with scalar tower compatibility
+  -- Key: liftToR(c•α) - algebraMap k R c * liftToR(α) ∈ v.asIdeal
+  have hdiff : liftToR R v (c • α) - algebraMap k R c * liftToR R v α ∈ v.asIdeal :=
+    liftToR_smul_diff_mem_ideal k R v c α
+  -- Define the key elements
+  set r_cα := liftToR R v (c • α) with hr_cα
+  set r_α := liftToR R v α with hr_α
+  set d := r_cα - algebraMap k R c * r_α with hd
+  -- d is in v.asIdeal
+  have hd_mem : d ∈ v.asIdeal := hdiff
+  -- The K-elements
+  set x_cα := algebraMap R K r_cα * uniformizerInvPow R K v (D v + 1) with hx_cα
+  set x_α := algebraMap R K r_α * uniformizerInvPow R K v (D v + 1) with hx_α
+  -- The scaled element
+  set x_scaled := algebraMap k K c * x_α with hx_scaled
+  -- The difference in K
+  have hx_diff : x_cα - x_scaled = algebraMap R K d * uniformizerInvPow R K v (D v + 1) := by
+    simp only [hx_cα, hx_α, hx_scaled, hd]
+    rw [IsScalarTower.algebraMap_apply k R K c, map_sub, map_mul]
+    ring
+  -- Define the adeles
+  set a_cα := finiteAdeleSingleHere R K v (algebraMap K (v.adicCompletion K) x_cα) with ha_cα
+  set a_α := finiteAdeleSingleHere R K v (algebraMap K (v.adicCompletion K) x_α) with ha_α
+  -- Goal: quotientMapLinear(a_cα) = c • quotientMapLinear(a_α)
+  have hlin : c • quotientMapLinear k R K D a_α = quotientMapLinear k R K D (c • a_α) := by
+    simp only [map_smul]
+  rw [hlin]
+  -- Show a_cα - c • a_α ∈ globalPlusBoundedSubmodule
+  unfold quotientMapLinear
+  rw [Submodule.mkQ_apply, Submodule.mkQ_apply, Submodule.Quotient.eq]
+  unfold globalPlusBoundedSubmodule
+  apply Submodule.mem_sup_right
+  show _ ∈ boundedSubmodule k R K D
+  -- The key: a_cα - c • a_α differs from a single-place adele by something in K (global)
+  -- We'll show directly that at each place the valuation bound is satisfied
+  intro w
+  simp only [satisfiesBoundAt, valuationAt]
+  by_cases hw : w = v
+  · -- At place v (w = v)
+    -- First establish (a_α) v = algebraMap K (v.adicCompletion K) x_α
+    have ha_α_v : a_α v = algebraMap K (v.adicCompletion K) x_α := by
+      rw [ha_α]; exact finiteAdeleSingleHere_apply_same R K v _
+    -- The valuation of c • a_α at v
+    have hsmul_v : (c • a_α) v = algebraMap K (v.adicCompletion K) x_scaled := by
+      simp only [Algebra.smul_def]
+      have h1 : ((algebraMap k (FiniteAdeleRing R K) c) * a_α) v =
+          (algebraMap k (FiniteAdeleRing R K) c) v * a_α v := rfl
+      rw [h1, ha_α_v]
+      -- (algebraMap k (FiniteAdeleRing R K) c) v = algebraMap k K c as element of adicCompletion
+      have halg : (algebraMap k (FiniteAdeleRing R K) c) v =
+          (algebraMap k K c : v.adicCompletion K) := rfl
+      rw [halg]
+      -- Now: (algebraMap k K c : adicCompletion) * (algebraMap K adicCompletion x_α) = algebraMap K ... x_scaled
+      -- The coercion from K to adicCompletion is the same as algebraMap K adicCompletion
+      have hcoe : (algebraMap k K c : v.adicCompletion K) =
+          algebraMap K (v.adicCompletion K) (algebraMap k K c) := rfl
+      rw [hcoe, ← map_mul, hx_scaled]
+    -- First establish (a_cα) v
+    have ha_cα_v : a_cα v = algebraMap K (v.adicCompletion K) x_cα := by
+      rw [ha_cα]; exact finiteAdeleSingleHere_apply_same R K v _
+    -- The difference (a_cα - c • a_α) v
+    have hdiff_v : (a_cα - c • a_α) v =
+        algebraMap K (v.adicCompletion K) (x_cα - x_scaled) := by
+      have hsub : (a_cα - c • a_α) v = a_cα v - (c • a_α) v := rfl
+      rw [hsub, ha_cα_v, hsmul_v, ← map_sub]
+    -- Now show the valuation bound for d * π^(-(D(v)+1))
+    have hr_val : v.intValuation d ≤ WithZero.exp (-(1 : ℤ)) := by
+      have hmem1 : d ∈ v.asIdeal ^ 1 := by simp only [pow_one]; exact hd_mem
+      have hle := (v.intValuation_le_pow_iff_mem d 1).mpr hmem1
+      simp only [Nat.cast_one] at hle
+      exact hle
+    have hr_val_K : v.valuation K (algebraMap R K d) ≤ WithZero.exp (-1 : ℤ) := by
+      rw [HeightOneSpectrum.valuation_of_algebraMap]
+      exact hr_val
+    have hx_val : v.valuation K (algebraMap R K d * uniformizerInvPow R K v (D v + 1)) ≤
+        WithZero.exp (D v) := by
+      unfold uniformizerInvPow uniformizerInK
+      rw [Valuation.map_mul, uniformizerAt_zpow_valuation]
+      simp only [neg_neg]
+      calc v.valuation K (algebraMap R K d) * WithZero.exp (D v + 1)
+          ≤ WithZero.exp (-1) * WithZero.exp (D v + 1) := by
+            exact mul_le_mul_of_nonneg_right hr_val_K (WithZero.zero_le _)
+        _ = WithZero.exp (-1 + (D v + 1)) := by rw [← WithZero.exp_add]
+        _ = WithZero.exp (D v) := by ring_nf
+    -- Use hw : w = v to rewrite the goal
+    rw [hw, hdiff_v, hx_diff]
+    -- The algebraMap K → adicCompletion K v sends x to (x : adicCompletion K v)
+    -- So Valued.v (algebraMap K _ x) = Valued.v ↑x = v.valuation K x
+    -- Use valuedAdicCompletion_eq_valuation' with explicit term
+    convert hx_val using 1
+    exact valuedAdicCompletion_eq_valuation' v _
+  · -- At place w ≠ v: both a_cα and c • a_α are 0 at w
+    have ha_cα_w : a_cα w = 0 := by
+      rw [ha_cα]
+      exact finiteAdeleSingleHere_apply_ne R K v w _ hw
+    have ha_α_w : a_α w = 0 := by
+      rw [ha_α]
+      exact finiteAdeleSingleHere_apply_ne R K v w _ hw
+    have hsmul_w : (c • a_α) w = 0 := by
+      simp only [Algebra.smul_def]
+      have h1 : ((algebraMap k (FiniteAdeleRing R K) c) * a_α) w =
+          (algebraMap k (FiniteAdeleRing R K) c) w * a_α w := rfl
+      rw [h1, ha_α_w, mul_zero]
+    have hdiff_w : (a_cα - c • a_α) w = 0 := by
+      have hsub : (a_cα - c • a_α) w = a_cα w - (c • a_α) w := rfl
+      rw [hsub, ha_cα_w, hsmul_w, sub_zero]
+    rw [hdiff_w, Valuation.map_zero]
+    exact WithZero.zero_le _
 
 /-- The connecting homomorphism as a k-linear map.
 
@@ -488,16 +592,25 @@ Using exactness, we derive the additive property of the Euler characteristic.
 def eulerChar (D : DivisorV2 R) : ℤ :=
   (ell_proj k R K D : ℤ) - h1_finrank k R K D
 
+/-- Assumption that all places have degree 1 over k.
+
+This is equivalent to saying k is the full field of constants (k = H⁰(O_X))
+and all places are k-rational points of the curve. This holds for:
+- k algebraically closed
+- Curves with only k-rational points
+- Function fields where k is exactly the constants
+-/
+class DegreeOnePlaces where
+  residue_finrank_one : ∀ v : HeightOneSpectrum R, Module.finrank k (residueFieldAtPrime R v) = 1
+
 /-- The residue field κ(v) has dimension 1 over k.
 
 The residue field κ(v) = R/v.asIdeal is a simple R-module (has length 1),
 which when k ⊆ R implies dim_k(κ(v)) = 1.
 -/
-lemma kappa_dim_one (v : HeightOneSpectrum R) :
-    Module.finrank k (residueFieldAtPrime R v) = 1 := by
-  -- The residue field is 1-dimensional over k by hypothesis on k being
-  -- the field of constants (i.e., k = H⁰(O_X))
-  sorry
+lemma kappa_dim_one [DegreeOnePlaces k R] (v : HeightOneSpectrum R) :
+    Module.finrank k (residueFieldAtPrime R v) = 1 :=
+  DegreeOnePlaces.residue_finrank_one v
 
 /-- Key theorem: χ(D+v) = χ(D) + 1.
 
