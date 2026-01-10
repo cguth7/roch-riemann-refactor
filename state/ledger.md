@@ -5,16 +5,58 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 337
+**Cycle**: 338
 **Phase**: 7 (Euler Characteristic) - Active
-**Total Sorries**: ~15 (2 critical path + 6 axioms + 5 Abstract/AdelicH1Full + 2 EllipticH1)
+**Total Sorries**: ~14 (1 critical path + 6 axioms + 5 Abstract/AdelicH1Full + 2 EllipticH1)
 
-### Critical Path Sorries (2 in EulerCharacteristic.lean)
+### Critical Path Sorries (1 in EulerCharacteristic.lean)
 
 | Line | Lemma | Description |
 |------|-------|-------------|
-| 1758 | `chi_additive` | χ(D+v) = χ(D) + 1 (needs final dimension step: ℓ(D+v) - ℓ(D) = finrank(range(eval))) |
-| 1813 | `euler_characteristic` | χ(D) = deg(D) + 1 - g (needs induction using chi_additive) |
+| ~1914 | `euler_characteristic` | χ(D) = deg(D) + 1 - g (needs divisor induction infrastructure) |
+
+✅ **chi_additive PROVED** (Cycle 338): χ(D+v) = χ(D) + 1
+
+---
+
+## Cycle 338 Completed
+
+**Goal**: Prove chi_additive using dimension counting from 6-term exact sequence.
+
+### Major Accomplishment
+
+**chi_additive is now FULLY PROVED**: χ(D+v) = χ(D) + 1
+
+### Deliverables
+
+1. **New definitions and lemmas added**:
+   - `kerEval_as_k_submodule`: Kernel of eval as k-submodule
+   - `kerEval_eq_rangeInclusion`: ker(eval) = range(inclusion) from exactness_at_LDv
+   - `finrank_rangeInclusion_eq_ell`: finrank(ker eval) = ℓ(D) via LinearEquiv.ofInjective
+   - `evalAsKLinear`: Evaluation map viewed as k-linear (via restrictScalars)
+   - `evalAsKLinear_range/ker`: Range and kernel equalities
+   - `eval_rank_nullity`: finrank(range) + finrank(ker) = ℓ(D+v)
+   - `ell_diff_eq_rangeEval`: ℓ(D+v) - ℓ(D) = finrank(range(eval))
+   - `kappa_finite`: Instance deriving Module.Finite from DegreeOnePlaces
+
+2. **chi_additive proof structure**:
+   - Uses `ell_diff_eq_rangeEval`: ℓ(D+v) - ℓ(D) = finrank(range(eval))
+   - Uses `h1_diff_eq_rangeδ`: h¹(D) - h¹(D+v) = finrank(range(δ))
+   - Uses `rangeδ_plus_rangeEval_eq_one`: finrank(range(δ)) + finrank(range(eval)) = 1
+   - omega tactic combines these for the final result
+
+3. **euler_characteristic**:
+   - Base case verified: χ(0) = deg(0) + 1 - g ✓
+   - Full induction requires divisor decomposition infrastructure
+   - Remains as sorry pending this infrastructure
+
+### Technical Notes
+
+The proof required carefully handling scalar restriction:
+- eval is R-linear but we need k-dimension counting
+- Used `LinearMap.restrictScalars k` to convert to k-linear
+- Used `LinearEquiv.ofInjective` + `restrictScalars` for isomorphism
+- Applied standard `LinearMap.finrank_range_add_finrank_ker` for rank-nullity
 
 ---
 
