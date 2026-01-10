@@ -5,7 +5,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 336
+**Cycle**: 337
 **Phase**: 7 (Euler Characteristic) - Active
 **Total Sorries**: ~15 (2 critical path + 6 axioms + 5 Abstract/AdelicH1Full + 2 EllipticH1)
 
@@ -13,8 +13,44 @@
 
 | Line | Lemma | Description |
 |------|-------|-------------|
-| 1639 | `chi_additive` | χ(D+v) = χ(D) + 1 (needs dimension counting from exact sequence) |
-| 1658 | `euler_characteristic` | χ(D) = deg(D) + 1 - g (needs induction using chi_additive) |
+| 1676 | `chi_additive` | χ(D+v) = χ(D) + 1 (needs dimension counting from exact sequence) |
+| 1731 | `euler_characteristic` | χ(D) = deg(D) + 1 - g (needs induction using chi_additive) |
+
+---
+
+## Cycle 337 Completed
+
+**Goal**: Add dimension counting infrastructure for chi_additive.
+
+### Deliverables
+
+1. **Added dimension counting helpers**:
+   - `evalRange_as_k_submodule`: Range of eval as k-submodule via restrictScalars
+   - `evalRange_eq_kerDelta_set`: Set equality showing range(eval) = ker(δ) as sets
+   - `evalRange_eq_kerDelta`: k-submodule equality range(eval) = ker(δ)
+   - `finrank_evalRange_eq_finrank_kerDelta`: Dimension equality from submodule equality
+
+2. **Added DegreeOnePlaces hypothesis** to chi_additive and euler_characteristic
+   - chi_additive needs dim(κ(v)) = 1 which requires DegreeOnePlaces k R
+
+3. **Documented proof strategies**:
+   - chi_additive: Dimension counting from 6-term exact sequence
+   - euler_characteristic: Induction on divisor structure
+
+### Technical Notes
+
+**chi_additive proof strategy** (documented in source):
+1. dim(κ(v)) = 1 by DegreeOnePlaces
+2. From rank-nullity on δ: finrank(range(δ)) + finrank(ker(δ)) = 1
+3. From exactness: ker(δ) = range(eval) as k-submodules
+4. From H1_surjection + exactness_at_H1: h¹(D) = finrank(range(δ)) + h¹(D+v)
+5. From exactness_at_LDv: ℓ(D+v) = ℓ(D) + finrank(range(eval))
+6. Combining yields χ(D+v) - χ(D) = 1
+
+**Remaining blockers**:
+- Need to formalize rank-nullity connections for the exact sequence maps
+- Need proper Module.Finite instances on intermediate spaces
+- Need formal induction structure for euler_characteristic
 
 ---
 
