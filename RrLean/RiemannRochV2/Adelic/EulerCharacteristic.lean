@@ -1613,6 +1613,14 @@ lemma kappa_dim_one [DegreeOnePlaces k R] (v : HeightOneSpectrum R) :
     Module.finrank k (residueFieldAtPrime R v) = 1 :=
   DegreeOnePlaces.residue_finrank_one v
 
+/-- When DegreeOnePlaces holds, the residue field is finite-dimensional over k.
+
+From finrank = 1, we can derive Module.Finite. -/
+instance kappa_finite [DegreeOnePlaces k R] (v : HeightOneSpectrum R) :
+    Module.Finite k (residueFieldAtPrime R v) := by
+  have h := kappa_dim_one k R v
+  exact FiniteDimensional.of_finrank_eq_succ h
+
 /-! ## Dimension Counting Helpers -/
 
 -- For dimension counting, we express exactness at κ(v) using the set equality
@@ -1740,6 +1748,106 @@ lemma h1_diff_eq_rangeδ (v : HeightOneSpectrum R) (D : DivisorV2 R)
   have h := h1_eq_rangeδ_plus_h1_next k R K v D
   omega
 
+/-- The kernel of the evaluation map as a k-submodule.
+
+From exactness_at_LDv, this equals the image of the inclusion L(D) → L(D+v). -/
+def kerEval_as_k_submodule (v : HeightOneSpectrum R) (D : DivisorV2 R) :
+    Submodule k (RRModuleV2_real R K (D + DivisorV2.single v 1)) :=
+  (LinearMap.ker (evaluationMapAt_complete (K := K) v D)).restrictScalars k
+
+/-- The kernel of eval equals the image of the inclusion L(D) → L(D+v) as k-submodules.
+
+This follows from exactness_at_LDv. -/
+lemma kerEval_eq_rangeInclusion (v : HeightOneSpectrum R) (D : DivisorV2 R) :
+    kerEval_as_k_submodule k R K v D =
+    (LinearMap.range (Submodule.inclusion
+      (RRModuleV2_mono_inclusion R K (divisor_le_add_single D v)))).restrictScalars k := by
+  unfold kerEval_as_k_submodule
+  congr 1
+  exact exactness_at_LDv (R := R) (K := K) v D
+
+/-- The finrank of the inclusion range equals ℓ(D).
+
+Since inclusion is injective, its range is isomorphic to L(D). -/
+lemma finrank_rangeInclusion_eq_ell (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    [Module.Finite k (RRSpace_proj k R K D)] :
+    Module.finrank k ((LinearMap.range (Submodule.inclusion
+      (RRModuleV2_mono_inclusion R K (divisor_le_add_single D v)))).restrictScalars k) =
+    ell_proj k R K D := by
+  -- Submodule.inclusion is always injective
+  have h_inj : Function.Injective (Submodule.inclusion
+      (RRModuleV2_mono_inclusion R K (divisor_le_add_single D v))) :=
+    Submodule.inclusion_injective _
+  -- Use LinearMap.finrank_range_of_inj for R-modules:
+  -- finrank_R(range(inclusion)) = finrank_R(L(D))
+  have h_finrank_R := LinearMap.finrank_range_of_inj h_inj
+  -- The two k-finranks are equal because we have an R-linear isomorphism
+  -- between L(D) and range(inclusion), and R is a k-algebra
+  rw [ell_proj, RRSpace_proj]
+  -- LinearEquiv.ofInjective gives L(D) ≃ₗ[R] range(inclusion)
+  have h_equiv := LinearEquiv.ofInjective
+      (Submodule.inclusion (RRModuleV2_mono_inclusion R K (divisor_le_add_single D v))) h_inj
+  -- Since the R-linear isomorphism is also k-linear (via scalar restriction),
+  -- it preserves k-finrank
+  have h_eq := LinearEquiv.finrank_eq (h_equiv.restrictScalars k)
+  exact h_eq.symm
+
+/-- The finrank of ker(eval) equals ℓ(D). -/
+lemma finrank_kerEval_eq_ell (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    [Module.Finite k (RRSpace_proj k R K D)] :
+    Module.finrank k (kerEval_as_k_submodule k R K v D) = ell_proj k R K D := by
+  rw [kerEval_eq_rangeInclusion k R K v D, finrank_rangeInclusion_eq_ell k R K v D]
+
+/-- The evaluation map viewed as a k-linear map.
+
+Since eval is R-linear and k → R is a ring hom, eval is also k-linear. -/
+def evalAsKLinear (v : HeightOneSpectrum R) (D : DivisorV2 R) :
+    (RRModuleV2_real R K (D + DivisorV2.single v 1)) →ₗ[k] (residueFieldAtPrime R v) :=
+  (evaluationMapAt_complete (K := K) v D).restrictScalars k
+
+/-- The range of evalAsKLinear as k-submodule equals evalRange_as_k_submodule. -/
+lemma evalAsKLinear_range (v : HeightOneSpectrum R) (D : DivisorV2 R) :
+    LinearMap.range (evalAsKLinear k R K v D) = evalRange_as_k_submodule k R K v D := by
+  unfold evalAsKLinear evalRange_as_k_submodule
+  rfl
+
+/-- The kernel of evalAsKLinear as k-submodule equals kerEval_as_k_submodule. -/
+lemma evalAsKLinear_ker (v : HeightOneSpectrum R) (D : DivisorV2 R) :
+    LinearMap.ker (evalAsKLinear k R K v D) = kerEval_as_k_submodule k R K v D := by
+  unfold evalAsKLinear kerEval_as_k_submodule
+  rfl
+
+/-- Rank-nullity for the evaluation map as k-linear spaces.
+
+finrank(range(eval)) + finrank(ker(eval)) = ℓ(D+v) -/
+lemma eval_rank_nullity (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    [hfin : Module.Finite k (RRSpace_proj k R K (D + DivisorV2.single v 1))] :
+    Module.finrank k (evalRange_as_k_submodule k R K v D) +
+    Module.finrank k (kerEval_as_k_submodule k R K v D) =
+    ell_proj k R K (D + DivisorV2.single v 1) := by
+  -- Rewrite in terms of evalAsKLinear
+  rw [← evalAsKLinear_range k R K v D, ← evalAsKLinear_ker k R K v D]
+  -- The domain is finite-dimensional as a k-module (from hypothesis on RRSpace_proj)
+  -- RRSpace_proj and RRModuleV2_real have the same carrier type, so Module.Finite transfers
+  letI : Module.Finite k (RRModuleV2_real R K (D + DivisorV2.single v 1)) := hfin
+  -- Apply standard rank-nullity theorem
+  have h := LinearMap.finrank_range_add_finrank_ker (evalAsKLinear k R K v D)
+  -- The domain finrank equals ell_proj
+  simp only [ell_proj, RRSpace_proj] at h ⊢
+  exact h
+
+/-- The difference ℓ(D+v) - ℓ(D) equals finrank(range(eval)).
+
+This follows from rank-nullity on eval and exactness. -/
+lemma ell_diff_eq_rangeEval (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    [Module.Finite k (RRSpace_proj k R K D)]
+    [Module.Finite k (RRSpace_proj k R K (D + DivisorV2.single v 1))] :
+    (ell_proj k R K (D + DivisorV2.single v 1) : ℤ) - ell_proj k R K D =
+    Module.finrank k (evalRange_as_k_submodule k R K v D) := by
+  have h_rn := eval_rank_nullity k R K v D
+  have h_ker := finrank_kerEval_eq_ell k R K v D
+  omega
+
 /-- Key theorem: χ(D+v) = χ(D) + 1.
 
 This follows from the exact sequence and the Rank-Nullity theorem.
@@ -1778,26 +1886,19 @@ theorem chi_additive (v : HeightOneSpectrum R) (D : DivisorV2 R)
                   = dim(range(eval)) + dim(range(δ))
                   = dim(κ(v)) = 1
   -/
-  -- Step 1: dim(κ(v)) = 1 by DegreeOnePlaces
-  have h_kappa := kappa_dim_one k R v
-
-  -- Step 2: From rank-nullity on δ:
-  -- finrank(range(δ)) + finrank(ker(δ)) = finrank(κ(v)) = 1
-  -- Using exactness_at_kappa: ker(δ) = range(eval) as k-submodules
-
-  -- Step 3: From H1_surjection and exactness_at_H1:
-  -- h¹(D) = finrank(ker(proj)) + h¹(D+v) since proj is surjective
-  -- And ker(proj) = range(δ)
-
-  -- Step 4: From exactness_at_LDv:
-  -- ℓ(D+v) = ℓ(D) + finrank(range(eval)) since ker(eval) = L(D)
-
-  -- Combining these dimension relations yields χ(D+v) = χ(D) + 1
-
-  -- The full formalization requires connecting these finrank statements
-  -- through the exact sequence infrastructure. For now we document the
-  -- mathematical structure and leave as sorry.
-  sorry
+  -- Use the helper lemmas for dimension counting
+  -- From ell_diff_eq_rangeEval: ℓ(D+v) - ℓ(D) = finrank(range(eval))
+  have h_ell := ell_diff_eq_rangeEval k R K v D
+  -- From h1_diff_eq_rangeδ: h¹(D) - h¹(D+v) = finrank(range(δ))
+  have h_h1 := h1_diff_eq_rangeδ k R K v D
+  -- From rangeδ_plus_rangeEval_eq_one: finrank(range(δ)) + finrank(range(eval)) = 1
+  have h_sum := rangeδ_plus_rangeEval_eq_one k R K v D
+  -- Unfold eulerChar and compute
+  simp only [eulerChar]
+  -- χ(D+v) - χ(D) = (ℓ(D+v) - h¹(D+v)) - (ℓ(D) - h¹(D))
+  --                = (ℓ(D+v) - ℓ(D)) + (h¹(D) - h¹(D+v))
+  --                = finrank(range(eval)) + finrank(range(δ)) = 1
+  omega
 
 /-- Full Euler characteristic formula by induction.
 
@@ -1831,13 +1932,21 @@ theorem euler_characteristic (D : DivisorV2 R) (genus : ℕ)
             = (deg(D) + 1) + 1 - genus
             = deg(D') + 1 - genus  [since deg(D') = deg(D) + 1]
 
-  The formal induction needs to handle:
-  - Divisors with both positive and negative coefficients
-  - The finite support structure of divisors
-  - Converting between D and D ± single v 1
+  The formal induction needs:
+  - Strong induction on a measure like |deg(D)| + Σᵥ |D(v)|
+  - Both chi_additive and its inverse (χ(D) = χ(D+v) - 1)
+  - Infrastructure for decomposing divisors
 
-  For now, we document this structure and use sorry.
+  This remains as a sorry pending formal divisor induction infrastructure.
   -/
+  -- Base case verification (for documentation)
+  have h_base : eulerChar k R K 0 = (0 : DivisorV2 R).deg + 1 - genus := by
+    simp only [eulerChar, DivisorV2.deg_zero]
+    rw [h_ell_zero, h_genus]
+    ring
+  -- The key step chi_additive is proved above
+  -- Full induction requires decomposing D = D₀ + Σᵢ εᵢ·single(vᵢ)
+  -- and applying chi_additive iteratively
   sorry
 
 /-! ## Section 4: Full Riemann-Roch from Euler Characteristic
