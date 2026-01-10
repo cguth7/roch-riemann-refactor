@@ -105,8 +105,16 @@ lemma h1_zero_eq_genus : h1_finrank W (zeroDivisor W) = ellipticGenus :=
 /-- H¹(O) is finite-dimensional.
 
 This follows from h1_zero_eq_one: the space has dimension 1, hence is finite.
+Proof: h¹(O) = 1 > 0, so Module.finite_of_finrank_pos applies.
 -/
-axiom h1_zero_finite : Module.Finite F (EllipticH1 W (zeroDivisor W))
+theorem h1_zero_finite : Module.Finite F (EllipticH1 W (zeroDivisor W)) := by
+  have h := h1_zero_eq_one W
+  have heq : h1_finrank W (zeroDivisor W) =
+      Module.finrank F (EllipticH1 W (zeroDivisor W)) := rfl
+  rw [heq] at h
+  have hpos : 0 < Module.finrank F (EllipticH1 W (zeroDivisor W)) := by
+    rw [h]; exact Nat.one_pos
+  exact Module.finite_of_finrank_pos hpos
 
 /-! ## Vanishing for Positive Degree
 

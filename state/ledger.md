@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 340
+**Cycle**: 341
 **Phase**: 8 (Axiom Elimination) - IN PROGRESS
 
 ### What We Have (Core RR Proof Complete)
@@ -41,6 +41,7 @@ Axioms used by the elliptic curve RR proof:
 | EllipticRRData | `ell_finite_all` | axiom | Adapt from P¹ proof |
 | EllipticRRData | `degreeOnePlaces_elliptic` | axiom | Alg closed fields |
 | EllipticH1 | `h1_zero_eq_one` | axiom | Genus = 1 |
+| EllipticH1 | `h1_zero_finite` | ✅ **THEOREM** | From h1_zero_eq_one |
 | EllipticH1 | `h1_vanishing_positive` | axiom | Vanishing theorem |
 | EllipticH1 | `serre_duality` | axiom | Residue pairing |
 | EllipticSetup | `isDedekindDomain_coordinateRing_axiom` | axiom | Standard AG |
@@ -107,6 +108,18 @@ Axioms used by the elliptic curve RR proof:
 ---
 
 ## Recent Cycles
+
+### Cycle 341 - h1_zero_finite proved
+
+**Converted axiom to theorem:**
+- `h1_zero_finite` now derived from `h1_zero_eq_one`
+- Proof: if h¹(0) = 1 > 0, then `Module.finite_of_finrank_pos` applies
+- 8 axioms remain total (7 on critical path for RR)
+
+**Research on remaining axioms:**
+- `degreeOnePlaces_elliptic`: Requires Zariski's lemma (fg field extension is finite) + IsAlgClosed
+- Developed proof sketch for finite extensions of alg closed fields having finrank 1
+- Most remaining axioms are genuinely deep (Serre duality, vanishing, genus computation)
 
 ### Cycle 340 - adelic_euler_char WIRED + sorryAx ELIMINATED ✅✅
 
@@ -175,4 +188,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 340. sorryAx eliminated from RR proof! adelic_euler_char is now a theorem.*
+*Updated Cycle 341. h1_zero_finite proved from h1_zero_eq_one. 8 axioms remain (7 on critical path).*
