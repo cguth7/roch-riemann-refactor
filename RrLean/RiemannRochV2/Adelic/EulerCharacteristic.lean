@@ -1658,6 +1658,88 @@ lemma finrank_evalRange_eq_finrank_kerDelta (v : HeightOneSpectrum R) (D : Divis
     Module.finrank k (LinearMap.ker (connectingHom k R K v D)) := by
   rw [evalRange_eq_kerDelta k R K v D]
 
+/-- From surjectivity of H1Projection: finrank(range(proj)) = h¹(D+v). -/
+lemma finrank_range_H1Projection (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    [Module.Finite k (SpaceModule k R K D)]
+    [Module.Finite k (SpaceModule k R K (D + DivisorV2.single v 1))] :
+    Module.finrank k (LinearMap.range (H1Projection k R K v D)) =
+    h1_finrank k R K (D + DivisorV2.single v 1) := by
+  have h_surj := H1_surjection k R K v D
+  have h_range := LinearMap.range_eq_top_of_surjective (H1Projection k R K v D) h_surj
+  rw [h_range]
+  simp only [h1_finrank]
+  exact finrank_top k _
+
+/-- Rank-nullity applied to H1Projection. -/
+lemma H1_rank_nullity (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    [Module.Finite k (SpaceModule k R K D)] :
+    Module.finrank k (LinearMap.range (H1Projection k R K v D)) +
+    Module.finrank k (LinearMap.ker (H1Projection k R K v D)) =
+    h1_finrank k R K D := by
+  have h := LinearMap.finrank_range_add_finrank_ker (H1Projection k R K v D)
+  simp only [h1_finrank]
+  exact h
+
+/-- Key dimension relation: h¹(D) = finrank(ker(proj)) + h¹(D+v). -/
+lemma h1_eq_ker_plus_h1_next (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    [Module.Finite k (SpaceModule k R K D)]
+    [Module.Finite k (SpaceModule k R K (D + DivisorV2.single v 1))] :
+    h1_finrank k R K D =
+    Module.finrank k (LinearMap.ker (H1Projection k R K v D)) +
+    h1_finrank k R K (D + DivisorV2.single v 1) := by
+  have h_rn := H1_rank_nullity k R K v D
+  have h_range := finrank_range_H1Projection k R K v D
+  omega
+
+/-- From exactness_at_H1: finrank(ker(proj)) = finrank(range(δ)). -/
+lemma finrank_kerProj_eq_finrank_rangeδ (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    [Module.Finite k (SpaceModule k R K D)] :
+    Module.finrank k (LinearMap.ker (H1Projection k R K v D)) =
+    Module.finrank k (LinearMap.range (connectingHom k R K v D)) := by
+  have h_exact := exactness_at_H1 k R K v D
+  rw [← h_exact]
+
+/-- Combining: h¹(D) = finrank(range(δ)) + h¹(D+v). -/
+lemma h1_eq_rangeδ_plus_h1_next (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    [Module.Finite k (SpaceModule k R K D)]
+    [Module.Finite k (SpaceModule k R K (D + DivisorV2.single v 1))] :
+    h1_finrank k R K D =
+    Module.finrank k (LinearMap.range (connectingHom k R K v D)) +
+    h1_finrank k R K (D + DivisorV2.single v 1) := by
+  rw [h1_eq_ker_plus_h1_next k R K v D, finrank_kerProj_eq_finrank_rangeδ k R K v D]
+
+/-- Rank-nullity for the connecting homomorphism δ. -/
+lemma delta_rank_nullity (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    [Module.Finite k (residueFieldAtPrime R v)] :
+    Module.finrank k (LinearMap.range (connectingHom k R K v D)) +
+    Module.finrank k (LinearMap.ker (connectingHom k R K v D)) =
+    Module.finrank k (residueFieldAtPrime R v) := by
+  exact LinearMap.finrank_range_add_finrank_ker (connectingHom k R K v D)
+
+/-- Key equation: finrank(range(δ)) + finrank(range(eval)) = finrank(κ(v)) = 1.
+
+This follows from rank-nullity on δ and exactness: ker(δ) = range(eval). -/
+lemma rangeδ_plus_rangeEval_eq_one (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    [DegreeOnePlaces k R]
+    [Module.Finite k (residueFieldAtPrime R v)] :
+    Module.finrank k (LinearMap.range (connectingHom k R K v D)) +
+    Module.finrank k (evalRange_as_k_submodule k R K v D) = 1 := by
+  have h_rn := delta_rank_nullity k R K v D
+  have h_kappa := kappa_dim_one k R v
+  have h_exact := finrank_evalRange_eq_finrank_kerDelta k R K v D
+  omega
+
+/-- The difference h¹(D) - h¹(D+v) equals finrank(range(δ)).
+
+This follows from h1_eq_rangeδ_plus_h1_next. -/
+lemma h1_diff_eq_rangeδ (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    [Module.Finite k (SpaceModule k R K D)]
+    [Module.Finite k (SpaceModule k R K (D + DivisorV2.single v 1))] :
+    (h1_finrank k R K D : ℤ) - h1_finrank k R K (D + DivisorV2.single v 1) =
+    Module.finrank k (LinearMap.range (connectingHom k R K v D)) := by
+  have h := h1_eq_rangeδ_plus_h1_next k R K v D
+  omega
+
 /-- Key theorem: χ(D+v) = χ(D) + 1.
 
 This follows from the exact sequence and the Rank-Nullity theorem.
