@@ -64,31 +64,32 @@ Axioms used by the elliptic curve RR proof:
 
 ---
 
-## Phase 8: Axiom Elimination Plan
+## Phase 8: Axiom Elimination Plan (UPDATED Cycle 341)
 
-### Tier 1: Quick Wins (4-6 cycles)
-
-| Task | Cycles | Notes |
-|------|--------|-------|
-| Wire `euler_char_axiom` | ✅ DONE | Cycle 340 - converted to theorem! |
-| P¹ strong approx topology | 1-2 | Infrastructure exists |
-| `IsLinearPlaceSupport` lemma | 1 | Fixes 3 sorries at once |
-| Valuation bound (line 1508) | 1 | Clear from comments |
-
-### Tier 2: Medium Work (6-10 cycles)
+### Tier 1: Quick Wins (Done or 1-2 cycles each)
 
 | Task | Cycles | Notes |
 |------|--------|-------|
-| `h1_finite_all` | 2-3 | Via Serre duality shortcut |
-| `ell_finite_all` | 4-6 | Adapt P¹ clearing polynomial |
-| EllipticH1 integration | 2-3 | Uses Tier 2 results |
+| Wire `euler_char_axiom` | ✅ DONE | Cycle 340 |
+| `h1_zero_finite` | ✅ DONE | Cycle 341 - from h1_zero_eq_one |
+| P¹ strong approx topology | 1-2 | Infrastructure exists (P¹ only, not critical for elliptic) |
+| `IsLinearPlaceSupport` lemma | 1 | P¹ only, not on elliptic critical path |
 
-### Tier 3: Hard (6+ cycles)
+### Tier 2: Medium Work - BETTER THAN EXPECTED
 
 | Task | Cycles | Notes |
 |------|--------|-------|
-| Deep negative infinity | 4-6 | Constrained strong approx |
-| Non-vanishing Serre duality | 4-6 | Residue pairing |
+| `ell_finite_all` | 3-5 | **P¹ proof in DimensionGeneral.lean ~80% reusable!** |
+| `h1_finite_all` | 2-3 | Via Serre duality: h1(D) = ell(-D) + ell_finite |
+| `degreeOnePlaces_elliptic` | 2-3 | PlaceDegree infrastructure exists, need IsAlgClosed |
+
+### Tier 3: Hard (6+ cycles each)
+
+| Task | Cycles | Notes |
+|------|--------|-------|
+| `h1_vanishing_positive` | 4-6 | Needs StrongApprox for elliptic |
+| `serre_duality` | 4-6 | Vanishing case done, need non-vanishing |
+| `h1_zero_eq_one` | 4-6 | Genus = 1, needs invariant differential |
 
 ### Keep as Axioms (Recommended)
 
@@ -96,6 +97,16 @@ Axioms used by the elliptic curve RR proof:
 |-------|---------------|
 | `isDedekindDomain_coordRing` | Standard AG, 2-3 weeks to prove |
 | `instStrongApprox_Elliptic` | Deep number theory, textbook fact |
+
+### Key Infrastructure Files (Discovered Cycle 341)
+
+| File | What's There | Reusability |
+|------|--------------|-------------|
+| DimensionGeneral.lean | Complete L(D) finiteness proof | 80% for elliptic |
+| DimensionCore.lean | Pole-clearing technique | Reference |
+| GapBoundGeneral.lean | Gap bounds, residue field finiteness | 95% generic |
+| AllIntegersCompactProof.lean | DVR, RankOne PROVED | Missing residue iso |
+| PlaceDegree.lean | Degree 1 places for P¹ | Need to wire |
 
 ### Revised Estimate
 
@@ -109,17 +120,34 @@ Axioms used by the elliptic curve RR proof:
 
 ## Recent Cycles
 
-### Cycle 341 - h1_zero_finite proved
+### Cycle 341 - h1_zero_finite proved + Infrastructure Discovery
 
 **Converted axiom to theorem:**
 - `h1_zero_finite` now derived from `h1_zero_eq_one`
 - Proof: if h¹(0) = 1 > 0, then `Module.finite_of_finrank_pos` applies
 - 8 axioms remain total (7 on critical path for RR)
 
+**Major Infrastructure Discovery** (via systematic exploration):
+
+| Axiom | What We Found | Reusability |
+|-------|---------------|-------------|
+| `ell_finite_all` | **P¹ proof EXISTS in DimensionGeneral.lean** | ~80% |
+| `h1_finite_all` | DVR/RankOne/CompleteSpace ALL PROVED (Cycles 105-106) | High |
+| `degreeOnePlaces` | PlaceDegree.lean has `linearPlace_degree_eq_one` | Need wiring |
+| `serre_duality` | Vanishing case (deg≥-1) PROVED | Full for P¹ |
+| `h1_vanishing` | Needs StrongApprox (sorried) | Blocked |
+
+**Key files with reusable proofs:**
+- `DimensionGeneral.lean`: Complete L(D) finiteness via weighted degree induction
+- `DimensionCore.lean`: Pole-clearing technique
+- `GapBoundGeneral.lean`: Gap bounds, `residueFieldAtPrime_finite`
+- `AllIntegersCompactProof.lean`: DVR, RankOne infrastructure
+- `PlaceDegree.lean`: Degree 1 places for P¹
+
 **Research on remaining axioms:**
-- `degreeOnePlaces_elliptic`: Requires Zariski's lemma (fg field extension is finite) + IsAlgClosed
-- Developed proof sketch for finite extensions of alg closed fields having finrank 1
-- Most remaining axioms are genuinely deep (Serre duality, vanishing, genus computation)
+- `degreeOnePlaces_elliptic`: Proof sketch using `degree_eq_one_of_irreducible_of_root` + IsAlgClosed
+- AllIntegersCompact only missing Mathlib's residue field isomorphism
+- Serre duality shortcut: h1_finite can follow from ell_finite via h1(D) = ell(-D)
 
 ### Cycle 340 - adelic_euler_char WIRED + sorryAx ELIMINATED ✅✅
 
@@ -188,4 +216,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 341. h1_zero_finite proved from h1_zero_eq_one. 8 axioms remain (7 on critical path).*
+*Updated Cycle 341. h1_zero_finite proved. Major infrastructure discovery: P¹ proofs in DimensionGeneral.lean are ~80% reusable for elliptic!*

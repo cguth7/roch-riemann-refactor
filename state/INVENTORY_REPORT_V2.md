@@ -1,6 +1,6 @@
 # Inventory Report V2: Phase 8 Scoping
 
-**Generated**: Cycle 339 (Jan 2026)
+**Generated**: Cycle 339, **Updated**: Cycle 341 (Jan 2026)
 **Purpose**: Detailed assessment of remaining work for Litt's challenge
 
 ---
@@ -10,10 +10,84 @@
 **Core RR proof**: ✅ COMPLETE (euler_characteristic, chi_additive, riemann_roch_from_euler)
 
 **Remaining for Litt's challenge**:
-- 6 axiom declarations → must become theorems
-- 9 sorry placeholders → must be filled
+- 7 axiom declarations on critical path (8 total)
+- Several sorry placeholders in non-critical P¹ code
 
 **Estimated effort**: 12-21 cycles (optimistic: 12, realistic: 18, pessimistic: 25+)
+
+**Cycle 341 Discovery**: We have MORE infrastructure than previously thought! See "Key Infrastructure Discoveries" section.
+
+---
+
+## Key Infrastructure Discoveries (Cycle 341)
+
+**Critical finding**: Much more infrastructure exists than previously documented!
+
+### ell_finite_all - P¹ Proof EXISTS
+
+| Component | Status | Location |
+|-----------|--------|----------|
+| **Complete P¹ finiteness proof** | ✅ PROVED | DimensionGeneral.lean |
+| Pole-clearing via (X-α)^n multiplication | ✅ PROVED | DimensionCore.lean |
+| Induction on weighted degree | ✅ PROVED | DimensionGeneral.lean |
+| Surjective evaluation maps | ✅ PROVED | DimensionGeneral.lean |
+| Gap bound ℓ(D+[v]) = ℓ(D) + deg(v) | ✅ PROVED | GapBoundGeneral.lean |
+| `residueFieldAtPrime_finite` | ✅ PROVED | GapBoundGeneral.lean |
+
+**Reusability for elliptic**: ~80% direct copy. Needs:
+- Negative degree case: L(D) = {0} when deg(D) < 0
+- ConstantsValuationBound typeclass instantiation
+
+### h1_finite_all - AllIntegersCompact Almost Done
+
+| Component | Status | Location |
+|-----------|--------|----------|
+| DVR for adic completions | ✅ PROVED | DedekindDVR.lean |
+| RankOne for valuations | ✅ PROVED | AllIntegersCompactProof.lean:154 |
+| CompleteSpace for completions | ✅ PROVED | (automatic from completion) |
+| h1_anti_mono (monotonicity) | ✅ PROVED | AdelicH1v2.lean:523 |
+| **FiniteCompletionResidueFields** | ❌ AXIOM | Only remaining blocker! |
+
+**Blocker**: Mathlib lacks `ResidueField(O_v^) ≃ R/v.asIdeal` isomorphism.
+
+**Alternative**: Use Serre duality shortcut: h1(D) = ell(-D), so h1_finite follows from ell_finite.
+
+### degreeOnePlaces - PlaceDegree Infrastructure Ready
+
+| Component | Status | Location |
+|-----------|--------|----------|
+| DegreeOnePlaces typeclass | ✅ DEFINED | EulerCharacteristic.lean |
+| `linearPlace_degree_eq_one` | ✅ PROVED | PlaceDegree.lean |
+| `finrank_residueField_eq_degree` | ✅ PROVED | PlaceDegree.lean:176-183 |
+| `linear_of_degree_eq_one` (converse) | ✅ PROVED | PlaceDegree.lean |
+| Finite quotient instances | ✅ PROVED | FqPolynomialInstance.lean |
+
+**For elliptic over alg closed**: Need `[IsAlgClosed F]` + prove finite extensions are trivial.
+Proof sketch developed in Cycle 341 using `degree_eq_one_of_irreducible_of_root`.
+
+### serre_duality - Vanishing Case Done
+
+| Component | Status | Location |
+|-----------|--------|----------|
+| Abstract serrePairing framework | ✅ DEFINED | Abstract.lean (as placeholder 0) |
+| Residue theorem (split denominators) | ✅ PROVED | RatFuncResidues.lean |
+| **Vanishing case (deg ≥ -1)** | ✅ PROVED | AdelicH1Full.lean |
+| Non-vanishing case (deg < -1) | ❌ SORRY | Needs actual residue pairing |
+| Pole cancellation structure | ✅ PROVED | RatFuncPairing.lean |
+
+**Key insight**: For P¹ (genus 0), the vanishing case covers almost everything.
+For elliptic (genus 1), need full pairing for some divisors.
+
+### h1_vanishing - Needs StrongApprox
+
+| Component | Status | Location |
+|-----------|--------|----------|
+| h1_vanishing axiom in AdelicRRData | ✅ DEFINED | AdelicH1v2.lean:419 |
+| StrongApprox typeclass | ✅ DEFINED | StrongApproximation.lean |
+| P¹ strong approximation | ❌ SORRY | CRT + topology wiring needed |
+| Elliptic strong approximation | ❌ SORRY | Deep number theory |
+
+**Dependency**: h1_vanishing proof requires StrongApprox instance.
 
 ---
 
@@ -60,28 +134,31 @@ axiom ell_finite_all (D : DivisorV2 (CoordRing W)) :
     Module.Finite F (RRSpace_proj F (CoordRing W) (FuncField W) D)
 ```
 
-**What Exists**:
+**What Exists** (UPDATED Cycle 341 - more than expected!):
 | Component | Status | Location |
 |-----------|--------|----------|
 | RRSpace_proj definition | ✅ | Projective.lean:50 |
 | ell_proj dimension function | ✅ | Projective.lean:55 |
 | Valuation membership condition | ✅ PROVED | RRSpace.lean:64 |
 | Monotonicity | ✅ PROVED | Projective.lean:61 |
-| **Complete P¹ proof** | ✅ PROVED | AdelicH1Full.lean:1740-1950 |
+| **Complete P¹ proof** | ✅ PROVED | DimensionGeneral.lean (NOT AdelicH1Full!) |
+| Pole-clearing technique | ✅ PROVED | DimensionCore.lean |
+| Weighted degree induction | ✅ PROVED | DimensionGeneral.lean |
+| Surjective evaluation maps | ✅ PROVED | DimensionGeneral.lean |
+| Gap bounds | ✅ PROVED | GapBoundGeneral.lean |
 
-**What's Missing**:
-- Clearing polynomial for elliptic curves (exists for P¹)
-- Integrality after clearing lemmas
-- Degree bounds in function field context
+**What's Missing for Elliptic**:
+- Negative degree case: prove L(D) = {0} when deg(D) < 0
+- ConstantsValuationBound typeclass instance for elliptic
 
-**Proof Strategy**:
-The P¹ proof in AdelicH1Full.lean is a complete template:
-1. Define clearing polynomial q
-2. Show f·q is integral for f ∈ L(D)
-3. Bound degree: deg(f·q) ≤ deg(D) + deg(q)
-4. Embed into bounded-degree space (finite-dim)
+**Proof Strategy** (UPDATED):
+The P¹ proof in **DimensionGeneral.lean** is ~80% reusable:
+1. Uses strong induction on `degWeighted D`
+2. Surjective evaluation φ: L(D+v) → κ(v)
+3. Kernel is L(D), apply induction hypothesis
+4. Works for ANY Dedekind domain with proper valuation properties
 
-**Difficulty**: MEDIUM-HIGH (4-6 cycles to adapt from P¹)
+**Difficulty**: MEDIUM (3-5 cycles) - Better than expected!
 
 ---
 
@@ -345,4 +422,5 @@ grep -rn "^axiom " RrLean/RiemannRochV2 --include="*.lean" | wc -l
 
 ---
 
-*Generated Cycle 339. Core proof complete. ~12-21 cycles to full Litt challenge.*
+*Generated Cycle 339. Updated Cycle 341 with infrastructure discoveries.*
+*Core proof complete. More reusable infrastructure exists than expected!*
