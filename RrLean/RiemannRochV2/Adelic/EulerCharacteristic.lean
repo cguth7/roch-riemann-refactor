@@ -1260,13 +1260,152 @@ lemma bound_at_v_helper (v : HeightOneSpectrum R) (D : DivisorV2 R)
     Valued.v (algebraMap K (v.adicCompletion K)
       (algebraMap R K (liftToR R v (alphaFromR R v r)) * uniformizerInvPow R K v (D v + 1)) - b v) ≤
       WithZero.exp (D v) := by
-  -- This proof has been fully verified but is technically complex due to type coercions.
-  -- The strategy is documented above. The key steps are:
-  -- 1. liftToR(alphaFromR r) - r ∈ v.asIdeal (from liftToR_alphaFromR_diff_mem_ideal)
-  -- 2. same residue implies same valuation class in completion integers
-  -- 3. Factor the difference and apply ultrametric inequality
-  -- Full proof deferred to avoid elaborator timeout - see ledger for details
-  sorry
+  -- Set notation for clarity
+  set L := liftToR R v (alphaFromR R v r) with hL_def
+  set sb := shiftedB R K v D b with hsb_def
+  set sb_mem := shiftedB_mem_integers k R K v D b hb with hsb_mem_def
+  set π_inv := uniformizerInvPow R K v (D v + 1) with hπ_inv_def
+  set π_pow := uniformizerPow_completion R K v (D v + 1) with hπ_pow_def
+
+  -- Step 1: Factor the difference
+  -- b v = sb * π^(-(D v+1)) since sb = b v * π^(D v+1)
+  have h_bv_factor : b v = sb * algebraMap K (v.adicCompletion K) π_inv := by
+    simp only [hsb_def, shiftedB, hπ_inv_def, uniformizerInvPow, uniformizerInK, hπ_pow_def,
+               uniformizerPow_completion]
+    have hunif_ne := uniformizerAt_ne_zero v
+    have hunif_K_ne : algebraMap R K (uniformizerAt v) ≠ 0 := by
+      intro h
+      have hinj : Function.Injective (algebraMap R K) := IsFractionRing.injective R K
+      exact hunif_ne (hinj (h.trans (map_zero _).symm))
+    have h_zpow : (algebraMap R K (uniformizerAt v)) ^ (D v + 1) *
+        (algebraMap R K (uniformizerAt v)) ^ (-(D v + 1)) = 1 := by
+      rw [← zpow_add₀ hunif_K_ne]
+      simp only [add_neg_cancel, zpow_zero]
+    -- sb = b v * π^(D v+1), so b v = sb * π^(-(D v+1))
+    have h1 : algebraMap K (v.adicCompletion K) ((algebraMap R K (uniformizerAt v)) ^ (D v + 1)) *
+        algebraMap K (v.adicCompletion K) ((algebraMap R K (uniformizerAt v)) ^ (-(D v + 1))) = 1 := by
+      rw [← map_mul, h_zpow, map_one]
+    calc b v = b v * 1 := (mul_one _).symm
+      _ = b v * (algebraMap K (v.adicCompletion K) ((algebraMap R K (uniformizerAt v)) ^ (D v + 1)) *
+            algebraMap K (v.adicCompletion K) ((algebraMap R K (uniformizerAt v)) ^ (-(D v + 1)))) := by rw [h1]
+      _ = (b v * algebraMap K (v.adicCompletion K) ((algebraMap R K (uniformizerAt v)) ^ (D v + 1))) *
+            algebraMap K (v.adicCompletion K) ((algebraMap R K (uniformizerAt v)) ^ (-(D v + 1))) := by ring
+
+  -- Rewrite goal using the factorization
+  -- algebraMap K ... (L * π_inv) - b v = algebraMap K ... L * algebraMap K ... π_inv - sb * algebraMap K ... π_inv
+  --                                     = (algebraMap K ... L - sb) * algebraMap K ... π_inv
+  have h_goal_factor : algebraMap K (v.adicCompletion K)
+      (algebraMap R K L * π_inv) - b v =
+      (algebraMap K (v.adicCompletion K) (algebraMap R K L) - sb) *
+        algebraMap K (v.adicCompletion K) π_inv := by
+    rw [h_bv_factor, map_mul]
+    ring
+  rw [h_goal_factor, Valuation.map_mul]
+
+  -- Step 2: Show val(algebraMap K ... L - sb) ≤ exp(-1) using ultrametric
+  -- First, show val(L - r) ≤ exp(-1) from liftToR_alphaFromR_diff_mem_ideal
+  have hL_r_ideal : L - r ∈ v.asIdeal := liftToR_alphaFromR_diff_mem_ideal R v r
+
+  -- val(algebraMap R K (L - r)) ≤ exp(-1)
+  have hL_r_val : v.valuation K (algebraMap R K L - algebraMap R K r) ≤ WithZero.exp (-1) := by
+    rw [← map_sub]
+    exact valuation_of_ideal_mem_K R K v (L - r) hL_r_ideal
+
+  -- Step 3: Show algebraMap r and sb have same residue, so their difference is in maximal ideal
+  -- hr_residue : toResidueField v r = residue ⟨sb, sb_mem⟩
+  -- toResidueField = residue ∘ algebraMapToIntegers
+  -- So residue(algebraMap r) = residue ⟨sb, sb_mem⟩
+  -- Use explicit Subtype.mk since anonymous constructor doesn't work for ValuationSubring
+  let sb_elem : v.adicCompletionIntegers K := Subtype.mk sb sb_mem
+  have hr_sb_same_residue : IsLocalRing.residue (R := v.adicCompletionIntegers K)
+      (ResidueFieldIso.algebraMapToIntegers v r) =
+      IsLocalRing.residue (R := v.adicCompletionIntegers K) sb_elem := by
+    simp only [ResidueFieldIso.toResidueField, RingHom.coe_comp, Function.comp_apply] at hr_residue
+    exact hr_residue
+
+  -- Same residue implies difference is in maximal ideal
+  have hr_sb_diff_maxIdeal : ResidueFieldIso.algebraMapToIntegers v r - sb_elem ∈
+      IsLocalRing.maximalIdeal (v.adicCompletionIntegers K) := by
+    rw [← sub_eq_zero, ← map_sub, IsLocalRing.residue_eq_zero_iff] at hr_sb_same_residue
+    exact hr_sb_same_residue
+
+  -- Difference in maximal ideal means val < 1, hence ≤ exp(-1)
+  -- We need to show: Valued.v x < 1 → Valued.v x ≤ exp(-1)
+  -- This follows from the value group being exp(ℤ) ∪ {0}
+  have hr_sb_val : Valued.v ((ResidueFieldIso.algebraMapToIntegers v r : v.adicCompletionIntegers K) -
+      sb_elem : v.adicCompletion K) ≤ WithZero.exp (-1) := by
+    rw [ResidueFieldIso.mem_maximalIdeal_iff_val_lt_one] at hr_sb_diff_maxIdeal
+    -- hr_sb_diff_maxIdeal : Valued.v (...) < 1
+    -- Use withzero_lt_exp_succ_imp_le_exp: if x < exp(n+1) and x ≠ 0 then x ≤ exp(n)
+    -- Here 1 = exp(0), so x < exp(0) = exp(-1+1) implies x ≤ exp(-1)
+    set y := ((ResidueFieldIso.algebraMapToIntegers v r : v.adicCompletionIntegers K) -
+        sb_elem : v.adicCompletion K) with hy_def
+    by_cases hzero : Valued.v y = 0
+    · rw [hzero]; exact WithZero.zero_le _
+    · have hlt : Valued.v y < WithZero.exp ((-1 : ℤ) + 1) := by simpa using hr_sb_diff_maxIdeal
+      exact withzero_lt_exp_succ_imp_le_exp (Valued.v y) (-1) hzero hlt
+
+  -- Step 4: Use ultrametric to bound val(algebraMap K ... L - sb)
+  -- algebraMap K ... L - sb = (algebraMap K ... L - algebraMap K ... r) + (algebraMap K ... r - sb)
+  have h_split : algebraMap K (v.adicCompletion K) (algebraMap R K L) - sb =
+      (algebraMap K (v.adicCompletion K) (algebraMap R K L) -
+       algebraMap K (v.adicCompletion K) (algebraMap R K r)) +
+      (algebraMap K (v.adicCompletion K) (algebraMap R K r) - sb) := by ring
+
+  -- Convert hr_sb_val to the right form
+  have hr_sb_val' : Valued.v (algebraMap K (v.adicCompletion K) (algebraMap R K r) - sb) ≤
+      WithZero.exp (-1) := by
+    -- algebraMapToIntegers v r = algebraMap R (adicCompletionIntegers K) r
+    -- Its coercion to adicCompletion K is algebraMap K (adicCompletion K) (algebraMap R K r)
+    have hcoe : ((ResidueFieldIso.algebraMapToIntegers v r : v.adicCompletionIntegers K) :
+        v.adicCompletion K) = algebraMap K (v.adicCompletion K) (algebraMap R K r) := by
+      simp only [ResidueFieldIso.algebraMapToIntegers]
+      rfl
+    simp only [hcoe] at hr_sb_val
+    exact hr_sb_val
+
+  -- Convert hL_r_val to completion
+  have hL_r_val' : Valued.v (algebraMap K (v.adicCompletion K) (algebraMap R K L) -
+      algebraMap K (v.adicCompletion K) (algebraMap R K r)) ≤ WithZero.exp (-1) := by
+    -- The algebraMap K → completion preserves valuation
+    rw [← map_sub]
+    -- Show algebraMap K (completion) x = (x : completion) for x : K
+    set y := algebraMap R K L - algebraMap R K r with hy_def
+    have hval : Valued.v (algebraMap K (v.adicCompletion K) y) = v.valuation K y :=
+      valuedAdicCompletion_eq_valuation' v y
+    rw [hval]
+    exact hL_r_val
+
+  -- Ultrametric bound
+  have h_ultra : Valued.v (algebraMap K (v.adicCompletion K) (algebraMap R K L) - sb) ≤
+      WithZero.exp (-1) := by
+    rw [h_split]
+    calc Valued.v ((algebraMap K (v.adicCompletion K) (algebraMap R K L) -
+            algebraMap K (v.adicCompletion K) (algebraMap R K r)) +
+           (algebraMap K (v.adicCompletion K) (algebraMap R K r) - sb))
+        ≤ max (Valued.v (algebraMap K (v.adicCompletion K) (algebraMap R K L) -
+                algebraMap K (v.adicCompletion K) (algebraMap R K r)))
+              (Valued.v (algebraMap K (v.adicCompletion K) (algebraMap R K r) - sb)) :=
+          Valuation.map_add _ _ _
+      _ ≤ max (WithZero.exp (-1)) (WithZero.exp (-1)) := max_le_max hL_r_val' hr_sb_val'
+      _ = WithZero.exp (-1) := max_self _
+
+  -- Step 5: val(π_inv) = exp(D v + 1)
+  have hπ_inv_val : Valued.v (algebraMap K (v.adicCompletion K) π_inv) = WithZero.exp (D v + 1) := by
+    simp only [hπ_inv_def, uniformizerInvPow, uniformizerInK]
+    have hval : Valued.v (algebraMap K (v.adicCompletion K)
+        ((algebraMap R K (uniformizerAt v)) ^ (-(D v + 1)))) =
+        v.valuation K ((algebraMap R K (uniformizerAt v)) ^ (-(D v + 1))) :=
+      valuedAdicCompletion_eq_valuation' v _
+    rw [hval, uniformizerAt_zpow_valuation]
+    simp only [neg_neg]
+
+  -- Step 6: Final calculation
+  rw [hπ_inv_val]
+  calc Valued.v (algebraMap K (v.adicCompletion K) (algebraMap R K L) - sb) * WithZero.exp (D v + 1)
+      ≤ WithZero.exp (-1) * WithZero.exp (D v + 1) := mul_le_mul_of_nonneg_right h_ultra (WithZero.zero_le _)
+    _ = WithZero.exp (-1 + (D v + 1)) := (WithZero.exp_add (-1) (D v + 1)).symm
+    _ = WithZero.exp (D v) := by ring_nf
 
 /-- Helper: For any bounded adele b at D+v, we can find α such that
     the single-place adele for α differs from b by something bounded for D.
@@ -1397,7 +1536,42 @@ theorem exactness_at_H1 (v : HeightOneSpectrum R) (D : DivisorV2 R)
     -- The rest of the proof uses exists_alpha_for_bounded to construct α
     -- and shows quotientMapLinear b ∈ range(connectingHom)
     -- x = [a]_D = [b]_D since diag(g) ∈ globalSubmodule, then use α from the lemma
-    sorry
+
+    -- Step 1: x = [a]_D = [b]_D since diag(g) ∈ globalSubmodule
+    have hx_eq_b : x = quotientMapLinear k R K D b := by
+      rw [← ha, ← h_eq]
+      unfold quotientMapLinear
+      -- Use Submodule.Quotient.mk_add to split g_adele + b
+      simp only [Submodule.mkQ_apply, Submodule.Quotient.mk_add]
+      -- g_adele = diag(g) ∈ globalSubmodule ⊆ globalPlusBoundedSubmodule
+      have hg_in_global : g_adele ∈ globalSubmodule k R K := ⟨g, hg_diag⟩
+      have hg_in : g_adele ∈ globalPlusBoundedSubmodule k R K D := by
+        unfold globalPlusBoundedSubmodule
+        exact Submodule.mem_sup_left hg_in_global
+      rw [(Submodule.Quotient.mk_eq_zero (globalPlusBoundedSubmodule k R K D)).mpr hg_in, zero_add]
+
+    -- Step 2: Apply exists_alpha_for_bounded to find α
+    obtain ⟨α, hα⟩ := exists_alpha_for_bounded k R K v D b hb_bounded
+
+    -- Step 3: connectingHom(α) = [finiteAdeleSingleHere(...)]_D
+    -- The definition of connectingHom uses quotientMapLinear
+    have hconn_def : connectingHom k R K v D α = quotientMapLinear k R K D
+        (finiteAdeleSingleHere R K v (algebraMap K (v.adicCompletion K)
+          (algebraMap R K (liftToR R v α) * uniformizerInvPow R K v (D v + 1)))) := rfl
+
+    -- Step 4: finiteAdeleSingleHere(...) - b ∈ globalPlusBoundedSubmodule(D)
+    -- So quotientMapLinear(finiteAdeleSingleHere(...)) = quotientMapLinear(b)
+    have h_eq_quot : quotientMapLinear k R K D
+        (finiteAdeleSingleHere R K v (algebraMap K (v.adicCompletion K)
+          (algebraMap R K (liftToR R v α) * uniformizerInvPow R K v (D v + 1)))) =
+        quotientMapLinear k R K D b := by
+      unfold quotientMapLinear
+      rw [Submodule.mkQ_apply, Submodule.mkQ_apply, Submodule.Quotient.eq]
+      exact hα
+
+    -- Step 5: x = connectingHom(α)
+    rw [hx_eq_b, ← h_eq_quot, ← hconn_def]
+    exact LinearMap.mem_range_self _ α
 
 /-- H¹(D) → H¹(D+v) is surjective.
 
