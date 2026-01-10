@@ -5,9 +5,42 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 334
-**Phase**: 7 (Weil Differentials) - Active
-**Total Sorries**: 12 (4 in EulerCharacteristic + 8 existing axioms)
+**Cycle**: 335
+**Phase**: 7 (Euler Characteristic) - Active
+**Total Sorries**: ~17 (4 critical path + 6 axioms + 5 Abstract/AdelicH1Full + 2 EllipticH1)
+
+### Critical Path Sorries (4 in EulerCharacteristic.lean)
+
+| Line | Lemma | Description |
+|------|-------|-------------|
+| 1255 | `bound_at_v_helper` | Valuation bound helper (strategy documented) |
+| 1373 | `exactness_at_H1` | image(δ) = ker(proj) backward direction |
+| 1457 | `chi_additive` | χ(D+v) = χ(D) + 1 |
+| 1478 | `euler_characteristic` | χ(D) = deg(D) + 1 - g |
+
+---
+
+## Cycle 335 Completed
+
+**Goal**: Fix build errors that accumulated in EulerCharacteristic.lean.
+
+### Deliverables
+
+1. **Fixed 4 compile errors** in `exists_alpha_for_bounded` lemma:
+   - Line 1227: Changed `Finsupp.single_eq_of_ne` to `Finsupp.single_apply` + `if_neg` pattern
+   - Line 1336-1338: Fixed `IsLocalRing.residue` type annotation with explicit `(R := ...)` syntax
+   - Lines 1351-1360: Fixed `finiteAdeleSingleHere_apply_*` usage by adding explicit `h_sub_apply` lemma
+   - Replaced `subst hw` with `rw [hw]` to avoid scope issues with variable `v`
+
+2. **Build restored**: All 2845 jobs complete successfully
+
+### Technical Notes
+
+The errors were related to:
+- Lean 4's handling of `Finsupp` lemma unification with `DivisorV2` abbreviation
+- Type inference for `IsLocalRing.residue` needing explicit ring parameter
+- `FiniteAdeleRing` subtraction not automatically unfolding via `Pi.sub_apply`
+- `subst` tactic replacing variable `v` in unexpected ways after case split
 
 ---
 
