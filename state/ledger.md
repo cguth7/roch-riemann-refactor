@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 341
+**Cycle**: 342
 **Phase**: 8 (Axiom Elimination) - IN PROGRESS
 
 ### What We Have (Core RR Proof Complete)
@@ -33,12 +33,12 @@ The proof uses only propext/choice/quot.sound BUT has `axiom` declarations and `
 
 The main RR theorem (`riemann_roch_fullRRData`) now shows **NO sorryAx**!
 
-Axioms used by the elliptic curve RR proof:
+Axioms used by the elliptic curve RR proof (6 on critical path):
 | File | Axiom | Status | Notes |
 |------|-------|--------|-------|
 | EllipticRRData | `adelic_euler_char` | ✅ **THEOREM** | Uses euler_characteristic |
 | EllipticRRData | `h1_finite_all` | axiom | Shortcut via Serre duality |
-| EllipticRRData | `ell_finite_all` | axiom | Adapt from P¹ proof |
+| EllipticRRData | `ell_finite_all` | ✅ **THEOREM** | Cycle 342 - gap bound + posPart |
 | EllipticRRData | `degreeOnePlaces_elliptic` | axiom | Alg closed fields |
 | EllipticH1 | `h1_zero_eq_one` | axiom | Genus = 1 |
 | EllipticH1 | `h1_zero_finite` | ✅ **THEOREM** | From h1_zero_eq_one |
@@ -75,11 +75,11 @@ Axioms used by the elliptic curve RR proof:
 | P¹ strong approx topology | 1-2 | Infrastructure exists (P¹ only, not critical for elliptic) |
 | `IsLinearPlaceSupport` lemma | 1 | P¹ only, not on elliptic critical path |
 
-### Tier 2: Medium Work - BETTER THAN EXPECTED
+### Tier 2: Medium Work
 
 | Task | Cycles | Notes |
 |------|--------|-------|
-| `ell_finite_all` | 3-5 | **P¹ proof in DimensionGeneral.lean ~80% reusable!** |
+| `ell_finite_all` | ✅ DONE | Cycle 342 - gap bound + positive part |
 | `h1_finite_all` | 2-3 | Via Serre duality: h1(D) = ell(-D) + ell_finite |
 | `degreeOnePlaces_elliptic` | 2-3 | PlaceDegree infrastructure exists, need IsAlgClosed |
 
@@ -119,6 +119,22 @@ Axioms used by the elliptic curve RR proof:
 ---
 
 ## Recent Cycles
+
+### Cycle 342 - ell_finite_all PROVED ✅
+
+**Converted axiom to theorem** - Major milestone!
+
+Infrastructure added to EulerCharacteristic.lean:
+- `gap_le_one_proj_of_degreeOne`: Gap bound ℓ(D+v) ≤ ℓ(D) + 1 using DegreeOnePlaces
+- `RRSpace_proj_zero_finite`: L(0) is finite for proper curves
+- `ell_finite_of_effective`: L(D) finite for effective D by degree induction
+
+Proof strategy for `ell_finite_all`:
+1. For effective D: Use `ell_finite_of_effective`
+2. For non-effective D: L(D) ⊆ L(D.posPart) where D.posPart is effective
+3. Use `Module.Finite.of_injective` to transfer finiteness via inclusion
+
+**Result**: 6 axioms on critical path (down from 7)
 
 ### Cycle 341 - h1_zero_finite proved + Infrastructure Discovery
 
@@ -216,4 +232,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 341. h1_zero_finite proved. Major infrastructure discovery: P¹ proofs in DimensionGeneral.lean are ~80% reusable for elliptic!*
+*Updated Cycle 342. ell_finite_all PROVED! 6 axioms remain on critical path.*

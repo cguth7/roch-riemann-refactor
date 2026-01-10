@@ -57,47 +57,6 @@ We need additional axioms for:
 3. The Euler characteristic formula
 -/
 
-/-! ### Finiteness Axioms -/
-
-/-- H¹(D) is finite-dimensional for all divisors D.
-
-This follows from:
-1. For deg(D) > 0: H¹(D) = 0, trivially finite
-2. For deg(D) = 0: Requires analysis of A/(K + A(O))
-3. For deg(D) < 0: Follows from Serre duality + finiteness of L(-D)
-
-The proof would use compactness of adelic quotients (analytic argument).
-We axiomatize this as it's standard and orthogonal to RR content.
--/
-axiom h1_finite_all (D : DivisorV2 (CoordRing W)) :
-    Module.Finite F (EllipticH1 W D)
-
-/-- L(D) is finite-dimensional for all divisors D.
-
-This is a fundamental fact about function fields:
-- L(D) embeds into K via f ↦ f
-- The valuation constraints give finite-dimensionality
-
-For elliptic curves:
-- deg(D) < 0: L(D) = {0}, trivially finite
-- deg(D) = 0: L(D) = F (constants), 1-dimensional
-- deg(D) > 0: L(D) is deg(D)-dimensional (by RR!)
-
-We axiomatize this as it requires function field arithmetic.
--/
-axiom ell_finite_all (D : DivisorV2 (CoordRing W)) :
-    Module.Finite F (RRSpace_proj F (CoordRing W) (FuncField W) D)
-
-/-- Instance version of h1_finite_all for use with euler_characteristic. -/
-instance ellipticH1Finite (E : DivisorV2 (CoordRing W)) :
-    Module.Finite F (AdelicH1v2.SpaceModule F (CoordRing W) (FuncField W) E) :=
-  h1_finite_all W E
-
-/-- Instance version of ell_finite_all for use with euler_characteristic. -/
-instance ellipticEllFinite (E : DivisorV2 (CoordRing W)) :
-    Module.Finite F (RRSpace_proj F (CoordRing W) (FuncField W) E) :=
-  ell_finite_all W E
-
 /-! ### Degree One Places
 
 For an elliptic curve over an algebraically closed field F, all places have
@@ -123,6 +82,26 @@ axiom degreeOnePlaces_elliptic :
 /-- DegreeOnePlaces instance for elliptic curves. -/
 instance ellipticDegreeOnePlaces : EulerCharacteristic.DegreeOnePlaces F (CoordRing W) where
   residue_finrank_one := degreeOnePlaces_elliptic W
+
+/-! ### Finiteness Axioms -/
+
+/-- H¹(D) is finite-dimensional for all divisors D.
+
+This follows from:
+1. For deg(D) > 0: H¹(D) = 0, trivially finite
+2. For deg(D) = 0: Requires analysis of A/(K + A(O))
+3. For deg(D) < 0: Follows from Serre duality + finiteness of L(-D)
+
+The proof would use compactness of adelic quotients (analytic argument).
+We axiomatize this as it's standard and orthogonal to RR content.
+-/
+axiom h1_finite_all (D : DivisorV2 (CoordRing W)) :
+    Module.Finite F (EllipticH1 W D)
+
+/-- Instance version of h1_finite_all for use with euler_characteristic. -/
+instance ellipticH1Finite (E : DivisorV2 (CoordRing W)) :
+    Module.Finite F (AdelicH1v2.SpaceModule F (CoordRing W) (FuncField W) E) :=
+  h1_finite_all W E
 
 /-! ### ℓ(0) = 1 (moved here to break circular dependency)
 
@@ -152,6 +131,88 @@ lemma ell_zero_eq_one : ell_proj F (CoordRing W) (FuncField W) (zeroDivisor W) =
     exact this
   -- Combine: ell_proj ... 0 = 1
   omega
+
+/-! ### ProperCurve Instance (needed for finiteness proof)
+
+Elliptic curves are proper, so L(0) = constants = 1-dimensional.
+-/
+
+/-- Elliptic curves are proper curves (L(0) = k). -/
+instance ellipticProperCurve : ProperCurve F (CoordRing W) (FuncField W) where
+  ell_zero_eq_one := by
+    have h := ell_zero_eq_one W
+    unfold zeroDivisor at h
+    exact h
+
+/-! ### Finiteness of L(D) (Cycle 342)
+
+L(D) is finite-dimensional for all divisors D.
+
+For effective D: Use `ell_finite_of_effective` from EulerCharacteristic.lean
+For general D: L(D) ⊆ L(D⁺) where D⁺ is the positive part
+-/
+
+/-- The positive part of a divisor: D⁺(v) = max(D(v), 0). -/
+def DivisorV2.posPart (D : DivisorV2 (CoordRing W)) : DivisorV2 (CoordRing W) :=
+  D.mapRange (max · 0) (by simp)
+
+/-- The positive part is effective. -/
+lemma DivisorV2.posPart_effective (D : DivisorV2 (CoordRing W)) :
+    (DivisorV2.posPart W D).Effective := by
+  intro v
+  simp only [DivisorV2.posPart, Finsupp.mapRange_apply]
+  exact le_max_right _ _
+
+/-- D ≤ D.posPart pointwise. -/
+lemma DivisorV2.le_posPart (D : DivisorV2 (CoordRing W)) : D ≤ DivisorV2.posPart W D := by
+  intro v
+  simp only [DivisorV2.posPart, Finsupp.mapRange_apply]
+  exact le_max_left _ _
+
+/-- L(D) ⊆ L(D.posPart) via monotonicity. -/
+lemma RRSpace_proj_le_posPart (D : DivisorV2 (CoordRing W)) :
+    RRSpace_proj F (CoordRing W) (FuncField W) D ≤
+    RRSpace_proj F (CoordRing W) (FuncField W) (DivisorV2.posPart W D) :=
+  RRSpace_proj_mono F (CoordRing W) (FuncField W) (DivisorV2.le_posPart W D)
+
+/-- L(D) is finite-dimensional for all divisors D.
+
+This is now a THEOREM using `ell_finite_of_effective` from EulerCharacteristic.lean.
+
+Proof:
+- D.posPart is effective
+- L(D.posPart) is finite by `ell_finite_of_effective`
+- L(D) ⊆ L(D.posPart), so L(D) is finite via the inclusion map
+-/
+theorem ell_finite_all (D : DivisorV2 (CoordRing W)) :
+    Module.Finite F (RRSpace_proj F (CoordRing W) (FuncField W) D) := by
+  -- D.posPart is effective
+  have heff : (DivisorV2.posPart W D).Effective := DivisorV2.posPart_effective W D
+  -- L(D.posPart) is finite by ell_finite_of_effective
+  haveI hfin : Module.Finite F (RRSpace_proj F (CoordRing W) (FuncField W) (DivisorV2.posPart W D)) :=
+    EulerCharacteristic.ell_finite_of_effective F (CoordRing W) (FuncField W) (DivisorV2.posPart W D) heff
+  -- L(D) is a submodule of L(D.posPart)
+  have hsub : RRSpace_proj F (CoordRing W) (FuncField W) D ≤
+      RRSpace_proj F (CoordRing W) (FuncField W) (DivisorV2.posPart W D) :=
+    RRSpace_proj_le_posPart W D
+  -- The inclusion map from L(D) to L(D.posPart)
+  let incl : ↥(RRSpace_proj F (CoordRing W) (FuncField W) D) →ₗ[F]
+      ↥(RRSpace_proj F (CoordRing W) (FuncField W) (DivisorV2.posPart W D)) :=
+    { toFun := fun f => ⟨f.val, hsub f.property⟩
+      map_add' := fun _ _ => rfl
+      map_smul' := fun _ _ => rfl }
+  -- The inclusion is injective (obvious from construction)
+  have h_inj : Function.Injective incl := by
+    intro x y h
+    simp only [incl, LinearMap.coe_mk, AddHom.coe_mk, Subtype.mk.injEq] at h
+    exact Subtype.ext h
+  -- Use Module.Finite.of_injective: injective linear map into finite module means domain is finite
+  exact Module.Finite.of_injective incl h_inj
+
+/-- Instance version of ell_finite_all for use with euler_characteristic. -/
+instance ellipticEllFinite (E : DivisorV2 (CoordRing W)) :
+    Module.Finite F (RRSpace_proj F (CoordRing W) (FuncField W) E) :=
+  ell_finite_all W E
 
 /-! ### The Euler Characteristic Theorem
 
@@ -309,21 +370,6 @@ For deg(D) > 0:
 
 The "+1" difference is the genus: 1 - g where g = 0 for P¹ and g = 1 for elliptic.
 -/
-
-/-! ## ProperCurve Instance (Cycle 323)
-
-Elliptic curves are proper, so L(0) = constants = 1-dimensional.
-This enables the bridge from AdelicRRData to FullRRData.
--/
-
-/-- Elliptic curves are proper curves (L(0) = k).
-
-This follows from `ell_zero_eq_one` proved above. -/
-instance ellipticProperCurve : ProperCurve F (CoordRing W) (FuncField W) where
-  ell_zero_eq_one := by
-    have h := ell_zero_eq_one W
-    unfold zeroDivisor at h
-    exact h
 
 /-! ## FullRRData Instance (Cycle 323)
 

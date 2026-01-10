@@ -2044,6 +2044,332 @@ theorem riemann_roch_from_euler
     (ell_proj k R K D : ℤ) - ell_proj k R K (canonical - D) = D.deg + 1 - genus :=
   riemann_roch_from_adelic k R K
 
+/-! ## Gap Bound for DegreeOnePlaces
+
+The gap bound ℓ(D+v) ≤ ℓ(D) + 1 holds when all residue fields have dimension 1.
+This is a variant of `gap_le_one_proj_of_rational` from Projective.lean that uses
+`DegreeOnePlaces` instead of requiring an explicit algebra isomorphism κ(v) ≃ₐ[k] k.
+-/
+
+/-- Gap bound using DegreeOnePlaces: ℓ(D+v) ≤ ℓ(D) + 1.
+
+The proof shows that the quotient L(D+v)/L(D) embeds into κ(v),
+which has dimension 1 when DegreeOnePlaces holds.
+-/
+lemma gap_le_one_proj_of_degreeOne (D : DivisorV2 R) (v : HeightOneSpectrum R)
+    [DegreeOnePlaces k R]
+    [hfin : Module.Finite k (RRSpace_proj k R K (D + DivisorV2.single v 1))] :
+    ell_proj k R K (D + DivisorV2.single v 1) ≤ ell_proj k R K D + 1 := by
+  -- Setup: L(D) embeds into L(D+v)
+  have hle := divisor_le_add_single D v
+  have hincl : RRSpace_proj k R K D ≤ RRSpace_proj k R K (D + DivisorV2.single v 1) :=
+    RRSpace_proj_mono k R K hle
+
+  -- The comap gives us L(D) as a submodule of L(D+v)
+  let LD := (RRSpace_proj k R K D).comap (RRSpace_proj k R K (D + DivisorV2.single v 1)).subtype
+
+  -- Key: quotient L(D+v)/LD embeds into κ(v), which has dim 1
+  have h_quot_le : Module.finrank k (↥(RRSpace_proj k R K (D + DivisorV2.single v 1)) ⧸ LD) ≤ 1 := by
+    -- κ(v) has dimension 1
+    have h_residue_dim : Module.finrank k (residueFieldAtPrime R v) = 1 := kappa_dim_one k R v
+    -- κ(v) is finite-dimensional
+    haveI : Module.Finite k (residueFieldAtPrime R v) := kappa_finite k R v
+
+    -- The evaluation map φ : L(D+v)_R → κ(v)
+    let φ := evaluationMapAt_complete (K := K) v D
+    have h_ker_R := kernel_evaluationMapAt_complete_proof (R := R) (K := K) v D
+
+    -- Construct k-linear map ψ : L(D+v) → κ(v) with same function as φ
+    let ψ : ↥(RRSpace_proj k R K (D + DivisorV2.single v 1)) →ₗ[k] residueFieldAtPrime R v :=
+      { toFun := fun x => φ ⟨x.val, x.property⟩
+        map_add' := fun x y => φ.map_add _ _
+        map_smul' := fun c x => by
+          have h1 : (c • x).val = (algebraMap k R c) • x.val :=
+            (IsScalarTower.algebraMap_smul R c x.val).symm
+          have hmem : (algebraMap k R c) • x.val ∈ RRModuleV2_real R K (D + DivisorV2.single v 1) :=
+            Submodule.smul_mem _ _ x.property
+          have h2 : φ ⟨(algebraMap k R c) • x.val, hmem⟩ = (algebraMap k R c) • φ ⟨x.val, x.property⟩ := by
+            convert φ.map_smul (algebraMap k R c) ⟨x.val, x.property⟩ using 1
+          have h3 : (algebraMap k R c) • φ ⟨x.val, x.property⟩ = c • φ ⟨x.val, x.property⟩ :=
+            IsScalarTower.algebraMap_smul R c _
+          calc φ ⟨(c • x).val, (c • x).property⟩
+              = φ ⟨(algebraMap k R c) • x.val, hmem⟩ := by simp only [h1]
+            _ = (algebraMap k R c) • φ ⟨x.val, x.property⟩ := h2
+            _ = c • φ ⟨x.val, x.property⟩ := h3 }
+
+    -- Show LD ≤ ker(ψ): elements of L(D) map to 0
+    have h_le_ker : LD ≤ LinearMap.ker ψ := by
+      intro x hx
+      rw [LinearMap.mem_ker]
+      rw [Submodule.mem_comap] at hx
+      let y : RRModuleV2_real R K D := ⟨x.val, hx⟩
+      have hinc : (⟨x.val, x.property⟩ : RRModuleV2_real R K (D + DivisorV2.single v 1)) =
+          Submodule.inclusion (RRModuleV2_mono_inclusion R K (divisor_le_add_single D v)) y := rfl
+      show ψ x = 0
+      simp only [ψ, LinearMap.coe_mk, AddHom.coe_mk]
+      rw [hinc]
+      exact LD_element_maps_to_zero v D y
+
+    -- Show ker(ψ) ≤ LD: if ψ(x) = 0, then x.val ∈ L(D)
+    have h_ker_le : LinearMap.ker ψ ≤ LD := by
+      intro x hx
+      rw [LinearMap.mem_ker] at hx
+      show x ∈ LD
+      simp only [ψ, LinearMap.coe_mk, AddHom.coe_mk] at hx
+      have h_in_ker : (⟨x.val, x.property⟩ : RRModuleV2_real R K (D + DivisorV2.single v 1)) ∈
+          LinearMap.ker φ := hx
+      rw [h_ker_R, LinearMap.mem_range] at h_in_ker
+      obtain ⟨y, hy⟩ := h_in_ker
+      rw [Submodule.mem_comap, Submodule.coe_subtype]
+      have hval : y.val = x.val := congrArg Subtype.val hy
+      rw [← hval]
+      exact y.property
+
+    -- LD = ker(ψ)
+    have h_eq_ker : LD = LinearMap.ker ψ := le_antisymm h_le_ker h_ker_le
+
+    -- The descended map: quotient → κ(v) is injective
+    let desc := Submodule.liftQ LD ψ h_le_ker
+    have h_desc_inj : Function.Injective desc := by
+      rw [← LinearMap.ker_eq_bot]
+      have hker := Submodule.ker_liftQ LD ψ h_le_ker
+      rw [hker, h_eq_ker, Submodule.mkQ_map_self]
+
+    -- finrank of domain ≤ finrank of codomain when injection exists
+    calc Module.finrank k (↥(RRSpace_proj k R K (D + DivisorV2.single v 1)) ⧸ LD)
+        ≤ Module.finrank k (residueFieldAtPrime R v) :=
+          LinearMap.finrank_le_finrank_of_injective h_desc_inj
+      _ = 1 := h_residue_dim
+
+  -- LD is isomorphic to L(D) (comap of subtype for an included submodule)
+  have h_LD_eq : Module.finrank k LD = ell_proj k R K D := by
+    unfold ell_proj LD
+    have h_eq : (RRSpace_proj k R K D).comap
+        (RRSpace_proj k R K (D + DivisorV2.single v 1)).subtype =
+        LinearMap.range (Submodule.inclusion hincl) := by
+      apply le_antisymm
+      · intro x hx
+        rw [Submodule.mem_comap] at hx
+        rw [LinearMap.mem_range]
+        exact ⟨⟨x.val, hx⟩, rfl⟩
+      · intro x hx
+        rw [LinearMap.mem_range] at hx
+        obtain ⟨y, hy⟩ := hx
+        rw [Submodule.mem_comap]
+        rw [← hy]; exact y.2
+    rw [h_eq]
+    exact LinearMap.finrank_range_of_inj (Submodule.inclusion_injective hincl)
+
+  -- Combine: finrank(L(D+v)) = finrank(LD) + finrank(quotient)
+  have h_add := Submodule.finrank_quotient_add_finrank LD
+  unfold ell_proj
+  have h_eq_dim : Module.finrank k ↥(RRSpace_proj k R K (D + DivisorV2.single v 1)) =
+      Module.finrank k LD +
+      Module.finrank k (↥(RRSpace_proj k R K (D + DivisorV2.single v 1)) ⧸ LD) := by
+    rw [← h_add, add_comm]
+  rw [h_eq_dim]
+  calc Module.finrank k LD +
+        Module.finrank k (↥(RRSpace_proj k R K (D + DivisorV2.single v 1)) ⧸ LD)
+      ≤ Module.finrank k (RRSpace_proj k R K D) + 1 := Nat.add_le_add (le_of_eq h_LD_eq) h_quot_le
+
+/-! ## Finiteness for Effective Divisors
+
+When DegreeOnePlaces holds and L(0) is finite, L(D) is finite for all effective D.
+-/
+
+/-- L(0) is finite-dimensional for proper curves.
+
+From ProperCurve, ell_proj k R K 0 = 1, which means finrank = 1 > 0,
+so Module.finite_of_finrank_pos applies.
+-/
+lemma RRSpace_proj_zero_finite [ProperCurve k R K] :
+    Module.Finite k (RRSpace_proj k R K (0 : DivisorV2 R)) := by
+  have h : ell_proj k R K 0 = 1 := ProperCurve.ell_zero_eq_one
+  have heq : ell_proj k R K 0 = Module.finrank k (RRSpace_proj k R K 0) := rfl
+  rw [heq] at h
+  have hpos : 0 < Module.finrank k (RRSpace_proj k R K 0) := by rw [h]; exact Nat.one_pos
+  exact Module.finite_of_finrank_pos hpos
+
+/-- Finiteness of L(D) for effective D by induction on degree.
+
+Strategy:
+- Base: deg(D) = 0 and D effective ⟹ D = 0 ⟹ L(0) is finite
+- Step: D = D' + [v] where D' has smaller degree
+  - L(D') is finite by IH
+  - L(D)/L(D') embeds into κ(v) which is 1-dimensional
+  - Therefore L(D) is finite
+-/
+theorem ell_finite_of_effective [DegreeOnePlaces k R] [ProperCurve k R K]
+    (D : DivisorV2 R) (hD : D.Effective) :
+    Module.Finite k (RRSpace_proj k R K D) := by
+  -- Degree is non-negative for effective D
+  have hdeg_nn : 0 ≤ D.deg := DivisorV2.deg_nonneg_of_effective hD
+  obtain ⟨n, hn⟩ := Int.eq_ofNat_of_zero_le hdeg_nn
+
+  -- Strong induction on n = deg(D)
+  induction n using Nat.strong_induction_on generalizing D with
+  | _ n ih =>
+    by_cases hn0 : n = 0
+    · -- Base case: deg(D) = 0 ⟹ D = 0 (for effective D) ⟹ L(0) is finite
+      subst hn0
+      have hD_zero : D = 0 := by
+        ext v
+        by_contra h_neq
+        have h_pos : 0 < D v := lt_of_le_of_ne (hD v) (Ne.symm h_neq)
+        have h_in_supp : v ∈ D.support := Finsupp.mem_support_iff.mpr (ne_of_gt h_pos)
+        have h_sum_pos : 0 < D.deg := by
+          unfold DivisorV2.deg
+          apply Finsupp.sum_pos'
+          · intro x _; exact hD x
+          · exact ⟨v, h_in_supp, h_pos⟩
+        omega
+      rw [hD_zero]
+      exact RRSpace_proj_zero_finite k R K
+
+    · -- Inductive case: deg(D) = n > 0
+      have hn_pos : 0 < n := Nat.pos_of_ne_zero hn0
+      have hdeg_pos : D.deg > 0 := by rw [hn]; exact Nat.cast_pos.mpr hn_pos
+
+      -- There exists v with D(v) > 0
+      have h_exists_pos : ∃ v, 0 < D v := DivisorV2.exists_pos_of_deg_pos hD hdeg_pos
+      obtain ⟨v, hv_pos⟩ := h_exists_pos
+
+      -- Let D' = D - [v]
+      set D' := D - DivisorV2.single v 1 with hD'_def
+
+      -- D' is effective
+      have hD'_eff : D'.Effective := DivisorV2.effective_sub_single hD v hv_pos
+
+      -- deg(D') = n - 1 < n
+      have hdeg_D' : D'.deg = (n : ℤ) - 1 := by
+        have h1 : D'.deg = D.deg - 1 := DivisorV2.deg_sub_single D v
+        rw [h1, hn]
+
+      have hdeg_D'_nn : 0 ≤ D'.deg := DivisorV2.deg_nonneg_of_effective hD'_eff
+      have hdeg_D'_nat : D'.deg = ((n - 1 : ℕ) : ℤ) := by
+        rw [hdeg_D']
+        omega
+
+      -- IH: n - 1 < n
+      have ih_hyp : n - 1 < n := Nat.sub_lt hn_pos Nat.one_pos
+
+      -- Apply IH to D': L(D') is finite
+      haveI hfin_D' : Module.Finite k (RRSpace_proj k R K D') :=
+        ih (n - 1) ih_hyp D' hD'_eff hdeg_D'_nn hdeg_D'_nat
+
+      -- D = D' + [v]
+      have hD_eq : D = D' + DivisorV2.single v 1 := by
+        rw [hD'_def, sub_add_cancel]
+
+      -- Now prove L(D) = L(D' + [v]) is finite
+      -- Strategy: L(D')/L(D' + [v]) embeds into κ(v) which is finite
+
+      -- The inclusion L(D') ↪ L(D' + [v])
+      have hincl : RRSpace_proj k R K D' ≤
+          RRSpace_proj k R K (D' + DivisorV2.single v 1) :=
+        RRSpace_proj_mono k R K (divisor_le_add_single D' v)
+
+      -- The comap LD = L(D').comap(subtype) in L(D' + [v])
+      let LD := (RRSpace_proj k R K D').comap
+          (RRSpace_proj k R K (D' + DivisorV2.single v 1)).subtype
+
+      -- LD equals range of inclusion
+      have hLD_eq_range : LD = LinearMap.range (Submodule.inclusion hincl) := by
+        ext x
+        constructor
+        · intro hx
+          rw [Submodule.mem_comap] at hx
+          rw [LinearMap.mem_range]
+          exact ⟨⟨x.val, hx⟩, rfl⟩
+        · intro hx
+          rw [LinearMap.mem_range] at hx
+          obtain ⟨y, hy⟩ := hx
+          rw [Submodule.mem_comap]
+          rw [← hy]; exact y.2
+
+      -- LD is finite-dimensional (same as L(D'))
+      haveI hLD_fin : Module.Finite k LD := by
+        rw [hLD_eq_range]
+        exact Module.Finite.range (Submodule.inclusion hincl)
+
+      -- κ(v) is finite-dimensional (from DegreeOnePlaces)
+      haveI hκ_fin : Module.Finite k (residueFieldAtPrime R v) := kappa_finite k R v
+
+      -- Build the evaluation map ψ : L(D' + [v]) → κ(v)
+      let φ := evaluationMapAt_complete (K := K) v D'
+
+      let ψ : ↥(RRSpace_proj k R K (D' + DivisorV2.single v 1)) →ₗ[k]
+          residueFieldAtPrime R v := {
+        toFun := fun x => φ ⟨x.val, x.property⟩
+        map_add' := fun x y => φ.map_add _ _
+        map_smul' := fun c x => by
+          have h1 : (c • x).val = (algebraMap k R c) • x.val :=
+            (IsScalarTower.algebraMap_smul R c x.val).symm
+          have hmem : (algebraMap k R c) • x.val ∈
+              RRModuleV2_real R K (D' + DivisorV2.single v 1) :=
+            Submodule.smul_mem _ _ x.property
+          have h2 : φ ⟨(algebraMap k R c) • x.val, hmem⟩ =
+              (algebraMap k R c) • φ ⟨x.val, x.property⟩ := by
+            convert φ.map_smul (algebraMap k R c) ⟨x.val, x.property⟩ using 1
+          have h3 : (algebraMap k R c) • φ ⟨x.val, x.property⟩ =
+              c • φ ⟨x.val, x.property⟩ :=
+            IsScalarTower.algebraMap_smul R c _
+          simp only [RingHom.id_apply]
+          calc φ ⟨(c • x).val, (c • x).property⟩
+              = φ ⟨(algebraMap k R c) • x.val, hmem⟩ := by simp only [h1]
+            _ = (algebraMap k R c) • φ ⟨x.val, x.property⟩ := h2
+            _ = c • φ ⟨x.val, x.property⟩ := h3
+      }
+
+      -- LD ≤ ker(ψ)
+      have hle := divisor_le_add_single D' v
+      have h_LD_le_ker : LD ≤ LinearMap.ker ψ := by
+        intro x hx
+        rw [LinearMap.mem_ker]
+        rw [Submodule.mem_comap] at hx
+        have h_affine_mem : x.val ∈ RRModuleV2_real R K D' := hx
+        have h_in_affine_Dv : x.val ∈ RRModuleV2_real R K (D' + DivisorV2.single v 1) :=
+          RRModuleV2_mono_inclusion R K hle h_affine_mem
+        let y_affine : RRModuleV2_real R K D' := ⟨x.val, h_affine_mem⟩
+        have hinc : (⟨x.val, h_in_affine_Dv⟩ : RRModuleV2_real R K (D' + DivisorV2.single v 1)) =
+            Submodule.inclusion (RRModuleV2_mono_inclusion R K hle) y_affine := rfl
+        show ψ x = 0
+        simp only [ψ, LinearMap.coe_mk, AddHom.coe_mk]
+        have hx_eq : (⟨x.val, x.property⟩ :
+            RRModuleV2_real R K (D' + DivisorV2.single v 1)) =
+            ⟨x.val, h_in_affine_Dv⟩ := rfl
+        rw [hx_eq, hinc]
+        exact LD_element_maps_to_zero v D' y_affine
+
+      -- ker(ψ) ≤ LD
+      have h_ker_le_LD : LinearMap.ker ψ ≤ LD := by
+        intro x hx
+        rw [LinearMap.mem_ker] at hx
+        simp only [ψ, LinearMap.coe_mk, AddHom.coe_mk] at hx
+        have h_in_ker : (⟨x.val, x.property⟩ :
+            RRModuleV2_real R K (D' + DivisorV2.single v 1)) ∈
+            LinearMap.ker φ := hx
+        rw [kernel_evaluationMapAt_complete_proof, LinearMap.mem_range] at h_in_ker
+        obtain ⟨y, hy⟩ := h_in_ker
+        rw [Submodule.mem_comap, Submodule.coe_subtype]
+        have hval : y.val = x.val := congrArg Subtype.val hy
+        have h_affine : x.val ∈ RRModuleV2_real R K D' := by
+          rw [← hval]; exact y.property
+        exact h_affine
+
+      -- 1. The descended map quotient → κ(v) is injective
+      let desc := Submodule.liftQ LD ψ h_LD_le_ker
+      have hinj : Function.Injective desc :=
+        LinearMap.ker_eq_bot.mp (Submodule.ker_liftQ_eq_bot _ _ _ h_ker_le_LD)
+
+      -- 2. κ(v) is finite dimensional, so the quotient is finite (injection into finite-dim)
+      haveI : Module.Finite k (↥(RRSpace_proj k R K (D' + DivisorV2.single v 1)) ⧸ LD) :=
+        Module.Finite.of_injective desc hinj
+
+      -- 3. Extension of finite by finite is finite
+      rw [hD_eq]
+      exact Module.Finite.of_submodule_quotient LD
+
 end EulerCharacteristic
 
 end RiemannRochV2
