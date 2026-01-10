@@ -13,8 +13,8 @@
 
 | Line | Lemma | Description |
 |------|-------|-------------|
-| 1676 | `chi_additive` | χ(D+v) = χ(D) + 1 (needs dimension counting from exact sequence) |
-| 1731 | `euler_characteristic` | χ(D) = deg(D) + 1 - g (needs induction using chi_additive) |
+| 1758 | `chi_additive` | χ(D+v) = χ(D) + 1 (needs final dimension step: ℓ(D+v) - ℓ(D) = finrank(range(eval))) |
+| 1813 | `euler_characteristic` | χ(D) = deg(D) + 1 - g (needs induction using chi_additive) |
 
 ---
 
@@ -47,9 +47,16 @@
 5. From exactness_at_LDv: ℓ(D+v) = ℓ(D) + finrank(range(eval))
 6. Combining yields χ(D+v) - χ(D) = 1
 
+**Additional dimension lemmas added** (Cycle 337 part 2):
+- `finrank_range_H1Projection`: surjective proj has range = codomain dimension
+- `H1_rank_nullity`, `delta_rank_nullity`: rank-nullity for key maps
+- `h1_eq_rangeδ_plus_h1_next`: h¹(D) = finrank(range(δ)) + h¹(D+v)
+- `rangeδ_plus_rangeEval_eq_one`: finrank(range(δ)) + finrank(range(eval)) = 1
+- `h1_diff_eq_rangeδ`: h¹(D) - h¹(D+v) = finrank(range(δ))
+
 **Remaining blockers**:
-- Need to formalize rank-nullity connections for the exact sequence maps
-- Need proper Module.Finite instances on intermediate spaces
+- Need to relate finrank(range(eval)) to ℓ(D+v) - ℓ(D) via exactness_at_LDv
+- This requires k-linear version of eval map and proper scalar handling
 - Need formal induction structure for euler_characteristic
 
 ---
