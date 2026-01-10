@@ -5,18 +5,60 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 335
+**Cycle**: 336
 **Phase**: 7 (Euler Characteristic) - Active
-**Total Sorries**: ~17 (4 critical path + 6 axioms + 5 Abstract/AdelicH1Full + 2 EllipticH1)
+**Total Sorries**: ~15 (2 critical path + 6 axioms + 5 Abstract/AdelicH1Full + 2 EllipticH1)
 
-### Critical Path Sorries (4 in EulerCharacteristic.lean)
+### Critical Path Sorries (2 in EulerCharacteristic.lean)
 
 | Line | Lemma | Description |
 |------|-------|-------------|
-| 1255 | `bound_at_v_helper` | Valuation bound helper (strategy documented) |
-| 1373 | `exactness_at_H1` | image(δ) = ker(proj) backward direction |
-| 1457 | `chi_additive` | χ(D+v) = χ(D) + 1 |
-| 1478 | `euler_characteristic` | χ(D) = deg(D) + 1 - g |
+| 1639 | `chi_additive` | χ(D+v) = χ(D) + 1 (needs dimension counting from exact sequence) |
+| 1658 | `euler_characteristic` | χ(D) = deg(D) + 1 - g (needs induction using chi_additive) |
+
+---
+
+## Cycle 336 Completed
+
+**Goal**: Fill critical path sorries in EulerCharacteristic.lean.
+
+### Deliverables
+
+1. **Proved `bound_at_v_helper`** (line 1255 → removed):
+   - Uses `liftToR_alphaFromR_diff_mem_ideal` for ideal membership
+   - Uses `ResidueFieldIso.mem_maximalIdeal_iff_val_lt_one` for valuation bound
+   - Applies ultrametric inequality for the final bound
+   - Key insight: Factor b(v) = shiftedB * π^(-(D v+1))
+   - Uses `withzero_lt_exp_succ_imp_le_exp` for discrete valuation step-down
+
+2. **Proved `exactness_at_H1`** (line 1373 → removed):
+   - Proves backward exactness: ker(proj) ⊆ image(δ)
+   - Decomposes a ∈ globalPlusBoundedSubmodule into diag(g) + b
+   - Uses `exists_alpha_for_bounded` to find α with right properties
+   - Shows x = [a]_D = [b]_D = connectingHom(α) ∈ range(connectingHom)
+
+### Technical Notes
+
+**bound_at_v_helper proof structure:**
+1. Factor the difference using uniformizer power identities
+2. Show val(algebraMap R K L - sb) ≤ exp(-1) by ultrametric:
+   - val(L - r) ≤ exp(-1) from `liftToR_alphaFromR_diff_mem_ideal`
+   - val(r - sb) ≤ exp(-1) from same residue → difference in maximal ideal
+3. Multiply by val(π^(-n)) = exp(n) to get final bound
+
+**exactness_at_H1 proof structure:**
+1. Get representative a of x ∈ H¹(D)
+2. Use x = 0 in H¹(D+v) to get a ∈ globalPlusBoundedSubmodule(D+v)
+3. Decompose a = diag(g) + b where b ∈ boundedSubmodule
+4. Show [a]_D = [b]_D since diag(g) ∈ globalSubmodule
+5. Use `exists_alpha_for_bounded` to get α with connectingHom(α) = [b]_D
+
+### Remaining Sorries (2 in EulerCharacteristic.lean)
+
+| Lemma | Description | Blocker |
+|-------|-------------|---------|
+| `chi_additive` | χ(D+v) = χ(D) + 1 | Needs dimension counting from exact sequence |
+| `euler_characteristic` | χ(D) = deg(D) + 1 - g | Needs chi_additive + induction |
 
 ---
 
