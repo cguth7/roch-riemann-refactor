@@ -33,6 +33,7 @@ Serre duality, gives the full Riemann-Roch theorem.
 
 import RrLean.RiemannRochV2.Elliptic.EllipticH1
 import RrLean.RiemannRochV2.Adelic.AdelicH1v2
+import RrLean.RiemannRochV2.Adelic.EulerCharacteristic
 
 noncomputable section
 
@@ -87,19 +88,79 @@ We axiomatize this as it requires function field arithmetic.
 axiom ell_finite_all (D : DivisorV2 (CoordRing W)) :
     Module.Finite F (RRSpace_proj F (CoordRing W) (FuncField W) D)
 
-/-! ### The Euler Characteristic Axiom
+/-- Instance version of h1_finite_all for use with euler_characteristic. -/
+instance ellipticH1Finite (E : DivisorV2 (CoordRing W)) :
+    Module.Finite F (AdelicH1v2.SpaceModule F (CoordRing W) (FuncField W) E) :=
+  h1_finite_all W E
+
+/-- Instance version of ell_finite_all for use with euler_characteristic. -/
+instance ellipticEllFinite (E : DivisorV2 (CoordRing W)) :
+    Module.Finite F (RRSpace_proj F (CoordRing W) (FuncField W) E) :=
+  ell_finite_all W E
+
+/-! ### Degree One Places
+
+For an elliptic curve over an algebraically closed field F, all places have
+degree 1, i.e., all residue fields are isomorphic to F.
+
+This is because the residue field κ(v) = R/v.asIdeal is a finite extension of F,
+and algebraically closed fields have no proper finite extensions.
+-/
+
+/-- All places of an elliptic curve over an algebraically closed field have degree 1.
+
+This means dim_F(κ(v)) = 1 for all places v.
+
+For algebraically closed F:
+- κ(v) is a finite extension of F
+- But F has no proper finite extensions
+- Therefore κ(v) ≃ F, so dim = 1
+-/
+axiom degreeOnePlaces_elliptic :
+    ∀ v : HeightOneSpectrum (CoordRing W),
+      Module.finrank F (residueFieldAtPrime (CoordRing W) v) = 1
+
+/-- DegreeOnePlaces instance for elliptic curves. -/
+instance ellipticDegreeOnePlaces : EulerCharacteristic.DegreeOnePlaces F (CoordRing W) where
+  residue_finrank_one := degreeOnePlaces_elliptic W
+
+/-! ### ℓ(0) = 1 (moved here to break circular dependency)
+
+This lemma is needed for the Euler characteristic theorem proof below.
+-/
+
+/-- ℓ(O) = 1 for elliptic curves.
+
+The Riemann-Roch space L(0) consists only of constants.
+
+Proof via Serre duality (breaks circular dependency with Euler char):
+- serre_duality W 0 : h¹(0) = ℓ(-0) = ℓ(0)
+- h1_zero_eq_one W : h¹(0) = 1
+- Therefore: ℓ(0) = 1
+-/
+lemma ell_zero_eq_one : ell_proj F (CoordRing W) (FuncField W) (zeroDivisor W) = 1 := by
+  -- zeroDivisor W = 0 by definition
+  unfold zeroDivisor
+  -- By Serre duality: h¹(0) = ℓ(-0) = ℓ(0)
+  have h_serre := serre_duality W 0
+  simp only [neg_zero] at h_serre
+  -- h_serre : h1_finrank W 0 = ell_proj ... 0
+  -- h1_zero_eq_one W : h1_finrank W (zeroDivisor W) = 1
+  have h_h1 : h1_finrank W 0 = 1 := by
+    have := h1_zero_eq_one W
+    unfold zeroDivisor at this
+    exact this
+  -- Combine: ell_proj ... 0 = 1
+  omega
+
+/-! ### The Euler Characteristic Theorem
 
 The adelic Euler characteristic is the fundamental relation:
   χ(D) = ℓ(D) - h¹(D) = deg(D) + 1 - g
 
 For genus 1: χ(D) = deg(D).
 
-This formula can be proved from first principles using:
-1. The residue theorem
-2. Riemann's inequality
-3. Analysis of the adelic quotient
-
-We axiomatize it as the proof requires significant analytic infrastructure.
+This is now a theorem using our proved euler_characteristic!
 -/
 
 /-- The adelic Euler characteristic for elliptic curves.
@@ -108,10 +169,29 @@ We axiomatize it as the proof requires significant analytic infrastructure.
 
 This is the fundamental relation in adelic Riemann-Roch.
 Combined with Serre duality, it gives the full RR formula.
+
+PROVED using the general euler_characteristic theorem from EulerCharacteristic.lean!
 -/
-axiom adelic_euler_char (D : DivisorV2 (CoordRing W)) :
+theorem adelic_euler_char (D : DivisorV2 (CoordRing W)) :
     (ell_proj F (CoordRing W) (FuncField W) D : ℤ) - h1_finrank W D =
-    D.deg + 1 - ellipticGenus
+    D.deg + 1 - ellipticGenus := by
+  -- Use the general euler_characteristic theorem
+  -- We need: h_genus = h1(0) = ellipticGenus, h_ell_zero = ell(0) = 1
+  have h_genus : h1_finrank W (0 : DivisorV2 (CoordRing W)) = ellipticGenus := by
+    have := h1_zero_eq_one W
+    unfold zeroDivisor at this
+    simp only [ellipticGenus]
+    exact this
+  have h_ell_zero : ell_proj F (CoordRing W) (FuncField W) 0 = 1 := by
+    have := ell_zero_eq_one W
+    unfold zeroDivisor at this
+    exact this
+  -- Apply euler_characteristic
+  have h := EulerCharacteristic.euler_characteristic F (CoordRing W) (FuncField W) D ellipticGenus h_genus h_ell_zero
+  -- h : eulerChar F (CoordRing W) (FuncField W) D = D.deg + 1 - ellipticGenus
+  -- eulerChar is defined as (ell_proj ... D : ℤ) - h1_finrank ... D
+  unfold EulerCharacteristic.eulerChar at h
+  exact h
 
 /-- Simplified form: ℓ(D) - h¹(D) = deg(D) for elliptic curves. -/
 lemma euler_char_simplified (D : DivisorV2 (CoordRing W)) :
@@ -203,28 +283,10 @@ theorem riemann_roch_full' (D : DivisorV2 (CoordRing W)) :
 /-! ## Corollaries
 
 Additional consequences of Riemann-Roch for elliptic curves.
--/
 
-/-- ℓ(O) = 1 for elliptic curves.
-
-The Riemann-Roch space L(0) consists only of constants.
+Note: `ell_zero_eq_one` was moved earlier in the file to break
+the circular dependency with the Euler characteristic theorem.
 -/
-lemma ell_zero_eq_one : ell_proj F (CoordRing W) (FuncField W) (zeroDivisor W) = 1 := by
-  -- zeroDivisor W = 0 by definition
-  unfold zeroDivisor
-  -- By Euler characteristic: ℓ(0) - h¹(0) = deg(0) = 0
-  have h_euler := euler_char_simplified W 0
-  -- deg(0) = 0
-  simp only [DivisorV2.deg_zero] at h_euler
-  -- h¹(0) = 1 by axiom (zeroDivisor W = 0)
-  have h_h1 : h1_finrank W 0 = 1 := by
-    have := h1_zero_eq_one W
-    unfold zeroDivisor at this
-    exact this
-  -- h_euler : ℓ(0) - h¹(0) = 0
-  -- h_h1 : h¹(0) = 1
-  -- So ℓ(0) = 1
-  omega
 
 /-- ℓ(-D) = 0 for deg(D) > 0.
 
