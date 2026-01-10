@@ -38,7 +38,6 @@ The 1-dimensional H¹(O) is spanned by the class of the invariant differential
 -/
 
 import RrLean.RiemannRochV2.Elliptic.EllipticCanonical
-import RrLean.RiemannRochV2.Adelic.StrongApproximation
 import RrLean.RiemannRochV2.Adelic.AdelicH1v2
 import RrLean.RiemannRochV2.Definitions.Projective
 
@@ -186,43 +185,14 @@ lemma serre_duality' (D : DivisorV2 (CoordRing W)) :
 
 /-! ## Riemann-Roch for Elliptic Curves
 
-Combining the above, we can state Riemann-Roch for elliptic curves:
-  ℓ(D) - ℓ(-D) = deg(D)
+The full Riemann-Roch theorems are proved in `EllipticRRData.lean`:
+- `riemann_roch_positive'`: ℓ(D) = deg(D) for deg(D) > 0
+- `riemann_roch_full'`: ℓ(D) - ℓ(-D) = deg(D)
+- `riemann_roch_fullRRData`: ℓ(D) - ℓ(K-D) = deg(D) + 1 - g
 
-For deg(D) > 0:
-  ℓ(D) - 0 = deg(D)
-  ℓ(D) = deg(D)
-
-This is the genus-1 formula (compare with P¹: ℓ(D) = deg(D) + 1).
+These require the full AdelicRRData instance, which is constructed in that file
+using the Euler characteristic theorem.
 -/
-
-/-- Riemann-Roch for elliptic curves with deg(D) > 0.
-
-For an effective divisor D of positive degree:
-  ℓ(D) = deg(D)
-
-This is RR with g = 1 and h¹(D) = 0.
--/
-theorem riemann_roch_positive (D : DivisorV2 (CoordRing W)) (hD : D.deg > 0) :
-    (ell_proj F (CoordRing W) (FuncField W) D : ℤ) = D.deg := by
-  -- By Serre duality: h¹(D) = ℓ(-D)
-  -- By vanishing: h¹(D) = 0 (since deg(D) > 0)
-  -- By RR formula: ℓ(D) - h¹(D) = deg(D) + 1 - g
-  -- With g = 1: ℓ(D) - 0 = deg(D) + 1 - 1 = deg(D)
-  -- This requires the full AdelicRRData instance
-  sorry
-
-/-- Riemann-Roch formula: ℓ(D) - ℓ(-D) = deg(D) for elliptic curves.
-
-This is the full Riemann-Roch formula for genus 1, where K = 0.
--/
-theorem riemann_roch_full (D : DivisorV2 (CoordRing W)) :
-    (ell_proj F (CoordRing W) (FuncField W) D : ℤ) -
-    ell_proj F (CoordRing W) (FuncField W) (-D) = D.deg := by
-  -- ℓ(D) - ℓ(K - D) = deg(D) + 1 - g
-  -- With K = 0 and g = 1:
-  -- ℓ(D) - ℓ(-D) = deg(D) + 1 - 1 = deg(D)
-  sorry
 
 /-! ## Summary: Elliptic vs P¹
 

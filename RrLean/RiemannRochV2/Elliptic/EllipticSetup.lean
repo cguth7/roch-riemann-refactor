@@ -102,9 +102,12 @@ We axiomatize this rather than proving it, since:
 
 This axiom is SAFE: it doesn't affect the mathematical validity of RR,
 it just provides the infrastructure to state it for elliptic curves. -/
+axiom isDedekindDomain_coordinateRing_axiom (W : Affine F) [NonsingularCurve W] :
+    IsDedekindDomain (CoordRing W)
+
+/-- Instance version for typeclass inference. -/
 instance isDedekindDomain_coordinateRing (W : Affine F) [NonsingularCurve W] :
-    IsDedekindDomain (CoordRing W) := by
-  sorry -- Standard AG fact: smooth curves have Dedekind coordinate rings
+    IsDedekindDomain (CoordRing W) := isDedekindDomain_coordinateRing_axiom W
 
 /-! ## Fraction Ring Instance
 
