@@ -31,58 +31,67 @@ The proof uses only propext/choice/quot.sound BUT has `axiom` declarations and `
 
 #### Axiom Declarations (6) - Must Become Theorems
 
-| File | Axiom | Description | Difficulty |
-|------|-------|-------------|------------|
-| EllipticRRData.lean | `h1_finite_all` | H¹(D) is finite-dim for all D | Medium |
-| EllipticRRData.lean | `ell_finite_all` | L(D) is finite-dim for all D | Medium |
-| EllipticSetup.lean | `isDedekindDomain_coordRing` | Smooth curves → Dedekind | Medium-Hard |
-| EllipticRRData.lean | `euler_char_axiom` | χ(D) = deg(D) + 1 - g | **DONE** (can remove) |
-| StrongApproximation.lean | (2 axioms) | Function field density | Hard |
+| File | Axiom | Difficulty | Notes |
+|------|-------|------------|-------|
+| EllipticRRData | `euler_char_axiom` | **EASY** | We proved this! Just wire it. |
+| StrongApprox | `instStrongApprox_P1` | **MEDIUM** | ~80% done, just topology wiring |
+| EllipticRRData | `h1_finite_all` | MEDIUM | Shortcut via Serre duality |
+| EllipticRRData | `ell_finite_all` | MEDIUM-HIGH | Adapt from P¹ proof |
+| EllipticSetup | `isDedekindDomain_coordRing` | VERY HARD | Keep as axiom? |
+| StrongApprox | `instStrongApprox_Elliptic` | VERY HARD | Keep as axiom? |
 
-#### Sorry Placeholders (~7)
+#### Sorry Placeholders (9 found)
 
-| File | Location | Description | Difficulty |
-|------|----------|-------------|------------|
-| Abstract.lean | 3 sorries | Abstraction layer instances | Medium |
-| AdelicH1Full.lean | 2 sorries | Strong approximation cases | Hard |
-| EllipticH1.lean | 2 sorries | Elliptic-specific H1 | Medium |
+| File | Count | Difficulty | Notes |
+|------|-------|------------|-------|
+| Abstract.lean | 4 | 3 MEDIUM, 1 HARD | 3 are same lemma repeated |
+| AdelicH1Full.lean | 3 | 1 MEDIUM, 2 HARD | Edge cases in strong approx |
+| EllipticH1.lean | 2 | HARD | Depends on axioms above |
+
+**See INVENTORY_REPORT_V2.md for detailed scoping.**
 
 ---
 
 ## Phase 8: Axiom Elimination Plan
 
-### Priority Order
+### Tier 1: Quick Wins (4-6 cycles)
 
-1. **Remove `euler_char_axiom`** (Easy)
-   - We proved this! Just need to wire the proof to replace the axiom.
+| Task | Cycles | Notes |
+|------|--------|-------|
+| Wire `euler_char_axiom` | 1 | Just connect existing proof |
+| P¹ strong approx topology | 1-2 | Infrastructure exists |
+| `IsLinearPlaceSupport` lemma | 1 | Fixes 3 sorries at once |
+| Valuation bound (line 1508) | 1 | Clear from comments |
 
-2. **Prove finiteness axioms** (Medium)
-   - `h1_finite_all`: Use compactness of A_K/K
-   - `ell_finite_all`: From RRSpace theory already developed
+### Tier 2: Medium Work (6-10 cycles)
 
-3. **Prove `isDedekindDomain_coordRing`** (Medium-Hard)
-   - Standard AG fact: smooth affine curves have Dedekind coordinate rings
-   - May need to import/develop integrally closed + Noetherian + dim 1
+| Task | Cycles | Notes |
+|------|--------|-------|
+| `h1_finite_all` | 2-3 | Via Serre duality shortcut |
+| `ell_finite_all` | 4-6 | Adapt P¹ clearing polynomial |
+| EllipticH1 integration | 2-3 | Uses Tier 2 results |
 
-4. **Strong approximation axioms** (Hard)
-   - These are the real blockers
-   - Need function field density arguments
+### Tier 3: Hard (6+ cycles)
 
-5. **Clear remaining sorries** (Varies)
-   - Abstract.lean: Instance wiring
-   - AdelicH1Full.lean: Edge cases in strong approximation
-   - EllipticH1.lean: Elliptic-specific facts
+| Task | Cycles | Notes |
+|------|--------|-------|
+| Deep negative infinity | 4-6 | Constrained strong approx |
+| Non-vanishing Serre duality | 4-6 | Residue pairing |
 
-### Estimated Work
+### Keep as Axioms (Recommended)
 
-| Task | Cycles | Confidence |
-|------|--------|------------|
-| Remove euler_char_axiom | 1 | High |
-| Finiteness axioms | 2-3 | Medium |
-| Dedekind domain | 2-4 | Medium |
-| Strong approximation | 4-8 | Low |
-| Remaining sorries | 3-5 | Medium |
-| **Total** | **12-21** | |
+| Axiom | Justification |
+|-------|---------------|
+| `isDedekindDomain_coordRing` | Standard AG, 2-3 weeks to prove |
+| `instStrongApprox_Elliptic` | Deep number theory, textbook fact |
+
+### Revised Estimate
+
+| Scenario | Cycles | Notes |
+|----------|--------|-------|
+| Optimistic | 12-15 | Quick wins + shortcuts work |
+| Realistic | 16-20 | Some complications |
+| Full formalization | 25+ | If we prove everything |
 
 ---
 
@@ -132,9 +141,9 @@ RrLean/RiemannRochV2/
 ## References
 
 - [Litt's Challenge](https://twitter.com/littmath/status/1868344897046298846) - Dec 15, 2025
-- [Rosen Ch. 6](https://link.springer.com/chapter/10.1007/978-1-4757-6046-0_6) - Weil Differentials
-- INVENTORY_REPORT.md - Full asset inventory
+- **INVENTORY_REPORT_V2.md** - Detailed Phase 8 scoping (axioms, sorries, strategies)
+- INVENTORY_REPORT.md - Original asset inventory
 
 ---
 
-*Updated Cycle 339. Core RR proof complete. Phase 8: Eliminate axioms for Litt challenge.*
+*Updated Cycle 339. Core RR proof complete. Phase 8 scoped. See INVENTORY_REPORT_V2 for details.*
