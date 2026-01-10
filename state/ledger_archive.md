@@ -5475,3 +5475,74 @@ theorem exists_translate_in_integralFullAdeles : ...
 - `intDegree_ge_deg_of_valuation_and_denom_constraint` (AdelicH1Full)
 - `intDegree_ge_deg_of_valuation_bounds_and_linear_support` (PlaceDegree)
 
+
+---
+
+## Cycles 312-339 (Archived Jan 2026)
+
+### Cycle 339 - euler_characteristic PROVED
+
+**Goal**: Complete euler_characteristic theorem using Finsupp induction.
+
+**Major Accomplishment**: euler_characteristic is now FULLY PROVED: χ(D) = deg(D) + 1 - g
+
+**Deliverables**:
+1. `chi_additive_sub`: χ(D) = χ(D + single v 1) - 1
+2. `chi_additive_general`: χ(D + single v n) = χ(D) + n for any integer n
+3. `euler_characteristic`: Full proof using Finsupp.induction
+
+### Cycle 338 - chi_additive PROVED
+
+**Goal**: Prove chi_additive using dimension counting from 6-term exact sequence.
+
+**Deliverables**:
+- `kerEval_as_k_submodule`, `finrank_rangeInclusion_eq_ell`
+- `evalAsKLinear`, `eval_rank_nullity`
+- `ell_diff_eq_rangeEval`: ℓ(D+v) - ℓ(D) = finrank(range(eval))
+- `kappa_finite`: Instance deriving Module.Finite from DegreeOnePlaces
+
+### Cycle 337 - Dimension counting infrastructure
+
+Added dimension counting helpers for exact sequence analysis.
+
+### Cycle 336 - Critical path sorries
+
+Proved `bound_at_v_helper` and `exactness_at_H1`.
+
+### Cycle 335 - Build fixes
+
+Fixed compile errors in `exists_alpha_for_bounded`.
+
+### Cycle 334 - exists_alpha_for_bounded strategy
+
+Documented detailed proof strategy for backward exactness helper.
+
+### Cycle 333 - Forward exactness at H¹
+
+Proved `image_delta_subset_ker_proj`.
+
+### Cycle 332 - eval_g_eq_alpha_from_bounded
+
+Completed backward exactness at κ(v).
+
+### Cycle 331 - Backward exactness structure
+
+Proved main theorem structure for `exactness_at_kappa_set`.
+
+### Cycle 330 - Forward exactness at κ(v)
+
+Proved `image_eval_subset_ker_delta`.
+
+### Cycles 325-328 - Connecting homomorphism
+
+Implemented real `connectingHom` construction and proved linearity properties.
+
+### Cycle 323 - FullRRData for elliptic curves
+
+Created `ellipticFullRRData` instance and `riemann_roch_fullRRData` theorem.
+
+### Cycles 312-322 - Weil differentials and infrastructure
+
+Created WeilDifferential.lean with K-module structure, Serre pairing, etc.
+
+---
