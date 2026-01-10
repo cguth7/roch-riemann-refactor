@@ -1900,6 +1900,77 @@ theorem chi_additive (v : HeightOneSpectrum R) (D : DivisorV2 R)
   --                = finrank(range(eval)) + finrank(range(δ)) = 1
   omega
 
+/-- Variant of chi_additive going backwards: χ(D) = χ(D + single v 1) - 1. -/
+theorem chi_additive_sub (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    [DegreeOnePlaces k R]
+    [Module.Finite k (SpaceModule k R K D)]
+    [Module.Finite k (SpaceModule k R K (D + DivisorV2.single v 1))]
+    [Module.Finite k (RRSpace_proj k R K D)]
+    [Module.Finite k (RRSpace_proj k R K (D + DivisorV2.single v 1))] :
+    eulerChar k R K D = eulerChar k R K (D + DivisorV2.single v 1) - 1 := by
+  have h := chi_additive k R K v D
+  omega
+
+/-- General form: χ(D + single v n) = χ(D) + n for any integer n.
+
+This extends chi_additive (which handles n=1) to arbitrary integers using
+integer induction. -/
+theorem chi_additive_general (v : HeightOneSpectrum R) (D : DivisorV2 R) (n : ℤ)
+    [DegreeOnePlaces k R]
+    [∀ E : DivisorV2 R, Module.Finite k (SpaceModule k R K E)]
+    [∀ E : DivisorV2 R, Module.Finite k (RRSpace_proj k R K E)] :
+    eulerChar k R K (D + DivisorV2.single v n) = eulerChar k R K D + n := by
+  -- Integer induction on n
+  induction n using Int.induction_on with
+  | zero =>
+    -- Base case: n = 0
+    simp only [DivisorV2.single, Finsupp.single_zero, add_zero]
+  | succ i ih =>
+    -- Positive step: n = i + 1 where ih : χ(D + single v i) = χ(D) + i
+    -- χ(D + single v (i+1)) = χ((D + single v i) + single v 1) = χ(D + single v i) + 1 = χ(D) + i + 1
+    have h_split : D + DivisorV2.single v ((i : ℤ) + 1) = (D + DivisorV2.single v (i : ℤ)) + DivisorV2.single v 1 := by
+      simp only [DivisorV2.single]
+      -- single(v, i+1) = single(v, i) + single(v, 1)
+      have h_single : Finsupp.single v ((i : ℤ) + 1) = Finsupp.single v (i : ℤ) + Finsupp.single v (1 : ℤ) := by
+        rw [← Finsupp.single_add]
+      rw [h_single, add_assoc]
+    rw [h_split]
+    rw [chi_additive k R K v (D + DivisorV2.single v (i : ℤ))]
+    omega
+  | pred i ih =>
+    -- Negative step: n = -(i+1) where ih : χ(D + single v (-i)) = χ(D) + (-i)
+    -- Note: pred case gives us n = -↑i - 1 = -(i+1)
+    have h_split : D + DivisorV2.single v (-(i : ℤ) - 1) = (D + DivisorV2.single v (-(i : ℤ))) + DivisorV2.single v (-1) := by
+      simp only [DivisorV2.single]
+      -- single(v, -i-1) = single(v, -i) + single(v, -1)
+      have h_single : Finsupp.single v (-(i : ℤ) - 1) = Finsupp.single v (-(i : ℤ)) + Finsupp.single v (-1 : ℤ) := by
+        rw [← Finsupp.single_add]
+        ring_nf
+      rw [h_single, add_assoc]
+    rw [h_split]
+    -- Now use chi_additive_sub: χ(E + single v (-1)) = χ(E) - 1
+    -- We have χ(E + single v 1) = χ(E) + 1, so χ(E) = χ(E + single v 1) - 1
+    -- Thus χ(E + single v (-1)) = χ((E + single v (-1)) + single v 1) - 1 = χ(E) - 1
+    have h_neg_one : eulerChar k R K ((D + DivisorV2.single v (-(i : ℤ))) + DivisorV2.single v (-1)) =
+        eulerChar k R K (D + DivisorV2.single v (-(i : ℤ))) - 1 := by
+      -- Key insight: (E + single v 1) = D + single v (-i)  where E = D + single v (-i) + single v (-1)
+      -- So by chi_additive: χ(D + single v (-i)) = χ(E) + 1, hence χ(E) = χ(D + single v (-i)) - 1
+      set E := (D + DivisorV2.single v (-(i : ℤ))) + DivisorV2.single v (-1) with hE_def
+      have h_restore : E + DivisorV2.single v 1 = D + DivisorV2.single v (-(i : ℤ)) := by
+        simp only [hE_def, DivisorV2.single]
+        have h_cancel : Finsupp.single v (-1 : ℤ) + Finsupp.single v (1 : ℤ) = 0 := by
+          rw [← Finsupp.single_add]
+          simp
+        rw [add_assoc, add_assoc, h_cancel, add_zero]
+      have h_chi := chi_additive k R K v E
+      rw [h_restore] at h_chi
+      -- h_chi : eulerChar k R K (D + DivisorV2.single v (-↑i)) = eulerChar k R K E + 1
+      -- Goal: eulerChar k R K E = eulerChar k R K (D + DivisorV2.single v (-↑i)) - 1
+      simp only [hE_def] at h_chi ⊢
+      omega
+    rw [h_neg_one, ih]
+    ring
+
 /-- Full Euler characteristic formula by induction.
 
 For any divisor D: χ(D) = deg(D) + 1 - g
@@ -1918,36 +1989,38 @@ theorem euler_characteristic (D : DivisorV2 R) (genus : ℕ)
     (h_genus : h1_finrank k R K 0 = genus)
     (h_ell_zero : ell_proj k R K 0 = 1) :
     eulerChar k R K D = D.deg + 1 - genus := by
-  /-
-  Proof strategy: Induction on the "size" of D.
-
-  Base case: D = 0
-    χ(0) = ℓ(0) - h¹(0) = 1 - genus = 0 + 1 - genus = deg(0) + 1 - genus ✓
-
-  Inductive step: Assuming χ(D) = deg(D) + 1 - genus,
-    For D' = D + single v 1:
-      χ(D') = χ(D) + 1  [by chi_additive]
-            = (deg(D) + 1 - genus) + 1
-            = deg(D) + 2 - genus
-            = (deg(D) + 1) + 1 - genus
-            = deg(D') + 1 - genus  [since deg(D') = deg(D) + 1]
-
-  The formal induction needs:
-  - Strong induction on a measure like |deg(D)| + Σᵥ |D(v)|
-  - Both chi_additive and its inverse (χ(D) = χ(D+v) - 1)
-  - Infrastructure for decomposing divisors
-
-  This remains as a sorry pending formal divisor induction infrastructure.
-  -/
-  -- Base case verification (for documentation)
-  have h_base : eulerChar k R K 0 = (0 : DivisorV2 R).deg + 1 - genus := by
+  -- Use Finsupp.induction to prove by induction on divisor structure
+  induction D using Finsupp.induction with
+  | zero =>
+    -- Base case: D = 0
     simp only [eulerChar, DivisorV2.deg_zero]
     rw [h_ell_zero, h_genus]
     ring
-  -- The key step chi_additive is proved above
-  -- Full induction requires decomposing D = D₀ + Σᵢ εᵢ·single(vᵢ)
-  -- and applying chi_additive iteratively
-  sorry
+  | single_add v n f hv_notin hn_ne ih =>
+    -- Inductive step: D = (single v n) + f where v ∉ f.support and n ≠ 0
+    -- IH: χ(f) = deg(f) + 1 - genus
+    -- Goal: χ((single v n) + f) = deg((single v n) + f) + 1 - genus
+    --
+    -- By chi_additive_general: χ(f + single v n) = χ(f) + n
+    -- By add_comm: (single v n) + f = f + (single v n)
+    -- By IH: χ(f) = deg(f) + 1 - genus
+    -- So: χ((single v n) + f) = χ(f) + n = deg(f) + 1 - genus + n
+    --
+    -- For deg: deg((single v n) + f) = deg(single v n) + deg(f) = n + deg(f)
+    -- So: deg((single v n) + f) + 1 - genus = n + deg(f) + 1 - genus = deg(f) + 1 - genus + n ✓
+
+    -- Rewrite using commutativity
+    have h_comm : (Finsupp.single v n : DivisorV2 R) + f = f + Finsupp.single v n := add_comm _ _
+    rw [h_comm]
+    -- Apply chi_additive_general
+    rw [chi_additive_general k R K v f n]
+    -- Use IH
+    rw [ih]
+    -- Degree computation
+    have h_deg_add : DivisorV2.deg (f + DivisorV2.single v n) = DivisorV2.deg f + n := by
+      rw [DivisorV2.deg_add, DivisorV2.deg_single]
+    rw [h_deg_add]
+    ring
 
 /-! ## Section 4: Full Riemann-Roch from Euler Characteristic
 
