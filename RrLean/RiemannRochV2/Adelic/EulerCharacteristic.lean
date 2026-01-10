@@ -1613,6 +1613,51 @@ lemma kappa_dim_one [DegreeOnePlaces k R] (v : HeightOneSpectrum R) :
     Module.finrank k (residueFieldAtPrime R v) = 1 :=
   DegreeOnePlaces.residue_finrank_one v
 
+/-! ## Dimension Counting Helpers -/
+
+-- For dimension counting, we express exactness at κ(v) using the set equality
+-- Note: LinearMap.range (evaluationMapAt_complete v D) is an R-submodule
+-- and LinearMap.ker (connectingHom k R K v D) is a k-submodule
+-- They have the same underlying set but different scalar structures
+
+/-- The range of eval as a k-submodule via restrictScalars -/
+def evalRange_as_k_submodule (v : HeightOneSpectrum R) (D : DivisorV2 R) :
+    Submodule k (residueFieldAtPrime R v) :=
+  (LinearMap.range (evaluationMapAt_complete (K := K) v D)).restrictScalars k
+
+/-- The range of eval equals the kernel of δ as sets -/
+lemma evalRange_eq_kerDelta_set (v : HeightOneSpectrum R) (D : DivisorV2 R) :
+    (evalRange_as_k_submodule k R K v D : Set (residueFieldAtPrime R v)) =
+    (LinearMap.ker (connectingHom k R K v D) : Set (residueFieldAtPrime R v)) := by
+  -- Use exactness_at_kappa_set
+  have h := exactness_at_kappa_set k R K v D
+  ext α
+  simp only [evalRange_as_k_submodule, Submodule.restrictScalars_mem, LinearMap.mem_range,
+    SetLike.mem_coe, LinearMap.mem_ker]
+  constructor
+  · rintro ⟨f, hf⟩
+    have hα : α ∈ Set.range (evaluationMapAt_complete (K := K) v D) := ⟨f, hf⟩
+    rw [h] at hα
+    exact hα
+  · intro hker
+    have hα : α ∈ {x | connectingHom k R K v D x = 0} := hker
+    rw [← h] at hα
+    exact hα
+
+/-- The range of eval equals the kernel of δ as k-submodules -/
+lemma evalRange_eq_kerDelta (v : HeightOneSpectrum R) (D : DivisorV2 R) :
+    evalRange_as_k_submodule k R K v D = LinearMap.ker (connectingHom k R K v D) := by
+  ext x
+  have h_set := evalRange_eq_kerDelta_set k R K v D
+  rw [← SetLike.mem_coe, ← SetLike.mem_coe, h_set]
+
+/-- The dimension of range(eval) equals the dimension of ker(δ) -/
+lemma finrank_evalRange_eq_finrank_kerDelta (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    [Module.Finite k (residueFieldAtPrime R v)] :
+    Module.finrank k (evalRange_as_k_submodule k R K v D) =
+    Module.finrank k (LinearMap.ker (connectingHom k R K v D)) := by
+  rw [evalRange_eq_kerDelta k R K v D]
+
 /-- Key theorem: χ(D+v) = χ(D) + 1.
 
 This follows from the exact sequence and the Rank-Nullity theorem.
@@ -1629,13 +1674,47 @@ Rearranging:
 Therefore: χ(D+v) = χ(D) + 1
 -/
 theorem chi_additive (v : HeightOneSpectrum R) (D : DivisorV2 R)
+    [DegreeOnePlaces k R]
     [Module.Finite k (SpaceModule k R K D)]
     [Module.Finite k (SpaceModule k R K (D + DivisorV2.single v 1))]
     [Module.Finite k (RRSpace_proj k R K D)]
     [Module.Finite k (RRSpace_proj k R K (D + DivisorV2.single v 1))] :
     eulerChar k R K (D + DivisorV2.single v 1) = eulerChar k R K D + 1 := by
-  -- Use exactness and dimension counting
-  -- dim(L(D+v)) - dim(H¹(D+v)) - (dim(L(D)) - dim(H¹(D))) = dim(κ(v)) = 1
+  /-
+  Proof by dimension counting from the 6-term exact sequence:
+    0 → L(D) → L(D+v) → κ(v) → H¹(D) → H¹(D+v) → 0
+
+  Strategy:
+  1. h¹(D) = dim(range(δ)) + h¹(D+v)  [rank-nullity on proj + surjectivity]
+  2. dim(κ(v)) = dim(range(eval)) + dim(range(δ))  [exactness at κ(v)]
+  3. ℓ(D+v) = ℓ(D) + dim(range(eval))  [exactness at L(D+v)]
+  4. dim(κ(v)) = 1  [DegreeOnePlaces]
+
+  Combining:
+    χ(D+v) - χ(D) = (ℓ(D+v) - h¹(D+v)) - (ℓ(D) - h¹(D))
+                  = (ℓ(D+v) - ℓ(D)) + (h¹(D) - h¹(D+v))
+                  = dim(range(eval)) + dim(range(δ))
+                  = dim(κ(v)) = 1
+  -/
+  -- Step 1: dim(κ(v)) = 1 by DegreeOnePlaces
+  have h_kappa := kappa_dim_one k R v
+
+  -- Step 2: From rank-nullity on δ:
+  -- finrank(range(δ)) + finrank(ker(δ)) = finrank(κ(v)) = 1
+  -- Using exactness_at_kappa: ker(δ) = range(eval) as k-submodules
+
+  -- Step 3: From H1_surjection and exactness_at_H1:
+  -- h¹(D) = finrank(ker(proj)) + h¹(D+v) since proj is surjective
+  -- And ker(proj) = range(δ)
+
+  -- Step 4: From exactness_at_LDv:
+  -- ℓ(D+v) = ℓ(D) + finrank(range(eval)) since ker(eval) = L(D)
+
+  -- Combining these dimension relations yields χ(D+v) = χ(D) + 1
+
+  -- The full formalization requires connecting these finrank statements
+  -- through the exact sequence infrastructure. For now we document the
+  -- mathematical structure and leave as sorry.
   sorry
 
 /-- Full Euler characteristic formula by induction.
@@ -1650,11 +1729,33 @@ Proof:
 - Induction on degree using deg(D + single v 1) = deg(D) + 1
 -/
 theorem euler_characteristic (D : DivisorV2 R) (genus : ℕ)
+    [DegreeOnePlaces k R]
     [∀ E : DivisorV2 R, Module.Finite k (SpaceModule k R K E)]
     [∀ E : DivisorV2 R, Module.Finite k (RRSpace_proj k R K E)]
     (h_genus : h1_finrank k R K 0 = genus)
     (h_ell_zero : ell_proj k R K 0 = 1) :
     eulerChar k R K D = D.deg + 1 - genus := by
+  /-
+  Proof strategy: Induction on the "size" of D.
+
+  Base case: D = 0
+    χ(0) = ℓ(0) - h¹(0) = 1 - genus = 0 + 1 - genus = deg(0) + 1 - genus ✓
+
+  Inductive step: Assuming χ(D) = deg(D) + 1 - genus,
+    For D' = D + single v 1:
+      χ(D') = χ(D) + 1  [by chi_additive]
+            = (deg(D) + 1 - genus) + 1
+            = deg(D) + 2 - genus
+            = (deg(D) + 1) + 1 - genus
+            = deg(D') + 1 - genus  [since deg(D') = deg(D) + 1]
+
+  The formal induction needs to handle:
+  - Divisors with both positive and negative coefficients
+  - The finite support structure of divisors
+  - Converting between D and D ± single v 1
+
+  For now, we document this structure and use sorry.
+  -/
   sorry
 
 /-! ## Section 4: Full Riemann-Roch from Euler Characteristic
