@@ -144,6 +144,56 @@ instance ellipticProperCurve : ProperCurve F (CoordRing W) (FuncField W) where
     unfold zeroDivisor at h
     exact h
 
+/-! ### ℓ(D) ≥ 1 for effective D with positive degree (Cycle 343)
+
+For effective D, we have L(0) ⊆ L(D), so ℓ(D) ≥ ℓ(0) = 1.
+-/
+
+/-- For effective D, ℓ(D) ≥ 1.
+
+Since 0 ≤ D (effective), we have L(0) ⊆ L(D) by monotonicity.
+Combined with ℓ(0) = 1, this gives ℓ(D) ≥ 1.
+-/
+lemma ell_proj_ge_one_of_effective (D : DivisorV2 (CoordRing W)) (hD : D.Effective) :
+    1 ≤ ell_proj F (CoordRing W) (FuncField W) D := by
+  have h_mono := ell_proj_mono F (CoordRing W) (FuncField W) hD
+    (EulerCharacteristic.ell_finite_of_effective F (CoordRing W) (FuncField W) D hD)
+  have h_zero := ell_zero_eq_one W
+  unfold zeroDivisor at h_zero
+  omega
+
+/-- For effective D with positive degree, ℓ(D) > 0. -/
+lemma ell_proj_pos_of_effective (D : DivisorV2 (CoordRing W)) (hD : D.Effective) :
+    0 < ell_proj F (CoordRing W) (FuncField W) D := by
+  have h := ell_proj_ge_one_of_effective W D hD
+  omega
+
+/-! ### H¹ Finiteness for -D effective (Cycle 343)
+
+When -D is effective, we can prove H¹(D) is finite via Serre duality.
+-/
+
+/-- H¹(D) is finite when -D is effective.
+
+Proof:
+1. By Serre duality: h1_finrank W D = ell_proj ... (-D)
+2. Since -D is effective: ell_proj(-D) ≥ 1 by ell_proj_ge_one_of_effective
+3. So h1_finrank W D ≥ 1 > 0
+4. Use Module.finite_of_finrank_pos
+-/
+lemma h1_finite_of_neg_effective (D : DivisorV2 (CoordRing W)) (hD : (-D).Effective) :
+    Module.Finite F (EllipticH1 W D) := by
+  -- By Serre duality: h1_finrank W D = ell_proj ... (-D)
+  have h_serre := serre_duality W D
+  -- Since -D is effective, ell_proj(-D) ≥ 1
+  have h_ell_pos := ell_proj_pos_of_effective W (-D) hD
+  -- So h1_finrank W D ≥ 1 > 0
+  have h_h1_pos : 0 < h1_finrank W D := by
+    rw [h_serre]
+    exact h_ell_pos
+  -- Use Module.finite_of_finrank_pos
+  exact Module.finite_of_finrank_pos h_h1_pos
+
 /-! ### Finiteness of L(D) (Cycle 342)
 
 L(D) is finite-dimensional for all divisors D.

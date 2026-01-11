@@ -1,5 +1,7 @@
 # Riemann-Roch for P¹ in Lean 4
 
+> **Note:** This README is outdated. The project has evolved significantly - we now have a full Riemann-Roch proof for elliptic curves (genus 1) with only standard axioms (propext, Classical.choice, Quot.sound) plus ~6 declared axioms for standard AG facts. See `state/ledger.md` for current status (Cycle 343+).
+
 A "vibe-coded" formalization of a restricted Riemann-Roch theorem for the projective line over finite fields.
 
 ## What's Proved

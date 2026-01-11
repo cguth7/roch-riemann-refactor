@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 342
+**Cycle**: 343
 **Phase**: 8 (Axiom Elimination) - IN PROGRESS
 
 ### What We Have (Core RR Proof Complete)
@@ -80,7 +80,7 @@ Axioms used by the elliptic curve RR proof (6 on critical path):
 | Task | Cycles | Notes |
 |------|--------|-------|
 | `ell_finite_all` | ✅ DONE | Cycle 342 - gap bound + positive part |
-| `h1_finite_all` | 2-3 | Via Serre duality: h1(D) = ell(-D) + ell_finite |
+| `h1_finite_all` | ⚠️ BLOCKED | Cycle 343 - circular dep, partial progress (see below) |
 | `degreeOnePlaces_elliptic` | 2-3 | PlaceDegree infrastructure exists, need IsAlgClosed |
 
 ### Tier 3: Hard (6+ cycles each)
@@ -97,6 +97,7 @@ Axioms used by the elliptic curve RR proof (6 on critical path):
 |-------|---------------|
 | `isDedekindDomain_coordRing` | Standard AG, 2-3 weeks to prove |
 | `instStrongApprox_Elliptic` | Deep number theory, textbook fact |
+| `h1_finite_all` | Circular dep with Euler char; deg>0 case needs StrongApprox |
 
 ### Key Infrastructure Files (Discovered Cycle 341)
 
@@ -119,6 +120,34 @@ Axioms used by the elliptic curve RR proof (6 on critical path):
 ---
 
 ## Recent Cycles
+
+### Cycle 343 - h1_finite_all investigation
+
+**Attempted to convert axiom to theorem - found circular dependency**
+
+Key discovery: The "Serre duality shortcut" (h1(D) = ell(-D)) creates a circular dependency:
+```
+h1_finite_all → ellipticH1Finite → euler_characteristic → riemann_roch_positive' → h1_finite_all
+```
+
+**What we proved (partial progress):**
+- `ell_proj_ge_one_of_effective`: For effective D, ℓ(D) ≥ 1
+- `ell_proj_pos_of_effective`: For effective D, ℓ(D) > 0
+- `h1_finite_of_neg_effective`: **H¹(D) is finite when -D is effective** ✅
+
+**Case analysis for h1_finite_all:**
+| Case | Status | Blocker |
+|------|--------|---------|
+| -D effective (includes deg(D) ≤ 0 with D ≤ 0) | ✅ PROVED | - |
+| deg(D) < 0, -D not effective | Blocked | Need linear equivalence to effective |
+| deg(D) = 0, general | Blocked | Requires case analysis |
+| deg(D) > 0 | Blocked | `h1_vanishing_positive` gives finrank=0, not Module.Finite |
+
+**Conclusion:** Keep `h1_finite_all` as axiom. The deg > 0 case genuinely needs strong approximation
+to show the quotient is trivial (not just finrank = 0). This confirms the original assessment that
+compactness/strong approximation is required.
+
+**Build status:** ✅ PASSING
 
 ### Cycle 342 - ell_finite_all PROVED ✅
 
