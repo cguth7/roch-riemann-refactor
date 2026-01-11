@@ -13,8 +13,8 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 346
-**Phase**: 8 (Axiom Elimination) - IN PROGRESS
+**Cycle**: 347
+**Phase**: 9 (General Curve Infrastructure) - STARTING
 
 ### What We Have (Core RR Proof Complete)
 
@@ -52,74 +52,160 @@ Axioms used by the elliptic curve RR proof (6 on critical path):
 | StrongApprox | `instStrongApprox_P1` | P¹ density |
 | StrongApprox | `instStrongApprox_Elliptic` | Elliptic density |
 
-#### Sorry Placeholders (9 found)
+#### Sorry Placeholders (13 found - updated Cycle 347)
 
-| File | Count | Difficulty | Notes |
-|------|-------|------------|-------|
-| Abstract.lean | 4 | 3 MEDIUM, 1 HARD | 3 are same lemma repeated |
-| AdelicH1Full.lean | 3 | 1 MEDIUM, 2 HARD | Edge cases in strong approx |
-| EllipticH1.lean | 2 | HARD | Depends on axioms above |
+| File | Count | Lines | Notes |
+|------|-------|-------|-------|
+| Abstract.lean | 8 | 200,201,203,294,299,312,345,351 | P¹ instance, IsLinearPlaceSupport |
+| AdelicH1Full.lean | 3 | 811,1508,1519 | Strong approx edge cases |
+| StrongApproximation.lean | 2 | 127,171 | P¹ and Elliptic density |
+
+#### All Axioms (6 in Elliptic/, 5 on critical path)
+
+| Axiom | File | Critical Path? |
+|-------|------|----------------|
+| `h1_finite_all` | EllipticRRData | ✅ Yes |
+| `h1_zero_eq_one` | EllipticH1 | ✅ Yes |
+| `h1_vanishing_positive` | EllipticH1 | ✅ Yes |
+| `serre_duality` | EllipticH1 | ✅ Yes |
+| `isDedekindDomain_coordinateRing_axiom` | EllipticSetup | ✅ Yes |
+| `exists_localUniformizer` | EllipticPlaces | ❌ No |
 
 **See INVENTORY_REPORT_V2.md for detailed scoping.**
 
 ---
 
-## Phase 8: Axiom Elimination Plan (UPDATED Cycle 341)
+## Phase 9: General Curve Infrastructure (Cycle 347+)
 
-### Tier 1: Quick Wins (Done or 1-2 cycles each)
+**Goal**: Prove the 5 remaining axioms in a way that generalizes to genus N curves.
 
-| Task | Cycles | Notes |
-|------|--------|-------|
-| Wire `euler_char_axiom` | ✅ DONE | Cycle 340 |
-| `h1_zero_finite` | ✅ DONE | Cycle 341 - from h1_zero_eq_one |
-| P¹ strong approx topology | 1-2 | Infrastructure exists (P¹ only, not critical for elliptic) |
-| `IsLinearPlaceSupport` lemma | 1 | P¹ only, not on elliptic critical path |
+### The 5 Remaining Axioms
 
-### Tier 2: Medium Work
+| Axiom | What It Says | General Form |
+|-------|--------------|--------------|
+| `h1_finite_all` | H¹(D) is finite-dim for all D | Compactness of A_K/K |
+| `h1_vanishing_positive` | H¹(D) = 0 when deg(D) > 2g-2 | Strong Approximation + degree |
+| `h1_zero_eq_one` | dim H¹(O) = g | Genus via differentials |
+| `serre_duality` | h¹(D) = ℓ(K-D) | Residue pairing construction |
+| `isDedekindDomain_coordRing` | Smooth → Dedekind | Keep as axiom (orthogonal) |
 
-| Task | Cycles | Notes |
-|------|--------|-------|
-| `ell_finite_all` | ✅ DONE | Cycle 342 - gap bound + positive part |
-| `h1_finite_all` | ⚠️ BLOCKED | Cycle 343 - circular dep, partial progress (see below) |
-| `degreeOnePlaces_elliptic` | ✅ DONE | Cycle 346: F-linear equiv proof complete |
+### Strategy: Build General Infrastructure
 
-### Tier 3: Hard (6+ cycles each)
+Rather than proving these for elliptic curves only, we build infrastructure that works for any smooth projective curve over an algebraically closed field.
 
-| Task | Cycles | Notes |
-|------|--------|-------|
-| `h1_vanishing_positive` | 4-6 | Needs StrongApprox for elliptic |
-| `serre_duality` | 4-6 | Vanishing case done, need non-vanishing |
-| `h1_zero_eq_one` | 4-6 | Genus = 1, needs invariant differential |
+**IMPORTANT: Active Edge Rule** - Each cycle picks ONE specific target from the tracks below. Avoid diluting focus across multiple tracks.
 
-### Keep as Axioms (Recommended)
+#### Track A: Adelic Compactness → H¹ Finiteness
+**Goal**: Prove A_K/K is compact (or locally compact with discrete K)
 
-| Axiom | Justification |
-|-------|---------------|
-| `isDedekindDomain_coordRing` | Standard AG, 2-3 weeks to prove |
-| `instStrongApprox_Elliptic` | Deep number theory, textbook fact |
-| `h1_finite_all` | Circular dep with Euler char; deg>0 case needs StrongApprox |
+| Component | Status | Notes |
+|-----------|--------|-------|
+| DVR structure at places | ✅ DONE | AllIntegersCompactProof.lean |
+| RankOne valuations | ✅ DONE | Cycles 105-106 |
+| Local compactness of A(D) | Partial | Need restricted product topology |
+| K discrete in A_K | Needed | Standard fact |
+| Compactness of quotient | Needed | Gives Module.Finite for H¹ |
 
-### Key Infrastructure Files (Discovered Cycle 341)
+#### Track B: Strong Approximation → H¹ Vanishing
+**Goal**: Prove K + A(D) = A_K when deg(D) > 2g-2
 
-| File | What's There | Reusability |
-|------|--------------|-------------|
-| DimensionGeneral.lean | Complete L(D) finiteness proof | 80% for elliptic |
-| DimensionCore.lean | Pole-clearing technique | Reference |
-| GapBoundGeneral.lean | Gap bounds, residue field finiteness | 95% generic |
-| AllIntegersCompactProof.lean | DVR, RankOne PROVED | Missing residue iso |
-| PlaceDegree.lean | Degree 1 places for P¹ | Need to wire |
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Local density (K dense in K_v) | ✅ DONE | UniformSpace.Completion.denseRange_coe |
+| P¹ strong approximation | Cycle 347 | Reduced to single topology lemma |
+| Elliptic strong approximation | Needed | Requires group structure or CFT |
+| General curve strong approx | Needed | Follows from Riemann-Roch itself! |
 
-### Revised Estimate
+**Speculative Insight** (needs careful verification to avoid circularity):
+For deg(D) > 2g-2, strong approximation MAY follow from Riemann-Roch:
+- RR says ℓ(D) - h¹(D) = deg(D) + 1 - g
+- For deg(D) > 2g-2: ℓ(D) ≥ deg(D) + 1 - g > g - 1
+- This gives enough global sections to approximate
+- ⚠️ CONDITIONAL: Must verify no circular dependency with h1_vanishing_positive
 
-| Scenario | Cycles | Notes |
-|----------|--------|-------|
-| Optimistic | 12-15 | Quick wins + shortcuts work |
-| Realistic | 16-20 | Some complications |
-| Full formalization | 25+ | If we prove everything |
+#### Track C: Residue Pairing → Serre Duality
+**Goal**: Construct perfect pairing H¹(D) × L(K-D) → k
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Residue infrastructure | ✅ DONE | RatFuncResidues.lean |
+| Residue theorem | ✅ DONE | Sum of residues = 0 |
+| Pairing definition | ✅ DONE | serrePairing in Abstract.lean |
+| Vanishing case (both = 0) | ✅ DONE | For deg(D) ≥ -1 on P¹ |
+| Non-vanishing case | Needed | Requires pairing is perfect |
+| Transfer to general curves | Needed | Abstract from RatFunc |
+
+#### Track D: Genus = dim H¹(O)
+**Goal**: Prove h¹(O) = g via invariant differentials
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Canonical divisor K | ✅ DONE | ellipticCanonical = 0 |
+| deg(K) = 2g - 2 | ✅ DONE | For g=1: deg(K)=0 |
+| Invariant differential | Needed | ω = dx/(2y) for elliptic |
+| H¹(O) ≅ space of differentials | Needed | Duality statement |
+
+### Recommended Attack Order
+
+1. **Track C first**: Serre duality gives us h¹(D) = ℓ(K-D)
+   - Once we have this, h1_finite follows from ell_finite
+   - The residue pairing infrastructure exists
+
+2. **Track B second**: Strong approximation for vanishing
+   - Needs careful dependency analysis (see speculative note above)
+
+3. **Track A third**: Compactness for full finiteness
+   - Needed for cases where Serre duality shortcut fails
+   - Deepest infrastructure
+
+4. **Track D last**: Genus calculation
+   - Can be axiomatized if needed (defines the curve)
+   - Or prove via differential forms
+
+### Active Edge for Cycle 348
+
+**Target**: Track C - Extend Serre duality beyond vanishing case
+
+**Specific goal**: In Abstract.lean, the `serre_duality` field has a sorry at line 351 for the non-vanishing case (deg < -1). Investigate what's needed to fill this.
+
+**Why this**: If we prove h¹(D) = ℓ(K-D) as a module isomorphism (not just finrank equality), then `h1_finite_all` follows directly from `ell_finite_all` which is already proved.
+
+### Phase 8 Summary (Completed)
+
+| Task | Status |
+|------|--------|
+| `euler_char_axiom` | ✅ Wired (Cycle 340) |
+| `h1_zero_finite` | ✅ From h1_zero_eq_one (Cycle 341) |
+| `ell_finite_all` | ✅ Gap bound (Cycle 342) |
+| `degreeOnePlaces_elliptic` | ✅ F-linear equiv (Cycle 346) |
+| P¹ strong approx structure | ✅ Reduced to 1 lemma (Cycle 347) |
 
 ---
 
 ## Recent Cycles
+
+### Cycle 347 - Phase 9 Setup + P¹ Strong Approx Progress
+
+**Pivoted to building general curve infrastructure for genus N**
+
+Key achievements:
+1. Analyzed remaining 5 axioms for generalization potential
+2. Created 4-track plan (Compactness, Strong Approx, Serre Duality, Genus)
+3. Reduced P¹ StrongApprox to single topology lemma (`exists_boundedSubmodule_subset_nhds`)
+
+**P¹ Strong Approx proof structure** (in test_strong_approx.lean):
+- Uses `strong_approximation_ratfunc` (fully proved algebraic result)
+- Main theorem `p1_denseRange_algebraMap` compiles with 1 sorry
+- The sorry is: "bounded submodules form a neighborhood basis of 0"
+- Mathematical argument clear, needs Mathlib RestrictedProduct topology API
+
+**Ledger accuracy fixes** (after external review):
+- Updated sorry count: 13 (was 9) - Abstract.lean(8), AdelicH1Full.lean(3), StrongApprox(2)
+- Added missing axiom: `exists_localUniformizer` in EllipticPlaces.lean (not on critical path)
+- Added "Active Edge" rule to prevent focus dilution
+- Marked RR bootstrap for strong approx as speculative (needs circularity check)
+
+**Build status:** ✅ PASSING
 
 ### Cycle 346 - degreeOnePlaces_elliptic FULLY PROVED ✅✅
 
@@ -332,4 +418,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 346. degreeOnePlaces_elliptic fully proved. 5 axioms on critical path (no sorries in theorem chain).*
+*Updated Cycle 347. Phase 9 started - building general curve infrastructure. 5 axioms on critical path. Track C (Serre duality) recommended as next target.*
