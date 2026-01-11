@@ -34,6 +34,8 @@ Serre duality, gives the full Riemann-Roch theorem.
 import RrLean.RiemannRochV2.Elliptic.EllipticH1
 import RrLean.RiemannRochV2.Adelic.AdelicH1v2
 import RrLean.RiemannRochV2.Adelic.EulerCharacteristic
+import Mathlib.FieldTheory.IsAlgClosed.Basic
+import Mathlib.RingTheory.Jacobson.Ring
 
 noncomputable section
 
@@ -41,7 +43,7 @@ open IsDedekindDomain WeierstrassCurve
 
 namespace RiemannRochV2.Elliptic
 
-variable {F : Type*} [Field F]
+variable {F : Type*} [Field F] [IsAlgClosed F]
 variable (W : Affine F) [NonsingularCurve W]
 
 /-! ## Additional Axioms for Full AdelicRRData
@@ -71,13 +73,23 @@ and algebraically closed fields have no proper finite extensions.
 This means dim_F(κ(v)) = 1 for all places v.
 
 For algebraically closed F:
-- κ(v) is a finite extension of F
-- But F has no proper finite extensions
+- κ(v) is a finite extension of F (by Jacobson ring theory)
+- But F has no proper finite extensions (IsAlgClosed)
 - Therefore κ(v) ≃ F, so dim = 1
+
+PROOF SKETCH (Cycle 344):
+1. Fields are Jacobson rings (IsArtinianRing → IsJacobsonRing)
+2. Residue field is a finite type F-algebra (quotient of finitely generated algebra)
+3. finite_of_finite_type_of_isJacobsonRing gives Module.Finite
+4. Algebra.IsIntegral.of_finite gives integrality
+5. IsAlgClosed.algebraMap_bijective_of_isIntegral gives bijective algebraMap F → κ(v)
+6. Bijective algebraMap implies κ(v) = F, so finrank = 1
+
+The proof is mathematically complete but requires careful handling of scalar tower
+instances between F, CoordRing W, quotient, and residue field.
 -/
-axiom degreeOnePlaces_elliptic :
-    ∀ v : HeightOneSpectrum (CoordRing W),
-      Module.finrank F (residueFieldAtPrime (CoordRing W) v) = 1
+axiom degreeOnePlaces_elliptic (v : HeightOneSpectrum (CoordRing W)) :
+    Module.finrank F (residueFieldAtPrime (CoordRing W) v) = 1
 
 /-- DegreeOnePlaces instance for elliptic curves. -/
 instance ellipticDegreeOnePlaces : EulerCharacteristic.DegreeOnePlaces F (CoordRing W) where

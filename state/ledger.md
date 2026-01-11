@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 343
+**Cycle**: 344
 **Phase**: 8 (Axiom Elimination) - IN PROGRESS
 
 ### What We Have (Core RR Proof Complete)
@@ -39,7 +39,7 @@ Axioms used by the elliptic curve RR proof (6 on critical path):
 | EllipticRRData | `adelic_euler_char` | ✅ **THEOREM** | Uses euler_characteristic |
 | EllipticRRData | `h1_finite_all` | axiom | Shortcut via Serre duality |
 | EllipticRRData | `ell_finite_all` | ✅ **THEOREM** | Cycle 342 - gap bound + posPart |
-| EllipticRRData | `degreeOnePlaces_elliptic` | axiom | Alg closed fields |
+| EllipticRRData | `degreeOnePlaces_elliptic` | axiom | Cycle 344: Added [IsAlgClosed F], proof sketch documented |
 | EllipticH1 | `h1_zero_eq_one` | axiom | Genus = 1 |
 | EllipticH1 | `h1_zero_finite` | ✅ **THEOREM** | From h1_zero_eq_one |
 | EllipticH1 | `h1_vanishing_positive` | axiom | Vanishing theorem |
@@ -81,7 +81,7 @@ Axioms used by the elliptic curve RR proof (6 on critical path):
 |------|--------|-------|
 | `ell_finite_all` | ✅ DONE | Cycle 342 - gap bound + positive part |
 | `h1_finite_all` | ⚠️ BLOCKED | Cycle 343 - circular dep, partial progress (see below) |
-| `degreeOnePlaces_elliptic` | 2-3 | PlaceDegree infrastructure exists, need IsAlgClosed |
+| `degreeOnePlaces_elliptic` | ⏳ PARTIAL | Cycle 344: Added [IsAlgClosed F], proof strategy clear, needs scalar tower wiring |
 
 ### Tier 3: Hard (6+ cycles each)
 
@@ -120,6 +120,31 @@ Axioms used by the elliptic curve RR proof (6 on critical path):
 ---
 
 ## Recent Cycles
+
+### Cycle 344 - degreeOnePlaces_elliptic investigation
+
+**Added [IsAlgClosed F] assumption and documented proof strategy**
+
+Key changes to EllipticRRData.lean:
+1. Added imports: `Mathlib.FieldTheory.IsAlgClosed.Basic`, `Mathlib.RingTheory.Jacobson.Ring`
+2. Added `[IsAlgClosed F]` to the variable block (line 46)
+3. Documented complete proof strategy for `degreeOnePlaces_elliptic`
+
+**Proof strategy (mathematically complete, type class machinery complex):**
+1. Fields are Jacobson rings (via `IsArtinianRing → IsJacobsonRing`)
+2. Residue field κ(v) is a finite type F-algebra (quotient of CoordRing W)
+3. `finite_of_finite_type_of_isJacobsonRing` gives `Module.Finite F κ(v)`
+4. `Algebra.IsIntegral.of_finite` gives integrality
+5. `IsAlgClosed.algebraMap_bijective_of_isIntegral` gives bijective algebraMap F → κ(v)
+6. Bijective algebraMap implies κ(v) = F, so finrank = 1
+
+**Blocker for full proof:** Scalar tower instance synthesis between F, CoordRing W, quotient,
+and residue field requires careful `letI`/`haveI` ordering and explicit instance threading.
+
+**Result:** Axiom kept with `[IsAlgClosed F]` assumption (mathematically correct), proof sketch
+documented for future completion.
+
+**Build status:** ✅ PASSING
 
 ### Cycle 343 - h1_finite_all investigation
 
@@ -261,4 +286,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 342. ell_finite_all PROVED! 6 axioms remain on critical path.*
+*Updated Cycle 344. degreeOnePlaces_elliptic refined with [IsAlgClosed F] assumption. 6 axioms remain on critical path.*
