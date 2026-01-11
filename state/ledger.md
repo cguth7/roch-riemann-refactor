@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 348
+**Cycle**: 349
 **Phase**: 9 (General Curve Infrastructure)
 
 ### What We Have (Core RR Proof Complete)
@@ -170,27 +170,31 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
    - Can be axiomatized if needed (defines the curve)
    - Or prove via differential forms
 
-### Active Edge for Cycle 349
+### Active Edge for Cycle 350
 
-**Target**: Track C - Construct residue pairing isomorphism H¹(D) ≅ L(K-D)*
+**Target**: Track A - Use compactness of integral adeles to prove H¹(D) finiteness
 
-**Specific goal**: Build the quotient pairing construction that descends from FullAdeleRing × L(K-D) → Fq to the quotient H¹(D) × L(K-D) → Fq. This would solve both Abstract.lean:299 (h1_finite) and Abstract.lean:351 (serre_duality) simultaneously.
+**Specific goal**: Leverage `isCompact_integralFullAdeles` (already proved in FullAdelesCompact.lean) to show that H¹(D) = FullAdele / (K + A_K(D)) is finite-dimensional when deg D < -1.
 
-**Why this**: Cycle 348 investigation revealed circular dependency:
-- h1_finite (line 299) needs Module.Finite for SpaceModule_full when deg D < -1
-- serre_duality (line 351) needs h1_finrank_full = ell_proj_ext for deg D < -1
-- finrank returns 0 for non-finite modules, so h1_finite must be proven first
-- Both are solved by proving H¹(D) ≅ L(K-D)* via residue pairing
+**Why this (Cycle 349 finding)**: The residue pairing approach hits a fundamental issue:
+- Residues are defined for RatFunc, not for adicCompletion elements
+- The "weak approximation" (writing any adele as diag(k) + bounded) FAILS for deg D < -1
+- This means we can't define the pairing on general quotient elements via residues
 
-**Proof sketch**:
-1. Define pairing φ: FullAdeleRing × L(K-D) → Fq via φ(a, f) = Σ_v res_v(a_v · f)
-2. Show φ vanishes on globalSubmodule (K pairs to 0 with L(K-D))
-3. Show φ vanishes on boundedSubmodule(D) (pole cancellation)
-4. Conclude φ descends to quotient: H¹(D) × L(K-D) → Fq
-5. Prove non-degeneracy (each non-zero element pairs non-trivially)
-6. Get isomorphism H¹(D) ≅ L(K-D)* immediately
+**Alternative approach via compactness**:
+1. `isCompact_integralFullAdeles` gives compactness of ∏_v O_v × O_∞
+2. K embeds discretely in FullAdele (with infinity place, unlike finite adeles)
+3. A_K/K is compact (standard result for function fields)
+4. H¹(D) is a quotient of A_K/K by an open subgroup
+5. Open subgroups of compact groups have finite index
+6. Hence H¹(D) is finite-dimensional
 
-**Estimated scope**: 150-300 lines of Lean. Infrastructure exists in RatFuncResidues.lean and RatFuncPairing.lean.
+**Key infrastructure already in place**:
+- `isCompact_integralFullAdeles` ✅ (FullAdelesCompact.lean:186)
+- `completeSpace_FqtInfty` ✅ (completion is complete)
+- `rankOne_FqtInfty` ✅ (valuation has rank one)
+
+**Next step**: Prove K is discrete in FullAdele, then A_K/K compact follows.
 
 ### Phase 8 Summary (Completed)
 
@@ -205,6 +209,28 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
 ---
 
 ## Recent Cycles
+
+### Cycle 349 - Track C Blocked, Pivot to Track A (Compactness)
+
+**Attempted quotient pairing construction, found fundamental blocker**
+
+Key work:
+1. Created `test_quotient_pairing.lean` with raw pairing infrastructure
+2. Defined `rawKPairing : K × K → Fq` via `residueSumTotal`
+3. Proved bilinearity and vanishing for split denominators
+
+**Blocker discovered**: Residue pairing cannot descend to quotient
+- Residues are defined for RatFunc, not adicCompletion elements
+- To define φ([a], f) we need to compute res_v(a_v · f) where a_v ∈ K_v
+- The workaround (weak approximation: a = diag(k) + bounded) FAILS for deg D < -1
+- This is precisely when strong approximation fails
+
+**Pivot to compactness approach (Track A)**:
+- Found `isCompact_integralFullAdeles` already proved in FullAdelesCompact.lean
+- The standard path: K discrete → A_K/K compact → H¹(D) finite
+- This avoids needing residues on completion elements
+
+**Build status:** ✅ PASSING
 
 ### Cycle 348 - Track C Investigation: Circular Dependency Found
 
