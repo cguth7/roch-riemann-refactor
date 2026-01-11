@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 350
+**Cycle**: 353
 **Phase**: 9 (General Curve Infrastructure)
 
 ### What We Have (Core RR Proof Complete)
@@ -170,19 +170,20 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
    - Can be axiomatized if needed (defines the curve)
    - Or prove via differential forms
 
-### Active Edge for Cycle 353
+### Active Edge for Cycle 354
 
-**Target**: Fill in the `isOpen_bounded_finiteAdeles` sorry in test_h1_finiteness.lean
+**Target**: Complete the `isOpen_bounded_finiteAdeles` proof in test_h1_finiteness.lean
 
-**Current state**: The sorry has detailed documentation of the proof strategy. The challenge is working with Mathlib's RestrictedProduct API (supremum topologies + coinduced topologies).
+**Current state**: Mathematical argument fully documented, but Lean formalization needs work on:
+1. Type coercion between `FiniteAdeleRing` (def alias) and `RestrictedProduct`
+2. Typeclass resolution for `Valued` on components of the restricted product
+3. Working with `simp_rw` across topology instance equality
 
-**Key technical insight discovered in Cycle 352**:
-- The RestrictedProduct topology is characterized by `topologicalSpace_eq_iSup`
-- For each cofinite S, we need to show the preimage under `inclusion` is open
-- The preimage equals `{f | ∀ v ∈ T, f.1 v ∈ Ball_v}` where T is finite
-- This is open by `isOpen_set_pi` + `RestrictedProduct.continuous_coe`
-
-**The gap**: Correctly applying `@IsOpen ... (RestrictedProduct.topologicalSpace ...)` and using `isOpen_iSup_iff` with the coinduced topology structure.
+**Alternative approach to explore**:
+- Use `RestrictedProduct.isOpen_forall_imp_mem` with predicate `p v := v ∈ T` where T = {D v ≠ 0}
+- For v ∉ T, D v = 0 means Ball_v = O_v (automatically in restricted product constraint)
+- For v ∈ T, explicitly check Ball_v constraint
+- This may avoid the complex topology instance manipulation
 
 **What's proved** (Cycles 350-352):
 - `integralFullAdeles_covers_h1` ✅
@@ -203,6 +204,28 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
 ---
 
 ## Recent Cycles
+
+### Cycle 353 - Topology Instance Challenges
+
+**Attempted to formalize the isOpen_bounded_finiteAdeles proof**
+
+Key findings:
+1. **FiniteAdeleRing is a `def` not `abbrev`**: This creates a separate type with `inferInstanceAs` for topology
+2. **Type parameter issues**: Writing `IsOpen (X := RestrictedProduct ...)` works but typeclass resolution for `Valued` on dependent types fails
+3. **simp_rw limitations**: The `simp_rw [topologicalSpace_eq_iSup, isOpen_iSup_iff, isOpen_coinduced]` pattern from Mathlib doesn't apply directly due to type aliasing
+
+Attempted approaches:
+- Direct `show @IsOpen ...` with explicit type - syntax issues with restricted product notation
+- Helper lemma on RestrictedProduct type - typeclass resolution stuck
+- Using `rw [show inferInstance = ... from rfl]` - type mismatch
+
+**Insight**: The problem isn't the mathematical argument (which is clear), but how Lean handles type aliases and typeclass inference across definitionally equal but nominally distinct types.
+
+**Recommendation for next cycle**: Try using the existing `isOpen_forall_imp_mem` lemma with a predicate approach rather than fighting the topology instance issues.
+
+**Build status:** ✅ PASSING (1 sorry with detailed proof sketch)
+
+---
 
 ### Cycle 352 - RestrictedProduct Topology Investigation
 

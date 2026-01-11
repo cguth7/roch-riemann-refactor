@@ -110,7 +110,7 @@ theorem integralFullAdeles_covers_h1 (D : ExtendedDivisor (Polynomial Fq)) :
 
 /-! ## Key Topology Lemma (requires RestrictedProduct API) -/
 
-/-- The finite part constraint set is open in FiniteAdeleRing.
+/-- The bounded set is open in the RestrictedProduct type directly.
 
 The key insight is that for elements of the RestrictedProduct (which are integral
 at cofinitely many places), the condition "Valued.v (a v) ≤ exp(D v)" is:
@@ -122,28 +122,44 @@ This makes the infinite intersection effectively a finite one.
 theorem isOpen_bounded_finiteAdeles (D : DivisorV2 Fq[X]) :
     IsOpen {a : FiniteAdeleRing Fq[X] (RatFunc Fq) |
       ∀ v, Valued.v (a.1 v) ≤ WithZero.exp (D v)} := by
-  /-
-  Proof strategy:
-  1. The topology on FiniteAdeleRing is ⨆ S (cofinite), coinduced from S-principal product
-  2. By isOpen_iSup_iff, we need to show openness in each coinduced topology
-  3. By isOpen_coinduced, we need the preimage under inclusion to be open
-  4. Key insight: in the S-principal product, elements satisfy f v ∈ O_v for v ∈ S
-  5. When D v ≥ 0, Ball_v ⊇ O_v, so the condition is automatic for v ∈ S with D v ≥ 0
-  6. Only for v ∈ T := (S ∩ {D < 0}) ∪ Sᶜ is the condition non-trivial, and T is finite!
-  7. Use isOpen_set_pi on the finite set T
+  -- The bounded set can be written as:
+  -- {a | ∀ v ∈ T, a.1 v ∈ Ball_v} ∩ {a | ∀ v ∉ T, a.1 v ∈ O_v}
+  -- where T = supp(D) is finite, Ball_v = {x | v(x) ≤ exp(D v)}, and O_v is the valuation ring.
 
-  The mathematical argument is clear:
-  - For cofinite S, elements of S-principal satisfy f_v ∈ O_v for v ∈ S
-  - For v ∈ S with D_v ≥ 0, Ball_v ⊇ O_v, so f_v ∈ Ball_v is automatic
-  - For v ∈ S with D_v < 0 or v ∉ S, we need an explicit check
-  - Since supp(D) is finite, {D < 0} is finite
-  - So T = (S ∩ {D < 0}) ∪ Sᶜ is finite
-  - The preimage is {f | ∀ v ∈ T, f_v ∈ Ball_v} ∩ S-principal
-  - This is open by isOpen_set_pi
+  -- For v ∉ T, D v = 0, so Ball_v = O_v.
+  -- For v ∈ T with D v ≥ 0, Ball_v ⊇ O_v.
+  -- For v ∈ T with D v < 0, Ball_v ⊊ O_v.
 
-  The formalization requires careful handling of the RestrictedProduct API,
-  which involves supremum topologies and coinduced topologies.
-  -/
+  -- Key observation: The restricted product topology has the property that
+  -- a set is open if for each cofinite S, the S-principal elements satisfy the constraint
+  -- via a finite intersection.
+
+  -- We use isOpen_forall_imp_mem which handles the case where constraints apply
+  -- only at finitely many places (where p is true).
+
+  let T : Set (HeightOneSpectrum Fq[X]) := {v | D v ≠ 0}
+  have hT_finite : T.Finite := D.finite_support
+
+  -- The bounded set equals: (∀ v ∈ T, a.1 v ∈ Ball_v) ∧ (∀ v ∉ T, a.1 v ∈ O_v)
+  -- For v ∉ T, D v = 0, so exp(D v) = 1 and Ball_v = O_v.
+  -- So the constraint "∀ v ∉ T, a.1 v ∈ O_v" is equivalent to "∀ v ∉ T, v(a.1 v) ≤ exp(D v)".
+
+  -- Each constraint "v(a.1 v) ≤ exp(D v)" is:
+  -- - For v ∉ T: same as "a.1 v ∈ O_v" (automatic for S-principal when v ∈ S)
+  -- - For v ∈ T: an explicit open constraint
+
+  -- Strategy: show the set equals {a | ∀ v, v ∈ T → a.1 v ∈ Ball_v} ∩ {a | ∀ v, a.1 v ∈ O_v}
+  -- Wait, that's too strong. Let me just use the topology directly.
+
+  -- The topology is characterized by: open iff open in each S-principal for cofinite S.
+  -- In each S-principal, elements satisfy a.1 v ∈ O_v for v ∈ S.
+  -- For v ∈ S with D v ≥ 0: O_v ⊆ Ball_v, constraint automatic.
+  -- For v ∈ S with D v < 0 or v ∉ S: need explicit constraint.
+  -- The set of non-trivial places T_S = Sᶜ ∪ (S ∩ {D < 0}) is finite.
+
+  -- Since proving this directly is complex, we use a strategic sorry with proof sketch.
+  -- The full proof requires carefully handling the RestrictedProduct.topologicalSpace_eq_iSup
+  -- and showing that finite product of opens is open in the S-principal topology.
   sorry
 
 omit [Fintype Fq] [DecidableEq Fq] in
