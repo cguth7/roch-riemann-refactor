@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 345
+**Cycle**: 346
 **Phase**: 8 (Axiom Elimination) - IN PROGRESS
 
 ### What We Have (Core RR Proof Complete)
@@ -39,7 +39,7 @@ Axioms used by the elliptic curve RR proof (6 on critical path):
 | EllipticRRData | `adelic_euler_char` | ✅ **THEOREM** | Uses euler_characteristic |
 | EllipticRRData | `h1_finite_all` | axiom | Shortcut via Serre duality |
 | EllipticRRData | `ell_finite_all` | ✅ **THEOREM** | Cycle 342 - gap bound + posPart |
-| EllipticRRData | `degreeOnePlaces_elliptic` | ⏳ **THEOREM (1 sorry)** | Cycle 345: Jacobson proof works, scalar tower transfer sorry |
+| EllipticRRData | `degreeOnePlaces_elliptic` | ✅ **THEOREM** | Cycle 346: Fully proved via F-linear equiv |
 | EllipticH1 | `h1_zero_eq_one` | axiom | Genus = 1 |
 | EllipticH1 | `h1_zero_finite` | ✅ **THEOREM** | From h1_zero_eq_one |
 | EllipticH1 | `h1_vanishing_positive` | axiom | Vanishing theorem |
@@ -81,7 +81,7 @@ Axioms used by the elliptic curve RR proof (6 on critical path):
 |------|--------|-------|
 | `ell_finite_all` | ✅ DONE | Cycle 342 - gap bound + positive part |
 | `h1_finite_all` | ⚠️ BLOCKED | Cycle 343 - circular dep, partial progress (see below) |
-| `degreeOnePlaces_elliptic` | ⏳ ALMOST DONE | Cycle 345: Theorem with 1 sorry (scalar tower transfer) |
+| `degreeOnePlaces_elliptic` | ✅ DONE | Cycle 346: F-linear equiv proof complete |
 
 ### Tier 3: Hard (6+ cycles each)
 
@@ -120,6 +120,41 @@ Axioms used by the elliptic curve RR proof (6 on critical path):
 ---
 
 ## Recent Cycles
+
+### Cycle 346 - degreeOnePlaces_elliptic FULLY PROVED ✅✅
+
+**Eliminated the remaining sorry in degreeOnePlaces_elliptic!**
+
+Key achievements:
+1. Proved `algebraMap_quot_res_comp`: algebraMap compatibility for scalar tower transfer
+2. Built `quotToResLinearMapF`: F-linear map from quotient to residue field
+3. Built `quotToResLinearEquivF`: F-linear equivalence (using bijective algebraMap)
+4. Proved `finrank_quot_eq_finrank_res`: finrank transfers via linear equiv
+
+**The fix:**
+The sorry was about transferring finrank from quotient to residue field. The key insight:
+- Both quotient and residue field have F-algebra structures via F → CoordRing W
+- The algebraMap quotient → residue field respects the F-action (via scalar tower)
+- This means it's actually an F-linear map, not just an R-linear map
+- Bijective F-linear map = F-linear equivalence
+- Linear equivalences preserve finrank
+
+**Proof structure for scalar tower compatibility:**
+```
+algebraMap F quotient = Ideal.Quotient.mk ∘ algebraMap F (CoordRing W)      [scalar tower 1]
+algebraMap F residue = algebraMap (CoordRing W) residue ∘ algebraMap F (CoordRing W)  [scalar tower 2]
+algebraMap quotient residue ∘ Ideal.Quotient.mk = algebraMap (CoordRing W) residue    [scalar tower 3]
+```
+These compose to: `algebraMap quotient residue ∘ algebraMap F quotient = algebraMap F residue`
+
+**Current axiom status (5 axioms on critical path):**
+- `h1_finite_all`: axiom (blocked by circular dep)
+- `h1_zero_eq_one`: axiom
+- `h1_vanishing_positive`: axiom
+- `serre_duality`: axiom
+- `isDedekindDomain_coordinateRing_axiom`: axiom
+
+**Build status:** ✅ PASSING
 
 ### Cycle 345 - degreeOnePlaces_elliptic CONVERTED TO THEOREM ✅
 
@@ -297,4 +332,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 345. degreeOnePlaces_elliptic converted to theorem (1 sorry remaining). 5 axioms + 1 theorem-with-sorry on critical path.*
+*Updated Cycle 346. degreeOnePlaces_elliptic fully proved. 5 axioms on critical path (no sorries in theorem chain).*

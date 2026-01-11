@@ -37,6 +37,8 @@ import RrLean.RiemannRochV2.Adelic.EulerCharacteristic
 import Mathlib.FieldTheory.IsAlgClosed.Basic
 import Mathlib.RingTheory.Jacobson.Ring
 
+set_option synthInstance.maxHeartbeats 40000
+
 noncomputable section
 
 open IsDedekindDomain WeierstrassCurve
@@ -84,7 +86,70 @@ PROOF (Cycle 345):
 4. Inside that proof: Algebra.IsIntegral is derived
 5. IsAlgClosed.algebraMap_bijective_of_isIntegral gives bijective algebraMap F → κ(v)
 6. Bijective algebraMap implies κ(v) = F, so finrank = 1
+
+Key algebraMap compatibility (for F-linear equivalence between quotient and residue field):
+- algebraMap F quotient = Ideal.Quotient.mk ∘ algebraMap F (CoordRing W)  [scalar tower F CoordRing quotient]
+- algebraMap F residue = algebraMap (CoordRing W) residue ∘ algebraMap F (CoordRing W)  [scalar tower F CoordRing residue]
+- algebraMap quotient residue ∘ Ideal.Quotient.mk = algebraMap (CoordRing W) residue  [scalar tower CoordRing quotient residue]
+
+These compose to show: algebraMap quotient residue ∘ algebraMap F quotient = algebraMap F residue
+which means the ring isomorphism quotient ≃+* residue is actually an F-linear equivalence.
 -/
+
+/-- The algebraMap compatibility for transferring F-structure from quotient to residue field.
+
+For c : F, we have:
+  (algebraMap quotient residue) ((algebraMap F quotient) c) = (algebraMap F residue) c
+
+This uses three scalar towers:
+1. F → CoordRing W → quotient
+2. CoordRing W → quotient → residue
+3. F → CoordRing W → residue
+-/
+private lemma algebraMap_quot_res_comp (v : HeightOneSpectrum (CoordRing W)) (c : F) [v.asIdeal.IsMaximal] :
+    (algebraMap ((CoordRing W) ⧸ v.asIdeal) (residueFieldAtPrime (CoordRing W) v))
+      ((algebraMap F ((CoordRing W) ⧸ v.asIdeal)) c) =
+    (algebraMap F (residueFieldAtPrime (CoordRing W) v)) c := by
+  -- Use scalar tower F → CoordRing W → quotient
+  have h1 : (algebraMap F ((CoordRing W) ⧸ v.asIdeal)) c =
+      (algebraMap (CoordRing W) ((CoordRing W) ⧸ v.asIdeal)) ((algebraMap F (CoordRing W)) c) :=
+    IsScalarTower.algebraMap_apply F (CoordRing W) ((CoordRing W) ⧸ v.asIdeal) c
+  rw [h1]
+  -- Use scalar tower CoordRing W → quotient → residue
+  have h2 : (algebraMap ((CoordRing W) ⧸ v.asIdeal) (residueFieldAtPrime (CoordRing W) v))
+      ((algebraMap (CoordRing W) ((CoordRing W) ⧸ v.asIdeal)) ((algebraMap F (CoordRing W)) c)) =
+      (algebraMap (CoordRing W) (residueFieldAtPrime (CoordRing W) v)) ((algebraMap F (CoordRing W)) c) :=
+    IsScalarTower.algebraMap_apply (CoordRing W) ((CoordRing W) ⧸ v.asIdeal) (residueFieldAtPrime (CoordRing W) v) _
+  rw [h2]
+  -- Use scalar tower F → CoordRing W → residue (reversed)
+  have h3 : (algebraMap (CoordRing W) (residueFieldAtPrime (CoordRing W) v)) ((algebraMap F (CoordRing W)) c) =
+      (algebraMap F (residueFieldAtPrime (CoordRing W) v)) c :=
+    (IsScalarTower.algebraMap_apply F (CoordRing W) (residueFieldAtPrime (CoordRing W) v) c).symm
+  rw [h3]
+
+/-- The F-linear map from quotient to residue field.
+
+This is the algebraMap viewed as an F-linear map, using the scalar tower compatibility. -/
+private def quotToResLinearMapF (v : HeightOneSpectrum (CoordRing W)) [v.asIdeal.IsMaximal] :
+    ((CoordRing W) ⧸ v.asIdeal) →ₗ[F] (residueFieldAtPrime (CoordRing W) v) where
+  toFun := algebraMap ((CoordRing W) ⧸ v.asIdeal) (residueFieldAtPrime (CoordRing W) v)
+  map_add' x y := map_add _ x y
+  map_smul' c x := by
+    simp only [RingHom.id_apply, Algebra.smul_def, map_mul, algebraMap_quot_res_comp]
+
+/-- The F-linear equivalence between quotient and residue field.
+
+Since the algebraMap quotient → residue is bijective (for maximal ideals) and F-linear,
+it gives an F-linear equivalence. -/
+private def quotToResLinearEquivF (v : HeightOneSpectrum (CoordRing W)) [v.asIdeal.IsMaximal] :
+    ((CoordRing W) ⧸ v.asIdeal) ≃ₗ[F] (residueFieldAtPrime (CoordRing W) v) :=
+  LinearEquiv.ofBijective (quotToResLinearMapF W v)
+    (Ideal.bijective_algebraMap_quotient_residueField v.asIdeal)
+
+/-- The finrank over F is preserved by the linear equivalence quotient ≃ₗ[F] residue. -/
+private lemma finrank_quot_eq_finrank_res (v : HeightOneSpectrum (CoordRing W)) [v.asIdeal.IsMaximal] :
+    Module.finrank F ((CoordRing W) ⧸ v.asIdeal) = Module.finrank F (residueFieldAtPrime (CoordRing W) v) :=
+  (quotToResLinearEquivF W v).finrank_eq
 
 /-- Helper: bijective algebraMap between fields gives finrank = 1.
 
@@ -100,7 +165,7 @@ private lemma finrank_eq_one_of_algebraMap_bijective {K : Type*} [Field K] [Alge
       map_smul' := fun c x => by
         simp only [RingHom.id_apply]
         show e (c * x) = c • e x
-        simp only [Algebra.smul_def, map_mul, e] }
+        rw [Algebra.smul_def, e.map_mul] }
   -- finrank F K = finrank F F = 1
   rw [← elin.finrank_eq, Module.finrank_self]
 
@@ -205,25 +270,12 @@ theorem degreeOnePlaces_elliptic (v : HeightOneSpectrum (CoordRing W)) :
   -- - The residue field is a finite extension of F (same as quotient)
   -- - F is algebraically closed, so any finite extension has finrank 1
 
-  -- Use the ring isomorphism to define a compatible F-module structure
-  let iso : ((CoordRing W) ⧸ v.asIdeal) ≃+* (residueFieldAtPrime (CoordRing W) v) :=
-    RingEquiv.ofBijective _ hbij_res
-
-  -- Since the quotient and residue field are isomorphic as rings, and both are F-algebras
-  -- (with compatible structures via CoordRing W), the finrank transfers.
-  -- The quotient has finrank 1 over F, so the residue field also has finrank 1.
-
-  -- The transfer uses that linear rank is preserved under ring isomorphisms
-  -- when the algebra structures are compatible (both factor through CoordRing W).
-
-  -- For algebraically closed F, this is ultimately because:
-  -- - residueFieldAtPrime is a finite extension of F
-  -- - F has no proper finite extensions
-  -- - Therefore finrank = 1
-
-  -- REMAINING SORRY: Instance threading for IsScalarTower F quotient residue_field
-  -- The mathematical content is complete; this is a formalization detail.
-  sorry
+  -- Transfer to residue field using the F-linear equivalence
+  -- finrank F quotient = finrank F residue (by quotToResLinearEquivF)
+  -- finrank F quotient = 1 (hquot_finrank)
+  -- Therefore finrank F residue = 1
+  rw [← finrank_quot_eq_finrank_res W v]
+  exact hquot_finrank
 
 /-- DegreeOnePlaces instance for elliptic curves. -/
 instance ellipticDegreeOnePlaces : EulerCharacteristic.DegreeOnePlaces F (CoordRing W) where
