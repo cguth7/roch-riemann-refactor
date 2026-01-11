@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 349
+**Cycle**: 350
 **Phase**: 9 (General Curve Infrastructure)
 
 ### What We Have (Core RR Proof Complete)
@@ -170,31 +170,30 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
    - Can be axiomatized if needed (defines the curve)
    - Or prove via differential forms
 
-### Active Edge for Cycle 350
+### Active Edge for Cycle 351
 
-**Target**: Track A - Use compactness of integral adeles to prove H¹(D) finiteness
+**Target**: Prove `boundedSubmodule_full_isOpen` - that A_K(D) is open in FqFullAdeleRing
 
-**Specific goal**: Leverage `isCompact_integralFullAdeles` (already proved in FullAdelesCompact.lean) to show that H¹(D) = FullAdele / (K + A_K(D)) is finite-dimensional when deg D < -1.
+**Specific goal**: Complete the proof that A_K(D) is an open submodule, which is the key missing piece for the compactness → finiteness path.
 
-**Why this (Cycle 349 finding)**: The residue pairing approach hits a fundamental issue:
-- Residues are defined for RatFunc, not for adicCompletion elements
-- The "weak approximation" (writing any adele as diag(k) + bounded) FAILS for deg D < -1
-- This means we can't define the pairing on general quotient elements via residues
+**What we need**:
+1. For each finite place v: valuation ball {x : v(x) ≤ exp(n)} is open in adicCompletion ✅ (Valued.isOpen_closedBall)
+2. For infinity: {x : |x|_∞ ≤ exp(n)} is open in FqtInfty ✅ (isOpen_ball_le_one_FqtInfty)
+3. Product of opens is open in FqFullAdeleRing = RestrictedProduct × FqtInfty
 
-**Alternative approach via compactness**:
-1. `isCompact_integralFullAdeles` gives compactness of ∏_v O_v × O_∞
-2. K embeds discretely in FullAdele (with infinity place, unlike finite adeles)
-3. A_K/K is compact (standard result for function fields)
-4. H¹(D) is a quotient of A_K/K by an open subgroup
-5. Open subgroups of compact groups have finite index
-6. Hence H¹(D) is finite-dimensional
+**Key gap**: Connecting RestrictedProduct topology with component-wise openness
+- Need lemma: if U_v is open for v ∈ S (finite) and U_v = O_v for v ∉ S, then ∩_v U_v is open in RestrictedProduct
 
-**Key infrastructure already in place**:
-- `isCompact_integralFullAdeles` ✅ (FullAdelesCompact.lean:186)
-- `completeSpace_FqtInfty` ✅ (completion is complete)
-- `rankOne_FqtInfty` ✅ (valuation has rank one)
+**What's proved** (Cycle 350):
+- `integralFullAdeles_covers_h1`: fundamental domain covers the quotient ✅
+- Complete strategy documented in test_h1_finiteness.lean
 
-**Next step**: Prove K is discrete in FullAdele, then A_K/K compact follows.
+**Once `boundedSubmodule_full_isOpen` is proved**, the full chain works:
+1. globalPlusBoundedSubmodule_full D is open (K + A_K(D) = ⋃_{k∈K} (k + A_K(D)))
+2. H¹(D) has discrete topology (quotient by open subgroup)
+3. Image of integralFullAdeles (compact) covers H¹(D)
+4. Compact + discrete = finite
+5. Finite Fq-vector space = Module.Finite
 
 ### Phase 8 Summary (Completed)
 
@@ -209,6 +208,37 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
 ---
 
 ## Recent Cycles
+
+### Cycle 350 - Compactness Strategy Proof Structure
+
+**Developed complete strategy for h1_finite via compactness (Track A)**
+
+Key achievements:
+1. Created `test_h1_finiteness.lean` with proof structure
+2. **PROVED `integralFullAdeles_covers_h1`**: Every element of H¹(D) has a representative in integralFullAdeles (uses fundamental domain property from FullAdelesCompact.lean)
+3. Documented the full compactness → finiteness chain
+
+**The proof path**:
+1. A_K(D) is open in FqFullAdeleRing (needs `boundedSubmodule_full_isOpen` - 1 sorry)
+2. K + A_K(D) is open (union of translates of open set)
+3. H¹(D) = FullAdeleRing / (K + A_K(D)) has discrete topology
+4. integralFullAdeles maps surjectively onto H¹(D) ✅
+5. Compact + discrete = finite
+6. Finite Fq-vector space = Module.Finite
+
+**Key gap identified**: `boundedSubmodule_full_isOpen`
+- Requires connecting Mathlib's RestrictedProduct topology with component-wise valuations
+- Mathematical argument is clear: valuation balls are open, finite intersection of opens is open
+- Technical implementation needs RestrictedProduct API
+
+**Infrastructure confirmed as available**:
+- `isCompact_integralFullAdeles` ✅
+- `exists_translate_in_integralFullAdeles` ✅
+- `fq_discrete_in_fullAdeles` ✅
+- `fq_closed_in_fullAdeles` ✅
+- `Valued.isOpen_closedBall` ✅
+
+**Build status:** ✅ PASSING
 
 ### Cycle 349 - Track C Blocked, Pivot to Track A (Compactness)
 
@@ -494,4 +524,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 347. Phase 9 started - building general curve infrastructure. 5 axioms on critical path. Track C (Serre duality) recommended as next target.*
+*Updated Cycle 350. Phase 9 continues - Track A (compactness) is the active edge. Key blocker: `boundedSubmodule_full_isOpen`. Once this is proved, h1_finite_all follows via compactness.*
