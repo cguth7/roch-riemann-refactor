@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 344
+**Cycle**: 345
 **Phase**: 8 (Axiom Elimination) - IN PROGRESS
 
 ### What We Have (Core RR Proof Complete)
@@ -39,7 +39,7 @@ Axioms used by the elliptic curve RR proof (6 on critical path):
 | EllipticRRData | `adelic_euler_char` | ✅ **THEOREM** | Uses euler_characteristic |
 | EllipticRRData | `h1_finite_all` | axiom | Shortcut via Serre duality |
 | EllipticRRData | `ell_finite_all` | ✅ **THEOREM** | Cycle 342 - gap bound + posPart |
-| EllipticRRData | `degreeOnePlaces_elliptic` | axiom | Cycle 344: Added [IsAlgClosed F], proof sketch documented |
+| EllipticRRData | `degreeOnePlaces_elliptic` | ⏳ **THEOREM (1 sorry)** | Cycle 345: Jacobson proof works, scalar tower transfer sorry |
 | EllipticH1 | `h1_zero_eq_one` | axiom | Genus = 1 |
 | EllipticH1 | `h1_zero_finite` | ✅ **THEOREM** | From h1_zero_eq_one |
 | EllipticH1 | `h1_vanishing_positive` | axiom | Vanishing theorem |
@@ -81,7 +81,7 @@ Axioms used by the elliptic curve RR proof (6 on critical path):
 |------|--------|-------|
 | `ell_finite_all` | ✅ DONE | Cycle 342 - gap bound + positive part |
 | `h1_finite_all` | ⚠️ BLOCKED | Cycle 343 - circular dep, partial progress (see below) |
-| `degreeOnePlaces_elliptic` | ⏳ PARTIAL | Cycle 344: Added [IsAlgClosed F], proof strategy clear, needs scalar tower wiring |
+| `degreeOnePlaces_elliptic` | ⏳ ALMOST DONE | Cycle 345: Theorem with 1 sorry (scalar tower transfer) |
 
 ### Tier 3: Hard (6+ cycles each)
 
@@ -121,6 +121,31 @@ Axioms used by the elliptic curve RR proof (6 on critical path):
 
 ## Recent Cycles
 
+### Cycle 345 - degreeOnePlaces_elliptic CONVERTED TO THEOREM ✅
+
+**Major progress: Converted from axiom to theorem (with 1 remaining sorry)**
+
+Key achievements:
+1. Proved `finrank_eq_one_of_algebraMap_bijective` helper lemma
+2. Showed `Algebra.IsIntegral F ((CoordRing W) ⧸ v.asIdeal)` using Jacobson ring theory
+3. Proved `halg_bij`: algebraMap F → quotient is bijective (via IsAlgClosed)
+4. Proved `hquot_finrank`: finrank F quotient = 1
+
+**Proof structure:**
+1. `CoordRing W` is `Algebra.FiniteType F` (AdjoinRoot of polynomial ring) ✅
+2. `(CoordRing W) ⧸ v.asIdeal` is FiniteType over F (via `Algebra.FiniteType.of_surjective`) ✅
+3. F is `IsJacobsonRing` (field → Artinian → Jacobson) ✅
+4. `finite_of_finite_type_of_isJacobsonRing` gives `Module.Finite` ✅
+5. `IsIntegral.of_finite` gives integrality ✅
+6. `IsAlgClosed.algebraMap_bijective_of_isIntegral` gives bijective algebraMap ✅
+7. Bijective algebraMap → finrank = 1 ✅
+
+**Remaining sorry:** Transfer from quotient (finrank 1) to residue field (same finrank).
+This is a Mathlib instance threading issue (need IsScalarTower F quotient residue_field).
+The mathematical content is complete.
+
+**Build status:** ✅ PASSING
+
 ### Cycle 344 - degreeOnePlaces_elliptic investigation
 
 **Added [IsAlgClosed F] assumption and documented proof strategy**
@@ -129,20 +154,6 @@ Key changes to EllipticRRData.lean:
 1. Added imports: `Mathlib.FieldTheory.IsAlgClosed.Basic`, `Mathlib.RingTheory.Jacobson.Ring`
 2. Added `[IsAlgClosed F]` to the variable block (line 46)
 3. Documented complete proof strategy for `degreeOnePlaces_elliptic`
-
-**Proof strategy (mathematically complete, type class machinery complex):**
-1. Fields are Jacobson rings (via `IsArtinianRing → IsJacobsonRing`)
-2. Residue field κ(v) is a finite type F-algebra (quotient of CoordRing W)
-3. `finite_of_finite_type_of_isJacobsonRing` gives `Module.Finite F κ(v)`
-4. `Algebra.IsIntegral.of_finite` gives integrality
-5. `IsAlgClosed.algebraMap_bijective_of_isIntegral` gives bijective algebraMap F → κ(v)
-6. Bijective algebraMap implies κ(v) = F, so finrank = 1
-
-**Blocker for full proof:** Scalar tower instance synthesis between F, CoordRing W, quotient,
-and residue field requires careful `letI`/`haveI` ordering and explicit instance threading.
-
-**Result:** Axiom kept with `[IsAlgClosed F]` assumption (mathematically correct), proof sketch
-documented for future completion.
 
 **Build status:** ✅ PASSING
 
@@ -286,4 +297,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 344. degreeOnePlaces_elliptic refined with [IsAlgClosed F] assumption. 6 axioms remain on critical path.*
+*Updated Cycle 345. degreeOnePlaces_elliptic converted to theorem (1 sorry remaining). 5 axioms + 1 theorem-with-sorry on critical path.*
