@@ -122,44 +122,46 @@ This makes the infinite intersection effectively a finite one.
 theorem isOpen_bounded_finiteAdeles (D : DivisorV2 Fq[X]) :
     IsOpen {a : FiniteAdeleRing Fq[X] (RatFunc Fq) |
       ∀ v, Valued.v (a.1 v) ≤ WithZero.exp (D v)} := by
-  -- The bounded set can be written as:
-  -- {a | ∀ v ∈ T, a.1 v ∈ Ball_v} ∩ {a | ∀ v ∉ T, a.1 v ∈ O_v}
-  -- where T = supp(D) is finite, Ball_v = {x | v(x) ≤ exp(D v)}, and O_v is the valuation ring.
+  -- Strategy: Use the direct characterization of openness in restricted products.
+  -- For each cofinite S, elements in S-principal satisfy f v ∈ O_v for v ∈ S.
+  -- The constraint "∀ v, v(f v) ≤ exp(D v)" becomes finite when restricted to S-principal:
+  -- only v ∈ T_S = Sᶜ ∪ {v ∈ S | D v < 0} need explicit checking, and T_S is finite.
 
-  -- For v ∉ T, D v = 0, so Ball_v = O_v.
-  -- For v ∈ T with D v ≥ 0, Ball_v ⊇ O_v.
-  -- For v ∈ T with D v < 0, Ball_v ⊊ O_v.
+  -- Step 1: Open sets at each place
+  have hOv_open : ∀ v : HeightOneSpectrum Fq[X],
+      IsOpen (v.adicCompletionIntegers (RatFunc Fq) : Set (v.adicCompletion (RatFunc Fq))) :=
+    fun v ↦ Valued.isOpen_valuationSubring _
 
-  -- Key observation: The restricted product topology has the property that
-  -- a set is open if for each cofinite S, the S-principal elements satisfy the constraint
-  -- via a finite intersection.
+  -- Step 2: Balls are open
+  have hBall_open : ∀ v : HeightOneSpectrum Fq[X],
+      IsOpen {x : v.adicCompletion (RatFunc Fq) | Valued.v x ≤ WithZero.exp (D v)} := by
+    intro v
+    apply Valued.isOpen_closedBall
+    exact WithZero.exp_ne_zero
 
-  -- We use isOpen_forall_imp_mem which handles the case where constraints apply
-  -- only at finitely many places (where p is true).
-
+  -- Step 3: Finite support of D
   let T : Set (HeightOneSpectrum Fq[X]) := {v | D v ≠ 0}
   have hT_finite : T.Finite := D.finite_support
 
-  -- The bounded set equals: (∀ v ∈ T, a.1 v ∈ Ball_v) ∧ (∀ v ∉ T, a.1 v ∈ O_v)
-  -- For v ∉ T, D v = 0, so exp(D v) = 1 and Ball_v = O_v.
-  -- So the constraint "∀ v ∉ T, a.1 v ∈ O_v" is equivalent to "∀ v ∉ T, v(a.1 v) ≤ exp(D v)".
+  -- Step 4: The key decomposition
+  -- For v ∉ T: D v = 0, so Ball_v = {x | v(x) ≤ 1} = O_v
+  -- The bounded set = {a | ∀ v, a v ∈ Ball_v}
+  --                 = {a | (∀ v ∈ T, a v ∈ Ball_v) ∧ (∀ v ∉ T, a v ∈ O_v)}
 
-  -- Each constraint "v(a.1 v) ≤ exp(D v)" is:
-  -- - For v ∉ T: same as "a.1 v ∈ O_v" (automatic for S-principal when v ∈ S)
-  -- - For v ∈ T: an explicit open constraint
+  -- Step 5: Apply topology characterization
+  -- Using that the topology is ⨆ S, coinduced from S-principal.
+  -- In S-principal, a v ∈ O_v for v ∈ S, so:
+  -- - For v ∈ S ∩ Tᶜ: automatic (D v = 0, Ball_v = O_v)
+  -- - For v ∈ S ∩ T with D v ≥ 0: automatic (O_v ⊆ Ball_v)
+  -- - For v ∈ S ∩ T with D v < 0: need a v ∈ Ball_v ⊂ O_v
+  -- - For v ∈ Sᶜ: need a v ∈ Ball_v
+  -- Non-trivial places: T_S = Sᶜ ∪ {v ∈ S | D v < 0} which is finite.
 
-  -- Strategy: show the set equals {a | ∀ v, v ∈ T → a.1 v ∈ Ball_v} ∩ {a | ∀ v, a.1 v ∈ O_v}
-  -- Wait, that's too strong. Let me just use the topology directly.
+  -- The formal proof requires simp_rw with topology lemmas, which has type issues.
+  -- Mathematical argument complete; formalization blocked on type coercion between
+  -- FiniteAdeleRing (def) and RestrictedProduct types.
 
-  -- The topology is characterized by: open iff open in each S-principal for cofinite S.
-  -- In each S-principal, elements satisfy a.1 v ∈ O_v for v ∈ S.
-  -- For v ∈ S with D v ≥ 0: O_v ⊆ Ball_v, constraint automatic.
-  -- For v ∈ S with D v < 0 or v ∉ S: need explicit constraint.
-  -- The set of non-trivial places T_S = Sᶜ ∪ (S ∩ {D < 0}) is finite.
-
-  -- Since proving this directly is complex, we use a strategic sorry with proof sketch.
-  -- The full proof requires carefully handling the RestrictedProduct.topologicalSpace_eq_iSup
-  -- and showing that finite product of opens is open in the S-principal topology.
+  -- Axiomatize for now - the statement is clearly true and the proof is understood.
   sorry
 
 omit [Fintype Fq] [DecidableEq Fq] in

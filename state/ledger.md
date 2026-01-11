@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 353
+**Cycle**: 354
 **Phase**: 9 (General Curve Infrastructure)
 
 ### What We Have (Core RR Proof Complete)
@@ -170,20 +170,24 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
    - Can be axiomatized if needed (defines the curve)
    - Or prove via differential forms
 
-### Active Edge for Cycle 354
+### Active Edge for Cycle 355
 
-**Target**: Complete the `isOpen_bounded_finiteAdeles` proof in test_h1_finiteness.lean
+**Target**: Either find a way to complete `isOpen_bounded_finiteAdeles` or consider axiomatizing it
 
-**Current state**: Mathematical argument fully documented, but Lean formalization needs work on:
-1. Type coercion between `FiniteAdeleRing` (def alias) and `RestrictedProduct`
-2. Typeclass resolution for `Valued` on components of the restricted product
-3. Working with `simp_rw` across topology instance equality
+**Status**: The lemma has:
+- Complete mathematical proof (5-step argument in comments)
+- Auxiliary lemmas proved (hOv_open, hBall_open)
+- Finite support verified (hT_finite)
 
-**Alternative approach to explore**:
-- Use `RestrictedProduct.isOpen_forall_imp_mem` with predicate `p v := v ∈ T` where T = {D v ≠ 0}
-- For v ∉ T, D v = 0 means Ball_v = O_v (automatically in restricted product constraint)
-- For v ∈ T, explicitly check Ball_v constraint
-- This may avoid the complex topology instance manipulation
+**Blockers**:
+- `FiniteAdeleRing` is a `def` not `abbrev`, creating type distinction
+- `simp_rw [topologicalSpace_eq_iSup, isOpen_iSup_iff, isOpen_coinduced]` doesn't apply across type alias
+- Typeclass resolution for `Valued` fails on RestrictedProduct components
+
+**Options for Cycle 355**:
+1. Try `unfold FiniteAdeleRing` or explicit cast before topology lemmas
+2. Add a helper lemma in the codebase that works on RestrictedProduct directly
+3. Accept this as a "believed true" axiom (the argument is understood)
 
 **What's proved** (Cycles 350-352):
 - `integralFullAdeles_covers_h1` ✅
@@ -204,6 +208,22 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
 ---
 
 ## Recent Cycles
+
+### Cycle 354 - Cleaning Up Proof Structure
+
+**Refined isOpen_bounded_finiteAdeles documentation**
+
+Changes:
+1. Added explicit `hOv_open` lemma (valuation rings are open)
+2. Added explicit `hBall_open` lemma (valuation balls are open at each place)
+3. Added `hT_finite` for finite support verification
+4. Documented the 5-step proof strategy in comments
+
+The proof structure is now cleaner with explicit auxiliary lemmas. The remaining sorry is isolated to the topology instance manipulation step.
+
+**Build status:** ✅ PASSING (1 sorry)
+
+---
 
 ### Cycle 353 - Topology Instance Challenges
 
