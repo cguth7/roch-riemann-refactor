@@ -2,6 +2,7 @@ import RrLean.RiemannRochV2.Elliptic.EllipticSetup
 import RrLean.RiemannRochV2.Elliptic.EllipticPlaces
 import RrLean.RiemannRochV2.Elliptic.EllipticCanonical
 import RrLean.RiemannRochV2.Elliptic.EllipticH1
+import RrLean.RiemannRochV2.Elliptic.EllipticRRData
 -- StrongApproximation typeclass (in Adelic/) with elliptic instance
 import RrLean.RiemannRochV2.Adelic.StrongApproximation
 

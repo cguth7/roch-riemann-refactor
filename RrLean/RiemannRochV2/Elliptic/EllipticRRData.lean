@@ -70,8 +70,9 @@ This is because the residue field κ(v) = R/v.asIdeal is a finite extension of F
 and algebraically closed fields have no proper finite extensions.
 -/
 
-/-- All places of an elliptic curve over an algebraically closed field have degree 1.
+/-! ### Degree One Places
 
+All places of an elliptic curve over an algebraically closed field have degree 1.
 This means dim_F(κ(v)) = 1 for all places v.
 
 For algebraically closed F:
@@ -79,7 +80,7 @@ For algebraically closed F:
 - But F has no proper finite extensions (IsAlgClosed)
 - Therefore κ(v) ≃ F, so dim = 1
 
-PROOF (Cycle 345):
+**Proof Strategy (Cycle 345-346):**
 1. Fields are Jacobson rings (DivisionRing.instIsArtinianRing → IsJacobsonRing)
 2. Residue field is a finite type F-algebra (quotient of finitely generated algebra)
 3. finite_of_finite_type_of_isJacobsonRing gives Module.Finite
@@ -87,7 +88,7 @@ PROOF (Cycle 345):
 5. IsAlgClosed.algebraMap_bijective_of_isIntegral gives bijective algebraMap F → κ(v)
 6. Bijective algebraMap implies κ(v) = F, so finrank = 1
 
-Key algebraMap compatibility (for F-linear equivalence between quotient and residue field):
+**Key algebraMap compatibility** (for F-linear equivalence between quotient and residue field):
 - algebraMap F quotient = Ideal.Quotient.mk ∘ algebraMap F (CoordRing W)  [scalar tower F CoordRing quotient]
 - algebraMap F residue = algebraMap (CoordRing W) residue ∘ algebraMap F (CoordRing W)  [scalar tower F CoordRing residue]
 - algebraMap quotient residue ∘ Ideal.Quotient.mk = algebraMap (CoordRing W) residue  [scalar tower CoordRing quotient residue]
@@ -165,7 +166,9 @@ private lemma finrank_eq_one_of_algebraMap_bijective {K : Type*} [Field K] [Alge
       map_smul' := fun c x => by
         simp only [RingHom.id_apply]
         show e (c * x) = c • e x
-        rw [Algebra.smul_def, e.map_mul] }
+        rw [Algebra.smul_def, e.map_mul]
+        -- e c = algebraMap F K c by definition of RingEquiv.ofBijective
+        rfl }
   -- finrank F K = finrank F F = 1
   rw [← elin.finrank_eq, Module.finrank_self]
 
