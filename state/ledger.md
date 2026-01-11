@@ -13,8 +13,8 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 347
-**Phase**: 9 (General Curve Infrastructure) - STARTING
+**Cycle**: 348
+**Phase**: 9 (General Curve Infrastructure)
 
 ### What We Have (Core RR Proof Complete)
 
@@ -130,10 +130,18 @@ For deg(D) > 2g-2, strong approximation MAY follow from Riemann-Roch:
 |-----------|--------|-------|
 | Residue infrastructure | ✅ DONE | RatFuncResidues.lean |
 | Residue theorem | ✅ DONE | Sum of residues = 0 |
-| Pairing definition | ✅ DONE | serrePairing in Abstract.lean |
+| Diagonal pairing K × K → Fq | ✅ DONE | RatFuncPairing.lean |
+| Pole cancellation (bounded × L(K-D)) | ✅ DONE | bounded_times_LKD_no_pole |
 | Vanishing case (both = 0) | ✅ DONE | For deg(D) ≥ -1 on P¹ |
-| Non-vanishing case | Needed | Requires pairing is perfect |
+| **Quotient pairing descent** | BLOCKING | φ: H¹(D) × L(K-D) → Fq |
+| **Non-degeneracy** | BLOCKING | Each non-zero pairs non-trivially |
 | Transfer to general curves | Needed | Abstract from RatFunc |
+
+**Key insight (Cycle 348)**: The quotient pairing construction is the critical blocker.
+Once φ descends to H¹(D) and is non-degenerate, we get:
+- H¹(D) ≅ L(K-D)* (perfect pairing duality)
+- h1_finite follows from ell_finite (L(K-D) finite → L(K-D)* finite → H¹(D) finite)
+- serre_duality follows from dimension equality
 
 #### Track D: Genus = dim H¹(O)
 **Goal**: Prove h¹(O) = g via invariant differentials
@@ -162,13 +170,27 @@ For deg(D) > 2g-2, strong approximation MAY follow from Riemann-Roch:
    - Can be axiomatized if needed (defines the curve)
    - Or prove via differential forms
 
-### Active Edge for Cycle 348
+### Active Edge for Cycle 349
 
-**Target**: Track C - Extend Serre duality beyond vanishing case
+**Target**: Track C - Construct residue pairing isomorphism H¹(D) ≅ L(K-D)*
 
-**Specific goal**: In Abstract.lean, the `serre_duality` field has a sorry at line 351 for the non-vanishing case (deg < -1). Investigate what's needed to fill this.
+**Specific goal**: Build the quotient pairing construction that descends from FullAdeleRing × L(K-D) → Fq to the quotient H¹(D) × L(K-D) → Fq. This would solve both Abstract.lean:299 (h1_finite) and Abstract.lean:351 (serre_duality) simultaneously.
 
-**Why this**: If we prove h¹(D) = ℓ(K-D) as a module isomorphism (not just finrank equality), then `h1_finite_all` follows directly from `ell_finite_all` which is already proved.
+**Why this**: Cycle 348 investigation revealed circular dependency:
+- h1_finite (line 299) needs Module.Finite for SpaceModule_full when deg D < -1
+- serre_duality (line 351) needs h1_finrank_full = ell_proj_ext for deg D < -1
+- finrank returns 0 for non-finite modules, so h1_finite must be proven first
+- Both are solved by proving H¹(D) ≅ L(K-D)* via residue pairing
+
+**Proof sketch**:
+1. Define pairing φ: FullAdeleRing × L(K-D) → Fq via φ(a, f) = Σ_v res_v(a_v · f)
+2. Show φ vanishes on globalSubmodule (K pairs to 0 with L(K-D))
+3. Show φ vanishes on boundedSubmodule(D) (pole cancellation)
+4. Conclude φ descends to quotient: H¹(D) × L(K-D) → Fq
+5. Prove non-degeneracy (each non-zero element pairs non-trivially)
+6. Get isomorphism H¹(D) ≅ L(K-D)* immediately
+
+**Estimated scope**: 150-300 lines of Lean. Infrastructure exists in RatFuncResidues.lean and RatFuncPairing.lean.
 
 ### Phase 8 Summary (Completed)
 
@@ -183,6 +205,34 @@ For deg(D) > 2g-2, strong approximation MAY follow from Riemann-Roch:
 ---
 
 ## Recent Cycles
+
+### Cycle 348 - Track C Investigation: Circular Dependency Found
+
+**Investigated Serre duality non-vanishing case (Abstract.lean:351)**
+
+Key findings:
+1. **Circular dependency discovered**: h1_finite (line 299) and serre_duality (line 351) both need the same thing for deg D < -1
+2. **Root cause**: `Module.finrank` returns 0 for non-finite modules
+   - If we don't prove H¹(D) finite first, h1_finrank_full = 0
+   - But ell_proj_ext(K-D) > 0 for deg D < -1
+   - So the equality can't hold without finiteness
+3. **Solution identified**: Construct perfect pairing H¹(D) × L(K-D) → Fq
+   - The isomorphism H¹(D) ≅ L(K-D)* gives both finiteness and dimension equality
+   - This breaks the circular dependency
+
+**Infrastructure audit**:
+| Component | Location | Status |
+|-----------|----------|--------|
+| Residue sum at finite places | RatFuncResidues.lean | ✅ DONE |
+| Total residue sum (finite + ∞) | RatFuncResidues.lean | ✅ DONE |
+| Diagonal pairing K × K → Fq | RatFuncPairing.lean | ✅ DONE |
+| Pole cancellation for bounded × L(K-D) | RatFuncPairing.lean | ✅ DONE |
+| Quotient pairing (descent to H¹) | — | ❌ NEEDED |
+| Non-degeneracy proof | — | ❌ NEEDED |
+
+**Next step**: Build the quotient pairing construction. The hard part is showing the pairing descends to the quotient (vanishes on K + A(D)).
+
+**Build status:** ✅ PASSING
 
 ### Cycle 347 - Phase 9 Setup + P¹ Strong Approx Progress
 
