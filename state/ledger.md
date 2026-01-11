@@ -170,30 +170,25 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
    - Can be axiomatized if needed (defines the curve)
    - Or prove via differential forms
 
-### Active Edge for Cycle 351
+### Active Edge for Cycle 353
 
-**Target**: Prove `boundedSubmodule_full_isOpen` - that A_K(D) is open in FqFullAdeleRing
+**Target**: Fill in the `isOpen_bounded_finiteAdeles` sorry in test_h1_finiteness.lean
 
-**Specific goal**: Complete the proof that A_K(D) is an open submodule, which is the key missing piece for the compactness → finiteness path.
+**Current state**: The sorry has detailed documentation of the proof strategy. The challenge is working with Mathlib's RestrictedProduct API (supremum topologies + coinduced topologies).
 
-**What we need**:
-1. For each finite place v: valuation ball {x : v(x) ≤ exp(n)} is open in adicCompletion ✅ (Valued.isOpen_closedBall)
-2. For infinity: {x : |x|_∞ ≤ exp(n)} is open in FqtInfty ✅ (isOpen_ball_le_one_FqtInfty)
-3. Product of opens is open in FqFullAdeleRing = RestrictedProduct × FqtInfty
+**Key technical insight discovered in Cycle 352**:
+- The RestrictedProduct topology is characterized by `topologicalSpace_eq_iSup`
+- For each cofinite S, we need to show the preimage under `inclusion` is open
+- The preimage equals `{f | ∀ v ∈ T, f.1 v ∈ Ball_v}` where T is finite
+- This is open by `isOpen_set_pi` + `RestrictedProduct.continuous_coe`
 
-**Key gap**: Connecting RestrictedProduct topology with component-wise openness
-- Need lemma: if U_v is open for v ∈ S (finite) and U_v = O_v for v ∉ S, then ∩_v U_v is open in RestrictedProduct
+**The gap**: Correctly applying `@IsOpen ... (RestrictedProduct.topologicalSpace ...)` and using `isOpen_iSup_iff` with the coinduced topology structure.
 
-**What's proved** (Cycle 350):
-- `integralFullAdeles_covers_h1`: fundamental domain covers the quotient ✅
-- Complete strategy documented in test_h1_finiteness.lean
-
-**Once `boundedSubmodule_full_isOpen` is proved**, the full chain works:
-1. globalPlusBoundedSubmodule_full D is open (K + A_K(D) = ⋃_{k∈K} (k + A_K(D)))
-2. H¹(D) has discrete topology (quotient by open subgroup)
-3. Image of integralFullAdeles (compact) covers H¹(D)
-4. Compact + discrete = finite
-5. Finite Fq-vector space = Module.Finite
+**What's proved** (Cycles 350-352):
+- `integralFullAdeles_covers_h1` ✅
+- `isOpen_bounded_infty` ✅
+- `boundedSubmodule_full_isOpen` ✅ (modulo finite adeles lemma)
+- Complete chain from openness → Module.Finite documented
 
 ### Phase 8 Summary (Completed)
 
@@ -208,6 +203,48 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
 ---
 
 ## Recent Cycles
+
+### Cycle 352 - RestrictedProduct Topology Investigation
+
+**Deep dive into proving isOpen_bounded_finiteAdeles**
+
+Key discoveries:
+1. **RestrictedProduct topology structure**: Topology = ⨆ S (cofinite), coinduced from S-principal product
+2. **The key lemmas**:
+   - `topologicalSpace_eq_iSup Filter.cofinite`: characterizes the topology
+   - `isOpen_iSup_iff`: reduces to showing openness in each coinduced topology
+   - `isOpen_coinduced`: reduces to showing preimage is open
+3. **Mathematical argument validated**:
+   - For each cofinite S, define T = (S ∩ {D < 0}) ∪ Sᶜ (finite!)
+   - In S-principal product, ∀ v, f.1 v ∈ Ball_v ⟺ ∀ v ∈ T, f.1 v ∈ Ball_v
+   - The finite condition is open by `isOpen_set_pi`
+   - Preimage under continuous coercion is open
+4. **Technical gap identified**:
+   - Applying `@IsOpen` with the right topology instance
+   - Working with `isOpen_iSup_iff` when the topology is definitionally equal but not syntactically
+
+Remaining sorry: `isOpen_bounded_finiteAdeles` (with detailed proof sketch in comments)
+
+**Build status:** ✅ PASSING (1 sorry)
+
+---
+
+### Cycle 351 - Openness Proof Structure
+
+**Progress on proving boundedSubmodule_full is open**
+
+Key achievements:
+1. **PROVED `isOpen_bounded_infty`**: Valuation balls in FqtInfty are open
+2. Proved `boundedSubmodule_full_isOpen` structure (product of open sets approach)
+3. Identified precise gap in `isOpen_bounded_finiteAdeles`:
+   - Mathematical argument is clear (cofinite principal products + finite ball conditions)
+   - Technical gap: need variant of `RestrictedProduct.isOpen_forall_mem` for variable sets
+
+Remaining sorry: `isOpen_bounded_finiteAdeles` in test_h1_finiteness.lean
+
+The proof requires using `topologicalSpace_eq_iSup` to show openness via principal products, combined with `isOpen_set_pi` for finite conditions.
+
+---
 
 ### Cycle 350 - Compactness Strategy Proof Structure
 

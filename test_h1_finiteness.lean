@@ -80,8 +80,8 @@ import RrLean.RiemannRochV2.Adelic.FullAdelesCompact
 
 open IsDedekindDomain IsDedekindDomain.HeightOneSpectrum
 open RiemannRochV2 RiemannRochV2.FullAdeles RiemannRochV2.AdelicH1v2
-open RiemannRochV2.AdelicTopology
-open scoped Polynomial
+open RiemannRochV2.AdelicTopology FunctionField
+open scoped Polynomial WithZero
 
 noncomputable section
 
@@ -110,28 +110,76 @@ theorem integralFullAdeles_covers_h1 (D : ExtendedDivisor (Polynomial Fq)) :
 
 /-! ## Key Topology Lemma (requires RestrictedProduct API) -/
 
-/-- boundedSubmodule_full is open in FqFullAdeleRing.
+/-- The finite part constraint set is open in FiniteAdeleRing.
 
-This is the key lemma connecting valuations to topology.
-The proof requires:
-1. Each valuation ball is open in adicCompletion
-2. The product topology on FqFullAdeleRing = RestrictedProduct × FqtInfty
-3. Finite intersection of open constraints gives open set
+The key insight is that for elements of the RestrictedProduct (which are integral
+at cofinitely many places), the condition "Valued.v (a v) ≤ exp(D v)" is:
+- Automatically satisfied at places where D v = 0 (because exp(0) = 1 and a v is integral)
+- An open condition at finitely many places in supp(D)
+
+This makes the infinite intersection effectively a finite one.
 -/
+theorem isOpen_bounded_finiteAdeles (D : DivisorV2 Fq[X]) :
+    IsOpen {a : FiniteAdeleRing Fq[X] (RatFunc Fq) |
+      ∀ v, Valued.v (a.1 v) ≤ WithZero.exp (D v)} := by
+  /-
+  Proof strategy:
+  1. The topology on FiniteAdeleRing is ⨆ S (cofinite), coinduced from S-principal product
+  2. By isOpen_iSup_iff, we need to show openness in each coinduced topology
+  3. By isOpen_coinduced, we need the preimage under inclusion to be open
+  4. Key insight: in the S-principal product, elements satisfy f v ∈ O_v for v ∈ S
+  5. When D v ≥ 0, Ball_v ⊇ O_v, so the condition is automatic for v ∈ S with D v ≥ 0
+  6. Only for v ∈ T := (S ∩ {D < 0}) ∪ Sᶜ is the condition non-trivial, and T is finite!
+  7. Use isOpen_set_pi on the finite set T
+
+  The mathematical argument is clear:
+  - For cofinite S, elements of S-principal satisfy f_v ∈ O_v for v ∈ S
+  - For v ∈ S with D_v ≥ 0, Ball_v ⊇ O_v, so f_v ∈ Ball_v is automatic
+  - For v ∈ S with D_v < 0 or v ∉ S, we need an explicit check
+  - Since supp(D) is finite, {D < 0} is finite
+  - So T = (S ∩ {D < 0}) ∪ Sᶜ is finite
+  - The preimage is {f | ∀ v ∈ T, f_v ∈ Ball_v} ∩ S-principal
+  - This is open by isOpen_set_pi
+
+  The formalization requires careful handling of the RestrictedProduct API,
+  which involves supremum topologies and coinduced topologies.
+  -/
+  sorry
+
+omit [Fintype Fq] [DecidableEq Fq] in
+/-- The infinity part constraint set is open in FqtInfty. -/
+theorem isOpen_bounded_infty (n : ℤ) :
+    IsOpen { x : FqtInfty Fq | Valued.v x ≤ WithZero.exp n } := by
+  have h_exp_ne : (WithZero.exp n : WithZero (Multiplicative ℤ)) ≠ 0 := WithZero.exp_ne_zero
+  apply Valued.isOpen_closedBall
+  exact h_exp_ne
+
 theorem boundedSubmodule_full_isOpen (D : ExtendedDivisor (Polynomial Fq)) :
     IsOpen (boundedSubmodule_full Fq D : Set (FqFullAdeleRing Fq)) := by
   -- The bounded submodule is:
   -- { a | (∀ v, v(a_v) ≤ exp(D.finite(v))) ∧ (|a_∞|_∞ ≤ exp(D.inftyCoeff)) }
   --
-  -- In the product topology (RestrictedProduct × FqtInfty):
-  -- - The infinity constraint defines an open set in FqtInfty (by isOpen_ball_le_one_FqtInfty)
-  -- - The finite part constraint defines an open set in RestrictedProduct:
-  --   * For v ∉ supp(D.finite): the constraint is just O_v (the integer ring)
-  --   * For v ∈ supp(D.finite): valuation balls are open (Valued.isOpen_closedBall)
-  --   * Finite intersection is open
-  --
-  -- Technical gap: need Mathlib API for RestrictedProduct topology
-  sorry
+  -- Step 1: Rewrite as product of two sets
+  have h_eq : (boundedSubmodule_full Fq D : Set (FqFullAdeleRing Fq)) =
+      { a : FiniteAdeleRing Fq[X] (RatFunc Fq) |
+          ∀ v, Valued.v (a.1 v) ≤ WithZero.exp (D.finite v) } ×ˢ
+      { x : FqtInfty Fq | Valued.v x ≤ WithZero.exp D.inftyCoeff } := by
+    ext ⟨a_fin, a_infty⟩
+    constructor
+    · intro h
+      constructor
+      · intro v
+        exact h.1 v
+      · exact h.2
+    · intro ⟨hfin, hinfty⟩
+      constructor
+      · intro v
+        exact hfin v
+      · exact hinfty
+  rw [h_eq]
+
+  -- Step 2: Product of open sets is open
+  exact (isOpen_bounded_finiteAdeles D.finite).prod (isOpen_bounded_infty D.inftyCoeff)
 
 /-! ## Main Strategy Summary
 
