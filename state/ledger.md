@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 356
+**Cycle**: 358
 **Phase**: 9 (General Curve Infrastructure)
 
 ### What We Have (Core RR Proof Complete)
@@ -57,7 +57,7 @@ Axioms used by the elliptic curve RR proof (6 on critical path):
 | File | Count | Lines | Notes |
 |------|-------|-------|-------|
 | Abstract.lean | 8 | 200,201,203,294,299,312,345,351 | P¹ instance, IsLinearPlaceSupport |
-| AdelicH1Full.lean | 3 | 811,1508,1519 | Strong approx edge cases |
+| AdelicH1Full.lean | 3 | 757,1458,2095 | Strong approx edge cases + residue field |
 | StrongApproximation.lean | 2 | 127,171 | P¹ and Elliptic density |
 
 #### All Axioms (6 in Elliptic/, 5 on critical path)
@@ -170,17 +170,18 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
    - Can be axiomatized if needed (defines the curve)
    - Or prove via differential forms
 
-### Active Edge for Cycle 358
+### Active Edge for Cycle 359
 
-**Target**: Prove `finite_residueField_FqtInfty` (ResidueField(FqtInfty Fq) ≅ Fq)
+**Target**: Either:
+1. Prove `finite_residueField_FqtInfty` by constructing the surjection Fq → ResidueField
+2. OR pivot to Track C (Serre Duality) if residue field proof is too infrastructure-heavy
 
-**Status**: H¹ FINITENESS WIRED TO MAIN LIBRARY (Cycle 357)!
+**Status**: Investigation complete (Cycle 358) - proof strategy documented, blocked on Mathlib infrastructure.
 
-The `p1ProjectiveAdelicRRData.h1_finite` sorry is now filled with `module_finite_spaceModule_full`.
-
-**Remaining sorry**: `finite_residueField_FqtInfty` in AdelicH1Full.lean:2073
-- Needs: Prove ResidueField(FqtInfty Fq) ≅ Fq (standard for function fields)
-- The valuation ring of Fq((t⁻¹)) is Fq[[t⁻¹]], residue field is Fq
+**Remaining sorry**: `finite_residueField_FqtInfty` in AdelicH1Full.lean:2095
+- Mathematical content is clear (ResidueField(Fq((t⁻¹))) ≅ Fq)
+- Proof strategy fully documented in docstring
+- Blocked on Mathlib infrastructure for valued field completions
 
 ### Phase 8 Summary (Completed)
 
@@ -195,6 +196,36 @@ The `p1ProjectiveAdelicRRData.h1_finite` sorry is now filled with `module_finite
 ---
 
 ## Recent Cycles
+
+### Cycle 358 - Residue Field Investigation
+
+**Target**: Prove `finite_residueField_FqtInfty` (ResidueField(FqtInfty Fq) ≅ Fq)
+
+**Findings**:
+
+1. **FqtInfty structure**: Defined as `UniformSpace.Completion (RatFunc Fq)` with `inftyValuation`
+2. **Valued.ResidueField**: Equals `IsLocalRing.ResidueField (Valued.integer (FqtInfty Fq))`
+3. **Mathematical fact**: Valuation ring of Fq((t⁻¹)) is Fq[[t⁻¹]], residue field is Fq
+
+**Proof strategy identified** (not yet implemented due to Mathlib gaps):
+1. Embed Fq → FqtInfty via `RatFunc.C` + completion
+2. Use `inftyValuation.C`: constants have valuation 1, so land in integers
+3. Factor through `IsLocalRing.residue` to get `Fq →+* ResidueField`
+4. Prove surjectivity: elements of valuation 1 are equivalent to constants mod maximal ideal
+5. Apply `Finite.of_surjective`
+
+**Mathlib findings**:
+- `PowerSeries.residueFieldOfPowerSeries : ResidueField k⟦X⟧ ≃+* k` exists
+- But no direct connection between `Valued.integer (FqtInfty Fq)` and `k⟦X⟧`
+- Would need to build the ring isomorphism explicitly
+
+**Improved documentation**: Added detailed docstring to `finite_residueField_FqtInfty` explaining
+mathematical justification, proof strategy, and relevant Mathlib lemmas.
+
+**Decision**: Keep sorry with documentation; consider pivoting to Track C (Serre Duality) if this
+infrastructure work is too heavy for the RR goal.
+
+**Build status**: ✅ Passes with only expected sorries
 
 ### Cycle 357 - H¹ Finiteness Wired to Main Library
 

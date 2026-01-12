@@ -2064,16 +2064,39 @@ Since Fq is finite (Fintype), the residue field is also finite.
 This follows because the residue field of Fq((t⁻¹)) is isomorphic to Fq,
 and Fq is finite (we have Fintype Fq).
 
-Mathematical justification:
-- FqtInfty Fq is the completion of RatFunc Fq at infinity
+## Mathematical justification
+
+- FqtInfty Fq is the completion of RatFunc Fq at the infinity valuation
 - The valuation ring is Fq[[t⁻¹]] (formal power series in t⁻¹)
+- The maximal ideal is (t⁻¹) · Fq[[t⁻¹]]
 - The residue field is Fq[[t⁻¹]]/(t⁻¹) ≅ Fq
 - Since Fq is finite, so is the residue field
+
+## Proof strategy (not yet implemented)
+
+1. **Embedding**: The map `RatFunc.C : Fq →+* RatFunc Fq` composed with completion
+   gives an embedding `Fq → FqtInfty Fq` landing in the valuation integers
+   (since `inftyValuation.C` shows constants have valuation 1).
+
+2. **To residue field**: This factors through `IsLocalRing.residue` to give
+   `Fq →+* Valued.ResidueField (FqtInfty Fq)`.
+
+3. **Surjectivity**: Every element x with v(x) = 1 is equivalent to some constant
+   modulo the maximal ideal. This uses the structure of the completion.
+
+4. **Finiteness**: By `Finite.of_surjective` from Fq (which is Fintype).
+
+## Related Mathlib lemmas
+
+- `PowerSeries.residueFieldOfPowerSeries : ResidueField k⟦X⟧ ≃+* k`
+- `inftyValuation.C : inftyValuation Fq (RatFunc.C k) = 1` (for k ≠ 0)
+- `Valued.valuedCompletion_apply : Valued.v (↑x) = v x`
 -/
 instance finite_residueField_FqtInfty : Finite (Valued.ResidueField (FqtInfty Fq)) := by
   -- The residue field of FqtInfty Fq is isomorphic to Fq
-  -- This is standard but requires building the isomorphism explicitly
-  -- For now we axiomatize; the mathematical content is clear
+  -- The proof requires building a surjection Fq → ResidueField(FqtInfty Fq)
+  -- Key: constants embed into the integers and generate the residue field
+  -- Blocked on Mathlib infrastructure for valued field completions
   sorry
 
 /-! ### Openness of Bounded Submodule -/
