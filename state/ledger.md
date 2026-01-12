@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 359
+**Cycle**: 360
 **Phase**: 9 (General Curve Infrastructure)
 
 ### What We Have (Core RR Proof Complete)
@@ -52,12 +52,12 @@ Axioms used by the elliptic curve RR proof (6 on critical path):
 | StrongApprox | `instStrongApprox_P1` | P¹ density |
 | StrongApprox | `instStrongApprox_Elliptic` | Elliptic density |
 
-#### Sorry Placeholders (13 found - updated Cycle 359b)
+#### Sorry Placeholders (13 found - updated Cycle 360)
 
 | File | Count | Lines | Notes |
 |------|-------|-------|-------|
 | Abstract.lean | 8 | 200,201,203,294,299,312,345,351 | P¹ instance, IsLinearPlaceSupport |
-| AdelicH1Full.lean | 3 | 757,1458,2177 | Strong approx + residue surj |
+| AdelicH1Full.lean | 3 | 757,1458,2309 | Strong approx + residue surj |
 | StrongApproximation.lean | 2 | 127,171 | P¹ and Elliptic density |
 
 #### All Axioms (6 in Elliptic/, 5 on critical path)
@@ -197,6 +197,42 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
 ---
 
 ## Recent Cycles
+
+### Cycle 360 - Surjectivity via Topology + Density
+
+**Target**: Complete `constantToResidue_FqtInfty_surjective` proof
+
+**MAJOR PROGRESS - Topological Infrastructure Complete**:
+
+1. **New topology lemmas** (lines 2155-2285):
+   - `isOpen_val_lt_one_FqtInfty`: The set {v(x) < 1} is open in FqtInfty
+   - `maximalIdeal_val_lt_one_iff`: maximalIdeal = {x | v(x) < 1} in Valued.integer
+   - `maximalIdeal_FqtInfty_isOpen`: Maximal ideal is open in subspace topology
+   - `residueClass_isOpen`: Each residue class is clopen
+
+2. **Surjectivity proof structure** (lines 2309-2356):
+   - Step 1: Lift y ∈ ResidueField to x ∈ O via `IsLocalRing.residue_surjective`
+   - Step 2: Construct open set targetSet = {t | v(t - x) < 1 ∧ v(t) ≤ 1}
+   - Step 3: Use `denseRange_inftyRingHom` to find f ∈ RatFunc in targetSet
+   - Step 4: f is in same residue class as x, so residue(f) = y
+   - Step 5: **REMAINING SORRY**: Show residue(f) = constantToResidue(c) for some c ∈ Fq
+     - For f = p/q with deg(p) ≤ deg(q): extract leading(p)/leading(q) or 0
+
+3. **Key insight**:
+   - Residue classes are open because maximalIdeal = {v < 1} is open
+   - Density means RatFunc elements exist in every nonempty open set in O
+   - The final step requires analyzing RatFunc structure (polynomial division)
+
+**Technical lemmas proved**:
+- `WithZero_nonzero_eq_exp`: Nonzero elements in WithZero(Multiplicative ℤ) = exp(n)
+- `exp_lt_one_iff`: exp(n) < 1 ↔ n < 0
+- `val_lt_one_eq_iUnion`: {v < 1} = ⋃_{n < 0} {v ≤ exp(n)}
+- `residue_eq_zero_iff_mem_maximalIdeal`: residue(x) = 0 ↔ x ∈ maximalIdeal
+- `residue_eq_iff`: residue(x) = residue(y) ↔ x - y ∈ maximalIdeal
+
+**Build status**: ✅ Passes with 3 sorries in AdelicH1Full.lean (lines 757, 1458, 2309)
+
+---
 
 ### Cycle 359 - Residue Field Proof Infrastructure
 

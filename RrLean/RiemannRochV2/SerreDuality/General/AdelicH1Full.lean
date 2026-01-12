@@ -2152,6 +2152,138 @@ theorem constantToResidue_FqtInfty_injective :
     exact hx_unit
   exact h_not_in_max h_in_max
 
+/-! ### Topology lemmas for surjectivity proof -/
+
+-- For nonzero elements in WithZero (Multiplicative ℤ), they equal exp(n) for some n
+private lemma WithZero_nonzero_eq_exp {γ : WithZero (Multiplicative ℤ)} (hγ : γ ≠ 0) :
+    ∃ n : ℤ, γ = WithZero.exp n := by
+  obtain ⟨m, hm⟩ := WithZero.ne_zero_iff_exists.mp hγ
+  exact ⟨Multiplicative.toAdd m, by simp only [WithZero.exp, ofAdd_toAdd, ← hm]⟩
+
+-- exp(n) < 1 iff n < 0
+private lemma exp_lt_one_iff (n : ℤ) :
+    WithZero.exp n < (1 : WithZero (Multiplicative ℤ)) ↔ n < 0 := by
+  simp only [← WithZero.coe_one, WithZero.exp]
+  rw [WithZero.coe_lt_coe, ← ofAdd_zero]
+  exact Multiplicative.ofAdd_lt
+
+-- The set {v < 1} equals union of closed balls
+private lemma val_lt_one_eq_iUnion :
+    {x : FqtInfty Fq | Valued.v x < 1} =
+    ⋃ (n : ℤ) (_ : n < 0), {x : FqtInfty Fq | Valued.v x ≤ WithZero.exp n} := by
+  ext x
+  simp only [Set.mem_iUnion, Set.mem_setOf_eq]
+  constructor
+  · intro hlt
+    by_cases hx0 : Valued.v x = 0
+    · exact ⟨-1, by norm_num, by rw [hx0]; exact zero_le'⟩
+    · obtain ⟨m, hm⟩ := WithZero_nonzero_eq_exp hx0
+      have hm_neg : m < 0 := by rw [← exp_lt_one_iff, ← hm]; exact hlt
+      exact ⟨m, hm_neg, by rw [hm]⟩
+  · intro ⟨n, hn, hle⟩
+    calc Valued.v x ≤ WithZero.exp n := hle
+      _ < 1 := exp_lt_one_iff n |>.mpr hn
+
+/-- The set {v < 1} is open in FqtInfty. -/
+lemma isOpen_val_lt_one_FqtInfty :
+    IsOpen {x : FqtInfty Fq | Valued.v x < 1} := by
+  rw [val_lt_one_eq_iUnion Fq]
+  apply isOpen_iUnion; intro n
+  apply isOpen_iUnion; intro _
+  exact Valued.isOpen_closedBall (FqtInfty Fq) WithZero.exp_ne_zero
+
+-- residue(x) = 0 iff x ∈ maximalIdeal
+private lemma residue_eq_zero_iff_mem_maximalIdeal (x : Valued.integer (FqtInfty Fq)) :
+    IsLocalRing.residue (Valued.integer (FqtInfty Fq)) x = 0 ↔
+    x ∈ IsLocalRing.maximalIdeal (Valued.integer (FqtInfty Fq)) := by
+  unfold IsLocalRing.residue IsLocalRing.ResidueField
+  rw [Ideal.Quotient.eq_zero_iff_mem]
+
+/-- In the valuation ring, maximalIdeal = {v < 1}. -/
+lemma maximalIdeal_val_lt_one_iff (x : Valued.integer (FqtInfty Fq)) :
+    x ∈ IsLocalRing.maximalIdeal (Valued.integer (FqtInfty Fq)) ↔ Valued.v x.val < 1 := by
+  rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+  constructor
+  · intro h_nonunit
+    by_contra h_ge
+    push_neg at h_ge
+    have hv1 : Valued.v x.val = 1 := le_antisymm x.property h_ge
+    have hx_ne : x.val ≠ 0 := by
+      intro h0; rw [h0, map_zero] at hv1; exact zero_ne_one hv1
+    have hx_inv_in_O : x.val⁻¹ ∈ Valued.integer (FqtInfty Fq) := by
+      show Valued.v x.val⁻¹ ≤ 1; rw [Valuation.map_inv, hv1, inv_one]
+    let u : (Valued.integer (FqtInfty Fq))ˣ := {
+      val := x
+      inv := ⟨x.val⁻¹, hx_inv_in_O⟩
+      val_inv := by ext; simp [mul_inv_cancel₀ hx_ne]
+      inv_val := by ext; simp [inv_mul_cancel₀ hx_ne]
+    }
+    exact h_nonunit ⟨u, rfl⟩
+  · intro hv_lt ⟨u, hu⟩
+    have h_prod : x.val * (u.inv : Valued.integer (FqtInfty Fq)).val = 1 := by
+      have h := u.val_inv
+      change u.val * u.inv = 1 at h
+      have h2 : (u.val : FqtInfty Fq) * (u.inv : FqtInfty Fq) = 1 := by
+        have := congrArg Subtype.val h; simp only [Subring.coe_mul, Subring.coe_one] at this; exact this
+      have hu2 : (u.val : FqtInfty Fq) = x.val := congrArg Subtype.val hu
+      rw [hu2] at h2; exact h2
+    have hval_prod : Valued.v x.val * Valued.v (u.inv : Valued.integer (FqtInfty Fq)).val = 1 := by
+      rw [← Valuation.map_mul, h_prod, map_one]
+    have hv_inv_le : Valued.v (u.inv : Valued.integer (FqtInfty Fq)).val ≤ 1 :=
+      (u.inv : Valued.integer (FqtInfty Fq)).property
+    by_cases hv_inv_zero : Valued.v (u.inv : Valued.integer (FqtInfty Fq)).val = 0
+    · rw [hv_inv_zero, mul_zero] at hval_prod; exact zero_ne_one hval_prod
+    · have hpos : 0 < Valued.v (u.inv : Valued.integer (FqtInfty Fq)).val :=
+        zero_lt_iff.mpr hv_inv_zero
+      have h1 : Valued.v x.val * Valued.v (u.inv : Valued.integer (FqtInfty Fq)).val < 1 := by
+        calc Valued.v x.val * Valued.v (u.inv : Valued.integer (FqtInfty Fq)).val
+          < 1 * Valued.v (u.inv : Valued.integer (FqtInfty Fq)).val :=
+            mul_lt_mul_of_pos_right hv_lt hpos
+          _ = Valued.v (u.inv : Valued.integer (FqtInfty Fq)).val := one_mul _
+          _ ≤ 1 := hv_inv_le
+      rw [hval_prod] at h1; exact lt_irrefl 1 h1
+
+/-- The maximal ideal is open in Valued.integer (subspace topology). -/
+lemma maximalIdeal_FqtInfty_isOpen :
+    IsOpen (IsLocalRing.maximalIdeal (Valued.integer (FqtInfty Fq)) :
+      Set (Valued.integer (FqtInfty Fq))) := by
+  rw [isOpen_induced_iff]
+  use {x : FqtInfty Fq | Valued.v x < 1}
+  refine ⟨isOpen_val_lt_one_FqtInfty Fq, ?_⟩
+  ext ⟨x, hx⟩
+  simp only [Set.mem_preimage, Set.mem_setOf_eq, SetLike.mem_coe]
+  exact (maximalIdeal_val_lt_one_iff Fq ⟨x, hx⟩).symm
+
+-- Two elements have the same residue iff their difference is in maximal ideal
+private lemma residue_eq_iff (x y : Valued.integer (FqtInfty Fq)) :
+    IsLocalRing.residue (Valued.integer (FqtInfty Fq)) x =
+    IsLocalRing.residue (Valued.integer (FqtInfty Fq)) y ↔
+    x - y ∈ IsLocalRing.maximalIdeal (Valued.integer (FqtInfty Fq)) := by
+  constructor
+  · intro h; rw [← residue_eq_zero_iff_mem_maximalIdeal, map_sub, h, sub_self]
+  · intro h
+    have h2 := (residue_eq_zero_iff_mem_maximalIdeal Fq (x - y)).mpr h
+    rw [map_sub] at h2; exact sub_eq_zero.mp h2
+
+/-- Residue classes are open in Valued.integer. -/
+lemma residueClass_isOpen (x : Valued.integer (FqtInfty Fq)) :
+    IsOpen {z : Valued.integer (FqtInfty Fq) |
+      IsLocalRing.residue (Valued.integer (FqtInfty Fq)) z =
+      IsLocalRing.residue (Valued.integer (FqtInfty Fq)) x} := by
+  have h_eq : {z : Valued.integer (FqtInfty Fq) |
+      IsLocalRing.residue (Valued.integer (FqtInfty Fq)) z =
+      IsLocalRing.residue (Valued.integer (FqtInfty Fq)) x} =
+      {z | z - x ∈ IsLocalRing.maximalIdeal (Valued.integer (FqtInfty Fq))} := by
+    ext z; simp only [Set.mem_setOf_eq]; exact residue_eq_iff Fq z x
+  rw [h_eq]
+  have h_eq2 : {z : Valued.integer (FqtInfty Fq) |
+      z - x ∈ IsLocalRing.maximalIdeal (Valued.integer (FqtInfty Fq))} =
+      (· - x) ⁻¹' (IsLocalRing.maximalIdeal (Valued.integer (FqtInfty Fq)) :
+        Set (Valued.integer (FqtInfty Fq))) := by
+    ext z; simp only [Set.mem_preimage, Set.mem_setOf_eq, SetLike.mem_coe]
+  rw [h_eq2]
+  exact (maximalIdeal_FqtInfty_isOpen Fq).preimage (continuous_sub_right x)
+
 /-- The map from Fq to the residue field is surjective.
 
 This is the key lemma stating that the residue field of FqtInfty Fq is isomorphic to Fq.
@@ -2177,12 +2309,50 @@ and extracting leading coefficients from RatFunc elements.
 theorem constantToResidue_FqtInfty_surjective :
     Function.Surjective (constantToResidue_FqtInfty Fq) := by
   intro y
-  -- Lift y to x ∈ O, then use density to find f ∈ RatFunc in same residue class
-  -- The residue of f ∈ RatFunc ∩ O is in the image of constantToResidue
-  -- Key steps:
-  -- 1. obtain ⟨x, hx⟩ := IsLocalRing.residue_surjective y
-  -- 2. Use denseRange_inftyRingHom to find f ∈ RatFunc with residue(f) = residue(x)
-  -- 3. Show residue(f) = constantToResidue(leading coeff of f)
+  -- Step 1: Lift y to x ∈ O
+  obtain ⟨x, hx⟩ := IsLocalRing.residue_surjective y
+
+  -- The residue class in terms of valuation
+  have hclass_val : {z : Valued.integer (FqtInfty Fq) | Valued.v (z.val - x.val) < 1} =
+      {z | IsLocalRing.residue (Valued.integer (FqtInfty Fq)) z =
+           IsLocalRing.residue (Valued.integer (FqtInfty Fq)) x} := by
+    ext z; simp only [Set.mem_setOf_eq]
+    rw [residue_eq_iff Fq z x, maximalIdeal_val_lt_one_iff Fq (z - x)]; rfl
+
+  -- Step 2: Find f ∈ RatFunc with inftyRingHom(f) in same residue class as x
+  let targetSet := {t : FqtInfty Fq | Valued.v (t - x.val) < 1 ∧ Valued.v t ≤ 1}
+
+  have htarget_open : IsOpen targetSet := by
+    refine IsOpen.inter ?_ (isOpen_ball_le_one_FqtInfty Fq)
+    exact (isOpen_val_lt_one_FqtInfty Fq).preimage (continuous_sub_right x.val)
+
+  have htarget_nonempty : x.val ∈ targetSet := by
+    constructor
+    · simp only [sub_self, map_zero]; exact one_pos
+    · exact x.property
+
+  -- By density, RatFunc intersects targetSet
+  obtain ⟨f, hf_close, hf_in_O⟩ :=
+    (denseRange_inftyRingHom Fq).exists_mem_open htarget_open ⟨x.val, htarget_nonempty⟩
+
+  -- inftyRingHom(f) ∈ O and is in same residue class as x
+  have hf_mem : inftyRingHom Fq f ∈ Valued.integer (FqtInfty Fq) := hf_in_O
+
+  have hf_in_class : (⟨inftyRingHom Fq f, hf_mem⟩ : Valued.integer (FqtInfty Fq)) ∈
+      {z | IsLocalRing.residue (Valued.integer (FqtInfty Fq)) z =
+           IsLocalRing.residue (Valued.integer (FqtInfty Fq)) x} := by
+    rw [← hclass_val]; exact hf_close
+
+  -- So residue(inftyRingHom(f)) = residue(x) = y
+  have hf_residue : IsLocalRing.residue (Valued.integer (FqtInfty Fq))
+      (⟨inftyRingHom Fq f, hf_mem⟩ : Valued.integer (FqtInfty Fq)) = y := by
+    rw [← hx]; exact hf_in_class
+
+  -- Step 3: For f ∈ RatFunc with v(f) ≤ 1, residue(f) ∈ image(constantToResidue)
+  -- f = p/q where p, q ∈ Fq[X], and deg(p) ≤ deg(q)
+  -- If deg(p) < deg(q): v(f) < 1, residue = 0 = constantToResidue(0)
+  -- If deg(p) = deg(q): residue = constantToResidue(leading(p)/leading(q))
+  -- This requires extracting the leading coefficient ratio from the RatFunc structure
   sorry
 
 /-- The residue field of FqtInfty Fq is finite.
