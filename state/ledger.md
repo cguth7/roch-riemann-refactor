@@ -76,12 +76,13 @@ Laurent series work is suspended unless we hit a blocker.
 ```
 TRACE-DUAL ATTACK PLAN
 │
-├── Lemma 1: L(KDiv-D) ↔ dual(I_D) as fractional ideals
-│   └── Use: DifferentIdealBridge.fractionalIdealToDivisor_dual
-│   └── Use: mem_divisorToFractionalIdeal_iff
-│   └── Show: RRModuleV2_real R K (KDiv-D) ≅ dual(divisorToFractionalIdeal R K D)
+├── Lemma 1: L(KDiv-D) ↔ dual(I_D) as fractional ideals ✅ DONE
+│   └── TraceDualBridge.lean created with:
+│       - divisorToFractionalIdeal_fractionalIdealToDivisor (round-trip)
+│       - dual_divisorToFractionalIdeal_eq: dual(I_D) = divisorToFractionalIdeal(K-D)
+│       - mem_RRModuleV2_iff_mem_divisorToFractionalIdeal: L(D) = divisorToFractionalIdeal(-D)
 │
-├── Lemma 2: serreDualityPairing = trace pairing (restricted)
+├── Lemma 2: serreDualityPairing = trace pairing (restricted) ← NEXT
 │   └── Show: φ([a], f) corresponds to Tr_{K/k}(a·f) on I × dual(I)
 │   └── Bridge: fullRawPairing ↔ trace form
 │
@@ -106,8 +107,9 @@ TRACE-DUAL ATTACK PLAN
 | Canonical divisor from different | DifferentIdealBridge.lean | ✅ DONE |
 | `dual_mul_self`, `dual_dual` | Mathlib.Different | ✅ MATHLIB |
 | `traceForm_nondegenerate` | Mathlib.Different | ✅ MATHLIB |
-| **Bridge: L(KDiv-D) ≅ dual(I_D)** | TBD | ❌ NEEDED |
-| **Bridge: pairing = trace** | TBD | ❌ NEEDED |
+| **Bridge: L(D) = divisorToFractionalIdeal(-D)** | TraceDualBridge.lean | ✅ **DONE (Cycle 368)** |
+| **Bridge: dual(I_D) = divisorToFractionalIdeal(K-D)** | TraceDualBridge.lean | ✅ **DONE (Cycle 368)** |
+| **Bridge: pairing = trace** | TBD | ❌ NEEDED (Lemma 2) |
 
 ### Key Insight
 
@@ -150,7 +152,10 @@ RrLean/RiemannRochV2/
 ├── SerreDuality/General/
 │   ├── LocalResidue.lean       # Local residue axioms
 │   ├── PairingDescent.lean     # Pairing + descent ✅
-│   └── PairingNondegenerate.lean  # 🎯 BOSS BATTLE
+│   ├── PairingNondegenerate.lean  # 🎯 BOSS BATTLE (2 axioms)
+│   └── TraceDualBridge.lean    # ✅ NEW: L(D) ↔ dual(I) bridge
+├── ResidueTheory/
+│   └── DifferentIdealBridge.lean  # Divisor ↔ FractionalIdeal
 ├── Elliptic/          - Curve instances
 └── Support/           - DVR, uniformizers
 ```
@@ -158,6 +163,14 @@ RrLean/RiemannRochV2/
 ---
 
 ## Recent Cycles
+
+### Cycle 368: TraceDualBridge.lean - Lemma 1 Complete
+
+- ✅ Created `TraceDualBridge.lean` with bridge lemmas
+- ✅ Proved `divisorToFractionalIdeal_fractionalIdealToDivisor`: round-trip identity
+- ✅ Proved `dual_divisorToFractionalIdeal_eq`: dual(I_D) = divisorToFractionalIdeal(K-D)
+- ✅ Proved `mem_RRModuleV2_iff_mem_divisorToFractionalIdeal`: L(D) = divisorToFractionalIdeal(-D)
+- **Lemma 1 of trace-dual attack COMPLETE**
 
 ### Cycle 367: Wire General Theorem to Elliptic Instance
 
@@ -187,7 +200,8 @@ RrLean/RiemannRochV2/
 |------|---------|--------|
 | EulerCharacteristic.lean | Main RR theorems | ✅ Sorry-free |
 | PairingNondegenerate.lean | **BOSS BATTLE** | 2 axioms to prove |
-| DifferentIdealBridge.lean | **KEY FOR ATTACK** | ✅ Bridge lemmas exist |
+| DifferentIdealBridge.lean | Divisor ↔ FractionalIdeal | ✅ Complete |
+| **TraceDualBridge.lean** | **L(D) ↔ dual(I) bridge** | ✅ **NEW (Cycle 368)** |
 | PairingDescent.lean | Pairing infrastructure | ✅ Complete (13 axioms) |
 
 ---
@@ -200,4 +214,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 368. BOSS BATTLE: Trace-dual route committed. Goal: prove L(KDiv-D) ≅ dual(I_D), show pairing = trace form, invoke Mathlib perfect pairing theorems. Victory: 2 axioms eliminated.*
+*Updated Cycle 368. BOSS BATTLE in progress: Lemma 1 COMPLETE (TraceDualBridge.lean). Next: Lemma 2 - show serreDualityPairing = trace form. Victory: 2 axioms to be eliminated.*
