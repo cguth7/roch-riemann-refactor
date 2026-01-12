@@ -198,7 +198,8 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
 | DVR for completions | DedekindDVR.lean | ✅ DONE (general) |
 | Uniformizer existence | DedekindDVR.lean | ✅ DONE |
 | Residue field isomorphism | ResidueFieldIso.lean | ✅ DONE |
-| **Local residue map res_v** | LocalResidue.lean | ❌ NEEDED (Option 3) |
+| **Local residue map res_v** | LocalResidue.lean | 🔄 SKELETON (returns 0) |
+| Coefficient extraction (π⁻¹) | LocalResidue.lean | ❌ NEEDED |
 | Raw pairing ψ(a,f) = Σ res_v(a_v·f) | PairingDescent.lean | ❌ NEEDED |
 | Pairing vanishes on K + A(D) | PairingDescent.lean | ❌ NEEDED |
 | Non-degeneracy | PairingNondegenerate.lean | ❌ NEEDED |
@@ -238,12 +239,12 @@ For H¹(D) = A_K / (K + A(D)), representatives a ∈ A_K have components a_v ∈
 
 ```
 RrLean/RiemannRochV2/SerreDuality/General/
-├── LocalResidue.lean       # res_v : K_v → κ(v) via uniformizer
+├── LocalResidue.lean       # res_v : K_v → κ(v) via uniformizer ✅ CREATED
 ├── PairingDescent.lean     # Raw pairing + descent to quotient
 └── PairingNondegenerate.lean  # Non-degeneracy + serre_duality
 ```
 
-- `LocalResidue.lean`: NEW FILE
+- `LocalResidue.lean`: ✅ CREATED (Cycle 361)
   - Define `localResidue_v : v.adicCompletion K →ₗ[k] κ(v)`
   - Use DVR structure + uniformizer (NOT RatFunc-specific)
   - Prove vanishing on O_v
@@ -278,6 +279,45 @@ RrLean/RiemannRochV2/SerreDuality/General/
 
 ## Recent Cycles
 
+### Cycle 361: LocalResidue.lean Skeleton
+
+**Goal**: Create infrastructure for local residue map res_v : K_v → κ(v)
+
+**What was done**:
+1. ✅ Created `SerreDuality/General/LocalResidue.lean`
+2. ✅ Defined `CompletionUniformizer` structure with valuation = exp(-1)
+3. ✅ Proved `exists_completionUniformizer` using `valuation_exists_uniformizer`
+4. ✅ Proved `uniformizer_mem_integers` and `uniformizer_mem_maximalIdeal`
+5. ✅ Defined `localResidue : K_v → κ(v)` (returns 0 for now)
+6. ✅ Proved `localResidue_vanishes_on_integers` (trivial from definition)
+
+**Remaining sorries** (2 in LocalResidue.lean):
+- `uniformizer_not_mem_maximalIdeal_sq`: Need val ≤ exp(-2) for m_v² elements
+- `localResidue_add`: Needs proper coefficient extraction
+
+**Key insight**: The current `localResidue` returns 0 for all inputs. This is
+correct for O_v elements but needs the "coefficient of π⁻¹" extraction for poles.
+The definition uses `by_cases` on valuation which will allow case analysis.
+
+**Decision (end of Cycle 361)**:
+Option 1 (direct coefficient extraction) collapses into Option 2 (Laurent series)
+because **additivity of residue requires expansions**. Rather than build full
+LaurentSeries equivalence now, we proceed with:
+
+**Approach: Abstract Interface + Axioms**
+- Define `localResidue` as abstract k-linear map with properties:
+  1. Vanishes on O_v (integers)
+  2. Compatible with global residue theorem (sum = 0 for global elements)
+- Leave implementation as axiom, proceed to pairing descent
+- This isolates the gap and validates Serre duality structure
+- Laurent series bridge can be done later if strictly needed
+
+**Next steps** (Cycle 362+):
+1. Axiomatize `localResidue` linearity in LocalResidue.lean
+2. Create PairingDescent.lean with raw pairing ψ(a, f) = Σ res_v(a_v · f)
+3. Prove pairing vanishes on K + A(D) using residue theorem axiom
+4. Verify structure works before investing in Laurent series bridge
+
 *Cycles 340-360 archived to ledger_archive.md (Track A work, P¹-specific)*
 
 ---
@@ -305,6 +345,7 @@ RrLean/RiemannRochV2/
 | EllipticSetup.lean | Elliptic setup | Has 1 axiom |
 | StrongApproximation.lean | Density | Has 2 axioms |
 | Abstract.lean | Abstraction layer | Has 3 sorries |
+| LocalResidue.lean | Local residue map | Has 2 sorries (Cycle 361) |
 
 ---
 
@@ -316,4 +357,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 361. Phase 9 continues - Track C (Serre Duality) is the active edge. Key blocker: quotient pairing descent. Once perfect pairing H¹(D) × L(K-D) → Fq is constructed, h1_finite follows from ell_finite via duality.*
+*Updated Cycle 361. Phase 9 continues - Track C (Serre Duality) active. LocalResidue.lean created. **Decision**: Axiomatize localResidue linearity (don't build Laurent series yet), proceed to PairingDescent.lean. Validate Serre duality structure before heavy infrastructure investment.*
