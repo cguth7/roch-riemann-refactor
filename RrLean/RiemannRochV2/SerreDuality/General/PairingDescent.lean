@@ -33,6 +33,8 @@ Cycle 364: Refactor for liftQ compatibility.
 
 import RrLean.RiemannRochV2.SerreDuality.General.LocalResidue
 import RrLean.RiemannRochV2.Core.Divisor
+import RrLean.RiemannRochV2.Core.RRSpace
+import RrLean.RiemannRochV2.Adelic.AdelicH1v2
 import Mathlib.RingTheory.DedekindDomain.FiniteAdeleRing
 
 noncomputable section
@@ -383,12 +385,172 @@ This file establishes the framework for the Serre duality pairing.
 - Use canonical divisor KDiv parameter in vanishing_on_AD
 - Handle g = 0 case (no longer requires g ≠ 0)
 
-**TODO (Cycle 365+)**:
-- Define the induced pairing on H¹(D) × L(KDiv-D) using Submodule.liftQ
+**Cycle 365**:
+- Define induced pairing on H¹(D) × L(KDiv-D) via Submodule.liftQ
+- serrePairingLeft vanishes on K + A(D) for f ∈ L(KDiv-D)
+
+**TODO (Cycle 366+)**:
 - Prove non-degeneracy (→ Serre duality)
 - Connect to existing serre_duality axiom in EllipticH1.lean
 -/
 
 end RiemannRochV2.PairingDescent
+
+/-! ## Cycle 365: Induced Pairing on H¹(D)
+
+The raw pairing `fullRawPairing : FiniteAdeleRing R K → K → k` descends to the quotient
+H¹(D) = FiniteAdeleRing R K / (K + A_K(D)) when restricted to f ∈ L(KDiv - D).
+
+The key facts:
+1. `fullRawPairing_vanishes_on_K` → pairing vanishes on diagonal K
+2. `fullRawPairing_vanishes_on_AD` → pairing vanishes on A_K(D) when f ∈ L(KDiv - D)
+
+Combined, `serrePairingLeft f` vanishes on `globalPlusBoundedSubmodule k R K D`,
+so it descends via `Submodule.liftQ` to a well-defined linear map on H¹(D).
+-/
+
+namespace RiemannRochV2.SerrePairingDescent
+
+open IsDedekindDomain IsDedekindDomain.HeightOneSpectrum
+open RiemannRochV2.PairingDescent
+open RiemannRochV2.AdelicH1v2
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+variable (k : Type*) [Field k] [Algebra k R] [Algebra k K] [IsScalarTower k R K]
+
+/-! ## Vanishing on K + A(D)
+
+We prove that `serrePairingLeft f` vanishes on `globalPlusBoundedSubmodule k R K D`
+when f ∈ L(KDiv - D).
+-/
+
+/-- serrePairingLeft f vanishes on the diagonal embedding of K. -/
+theorem serrePairingLeft_vanishes_on_globalSubmodule (f : K) :
+    ∀ a ∈ globalSubmodule k R K, serrePairingLeft (R := R) (K := K) k f a = 0 := by
+  intro a ha
+  -- a is in the image of diagonalK = FiniteAdeleRing.algebraMap R K
+  obtain ⟨g, rfl⟩ := ha
+  -- serrePairingLeft k f (diagonalK R K g) = fullRawPairing k (diagonalK R K g) f
+  simp only [serrePairingLeft]
+  -- diagonalK R K = FiniteAdeleRing.algebraMap R K
+  show fullRawPairing (R := R) (K := K) k (diagonalK R K g) f = 0
+  -- By definition, diagonalK R K = FiniteAdeleRing.algebraMap R K
+  exact fullRawPairing_vanishes_on_K (R := R) (K := K) k g f
+
+/-- serrePairingLeft f vanishes on A_K(D) when f ∈ L(KDiv - D). -/
+theorem serrePairingLeft_vanishes_on_boundedSubmodule (D KDiv : DivisorV2 R) (f : K)
+    (hf : satisfiesValuationCondition R K (KDiv - D) f) :
+    ∀ a ∈ boundedSubmodule k R K D, serrePairingLeft (R := R) (K := K) k f a = 0 := by
+  intro a ha
+  simp only [serrePairingLeft]
+  -- ha : a ∈ boundedSubmodule k R K D means ∀ v, valuationAt R K a v ≤ exp(D v)
+  -- hf : f ∈ L(KDiv - D) means f = 0 ∨ ∀ v, v.valuation K f ≤ exp((KDiv - D) v)
+  -- Need to apply fullRawPairing_vanishes_on_AD
+  rcases hf with rfl | hf_bound
+  · -- f = 0 case
+    exact fullRawPairing_zero_right (R := R) (K := K) k a
+  · -- f satisfies valuation bounds
+    apply fullRawPairing_vanishes_on_AD (R := R) (K := K) k D KDiv a f
+    · -- ha_bound : ∀ v, Valued.v (a.1 v) ≤ WithZero.exp (D v)
+      intro v
+      have ha_v := ha v
+      simp only [satisfiesBoundAt, valuationAt] at ha_v
+      exact ha_v
+    · -- hf_bound : ∀ v, v.valuation K f ≤ WithZero.exp ((KDiv - D) v)
+      exact hf_bound
+
+/-- serrePairingLeft f vanishes on K + A_K(D) when f ∈ L(KDiv - D).
+
+This is the key lemma for descent to the quotient H¹(D). -/
+theorem serrePairingLeft_vanishes_on_globalPlusBoundedSubmodule (D KDiv : DivisorV2 R) (f : K)
+    (hf : satisfiesValuationCondition R K (KDiv - D) f) :
+    ∀ a ∈ globalPlusBoundedSubmodule k R K D, serrePairingLeft (R := R) (K := K) k f a = 0 := by
+  intro a ha
+  -- globalPlusBoundedSubmodule = globalSubmodule + boundedSubmodule (as submodule sum)
+  -- ha : a ∈ globalSubmodule k R K + boundedSubmodule k R K D
+  rw [globalPlusBoundedSubmodule] at ha
+  obtain ⟨g, hg, b, hb, rfl⟩ := Submodule.mem_sup.mp ha
+  -- a = g + b where g ∈ globalSubmodule and b ∈ boundedSubmodule
+  rw [(serrePairingLeft (R := R) (K := K) k f).map_add]
+  rw [serrePairingLeft_vanishes_on_globalSubmodule k f g hg]
+  rw [serrePairingLeft_vanishes_on_boundedSubmodule k D KDiv f hf b hb]
+  ring
+
+/-! ## Induced Pairing on H¹(D)
+
+Using Submodule.liftQ, we lift the pairing to the quotient.
+-/
+
+/-- The induced pairing on H¹(D) for a fixed f ∈ L(KDiv - D).
+
+Given f ∈ L(KDiv - D), this is the k-linear map:
+  φ_f : H¹(D) → k
+  φ_f([a]) = ψ(a, f)
+
+Well-defined because ψ(·, f) vanishes on K + A_K(D). -/
+def inducedPairingOnH1 (D KDiv : DivisorV2 R) (f : K)
+    (hf : satisfiesValuationCondition R K (KDiv - D) f) :
+    SpaceModule k R K D →ₗ[k] k :=
+  Submodule.liftQ (globalPlusBoundedSubmodule k R K D)
+    (serrePairingLeft (R := R) (K := K) k f)
+    (serrePairingLeft_vanishes_on_globalPlusBoundedSubmodule k D KDiv f hf)
+
+/-- The induced pairing applied to a quotient element. -/
+theorem inducedPairingOnH1_apply (D KDiv : DivisorV2 R) (f : K)
+    (hf : satisfiesValuationCondition R K (KDiv - D) f)
+    (a : FiniteAdeleRing R K) :
+    inducedPairingOnH1 k D KDiv f hf (Submodule.Quotient.mk a) =
+    fullRawPairing (R := R) (K := K) k a f := by
+  simp only [inducedPairingOnH1, Submodule.liftQ_apply, serrePairingLeft, LinearMap.coe_mk,
+    AddHom.coe_mk]
+
+/-! ## The Full Serre Duality Pairing
+
+The pairing H¹(D) × L(KDiv - D) → k defined by φ([a], f) = ψ(a, f).
+-/
+
+/-- The Serre duality pairing as a bilinear map.
+
+φ : H¹(D) × L(KDiv - D) → k
+φ([a], f) = Σ_v Tr(res_v(a_v · f))
+
+This is well-defined because:
+- The pairing vanishes on K (global residue theorem)
+- The pairing vanishes on A_K(D) when f ∈ L(KDiv - D) (pole cancellation)
+-/
+def serreDualityPairing (D KDiv : DivisorV2 R) :
+    SpaceModule k R K D →ₗ[k] (RRModuleV2_real R K (KDiv - D) →ₗ[k] k) where
+  toFun := fun h1_class => {
+    toFun := fun ⟨f, hf⟩ => inducedPairingOnH1 k D KDiv f hf h1_class
+    map_add' := fun ⟨f1, hf1⟩ ⟨f2, hf2⟩ => by
+      -- Need: inducedPairingOnH1 k D KDiv (f1 + f2) h12 h1_class
+      --     = inducedPairingOnH1 k D KDiv f1 hf1 h1_class + inducedPairingOnH1 k D KDiv f2 hf2 h1_class
+      -- This follows from linearity of fullRawPairing in the right argument
+      obtain ⟨a, rfl⟩ := Submodule.Quotient.mk_surjective _ h1_class
+      simp only [inducedPairingOnH1_apply]
+      exact fullRawPairing_add_right (R := R) (K := K) k a f1 f2
+    map_smul' := fun c ⟨f, hf⟩ => by
+      obtain ⟨a, rfl⟩ := Submodule.Quotient.mk_surjective _ h1_class
+      simp only [inducedPairingOnH1_apply, RingHom.id_apply]
+      exact fullRawPairing_smul_right (R := R) (K := K) k a c f
+  }
+  map_add' := fun h1 h2 => by
+    ext ⟨f, hf⟩
+    simp only [LinearMap.coe_mk, AddHom.coe_mk, LinearMap.add_apply]
+    exact (inducedPairingOnH1 k D KDiv f hf).map_add h1 h2
+  map_smul' := fun c h1 => by
+    ext ⟨f, hf⟩
+    simp only [LinearMap.coe_mk, AddHom.coe_mk, LinearMap.smul_apply, RingHom.id_apply]
+    exact (inducedPairingOnH1 k D KDiv f hf).map_smul c h1
+
+/-- Serre duality pairing applied to concrete representatives. -/
+theorem serreDualityPairing_apply (D KDiv : DivisorV2 R)
+    (a : FiniteAdeleRing R K) (f : RRModuleV2_real R K (KDiv - D)) :
+    serreDualityPairing k D KDiv (Submodule.Quotient.mk a) f =
+    fullRawPairing (R := R) (K := K) k a f.val := by
+  simp only [serreDualityPairing, LinearMap.coe_mk, AddHom.coe_mk, inducedPairingOnH1_apply]
+
+end RiemannRochV2.SerrePairingDescent
 
 end

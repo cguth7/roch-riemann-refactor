@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 364
+**Cycle**: 365
 **Phase**: 9 (General Curve Infrastructure)
 
 ### What We Have (Core RR Proof Complete)
@@ -207,7 +207,7 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
 | serrePairingLeft/Right | PairingDescent.lean | ✅ DEFINED (Cycle 364) |
 | Pairing vanishes on K | PairingDescent.lean | ✅ AXIOMATIZED |
 | Pairing vanishes on A(D) for L(KDiv-D) | PairingDescent.lean | ✅ AXIOMATIZED |
-| **Descent to H¹(D) quotient** | PairingDescent.lean | ❌ NEEDED |
+| **Descent to H¹(D) quotient** | PairingDescent.lean | ✅ DONE (Cycle 365) |
 | **Non-degeneracy** | PairingNondegenerate.lean | ❌ NEEDED |
 
 **The Core Problem** (documented in RatFuncPairing.lean:2211-2221):
@@ -284,6 +284,39 @@ RrLean/RiemannRochV2/SerreDuality/General/
 ---
 
 ## Recent Cycles
+
+### Cycle 365: Induced Pairing on H¹(D) via liftQ
+
+**Goal**: Define the Serre duality pairing on the quotient H¹(D) = A_K / (K + A_K(D)).
+
+**What was done**:
+1. ✅ Added imports for `RRSpace.lean` and `AdelicH1v2.lean`
+2. ✅ Proved `serrePairingLeft_vanishes_on_globalSubmodule`: pairing vanishes on diagonal K
+3. ✅ Proved `serrePairingLeft_vanishes_on_boundedSubmodule`: pairing vanishes on A_K(D) for f ∈ L(KDiv-D)
+4. ✅ Proved `serrePairingLeft_vanishes_on_globalPlusBoundedSubmodule`: combined vanishing
+5. ✅ Defined `inducedPairingOnH1`: φ_f : H¹(D) →ₗ[k] k using `Submodule.liftQ`
+6. ✅ Defined `serreDualityPairing`: H¹(D) →ₗ[k] (L(KDiv-D) →ₗ[k] k) as bilinear map
+7. ✅ Proved `serreDualityPairing_apply`: concrete formula for pairing on representatives
+
+**New definitions in PairingDescent.lean**:
+| Definition | Type | Purpose |
+|------------|------|---------|
+| `inducedPairingOnH1` | `SpaceModule k R K D →ₗ[k] k` | Pairing for fixed f ∈ L(KDiv-D) |
+| `serreDualityPairing` | `SpaceModule k R K D →ₗ[k] (RRModuleV2_real R K (KDiv-D) →ₗ[k] k)` | Full bilinear pairing |
+
+**Key theorems**:
+- `inducedPairingOnH1_apply`: `φ_f([a]) = fullRawPairing k a f`
+- `serreDualityPairing_apply`: `φ([a], f) = fullRawPairing k a f.val`
+
+**Status**: The Serre duality pairing is now fully defined on the quotient H¹(D).
+The pairing is bilinear over k and well-defined by construction (vanishes on K + A_K(D)).
+
+**Next steps** (Cycle 366+):
+1. Prove non-degeneracy: if φ([a], -) = 0 for all f ∈ L(KDiv-D), then [a] = 0
+2. Derive finrank equality: h¹(D) = ℓ(KDiv - D)
+3. Connect to existing `serre_duality` axiom in EllipticH1.lean
+
+---
 
 ### Cycle 364: PairingDescent.lean Refactor for liftQ Compatibility
 
@@ -512,4 +545,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 364. Phase 9 continues - Track C (Serre Duality) active. PairingDescent.lean refactored for liftQ compatibility: FiniteAdeleRing, k-linear maps, bilinearity axioms. Next: define induced pairing on H¹(D) via liftQ, prove non-degeneracy, derive Serre duality.*
+*Updated Cycle 365. Phase 9 continues - Track C (Serre Duality) active. Induced pairing on H¹(D) fully defined via Submodule.liftQ. serreDualityPairing : H¹(D) →ₗ[k] (L(KDiv-D) →ₗ[k] k) now available. Next: prove non-degeneracy, derive h¹(D) = ℓ(KDiv-D), connect to EllipticH1.lean axiom.*
