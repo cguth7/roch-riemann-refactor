@@ -181,9 +181,9 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
 - Avoids P¹-specific topology arguments
 - Solves multiple axioms at once (h1_finite + serre_duality)
 
-**Track A sorries (PARKED)**:
+**Track A sorries (PARKED - P¹ only, does not generalize)**:
 - `constantToResidue_FqtInfty_surjective` (AdelicH1Full.lean:2309) - P¹ only
-- Strong approximation sorries (lines 757, 1458) - also P¹-specific
+- Strong approximation sorries (lines 757, 1458) - P¹ only
 
 ---
 
@@ -206,16 +206,22 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
 Current residue infrastructure is on **RatFunc**, not **adicCompletion** elements.
 For H¹(D) = A_K / (K + A(D)), representatives a ∈ A_K have components a_v ∈ K_v (completions).
 
-**Two approaches** (from RatFuncPairing.lean strategy notes):
+**Two approaches** (honest assessment):
 
-1. **Residue on completions**: Extend `residueAt α` to work on `v.adicCompletion K`
-   - Requires new Mathlib infrastructure for Laurent series residues
-   - More general but heavier lift
+1. **Residue on completions (GENERAL - required for arbitrary genus)**:
+   - Build isomorphism `v.adicCompletion K ≃+* LaurentSeries k`
+   - Define `res_v : K_v → k` via `(f : LaurentSeries).coeff (-1)`
+   - For a ∈ A_K, f ∈ K: define ψ(a, f) = Σ_v res_v(a_v · f)
+   - **Status**: ResidueAtX.lean has `RatFunc → LaurentSeries` coercion and residue
+   - **Gap**: Need `adicCompletion ≃ LaurentSeries` isomorphism
+   - This IS the standard Serre duality construction for all curves
 
-2. **Weak approximation** (preferred): For [a] ∈ H¹(D), find k ∈ K with a - diag(k) ∈ A_K(D)
-   - Define φ([a], f) = -residueAtInfty(k * f) where k approximates a
-   - Stays entirely in RatFunc world (existing tools!)
-   - Need: well-definedness (independent of k choice) via residue theorem
+2. **Weak approximation (P¹ ONLY - fallback)**:
+   - For [a] ∈ H¹(D), find k ∈ K with a - diag(k) ∈ A_K(D)
+   - Define φ([a], f) = -residueAtInfty(k * f)
+   - **Problem**: For genus > 0, K doesn't approximate adeles well enough
+   - That's precisely WHY H¹(D) is nontrivial for higher genus!
+   - ⚠️ Does NOT generalize - only use if we give up on general case
 
 **File structure plan** (from ChatGPT):
 
@@ -234,10 +240,11 @@ RrLean/RiemannRochV2/SerreDuality/General/
   - Prove left/right non-degeneracy
   - Derive serre_duality_full
 
-**Cycle 361 target**:
-1. Create PairingDescent.lean skeleton with imports
-2. Define raw pairing using weak approximation approach
-3. Prove well-definedness or identify precise gap
+**Cycle 361 target** (focusing on general approach):
+1. Investigate `adicCompletion ≃ LaurentSeries` infrastructure in Mathlib
+2. Check if AllIntegersCompactProof.lean has relevant isomorphisms
+3. Determine if this isomorphism exists or needs to be built
+4. If feasible, create PairingDescent.lean with residue-on-completions approach
 
 ### Phase 8 Summary (Completed)
 
