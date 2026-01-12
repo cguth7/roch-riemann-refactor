@@ -110,6 +110,23 @@ theorem integralFullAdeles_covers_h1 (D : ExtendedDivisor (Polynomial Fq)) :
 
 /-! ## Key Topology Lemma (requires RestrictedProduct API) -/
 
+omit [Fintype Fq] [DecidableEq Fq] in
+/-- Helper: The constraint set for a single place is open.
+    With v fixed (not dependent), Lean can resolve the Valued instance. -/
+lemma isOpen_constraint_single_place (v : HeightOneSpectrum Fq[X]) (n : ℤ) :
+    IsOpen {a : FiniteAdeleRing Fq[X] (RatFunc Fq) | Valued.v (a.1 v) ≤ WithZero.exp n} := by
+  -- The evaluation map at v is continuous
+  -- Use RestrictedProduct.continuous_eval which gives continuity of projection
+  have heval_cont : Continuous (fun (a : FiniteAdeleRing Fq[X] (RatFunc Fq)) => a.1 v) :=
+    RestrictedProduct.continuous_eval v
+  -- The ball is open
+  have hball_open : IsOpen {x : v.adicCompletion (RatFunc Fq) | Valued.v x ≤ WithZero.exp n} := by
+    apply Valued.isOpen_closedBall
+    exact WithZero.exp_ne_zero
+  -- Preimage of open under continuous is open
+  exact hball_open.preimage heval_cont
+
+omit [Fintype Fq] [DecidableEq Fq] in
 /-- The bounded set is open in the RestrictedProduct type directly.
 
 The key insight is that for elements of the RestrictedProduct (which are integral
@@ -122,61 +139,72 @@ This makes the infinite intersection effectively a finite one.
 theorem isOpen_bounded_finiteAdeles (D : DivisorV2 Fq[X]) :
     IsOpen {a : FiniteAdeleRing Fq[X] (RatFunc Fq) |
       ∀ v, Valued.v (a.1 v) ≤ WithZero.exp (D v)} := by
-  -- Strategy: Use the direct characterization of openness in restricted products.
-  -- For each cofinite S, elements in S-principal satisfy f v ∈ O_v for v ∈ S.
-  -- The constraint "∀ v, v(f v) ≤ exp(D v)" becomes finite when restricted to S-principal:
-  -- only v ∈ T_S = Sᶜ ∪ {v ∈ S | D v < 0} need explicit checking, and T_S is finite.
-
-  -- Step 1: Open sets at each place
-  have hOv_open : ∀ v : HeightOneSpectrum Fq[X],
-      IsOpen (v.adicCompletionIntegers (RatFunc Fq) : Set (v.adicCompletion (RatFunc Fq))) :=
-    fun v ↦ Valued.isOpen_valuationSubring _
-
-  -- Step 2: Balls are open
-  have hBall_open : ∀ v : HeightOneSpectrum Fq[X],
-      IsOpen {x : v.adicCompletion (RatFunc Fq) | Valued.v x ≤ WithZero.exp (D v)} := by
-    intro v
-    apply Valued.isOpen_closedBall
-    exact WithZero.exp_ne_zero
-
-  -- Step 3: Finite support of D
+  -- Step 1: Finite support of D
   let T : Set (HeightOneSpectrum Fq[X]) := {v | D v ≠ 0}
   have hT_finite : T.Finite := D.finite_support
 
-  -- Step 4: The key decomposition
-  -- For v ∉ T: D v = 0, so Ball_v = {x | v(x) ≤ 1} = O_v
-  -- The bounded set = {a | ∀ v, a v ∈ Ball_v}
-  --                 = {a | (∀ v ∈ T, a v ∈ Ball_v) ∧ (∀ v ∉ T, a v ∈ O_v)}
+  -- Step 2: Key observation - for v ∉ T, D v = 0 so exp(D v) = 1
+  have h_outside_T : ∀ v : HeightOneSpectrum Fq[X], v ∉ T → D v = 0 := by
+    intro v hv
+    simp only [T, Set.mem_setOf_eq, not_not] at hv
+    exact hv
 
-  -- Step 5: Apply topology characterization
-  -- Using that the topology is ⨆ S, coinduced from S-principal.
-  -- In S-principal, a v ∈ O_v for v ∈ S, so:
-  -- - For v ∈ S ∩ Tᶜ: automatic (D v = 0, Ball_v = O_v)
-  -- - For v ∈ S ∩ T with D v ≥ 0: automatic (O_v ⊆ Ball_v)
-  -- - For v ∈ S ∩ T with D v < 0: need a v ∈ Ball_v ⊂ O_v
-  -- - For v ∈ Sᶜ: need a v ∈ Ball_v
-  -- Non-trivial places: T_S = Sᶜ ∪ {v ∈ S | D v < 0} which is finite.
+  -- Step 3: Rewrite the set as intersection
+  -- {∀ v, constraint} = {∀ v ∈ T, constraint} ∩ {∀ v ∉ T, constraint}
+  -- Use helper lemma to avoid typeclass resolution issues in set notation
+  let constraint (v : HeightOneSpectrum Fq[X]) : Set (FiniteAdeleRing Fq[X] (RatFunc Fq)) :=
+    {a | Valued.v (a.1 v) ≤ WithZero.exp (D v)}
 
-  -- PROOF STRATEGY (mathematically complete, formalization blocked):
-  --
-  -- 1. Split into: {∀ v ∈ T, constraint} ∩ {∀ v ∉ T, constraint} where T = supp(D)
-  -- 2. First part: finite intersection of preimages of open balls, hence open
-  --    Uses: Set.Finite.isOpen_biInter, RestrictedProduct.continuous_eval, hBall_open
-  -- 3. Second part: for v ∉ T, D v = 0 so Ball_v = O_v
-  --    Uses: RestrictedProduct.isOpen_forall_imp_mem with p := (· ∉ T)
-  --
-  -- FORMALIZATION BLOCKER:
-  -- Lean's typeclass resolution fails on `Valued (adicCompletion K v)` when v appears
-  -- in a dependent function context like `(fun v => adicCompletion K v) v`.
-  -- The type doesn't simplify, causing instance search to get stuck.
-  --
-  -- RESOLUTION OPTIONS:
-  -- A) Add explicit `@Valued` annotations with all type parameters
-  -- B) Define helper lemmas with fixed types outside the dependent context
-  -- C) Use `haveI` to provide local instances
-  --
-  -- The mathematical content is clear; this is purely a Lean elaboration issue.
-  sorry
+  have h_eq : {a : FiniteAdeleRing Fq[X] (RatFunc Fq) | ∀ v, Valued.v (a.1 v) ≤ WithZero.exp (D v)} =
+      (⋂ v ∈ T, constraint v) ∩
+      {a | ∀ v, v ∉ T → Valued.v (a.1 v) ≤ WithZero.exp (D v)} := by
+    ext a
+    simp only [constraint, Set.mem_setOf_eq, Set.mem_inter_iff, Set.mem_iInter]
+    constructor
+    · intro h
+      exact ⟨fun v _ => h v, fun v _ => h v⟩
+    · intro ⟨hT, hnotT⟩ v
+      by_cases hv : v ∈ T
+      · exact hT v hv
+      · exact hnotT v hv
+  rw [h_eq]
+
+  -- Step 4: First part is open (finite intersection of open sets)
+  have h_T_open : IsOpen (⋂ v ∈ T, constraint v) := by
+    apply hT_finite.isOpen_biInter
+    intro v _
+    exact isOpen_constraint_single_place v (D v)
+
+  -- Step 5: Second part - for v ∉ T, the constraint is v(a v) ≤ 1 = membership in O_v
+  -- Use RestrictedProduct.isOpen_forall_imp_mem
+  have h_notT_open : IsOpen {a : FiniteAdeleRing Fq[X] (RatFunc Fq) |
+      ∀ v, v ∉ T → Valued.v (a.1 v) ≤ WithZero.exp (D v)} := by
+    -- For v ∉ T, D v = 0 so exp(D v) = exp 0 = 1
+    -- The condition v(a v) ≤ 1 is exactly membership in the integer ring O_v
+    -- This is handled by isOpen_forall_imp_mem
+    have h_eq' : {a : FiniteAdeleRing Fq[X] (RatFunc Fq) |
+        ∀ v, v ∉ T → Valued.v (a.1 v) ≤ WithZero.exp (D v)} =
+        {a | ∀ v, v ∉ T → a.1 v ∈ v.adicCompletionIntegers (RatFunc Fq)} := by
+      ext a
+      simp only [Set.mem_setOf_eq]
+      apply forall_congr'
+      intro v
+      apply imp_congr_right
+      intro hv
+      -- For v ∉ T, D v = 0, so exp(D v) = exp 0 = 1
+      rw [h_outside_T v hv]
+      simp only [WithZero.exp_zero]
+      -- v(x) ≤ 1 iff x ∈ O_v
+      rw [HeightOneSpectrum.mem_adicCompletionIntegers]
+    rw [h_eq']
+    -- Need: ∀ v, IsOpen (v.adicCompletionIntegers (RatFunc Fq))
+    have hAopen : ∀ v : HeightOneSpectrum Fq[X],
+        IsOpen (v.adicCompletionIntegers (RatFunc Fq) : Set (v.adicCompletion (RatFunc Fq))) :=
+      fun v => Valued.isOpen_valuationSubring _
+    exact RestrictedProduct.isOpen_forall_imp_mem hAopen
+
+  -- Step 6: Intersection of open sets is open
+  exact h_T_open.inter h_notT_open
 
 omit [Fintype Fq] [DecidableEq Fq] in
 /-- The infinity part constraint set is open in FqtInfty. -/
