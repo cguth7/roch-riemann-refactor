@@ -77,6 +77,7 @@ Complete the topological infrastructure:
 
 import RrLean.RiemannRochV2.SerreDuality.General.AdelicH1Full
 import RrLean.RiemannRochV2.Adelic.FullAdelesCompact
+import RrLean.RiemannRochV2.P1Instance.FqPolynomialInstance
 
 open IsDedekindDomain IsDedekindDomain.HeightOneSpectrum
 open RiemannRochV2 RiemannRochV2.FullAdeles RiemannRochV2.AdelicH1v2
@@ -317,15 +318,91 @@ theorem finite_of_compact_discrete' {X : Type*} [TopologicalSpace X]
     [CompactSpace X] [DiscreteTopology X] : Finite X :=
   finite_of_compact_of_discrete
 
-/-! ## Main Strategy Summary
+/-! ## H¹(D) is Finite-Dimensional -/
 
-Chain completed:
-1. boundedSubmodule_full_isOpen ✅
-2. globalPlusBoundedSubmodule_full_isOpen ✅
-3. discreteTopology_spaceModule_full ✅
-4. finite_of_compact_discrete ✅
+/-- The quotient map from FqFullAdeleRing to H¹(D) is continuous. -/
+theorem continuous_quotientMapLinear_full (D : ExtendedDivisor (Polynomial Fq)) :
+    Continuous (quotientMapLinear_full Fq D) := by
+  -- The quotient map is continuous by definition of quotient topology
+  exact continuous_quot_mk
 
-Remaining: Wire compactness of integralFullAdeles image to Module.Finite.
+/-- The image of integralFullAdeles in H¹(D) is compact.
+    (Continuous image of compact is compact)
+
+    Note: Requires finite residue field at infinity (standard for function fields). -/
+theorem isCompact_image_h1 [Finite (Valued.ResidueField (FqtInfty Fq))]
+    (D : ExtendedDivisor (Polynomial Fq)) :
+    IsCompact (Set.range (fun a : integralFullAdeles Fq =>
+      quotientMapLinear_full Fq D a.1)) := by
+  -- integralFullAdeles is compact (instances from FqPolynomialInstance)
+  have h_compact : IsCompact (integralFullAdeles Fq) := isCompact_integralFullAdeles Fq
+  -- Define f on the subtype
+  let f : FqFullAdeleRing Fq → SpaceModule_full Fq D := quotientMapLinear_full Fq D
+  have h_cont : Continuous f := continuous_quotientMapLinear_full D
+  -- Image of integralFullAdeles under f
+  have h_image : IsCompact (f '' integralFullAdeles Fq) := h_compact.image h_cont
+  -- The range equals f '' integralFullAdeles
+  convert h_image using 1
+  ext x
+  simp only [Set.mem_range, Set.mem_image]
+  constructor
+  · rintro ⟨⟨a, ha⟩, rfl⟩
+    exact ⟨a, ha, rfl⟩
+  · rintro ⟨a, ha, rfl⟩
+    exact ⟨⟨a, ha⟩, rfl⟩
+
+/-- The image of integralFullAdeles covers all of H¹(D).
+    Combined with compactness, this shows H¹(D) is compact. -/
+theorem range_eq_univ_h1 (D : ExtendedDivisor (Polynomial Fq)) :
+    Set.range (fun a : integralFullAdeles Fq =>
+      quotientMapLinear_full Fq D a.1) = Set.univ := by
+  ext x
+  simp only [Set.mem_range, Set.mem_univ, iff_true]
+  -- By integralFullAdeles_covers_h1, every element has a rep in integralFullAdeles
+  obtain ⟨a, ha, hax⟩ := integralFullAdeles_covers_h1 D x
+  use ⟨a, ha⟩
+  exact hax
+
+/-- H¹(D) is a compact space. -/
+theorem compactSpace_spaceModule_full [Finite (Valued.ResidueField (FqtInfty Fq))]
+    (D : ExtendedDivisor (Polynomial Fq)) :
+    CompactSpace (SpaceModule_full Fq D) := by
+  rw [← isCompact_univ_iff, ← range_eq_univ_h1 D]
+  exact isCompact_image_h1 D
+
+/-- H¹(D) is finite (as a type) because it's compact and discrete. -/
+theorem finite_spaceModule_full [Finite (Valued.ResidueField (FqtInfty Fq))]
+    (D : ExtendedDivisor (Polynomial Fq)) :
+    Finite (SpaceModule_full Fq D) := by
+  haveI : DiscreteTopology (SpaceModule_full Fq D) := discreteTopology_spaceModule_full D
+  haveI : CompactSpace (SpaceModule_full Fq D) := compactSpace_spaceModule_full D
+  exact finite_of_compact_of_discrete
+
+/-- H¹(D) is finite-dimensional as an Fq-module.
+    This is the key result needed to fill h1_finite_all. -/
+theorem module_finite_spaceModule_full [Finite (Valued.ResidueField (FqtInfty Fq))]
+    (D : ExtendedDivisor (Polynomial Fq)) :
+    Module.Finite Fq (SpaceModule_full Fq D) := by
+  -- Finite type → Module.Finite via instance inference
+  haveI : Finite (SpaceModule_full Fq D) := finite_spaceModule_full D
+  -- Module.Finite.of_finite is an instance [Finite M] : Module.Finite R M
+  infer_instance
+
+/-! ## Main Result Summary
+
+**THEOREM**: For any divisor D, H¹(D) is a finite-dimensional Fq-vector space.
+
+**Proof chain**:
+1. boundedSubmodule_full_isOpen ✅ - Balls are open in RestrictedProduct topology
+2. globalPlusBoundedSubmodule_full_isOpen ✅ - Union of translates of open is open
+3. discreteTopology_spaceModule_full ✅ - Quotient by open is discrete
+4. isCompact_integralFullAdeles ✅ - Fundamental domain is compact (in Mathlib)
+5. integralFullAdeles_covers_h1 ✅ - Every class has rep in fundamental domain
+6. compactSpace_spaceModule_full ✅ - H¹(D) is compact (image of compact)
+7. finite_spaceModule_full ✅ - Compact + discrete = finite
+8. module_finite_spaceModule_full ✅ - Finite → Module.Finite
+
+This fills the `h1_finite_all` axiom for function fields!
 -/
 
 end
