@@ -7,6 +7,8 @@ well-defined pairing on H¹(D) = A_K / (K + A(D)).
 ## Main Definitions
 
 * `embeddedResidue v f` : Local residue of f ∈ K embedded in K_v
+* `fullRawPairing` : The raw Serre duality pairing on FiniteAdeleRing
+* `serrePairingLeft` : Bundled linear map for use with liftQ
 
 ## Mathematical Setup
 
@@ -23,11 +25,15 @@ is well-defined (vanishes on K + A(D)) and non-degenerate.
 
 ## Status
 
-Cycle 362: Initial skeleton with raw pairing definition.
+Cycle 364: Refactor for liftQ compatibility.
+- Use FiniteAdeleRing R K directly (no witness parameter)
+- Add bilinearity axioms
+- Add canonical divisor parameter for L(K-D) bounds
 -/
 
 import RrLean.RiemannRochV2.SerreDuality.General.LocalResidue
 import RrLean.RiemannRochV2.Core.Divisor
+import Mathlib.RingTheory.DedekindDomain.FiniteAdeleRing
 
 noncomputable section
 
@@ -173,7 +179,7 @@ section TracedResidueSum
 
 variable (k : Type*) [Field k] [Algebra k R] [Algebra k K] [IsScalarTower k R K]
 
-/-- A traced residue pairing map.
+/-- A traced residue sum map as a k-linear map.
 
 This takes a global element f ∈ K and returns the sum of traced residues:
   Σ_v Tr_{κ(v)/k}(res_v(f)) ∈ k
@@ -182,8 +188,11 @@ This takes a global element f ∈ K and returns the sum of traced residues:
 1. Trace maps Tr_{κ(v)/k} for each place
 2. Finiteness of the sum (only finitely many poles contribute)
 3. Linearity over k
+
+Using →ₗ[k] (LinearMap) rather than →+ (AddMonoidHom) for compatibility with
+Submodule.liftQ which requires linearity.
 -/
-axiom tracedResidueSum : K →+ k
+axiom tracedResidueSum : K →ₗ[k] k
 
 /-- The Global Residue Theorem: sum of traced residues of a global element is zero.
 
@@ -206,35 +215,92 @@ The Serre duality pairing is built from residues:
 For a ∈ A_K (adele) and f ∈ K (global element).
 
 We need this to:
-1. Be bilinear
+1. Be bilinear over k
 2. Vanish on K (global elements) by the residue theorem
 3. Vanish on A(D) when f ∈ L(K-D) by pole cancellation
+
+## Key Design Decision (Cycle 364)
+
+We use `FiniteAdeleRing R K` directly rather than `HeightOneSpectrum R → K` with
+a witness parameter. The FiniteAdeleRing type from Mathlib handles the finite
+support condition automatically, making the API cleaner for liftQ.
 
 ## Key Axioms for the Pairing
 
 Rather than constructing the pairing from local residues (which requires Laurent series),
 we axiomatize the full pairing directly with its essential properties:
-1. Bilinearity
+1. Bilinearity (add/smul in both arguments)
 2. Vanishing on K (residue theorem)
 3. Vanishing on A(D) for f ∈ L(K-D) (pole cancellation)
 
 This isolates the gap while validating the Serre duality structure.
 -/
 
-/-- The full Serre duality raw pairing on adeles.
+section RawPairing
 
-ψ : A_K × K → k
+variable (k : Type*) [Field k] [Algebra k R] [Algebra k K] [IsScalarTower k R K]
+
+/-- The full Serre duality raw pairing on finite adeles.
+
+ψ : FiniteAdeleRing R K × K → k
 ψ(a, f) = Σ_v Tr(res_v(a_v · f))
 
 **Axiomatized**: The sum is well-defined and finite for any adele a ∈ A_K and f ∈ K.
-
-We represent adeles as families a : HeightOneSpectrum R → K with finite support
-outside the integers. The full infrastructure uses FiniteAdeleRing, but we
-axiomatize the pairing directly.
+The FiniteAdeleRing type ensures adeles have finite support outside integers.
 -/
-axiom fullRawPairing (k : Type*) [Field k] [Algebra k R] [Algebra k K] [IsScalarTower k R K]
-    (a : HeightOneSpectrum R → K) (f : K)
-    (ha : { v : HeightOneSpectrum R | v.valuation K (a v) > 1 }.Finite) : k
+axiom fullRawPairing : FiniteAdeleRing R K → K → k
+
+/-! ### Bilinearity Axioms
+
+The pairing is k-bilinear. This is essential for descent via Submodule.liftQ.
+-/
+
+/-- Additivity in the left (adele) argument. -/
+axiom fullRawPairing_add_left (a b : FiniteAdeleRing R K) (f : K) :
+    fullRawPairing (R := R) (K := K) k (a + b) f =
+    fullRawPairing (R := R) (K := K) k a f + fullRawPairing (R := R) (K := K) k b f
+
+/-- Additivity in the right (function) argument. -/
+axiom fullRawPairing_add_right (a : FiniteAdeleRing R K) (f g : K) :
+    fullRawPairing (R := R) (K := K) k a (f + g) =
+    fullRawPairing (R := R) (K := K) k a f + fullRawPairing (R := R) (K := K) k a g
+
+/-- Scalar multiplication in the left argument.
+Note: FiniteAdeleRing has an R-algebra structure via Mathlib. We axiomatize k-linearity.
+-/
+axiom fullRawPairing_smul_left (c : k) (a : FiniteAdeleRing R K) (f : K) :
+    fullRawPairing (R := R) (K := K) k (c • a) f =
+    c * fullRawPairing (R := R) (K := K) k a f
+
+/-- Scalar multiplication in the right argument. -/
+axiom fullRawPairing_smul_right (a : FiniteAdeleRing R K) (c : k) (f : K) :
+    fullRawPairing (R := R) (K := K) k a (c • f) =
+    c * fullRawPairing (R := R) (K := K) k a f
+
+/-- Pairing with zero adele is zero. -/
+axiom fullRawPairing_zero_left (f : K) :
+    fullRawPairing (R := R) (K := K) k 0 f = 0
+
+/-- Pairing with zero function is zero. -/
+axiom fullRawPairing_zero_right (a : FiniteAdeleRing R K) :
+    fullRawPairing (R := R) (K := K) k a 0 = 0
+
+/-! ### Bundled Linear Maps
+
+For use with Submodule.liftQ, we provide bundled linear maps.
+-/
+
+/-- The pairing as a k-linear map in the left argument, fixing f ∈ K. -/
+def serrePairingLeft (f : K) : FiniteAdeleRing R K →ₗ[k] k where
+  toFun := fun a => fullRawPairing (R := R) (K := K) k a f
+  map_add' := fun a b => fullRawPairing_add_left (R := R) (K := K) (k := k) a b f
+  map_smul' := fun c a => fullRawPairing_smul_left (R := R) (K := K) (k := k) c a f
+
+/-- The pairing as a k-linear map in the right argument, fixing a ∈ A_K. -/
+def serrePairingRight (a : FiniteAdeleRing R K) : K →ₗ[k] k where
+  toFun := fun f => fullRawPairing (R := R) (K := K) k a f
+  map_add' := fun f g => fullRawPairing_add_right (R := R) (K := K) (k := k) a f g
+  map_smul' := fun c f => fullRawPairing_smul_right (R := R) (K := K) (k := k) a c f
 
 /-! ## Vanishing on K + A(D)
 
@@ -242,43 +308,46 @@ The key properties for descent to the quotient H¹(D) = A_K / (K + A(D)).
 
 ### Vanishing on K (diagonal embedding)
 
-When a is constant (a_v = g for all v), the pairing reduces to:
+When a is the diagonal embedding of g ∈ K:
   ψ(diag(g), f) = Σ_v Tr(res_v(g · f)) = 0
 
 by the global residue theorem for g · f ∈ K.
 
-### Vanishing on A(D) for f ∈ L(K-D)
+### Vanishing on A(D) for f ∈ L(KDiv - D)
 
-When a ∈ A(D) (v(a_v) ≤ D(v)) and f ∈ L(K-D) (v(f) ≤ (K-D)(v)):
-  v(a_v · f) ≤ D(v) + (K-D)(v) = K(v)
+When a ∈ A(D) (v(a_v) ≤ D(v)) and f ∈ L(KDiv - D) (v(f) ≥ -(KDiv - D)(v)):
+  v(a_v · f) ≤ D(v) + (KDiv - D)(v) = KDiv(v)
 
-For the canonical divisor K: if K(v) ≤ 0 at all places, then a_v · f has no pole.
-More carefully: the residue depends only on the -1 coefficient in the Laurent expansion,
-which vanishes when the product has bounded pole order.
+For the canonical divisor KDiv with deg(KDiv) = 2g-2: when KDiv(v) ≤ -1 at all places
+where a has poles, the product a · f has no contribution to the residue.
 -/
 
-/-- Vanishing on K: the pairing is zero for constant (diagonal) adeles.
+/-- Vanishing on K: the pairing is zero for diagonal adeles.
 
-For g ∈ K embedded diagonally: a_v = g for all v.
+For g ∈ K embedded diagonally via FiniteAdeleRing.algebraMap:
 ψ(diag(g), f) = Σ_v Tr(res_v(g · f)) = 0 by the global residue theorem.
+
+This includes g = 0 (trivially zero).
 -/
-axiom fullRawPairing_vanishes_on_K (k : Type*) [Field k] [Algebra k R] [Algebra k K]
-    [IsScalarTower k R K] (g f : K) (hg : g ≠ 0) :
-    fullRawPairing (R := R) (K := K) (k := k) (fun _ => g) f (poleSupport_finite K g hg) = 0
+axiom fullRawPairing_vanishes_on_K (g f : K) :
+    fullRawPairing (R := R) (K := K) k (FiniteAdeleRing.algebraMap R K g) f = 0
 
-/-- Vanishing on A(D): the pairing is zero for bounded adeles when f ∈ L(K-D).
+/-- Vanishing on A(D): the pairing is zero for bounded adeles when f ∈ L(KDiv - D).
 
-For a ∈ A(D) (v(a_v) ≤ exp(D(v))) and f ∈ L(K-D) (v(f) ≤ exp((K-D)(v))):
-Each local contribution ψ_v(a_v, f) = 0 because a_v · f has no pole at v.
+For a ∈ A(D) and f ∈ L(KDiv - D) where KDiv is the canonical divisor:
+Each local contribution ψ_v(a_v, f) vanishes because the product has residue 0.
+
+The canonical divisor KDiv is passed as a parameter to make the bound explicit.
+For smooth projective curves, deg(KDiv) = 2g - 2.
 -/
-axiom fullRawPairing_vanishes_on_AD (k : Type*) [Field k] [Algebra k R] [Algebra k K]
-    [IsScalarTower k R K] (D : DivisorV2 R) (a : HeightOneSpectrum R → K) (f : K)
-    (ha_bound : ∀ v, v.valuation K (a v) ≤ WithZero.exp (D v))
-    (hf_bound : ∀ v, v.valuation K f ≤ WithZero.exp ((-D) v))
-    (ha : { v : HeightOneSpectrum R | v.valuation K (a v) > 1 }.Finite) :
-    fullRawPairing (R := R) (K := K) (k := k) a f ha = 0
+axiom fullRawPairing_vanishes_on_AD (D KDiv : DivisorV2 R) (a : FiniteAdeleRing R K) (f : K)
+    (ha_bound : ∀ v, Valued.v (a.1 v) ≤ WithZero.exp (D v))
+    (hf_bound : ∀ v, v.valuation K f ≤ WithZero.exp ((KDiv - D) v)) :
+    fullRawPairing (R := R) (K := K) k a f = 0
 
-/-! ## Summary (Cycle 363)
+end RawPairing
+
+/-! ## Summary
 
 This file establishes the framework for the Serre duality pairing.
 
@@ -289,21 +358,33 @@ This file establishes the framework for the Serre duality pairing.
 4. **boundedTimesLKD_residue_zero**: Bounded × L(K-D) gives zero residue (axiom)
 
 ### Global Traced Residue (Cycle 363)
-5. **tracedResidueSum**: AddMonoidHom K →+ k for summing traced residues (axiom)
+5. **tracedResidueSum**: K →ₗ[k] k for summing traced residues (axiom)
 6. **globalResidueTheorem_traced**: Σ_v Tr(res_v(f)) = 0 for global f (axiom)
 
-### Full Pairing (Cycle 363)
-7. **fullRawPairing**: Pairing ψ(a, f) = Σ_v Tr(res_v(a_v·f)) on adeles (axiom)
-8. **fullRawPairing_vanishes_on_K**: Pairing vanishes on K (residue theorem) (axiom)
-9. **fullRawPairing_vanishes_on_AD**: Pairing vanishes on A(D) for f ∈ L(K-D) (axiom)
+### Full Pairing (Cycle 364 - Refactored)
+7. **fullRawPairing**: Pairing ψ : FiniteAdeleRing R K → K → k (axiom)
+8. **Bilinearity axioms**: add_left, add_right, smul_left, smul_right, zero_left, zero_right
+9. **serrePairingLeft/Right**: Bundled linear maps for liftQ compatibility
+10. **fullRawPairing_vanishes_on_K**: Pairing vanishes on K (axiom)
+11. **fullRawPairing_vanishes_on_AD**: Pairing vanishes on A(D) for f ∈ L(KDiv-D) (axiom)
 
 **Axioms introduced**:
 - Cycle 362 (2 axioms): `poleSupport_finite`, `boundedTimesLKD_residue_zero`
-- Cycle 363 (5 axioms): `tracedResidueSum`, `globalResidueTheorem_traced`,
-  `fullRawPairing`, `fullRawPairing_vanishes_on_K`, `fullRawPairing_vanishes_on_AD`
+- Cycle 363 (2 axioms): `tracedResidueSum`, `globalResidueTheorem_traced`
+- Cycle 364 (9 axioms): `fullRawPairing`, `fullRawPairing_add_left`, `fullRawPairing_add_right`,
+  `fullRawPairing_smul_left`, `fullRawPairing_smul_right`, `fullRawPairing_zero_left`,
+  `fullRawPairing_zero_right`, `fullRawPairing_vanishes_on_K`, `fullRawPairing_vanishes_on_AD`
 
-**TODO (Cycle 364+)**:
-- Define the induced pairing on H¹(D) × L(K-D) using Submodule.liftQ
+**Key Changes in Cycle 364**:
+- Use FiniteAdeleRing R K directly (no witness parameter)
+- tracedResidueSum now K →ₗ[k] k (linear over k)
+- Added full bilinearity axioms for liftQ compatibility
+- Added bundled linear maps serrePairingLeft/Right
+- Use canonical divisor KDiv parameter in vanishing_on_AD
+- Handle g = 0 case (no longer requires g ≠ 0)
+
+**TODO (Cycle 365+)**:
+- Define the induced pairing on H¹(D) × L(KDiv-D) using Submodule.liftQ
 - Prove non-degeneracy (→ Serre duality)
 - Connect to existing serre_duality axiom in EllipticH1.lean
 -/

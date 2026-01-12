@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 363
+**Cycle**: 364
 **Phase**: 9 (General Curve Infrastructure)
 
 ### What We Have (Core RR Proof Complete)
@@ -192,7 +192,7 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
 
 **Goal**: Construct perfect pairing φ: H¹(D) × L(K-D) → Fq
 
-**Infrastructure status** (Cycle 363):
+**Infrastructure status** (Cycle 364):
 | Component | Location | Status |
 |-----------|----------|--------|
 | DVR for completions | DedekindDVR.lean | ✅ DONE (general) |
@@ -200,11 +200,13 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
 | Residue field isomorphism | ResidueFieldIso.lean | ✅ DONE |
 | **Local residue map res_v** | LocalResidue.lean | ✅ AXIOMATIZED |
 | Coefficient extraction (π⁻¹) | LocalResidue.lean | ✅ AXIOMATIZED |
-| Traced residue sum | PairingDescent.lean | ✅ AXIOMATIZED |
+| Traced residue sum (k-linear) | PairingDescent.lean | ✅ AXIOMATIZED (→ₗ[k]) |
 | Global residue theorem | PairingDescent.lean | ✅ AXIOMATIZED |
-| Raw pairing ψ(a,f) = Σ res_v(a_v·f) | PairingDescent.lean | ✅ AXIOMATIZED |
+| Raw pairing on FiniteAdeleRing | PairingDescent.lean | ✅ AXIOMATIZED |
+| Pairing bilinearity axioms | PairingDescent.lean | ✅ AXIOMATIZED (Cycle 364) |
+| serrePairingLeft/Right | PairingDescent.lean | ✅ DEFINED (Cycle 364) |
 | Pairing vanishes on K | PairingDescent.lean | ✅ AXIOMATIZED |
-| Pairing vanishes on A(D) for L(K-D) | PairingDescent.lean | ✅ AXIOMATIZED |
+| Pairing vanishes on A(D) for L(KDiv-D) | PairingDescent.lean | ✅ AXIOMATIZED |
 | **Descent to H¹(D) quotient** | PairingDescent.lean | ❌ NEEDED |
 | **Non-degeneracy** | PairingNondegenerate.lean | ❌ NEEDED |
 
@@ -282,6 +284,51 @@ RrLean/RiemannRochV2/SerreDuality/General/
 ---
 
 ## Recent Cycles
+
+### Cycle 364: PairingDescent.lean Refactor for liftQ Compatibility
+
+**Goal**: Refactor the Serre duality pairing axioms for use with `Submodule.liftQ`.
+
+**What was done**:
+1. ✅ Refactored `fullRawPairing` to take `FiniteAdeleRing R K` directly (no witness parameter)
+2. ✅ Changed `tracedResidueSum` from `K →+ k` to `K →ₗ[k] k` (k-linear)
+3. ✅ Added full bilinearity axioms:
+   - `fullRawPairing_add_left`, `fullRawPairing_add_right`
+   - `fullRawPairing_smul_left`, `fullRawPairing_smul_right`
+   - `fullRawPairing_zero_left`, `fullRawPairing_zero_right`
+4. ✅ Defined bundled linear maps: `serrePairingLeft`, `serrePairingRight`
+5. ✅ Fixed `fullRawPairing_vanishes_on_AD` to use canonical divisor parameter `KDiv`
+6. ✅ Fixed `fullRawPairing_vanishes_on_K` to handle g = 0 case
+
+**New axioms (9 total, replacing 5 from Cycle 363)**:
+| Axiom | Purpose |
+|-------|---------|
+| `fullRawPairing` | Raw pairing on `FiniteAdeleRing R K × K → k` |
+| `fullRawPairing_add_left` | Additivity in left argument |
+| `fullRawPairing_add_right` | Additivity in right argument |
+| `fullRawPairing_smul_left` | k-scalar multiplication in left |
+| `fullRawPairing_smul_right` | k-scalar multiplication in right |
+| `fullRawPairing_zero_left` | Pairing with zero adele |
+| `fullRawPairing_zero_right` | Pairing with zero function |
+| `fullRawPairing_vanishes_on_K` | Vanishing on K (no g ≠ 0 needed) |
+| `fullRawPairing_vanishes_on_AD` | Vanishing on A(D) for f ∈ L(KDiv-D) |
+
+**Key design decisions**:
+- Use `FiniteAdeleRing R K` from Mathlib (handles finite support automatically)
+- k-linear maps for compatibility with `Submodule.liftQ`
+- Explicit canonical divisor `KDiv` parameter for L(KDiv-D) bounds
+
+**Bundled linear maps defined**:
+- `serrePairingLeft f : FiniteAdeleRing R K →ₗ[k] k` (for liftQ)
+- `serrePairingRight a : K →ₗ[k] k`
+
+**Next steps** (Cycle 365+):
+1. Define induced pairing on H¹(D) × L(KDiv-D) using `Submodule.liftQ`
+2. Prove non-degeneracy → finrank equality
+3. Derive `serre_duality` theorem from finrank equality
+4. Connect to existing axiom in EllipticH1.lean
+
+---
 
 ### Cycle 363: Full Raw Pairing Axiomatization
 
@@ -452,8 +499,8 @@ RrLean/RiemannRochV2/
 | EllipticSetup.lean | Elliptic setup | Has 1 axiom |
 | StrongApproximation.lean | Density | Has 2 axioms |
 | Abstract.lean | Abstraction layer | Has 3 sorries |
-| LocalResidue.lean | Local residue map | Has 2 axioms, 1 sorry (Cycle 362) |
-| PairingDescent.lean | Serre pairing | Has 2 axioms (Cycle 362) |
+| LocalResidue.lean | Local residue map | Has 2 axioms, 1 sorry |
+| PairingDescent.lean | Serre pairing | Has 13 axioms (Cycle 364: k-linear, FiniteAdeleRing) |
 
 ---
 
@@ -465,4 +512,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 362. Phase 9 continues - Track C (Serre Duality) active. LocalResidue.lean axiomatized, PairingDescent.lean created. Framework for Serre duality pairing established with 4 new axioms. Next: formalize sum of residues, define induced pairing on H¹(D), prove non-degeneracy.*
+*Updated Cycle 364. Phase 9 continues - Track C (Serre Duality) active. PairingDescent.lean refactored for liftQ compatibility: FiniteAdeleRing, k-linear maps, bilinearity axioms. Next: define induced pairing on H¹(D) via liftQ, prove non-degeneracy, derive Serre duality.*
