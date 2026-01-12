@@ -258,8 +258,13 @@ Uses `serre_duality_finrank` from PairingNondegenerate.lean with:
 - KDiv = ellipticCanonical W = 0 (canonical divisor)
 
 This gives: h¹(D) = ℓ(0 - D) = ℓ(-D).
+
+**Note** (Cycle 372): Now requires `FiniteDimensional` and `Algebra.IsSeparable`
+assumptions for the trace-based non-degeneracy proof.
 -/
 theorem serre_duality_from_general (D : DivisorV2 (CoordRing W))
+    [FiniteDimensional F (FuncField W)]
+    [Algebra.IsSeparable F (FuncField W)]
     [Module.Finite F (AdelicH1v2.SpaceModule F (CoordRing W) (FuncField W) D)]
     [hfin : Module.Finite F (RRModuleV2_real (CoordRing W) (FuncField W) (-D))] :
     h1_finrank W D = ell_proj F (CoordRing W) (FuncField W) (-D) := by

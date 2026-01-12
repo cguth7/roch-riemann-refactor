@@ -21,10 +21,13 @@ From the perfect pairing and finite-dimensionality, we get:
 
 ## Status
 
-Cycle 366: Initial non-degeneracy axioms and finrank derivation.
+Cycle 366: Initial axiom-based version with 2 axioms.
+Cycle 372: Refactored to derive from TracePairingBridge (0 axioms here).
+           Now requires [FiniteDimensional k K] [Algebra.IsSeparable k K].
 -/
 
 import RrLean.RiemannRochV2.SerreDuality.General.PairingDescent
+import RrLean.RiemannRochV2.SerreDuality.General.TracePairingBridge
 import Mathlib.LinearAlgebra.Dimension.Constructions
 import Mathlib.LinearAlgebra.Dual.Lemmas
 
@@ -40,41 +43,48 @@ namespace RiemannRochV2.PairingNondegenerate
 variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
 variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
 variable (k : Type*) [Field k] [Algebra k R] [Algebra k K] [IsScalarTower k R K]
+variable [FiniteDimensional k K] [Algebra.IsSeparable k K]
 
-/-! ## Non-Degeneracy Axioms
+/-! ## Non-Degeneracy Theorems (Cycle 372)
 
-The Serre duality pairing is non-degenerate. We axiomatize this property
-directly rather than constructing a proof via residue calculus.
+The Serre duality pairing is non-degenerate. This was previously axiomatized,
+but is now derived from trace form non-degeneracy via TracePairingBridge.lean.
 
 Non-degeneracy means: if the pairing with a class [a] ∈ H¹(D) vanishes
 for all f ∈ L(KDiv - D), then [a] = 0.
 
 Combined with the symmetric statement (existence of witness for nonzero elements),
 this gives the perfect pairing property.
+
+**Note**: This file now requires `[FiniteDimensional k K] [Algebra.IsSeparable k K]`
+assumptions, which are needed for trace form non-degeneracy.
 -/
 
 /-- Non-degeneracy on the left: if φ([a], f) = 0 for all f ∈ L(KDiv - D), then [a] = 0.
 
-**Axiomatized**: This is the key property of the Serre duality pairing.
-Mathematically, it follows from the fact that the residue pairing is
-non-degenerate on differentials.
+**Derived from trace non-degeneracy** (Cycle 372): This follows from the
+trace-residue connection established in TracePairingBridge.lean.
 
-The proof requires showing that if a non-zero adele class pairs trivially
-with all elements of L(KDiv - D), we can find a witness in L(KDiv - D)
-that has non-zero pairing, contradiction.
+The key insight is that trace form non-degeneracy on K implies that the
+residue-based Serre pairing is also non-degenerate.
 -/
-axiom serreDualityPairing_injective (D KDiv : DivisorV2 R) :
-    Function.Injective (serreDualityPairing (R := R) (K := K) k D KDiv)
+theorem serreDualityPairing_injective (D KDiv : DivisorV2 R) :
+    Function.Injective (serreDualityPairing (R := R) (K := K) k D KDiv) :=
+  TracePairingBridge.serreDualityPairing_injective_from_trace k D KDiv
 
 /-- Non-degeneracy on the right: for any nonzero f ∈ L(KDiv - D), there exists
 [a] ∈ H¹(D) such that φ([a], f) ≠ 0.
 
+**Derived from trace non-degeneracy** (Cycle 372): This follows from the
+trace-residue connection established in TracePairingBridge.lean.
+
 This is equivalent to the surjectivity of the transpose pairing.
 Combined with left non-degeneracy, this gives the perfect pairing.
 -/
-axiom serreDualityPairing_right_nondegen (D KDiv : DivisorV2 R)
+theorem serreDualityPairing_right_nondegen (D KDiv : DivisorV2 R)
     (f : RRModuleV2_real R K (KDiv - D)) (hf : f ≠ 0) :
-    ∃ h1_class : SpaceModule k R K D, serreDualityPairing k D KDiv h1_class f ≠ 0
+    ∃ h1_class : SpaceModule k R K D, serreDualityPairing k D KDiv h1_class f ≠ 0 :=
+  TracePairingBridge.serreDualityPairing_right_nondegen_from_trace k D KDiv f hf
 
 /-! ## Dimension Consequences
 
@@ -224,15 +234,16 @@ theorem serre_duality_h1_eq_ell (D KDiv : DivisorV2 R)
 
 end RiemannRochV2.PairingNondegenerate
 
-/-! ## Summary (Cycle 366)
+/-! ## Summary (Updated Cycle 372)
 
-**New file created**: `PairingNondegenerate.lean`
+**File**: `PairingNondegenerate.lean`
 
-**Axioms introduced** (2 total):
-1. `serreDualityPairing_injective`: Left non-degeneracy (injectivity of pairing)
-2. `serreDualityPairing_right_nondegen`: Right non-degeneracy (existence of witness)
+**Cycle 366**: Initial axiom-based version with 2 axioms.
+**Cycle 372**: Refactored to derive from TracePairingBridge (0 axioms here).
 
-**Theorems proved**:
+**Theorems** (all derived, no axioms in this file):
+- `serreDualityPairing_injective`: Left non-degeneracy (from trace bridge)
+- `serreDualityPairing_right_nondegen`: Right non-degeneracy (from trace bridge)
 - `serreDualityPairing_ker_eq_bot`: Kernel is trivial
 - `h1_finrank_le_ell`: dim H¹(D) ≤ dim L(KDiv - D)
 - `transposePairing_injective`: Transpose is injective (from right non-deg)
@@ -240,12 +251,17 @@ end RiemannRochV2.PairingNondegenerate
 - `serre_duality_finrank`: **h¹(D) = ℓ(KDiv - D)**
 - `serre_duality_h1_eq_ell`: Named version
 
-**Key insight**: Non-degeneracy axioms + finite-dimensionality give
-the dimension equality via mutual bounds.
+**Dependencies**:
+- Requires `[FiniteDimensional k K] [Algebra.IsSeparable k K]`
+- Derives from `TracePairingBridge.serreDualityPairing_injective_from_trace`
+- Derives from `TracePairingBridge.serreDualityPairing_right_nondegen_from_trace`
 
-**Next steps** (Cycle 367+):
-1. Connect to `serre_duality` axiom in EllipticH1.lean
-2. Wire the general theorem to the elliptic curve instance
+**Axiom hierarchy** (Cycle 372):
+- PairingNondegenerate.lean: 0 axioms (all derived)
+- TracePairingBridge.lean: 2 axioms (residuePairing_controlled_by_trace, witness_from_trace_nondegen)
+
+**Key insight**: Non-degeneracy of Serre pairing follows from trace form non-degeneracy.
+The axioms are now at the trace-residue level rather than the abstract pairing level.
 -/
 
 end

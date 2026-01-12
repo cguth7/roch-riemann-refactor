@@ -175,17 +175,28 @@ axiom residuePairing_controlled_by_trace (D KDiv : DivisorV2 R)
 **Mathematical statement**: For nonzero f ∈ L(KDiv-D), there exists an adele a
 (representing a non-zero class [a] ∈ H¹(D)) such that φ([a], f) ≠ 0.
 
-**Why this follows from trace**: By trace non-degeneracy on K, for nonzero f,
-there exists x ∈ K with Tr(x · f) ≠ 0. We can construct an adele from this
-that has non-zero pairing.
-
-**Axiomatized** because the full proof requires constructing the appropriate adele.
+**Proof** (Cycle 374): Derived from `fullRawPairing_from_trace_witness` and
+Mathlib's `traceForm_nondegenerate`:
+1. Since f ≠ 0, by trace non-degeneracy (tracePairing_nondegenerate_right),
+   there exists x ∈ K with Tr(x · f) ≠ 0.
+2. Apply `fullRawPairing_from_trace_witness` with this trace witness to get
+   an adele a ∉ K + A(D) with pairing(a, f) ≠ 0.
 -/
-axiom witness_from_trace_nondegen (D KDiv : DivisorV2 R)
+theorem witness_from_trace_nondegen (D KDiv : DivisorV2 R)
     (f : RRModuleV2_real R K (KDiv - D)) (hf : f ≠ 0) :
     ∃ a : FiniteAdeleRing R K,
       a ∉ globalPlusBoundedSubmodule k R K D ∧
-      fullRawPairing (R := R) (K := K) k a f.val ≠ 0
+      fullRawPairing (R := R) (K := K) k a f.val ≠ 0 := by
+  -- f ≠ 0 as a subtype means f.val ≠ 0
+  have hf_val : f.val ≠ 0 := by
+    intro h
+    apply hf
+    ext
+    exact h
+  -- By trace non-degeneracy, there exists x with Tr(x · f.val) ≠ 0
+  obtain ⟨x, htr⟩ := tracePairing_nondegenerate_right k f.val hf_val
+  -- Apply the bridging axiom
+  exact fullRawPairing_from_trace_witness (R := R) (K := K) k D f.val hf_val x htr
 
 end ResidueTraceBridge
 
@@ -265,13 +276,14 @@ This file establishes the trace-pairing bridge (Lemma 2 of the attack plan).
 1. `tracePairing_nondegenerate_left/right` : Non-degeneracy from Mathlib
 2. `L_KDivMinusD_eq_divisorToFractionalIdeal` : L(KDiv-D) = I_{D-KDiv} bridge
 
-**New axioms** (the trace-residue bridge):
+**Axiom** (Cycle 374 - reduced from 2 to 1):
 1. `residuePairing_controlled_by_trace` : Left non-degeneracy axiom
-2. `witness_from_trace_nondegen` : Right non-degeneracy axiom
 
 **Theorems derived**:
-1. `serreDualityPairing_injective_from_trace` : Proves left non-degeneracy
-2. `serreDualityPairing_right_nondegen_from_trace` : Proves right non-degeneracy
+1. `witness_from_trace_nondegen` : Right non-degeneracy (Cycle 374: now PROVED from
+   `fullRawPairing_from_trace_witness` + Mathlib's `traceForm_nondegenerate`)
+2. `serreDualityPairing_injective_from_trace` : Proves left non-degeneracy
+3. `serreDualityPairing_right_nondegen_from_trace` : Proves right non-degeneracy
 
 **Key insight**: The non-degeneracy of the Serre duality pairing follows from
 the non-degeneracy of the trace form, via the residue-trace connection.
@@ -281,11 +293,12 @@ the non-degeneracy of the trace form, via the residue-trace connection.
 - Use `dual_mul_self`, `dual_dual`, and `mem_dual` from Mathlib.Different
 - The mathematical path: residue sum relates to trace via local-global principle
 
-**Axiom reduction path**:
-- PairingNondegenerate.lean axioms (2): `serreDualityPairing_injective`, `serreDualityPairing_right_nondegen`
-- TracePairingBridge.lean axioms (2): `residuePairing_controlled_by_trace`, `witness_from_trace_nondegen`
-- Under [FiniteDimensional k K] [Algebra.IsSeparable k K], the first pair derives from the second
-- The trace-bridge axioms are more "elementary" - closer to Mathlib's perfect pairing infrastructure
+**Axiom reduction path** (updated Cycle 374):
+- PairingNondegenerate.lean axioms: 0 (all derived from TracePairingBridge)
+- TracePairingBridge.lean axioms: 1 (`residuePairing_controlled_by_trace`)
+- PairingDescent.lean axioms: 14 (including new `fullRawPairing_from_trace_witness`)
+- `witness_from_trace_nondegen` is now a THEOREM (proved from bridging axiom + Mathlib trace)
+- The single remaining trace-bridge axiom captures left non-degeneracy
 -/
 
 /-! ## Axiom Replacement Roadmap

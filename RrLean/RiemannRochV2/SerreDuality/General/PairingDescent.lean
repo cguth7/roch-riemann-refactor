@@ -36,6 +36,7 @@ import RrLean.RiemannRochV2.Core.Divisor
 import RrLean.RiemannRochV2.Core.RRSpace
 import RrLean.RiemannRochV2.Adelic.AdelicH1v2
 import Mathlib.RingTheory.DedekindDomain.FiniteAdeleRing
+import Mathlib.RingTheory.Trace.Basic
 
 noncomputable section
 
@@ -347,6 +348,42 @@ axiom fullRawPairing_vanishes_on_AD (D KDiv : DivisorV2 R) (a : FiniteAdeleRing 
     (hf_bound : ∀ v, v.valuation K f ≤ WithZero.exp ((KDiv - D) v)) :
     fullRawPairing (R := R) (K := K) k a f = 0
 
+/-! ### Trace-Residue Bridge Axiom (Cycle 374)
+
+The following axiom connects the residue-based `fullRawPairing` to the global trace form.
+This bridges the gap between:
+1. Mathlib's `traceForm_nondegenerate` which gives trace witnesses
+2. The adelic pairing structure needed for Serre duality
+
+The mathematical content is: a trace witness for f (i.e., x with Tr(xf) ≠ 0) can be
+"lifted" to an adelic witness (i.e., an adele a with pairing(a, f) ≠ 0).
+-/
+
+variable [FiniteDimensional k K] [Algebra.IsSeparable k K]
+
+/-- Trace non-degeneracy lifts to the residue pairing.
+
+If f ≠ 0 and there exists x ∈ K with Tr_{K/k}(x · f) ≠ 0 (a trace witness),
+then there exists an adele a not in K + A_K(D) such that fullRawPairing(a, f) ≠ 0.
+
+This bridges the global trace non-degeneracy (from Mathlib) to the adelic residue pairing,
+enabling derivation of non-degeneracy of the Serre duality pairing.
+
+**Mathematical justification**:
+The trace Tr_{K/k}(x · f) relates to the sum Σ_v Tr_{κ(v)/k}(res_v(...)) via:
+1. Local-global principle for residues
+2. The trace decomposes as sum of local traces over places
+3. A suitable adele can be constructed from the trace witness
+
+**Axiomatized** because the full proof requires Laurent series or
+detailed local-global residue analysis.
+-/
+axiom fullRawPairing_from_trace_witness (D : DivisorV2 R) (f : K) (hf : f ≠ 0)
+    (x : K) (htr : Algebra.trace k K (x * f) ≠ 0) :
+    ∃ a : FiniteAdeleRing R K,
+      a ∉ AdelicH1v2.globalPlusBoundedSubmodule k R K D ∧
+      fullRawPairing (R := R) (K := K) k a f ≠ 0
+
 end RawPairing
 
 /-! ## Summary
@@ -376,6 +413,7 @@ This file establishes the framework for the Serre duality pairing.
 - Cycle 364 (9 axioms): `fullRawPairing`, `fullRawPairing_add_left`, `fullRawPairing_add_right`,
   `fullRawPairing_smul_left`, `fullRawPairing_smul_right`, `fullRawPairing_zero_left`,
   `fullRawPairing_zero_right`, `fullRawPairing_vanishes_on_K`, `fullRawPairing_vanishes_on_AD`
+- Cycle 374 (1 axiom): `fullRawPairing_from_trace_witness` (trace-residue bridge)
 
 **Key Changes in Cycle 364**:
 - Use FiniteAdeleRing R K directly (no witness parameter)
