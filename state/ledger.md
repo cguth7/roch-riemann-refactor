@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 366
+**Cycle**: 367
 **Phase**: 9 (General Curve Infrastructure)
 
 ### What We Have (Core RR Proof Complete)
@@ -210,6 +210,7 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
 | **Descent to H¹(D) quotient** | PairingDescent.lean | ✅ DONE (Cycle 365) |
 | **Non-degeneracy** | PairingNondegenerate.lean | ✅ AXIOMATIZED (Cycle 366) |
 | **serre_duality_finrank** | PairingNondegenerate.lean | ✅ PROVED (Cycle 366) |
+| **Elliptic curve wiring** | EllipticH1.lean | ✅ DONE (Cycle 367) |
 
 **The Core Problem** (documented in RatFuncPairing.lean:2211-2221):
 
@@ -285,6 +286,40 @@ RrLean/RiemannRochV2/SerreDuality/General/
 ---
 
 ## Recent Cycles
+
+### Cycle 367: Wire General Serre Duality to Elliptic Curve Instance
+
+**Goal**: Connect `serre_duality_finrank` from PairingNondegenerate.lean to the elliptic curve axiom.
+
+**What was done**:
+1. ✅ Added import of `PairingNondegenerate.lean` to `EllipticH1.lean`
+2. ✅ Proved `finrank_eq_ell_proj`: Module.finrank F (RRModuleV2_real R K D) = ell_proj F R K D
+3. ✅ Proved `serre_duality_from_general`: h¹(D) = ℓ(-D) derived from general theorem
+
+**Key insight**: For elliptic curves, KDiv = ellipticCanonical W = 0, so the general theorem
+h¹(D) = ℓ(KDiv - D) specializes to h¹(D) = ℓ(0 - D) = ℓ(-D), matching the `serre_duality` axiom.
+
+**Status**: The `serre_duality` axiom in EllipticH1.lean is now understood as an instance
+of the general Serre duality theorem. The axiom remains because the general theorem
+depends on non-degeneracy axioms in PairingNondegenerate.lean.
+
+**Architecture established**:
+```
+PairingNondegenerate.lean (general)
+    └── serre_duality_finrank: h¹(D) = ℓ(KDiv - D)
+              ↓
+EllipticH1.lean (specific)
+    └── serre_duality_from_general: h¹(D) = ℓ(-D)  (KDiv = 0)
+              ↓ matches
+    └── serre_duality axiom: h¹(D) = ℓ(-D)
+```
+
+**Next steps** (Cycle 368+):
+1. Potentially remove `serre_duality` axiom in favor of theorem (requires proving non-degeneracy axioms)
+2. Connect `h1_finite_all` via Serre duality: L(-D) finite → H¹(D) finite
+3. Continue Track C towards removing all Serre duality axioms
+
+---
 
 ### Cycle 366: Non-Degeneracy and Serre Duality Theorem
 
@@ -585,4 +620,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 366. Phase 9 continues - Track C (Serre Duality) active. Non-degeneracy axiomatized and serre_duality_finrank (h¹(D) = ℓ(KDiv-D)) proved via mutual bounds. Next: wire general theorem to EllipticH1.lean axiom, instantiate for elliptic curves.*
+*Updated Cycle 367. Phase 9 continues - Track C (Serre Duality) active. General theorem wired to elliptic curve instance. serre_duality_from_general derives h¹(D) = ℓ(-D) from general serre_duality_finrank with KDiv=0. Next: use Serre duality to derive h1_finite_all from ell_finite_all.*
