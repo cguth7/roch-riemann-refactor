@@ -172,23 +172,25 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
 
 ### Active Edge for Cycle 357
 
-**Target**: Complete H¹(D) finiteness proof chain
+**Target**: Wire `module_finite_spaceModule_full` to `h1_finite_all` axiom
 
-**Status**: `isOpen_bounded_finiteAdeles` is NOW PROVED (Cycle 356)!
+**Status**: COMPLETE PROOF CHAIN ACHIEVED (Cycle 356)!
 
-**Next steps to fill `h1_finite_all` axiom**:
-1. Move test_h1_finiteness.lean content into main library
-2. Prove `globalPlusBoundedSubmodule_full` is open (union of translates)
-3. Prove H¹(D) has discrete topology (quotient by open submodule)
-4. Prove compact → discrete → finite
-5. Wire to Module.Finite
+The full proof chain for H¹(D) finiteness is now complete in `test_h1_finiteness.lean`:
 
-**What's proved** (test_h1_finiteness.lean):
-- `isOpen_constraint_single_place` ✅ (helper for fixed v)
-- `isOpen_bounded_finiteAdeles` ✅ (finite intersection + isOpen_forall_imp_mem)
-- `isOpen_bounded_infty` ✅
-- `boundedSubmodule_full_isOpen` ✅
-- `integralFullAdeles_covers_h1` ✅
+1. `isOpen_constraint_single_place` ✅ (helper for typeclass resolution)
+2. `isOpen_bounded_finiteAdeles` ✅ (RestrictedProduct topology)
+3. `boundedSubmodule_full_isOpen` ✅ (product of open sets)
+4. `globalPlusBoundedSubmodule_full_isOpen` ✅ (union of translates)
+5. `discreteTopology_spaceModule_full` ✅ (quotient by open is discrete)
+6. `isCompact_image_h1` ✅ (continuous image of compact)
+7. `compactSpace_spaceModule_full` ✅ (H¹ is compact)
+8. `finite_spaceModule_full` ✅ (compact + discrete = finite)
+9. `module_finite_spaceModule_full` ✅ (Finite → Module.Finite)
+
+**Remaining**: Move content to main library and wire to axiom.
+
+**Dependency**: `Finite (Valued.ResidueField (FqtInfty Fq))` - standard for function fields
 
 ### Phase 8 Summary (Completed)
 
@@ -204,22 +206,28 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
 
 ## Recent Cycles
 
-### Cycle 356 - BREAKTHROUGH: isOpen_bounded_finiteAdeles PROVED
+### Cycle 356 - MAJOR BREAKTHROUGH: Complete H¹(D) Module.Finite Chain
 
-**Used Resolution Option B**: Helper lemma with fixed type parameter
+**Three-phase cycle**:
 
-The key was defining `isOpen_constraint_single_place` with `v` as a fixed parameter (not dependent), which allowed Lean to resolve the `Valued` typeclass instance.
+**Phase 1**: Fixed typeclass resolution with Option B (helper lemma)
+- Defined `isOpen_constraint_single_place` with `v` fixed (not dependent)
+- This allowed Lean to resolve `Valued` typeclass on `adicCompletion`
 
-**Proof structure**:
-1. Define `isOpen_constraint_single_place v n : IsOpen {a | v(a v) ≤ exp(n)}`
-   - Uses `RestrictedProduct.continuous_eval v` for continuity
-   - Uses `Valued.isOpen_closedBall` for ball openness
-2. Main theorem `isOpen_bounded_finiteAdeles`:
-   - Split: `{∀ v ∈ T, ...} ∩ {∀ v ∉ T, ...}` where T = supp(D)
-   - T-part: `Set.Finite.isOpen_biInter` + helper lemma
-   - Tᶜ-part: `RestrictedProduct.isOpen_forall_imp_mem hAopen` with p = (· ∉ T)
+**Phase 2**: Completed openness chain
+- `isOpen_bounded_finiteAdeles`: finite intersection + `isOpen_forall_imp_mem`
+- `globalPlusBoundedSubmodule_full_isOpen`: union of translates of open set
+- `discreteTopology_spaceModule_full`: quotient by open → discrete
 
-This completes the key topology lemma that was blocking H¹(D) finiteness!
+**Phase 3**: Completed finiteness chain
+- `isCompact_image_h1`: continuous image of compact (fundamental domain)
+- `compactSpace_spaceModule_full`: H¹(D) is compact
+- `finite_spaceModule_full`: compact + discrete = finite
+- `module_finite_spaceModule_full`: Finite → Module.Finite
+
+**Full proof chain for h1_finite_all in test_h1_finiteness.lean!**
+
+Dependency: `Finite (Valued.ResidueField (FqtInfty Fq))` for infinity compactness
 
 ### Cycle 355 - Root Cause Analysis and Resolution Options
 
