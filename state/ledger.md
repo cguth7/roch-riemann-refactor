@@ -192,60 +192,77 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
 
 **Goal**: Construct perfect pairing φ: H¹(D) × L(K-D) → Fq
 
-**What we have** (from Cycle 348-349 + current investigation):
+**Infrastructure status** (Cycle 361):
 | Component | Location | Status |
 |-----------|----------|--------|
-| Residue sum at finite places | RatFuncResidues.lean | ✅ DONE |
-| Total residue sum (finite + ∞) | RatFuncResidues.lean | ✅ DONE |
-| Diagonal pairing K × K → Fq | RatFuncPairing.lean | ✅ DONE |
-| Pole cancellation (bounded × L(K-D)) | RatFuncPairing.lean | ✅ DONE |
-| Quotient pairing (descent to H¹) | — | ❌ BLOCKING |
-| Non-degeneracy proof | — | ❌ NEEDED |
+| DVR for completions | DedekindDVR.lean | ✅ DONE (general) |
+| Uniformizer existence | DedekindDVR.lean | ✅ DONE |
+| Residue field isomorphism | ResidueFieldIso.lean | ✅ DONE |
+| **Local residue map res_v** | LocalResidue.lean | ❌ NEEDED (Option 3) |
+| Raw pairing ψ(a,f) = Σ res_v(a_v·f) | PairingDescent.lean | ❌ NEEDED |
+| Pairing vanishes on K + A(D) | PairingDescent.lean | ❌ NEEDED |
+| Non-degeneracy | PairingNondegenerate.lean | ❌ NEEDED |
 
 **The Core Problem** (documented in RatFuncPairing.lean:2211-2221):
 
 Current residue infrastructure is on **RatFunc**, not **adicCompletion** elements.
 For H¹(D) = A_K / (K + A(D)), representatives a ∈ A_K have components a_v ∈ K_v (completions).
 
-**Two approaches** (honest assessment):
+**IMPORTANT: We target genus-N Riemann-Roch. Do NOT fall back to P¹/RatFunc tricks.**
 
-1. **Residue on completions (GENERAL - required for arbitrary genus)**:
-   - Build isomorphism `v.adicCompletion K ≃+* LaurentSeries k`
-   - Define `res_v : K_v → k` via `(f : LaurentSeries).coeff (-1)`
-   - For a ∈ A_K, f ∈ K: define ψ(a, f) = Σ_v res_v(a_v · f)
-   - **Status**: ResidueAtX.lean has `RatFunc → LaurentSeries` coercion and residue
-   - **Gap**: Need `adicCompletion ≃ LaurentSeries` isomorphism
-   - This IS the standard Serre duality construction for all curves
+**Approaches** (in priority order):
 
-2. **Weak approximation (P¹ ONLY - fallback)**:
-   - For [a] ∈ H¹(D), find k ∈ K with a - diag(k) ∈ A_K(D)
-   - Define φ([a], f) = -residueAtInfty(k * f)
-   - **Problem**: For genus > 0, K doesn't approximate adeles well enough
-   - That's precisely WHY H¹(D) is nontrivial for higher genus!
-   - ⚠️ Does NOT generalize - only use if we give up on general case
+**Option 3: Minimal residue map on completions (PREFERRED)**
+- Build `res_v : K_v → κ(v)` using DVR + uniformizer structure
+- Minimal API needed:
+  1. `res_v : K_v →ₗ[k] κ(v)` - linear map on completion
+  2. `res_v` vanishes on valuation ring O_v (bounded elements)
+  3. Compatibility with global residue theorem on K
+- Uses "coefficient of π⁻¹" without full `K_v ≃ LaurentSeries` isomorphism
+- **Status**: DVR infrastructure exists (`DedekindDVR.lean`), uniformizers exist
+- **Gap**: Need to define the coefficient extraction map
 
-**File structure plan** (from ChatGPT):
+**Option 1: Full Laurent series isomorphism (FALLBACK if Option 3 stalls)**
+- Build general `v.adicCompletion K ≃+* LaurentSeries κ(v)`
+- More foundational but heavier lift
+- Mathlib has this for X-adic only, not general places
+
+**Option 2: Weak approximation (REJECTED - do not use)**
+- P¹-specific, fails for deg D < -1 (Cycle 349)
+- Creates circularity (depends on strong approximation axiom)
+- Does NOT generalize to genus > 0
+
+---
+
+**File structure plan**:
 
 ```
 RrLean/RiemannRochV2/SerreDuality/General/
+├── LocalResidue.lean       # res_v : K_v → κ(v) via uniformizer
 ├── PairingDescent.lean     # Raw pairing + descent to quotient
 └── PairingNondegenerate.lean  # Non-degeneracy + serre_duality
 ```
 
-- `PairingDescent.lean`: imports AdelicH1Full, RatFuncResidues, RatFuncPairing
-  - Define raw pairing on FqFullAdeleRing × RRSpace_proj_ext
-  - Prove pairing vanishes on globalPlusBoundedSubmodule_full
-  - Induced pairing SpaceModule_full → L(K-D) → Fq
+- `LocalResidue.lean`: NEW FILE
+  - Define `localResidue_v : v.adicCompletion K →ₗ[k] κ(v)`
+  - Use DVR structure + uniformizer (NOT RatFunc-specific)
+  - Prove vanishing on O_v
+  - Prove compatibility with residue theorem
+
+- `PairingDescent.lean`: imports LocalResidue, AdelicH1Full
+  - Define raw pairing ψ(a, f) = Σ_v res_v(a_v · f)
+  - Prove pairing vanishes on K + A(D)
+  - Induced pairing on H¹(D) × L(K-D)
 
 - `PairingNondegenerate.lean`: imports PairingDescent, Abstract
-  - Prove left/right non-degeneracy
-  - Derive serre_duality_full
+  - Prove non-degeneracy
+  - Derive serre_duality
 
-**Cycle 361 target** (focusing on general approach):
-1. Investigate `adicCompletion ≃ LaurentSeries` infrastructure in Mathlib
-2. Check if AllIntegersCompactProof.lean has relevant isomorphisms
-3. Determine if this isomorphism exists or needs to be built
-4. If feasible, create PairingDescent.lean with residue-on-completions approach
+**Cycle 361 target**:
+1. Create `LocalResidue.lean` skeleton
+2. Define `localResidue_v` using DVR + uniformizer structure
+3. Prove it vanishes on O_v (valuation ring)
+4. If blocked, document gap and reassess Option 1
 
 ### Phase 8 Summary (Completed)
 
