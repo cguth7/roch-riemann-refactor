@@ -2057,47 +2057,67 @@ For FqtInfty Fq = Fq((t⁻¹)), the residue field is:
 - Residue field = Fq[[t⁻¹]]/(t⁻¹) ≅ Fq
 
 Since Fq is finite (Fintype), the residue field is also finite.
+
+The proof strategy:
+1. Constants in Fq have valuation 1 under inftyValuation (by `inftyValuation.C`)
+2. So the map `Fq → RatFunc Fq → FqtInfty Fq` lands in the valuation integers
+3. Composing with the residue map gives `constantToResidue : Fq →+* ResidueField`
+4. This map is surjective (residue field of completion = residue field of original)
+5. By `Finite.of_surjective`, the residue field is finite
 -/
+
+/-- Constants in Fq have valuation 1 under the infinity valuation on FqtInfty. -/
+theorem constant_val_one_FqtInfty (k : Fq) (hk : k ≠ 0) :
+    Valued.v (inftyRingHom Fq (RatFunc.C k)) = 1 := by
+  rw [valued_FqtInfty_eq_inftyValuationDef Fq (RatFunc.C k)]
+  rw [← FunctionField.inftyValuation_apply]
+  exact FunctionField.inftyValuation.C (Fq := Fq) hk
+
+/-- Constants in Fq land in the valuation integers of FqtInfty Fq. -/
+theorem constant_mem_integer_FqtInfty (k : Fq) :
+    inftyRingHom Fq (RatFunc.C k) ∈ Valued.integer (FqtInfty Fq) := by
+  by_cases hk : k = 0
+  · subst hk
+    simp only [map_zero]
+    show Valued.v (0 : FqtInfty Fq) ≤ 1
+    simp only [Valued.v.map_zero, zero_le']
+  · show Valued.v (inftyRingHom Fq (RatFunc.C k)) ≤ 1
+    rw [constant_val_one_FqtInfty Fq k hk]
+
+/-- The ring homomorphism embedding constants into the valuation integers of FqtInfty. -/
+noncomputable def constantToInteger_FqtInfty : Fq →+* Valued.integer (FqtInfty Fq) :=
+  ((inftyRingHom Fq).comp RatFunc.C).codRestrict _ (constant_mem_integer_FqtInfty Fq)
+
+/-- The ring homomorphism from Fq to the residue field of FqtInfty Fq.
+
+This is the composition: Fq → RatFunc Fq → FqtInfty Fq → Valued.integer → ResidueField
+-/
+noncomputable def constantToResidue_FqtInfty : Fq →+* Valued.ResidueField (FqtInfty Fq) :=
+  (IsLocalRing.residue _).comp (constantToInteger_FqtInfty Fq)
+
+/-- The map from Fq to the residue field is surjective.
+
+This is the key lemma stating that the residue field of FqtInfty Fq is isomorphic to Fq.
+The proof uses that:
+1. FqtInfty Fq is the completion of RatFunc Fq at inftyValuation
+2. For a discrete valuation, the residue field of the completion equals the residue field
+   of the original ring
+3. The residue field of RatFunc Fq at inftyValuation is Fq (constant coefficients)
+-/
+theorem constantToResidue_FqtInfty_surjective :
+    Function.Surjective (constantToResidue_FqtInfty Fq) := by
+  -- Every element x with v(x) ≤ 1 can be written as c + m where c ∈ Fq and v(m) < 1
+  -- This means residue(x) = residue(c), so Fq → ResidueField is surjective
+  -- Technical proof via density of RatFunc in FqtInfty
+  sorry
 
 /-- The residue field of FqtInfty Fq is finite.
 
-This follows because the residue field of Fq((t⁻¹)) is isomorphic to Fq,
-and Fq is finite (we have Fintype Fq).
-
-## Mathematical justification
-
-- FqtInfty Fq is the completion of RatFunc Fq at the infinity valuation
-- The valuation ring is Fq[[t⁻¹]] (formal power series in t⁻¹)
-- The maximal ideal is (t⁻¹) · Fq[[t⁻¹]]
-- The residue field is Fq[[t⁻¹]]/(t⁻¹) ≅ Fq
-- Since Fq is finite, so is the residue field
-
-## Proof strategy (not yet implemented)
-
-1. **Embedding**: The map `RatFunc.C : Fq →+* RatFunc Fq` composed with completion
-   gives an embedding `Fq → FqtInfty Fq` landing in the valuation integers
-   (since `inftyValuation.C` shows constants have valuation 1).
-
-2. **To residue field**: This factors through `IsLocalRing.residue` to give
-   `Fq →+* Valued.ResidueField (FqtInfty Fq)`.
-
-3. **Surjectivity**: Every element x with v(x) = 1 is equivalent to some constant
-   modulo the maximal ideal. This uses the structure of the completion.
-
-4. **Finiteness**: By `Finite.of_surjective` from Fq (which is Fintype).
-
-## Related Mathlib lemmas
-
-- `PowerSeries.residueFieldOfPowerSeries : ResidueField k⟦X⟧ ≃+* k`
-- `inftyValuation.C : inftyValuation Fq (RatFunc.C k) = 1` (for k ≠ 0)
-- `Valued.valuedCompletion_apply : Valued.v (↑x) = v x`
+Since Fq is finite (Fintype) and the map `constantToResidue_FqtInfty : Fq → ResidueField`
+is surjective, the residue field is finite by `Finite.of_surjective`.
 -/
-instance finite_residueField_FqtInfty : Finite (Valued.ResidueField (FqtInfty Fq)) := by
-  -- The residue field of FqtInfty Fq is isomorphic to Fq
-  -- The proof requires building a surjection Fq → ResidueField(FqtInfty Fq)
-  -- Key: constants embed into the integers and generate the residue field
-  -- Blocked on Mathlib infrastructure for valued field completions
-  sorry
+instance finite_residueField_FqtInfty : Finite (Valued.ResidueField (FqtInfty Fq)) :=
+  Finite.of_surjective (constantToResidue_FqtInfty Fq) (constantToResidue_FqtInfty_surjective Fq)
 
 /-! ### Openness of Bounded Submodule -/
 

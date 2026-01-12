@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 358
+**Cycle**: 359
 **Phase**: 9 (General Curve Infrastructure)
 
 ### What We Have (Core RR Proof Complete)
@@ -57,7 +57,7 @@ Axioms used by the elliptic curve RR proof (6 on critical path):
 | File | Count | Lines | Notes |
 |------|-------|-------|-------|
 | Abstract.lean | 8 | 200,201,203,294,299,312,345,351 | P¹ instance, IsLinearPlaceSupport |
-| AdelicH1Full.lean | 3 | 757,1458,2095 | Strong approx edge cases + residue field |
+| AdelicH1Full.lean | 3 | 757,1458,2107 | Strong approx edge cases + residue surjectivity |
 | StrongApproximation.lean | 2 | 127,171 | P¹ and Elliptic density |
 
 #### All Axioms (6 in Elliptic/, 5 on critical path)
@@ -170,18 +170,16 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
    - Can be axiomatized if needed (defines the curve)
    - Or prove via differential forms
 
-### Active Edge for Cycle 359
+### Active Edge for Cycle 360
 
-**Target**: Either:
-1. Prove `finite_residueField_FqtInfty` by constructing the surjection Fq → ResidueField
-2. OR pivot to Track C (Serre Duality) if residue field proof is too infrastructure-heavy
+**Target**: Prove `constantToResidue_FqtInfty_surjective`
 
-**Status**: Investigation complete (Cycle 358) - proof strategy documented, blocked on Mathlib infrastructure.
+**Status**: Major progress in Cycle 359 - built full proof infrastructure, localized sorry to surjectivity.
 
-**Remaining sorry**: `finite_residueField_FqtInfty` in AdelicH1Full.lean:2095
-- Mathematical content is clear (ResidueField(Fq((t⁻¹))) ≅ Fq)
-- Proof strategy fully documented in docstring
-- Blocked on Mathlib infrastructure for valued field completions
+**Remaining sorry**: `constantToResidue_FqtInfty_surjective` in AdelicH1Full.lean:2107
+- Surjectivity of Fq → ResidueField (every residue class contains a constant)
+- Mathematical fact: completion preserves residue field for discrete valuations
+- Proof approach: density of RatFunc in FqtInfty + continuity of residue map
 
 ### Phase 8 Summary (Completed)
 
@@ -196,6 +194,35 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
 ---
 
 ## Recent Cycles
+
+### Cycle 359 - Residue Field Proof Infrastructure
+
+**Target**: Prove `finite_residueField_FqtInfty`
+
+**Major Progress**:
+
+1. **Built complete proof infrastructure**:
+   - `constant_val_one_FqtInfty`: Constants have valuation 1 under inftyValuation
+   - `constant_mem_integer_FqtInfty`: Constants land in valuation integers
+   - `constantToInteger_FqtInfty`: Ring hom Fq →+* Valued.integer (FqtInfty Fq)
+   - `constantToResidue_FqtInfty`: Ring hom Fq →+* Valued.ResidueField (FqtInfty Fq)
+
+2. **Theorem structure**:
+   - `finite_residueField_FqtInfty` now uses `Finite.of_surjective` from `constantToResidue_FqtInfty`
+   - Only remaining sorry is `constantToResidue_FqtInfty_surjective`
+
+3. **Sorry localization**:
+   - Previous: Generic sorry in `finite_residueField_FqtInfty` (no structure)
+   - Now: Single sorry for surjectivity with clear mathematical content
+
+**Key lemmas used**:
+- `valued_FqtInfty_eq_inftyValuationDef`: Connects Valued.v on FqtInfty to inftyValuationDef
+- `FunctionField.inftyValuation.C`: Constants have valuation 1
+- `RingHom.codRestrict`: Lift to integers subring
+
+**Lines changed**: AdelicH1Full.lean 2052-2120 (complete rewrite of residue field section)
+
+**Build status**: ✅ Passes with only expected sorries
 
 ### Cycle 358 - Residue Field Investigation
 
