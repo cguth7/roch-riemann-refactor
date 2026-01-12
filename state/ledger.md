@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 355
+**Cycle**: 356
 **Phase**: 9 (General Curve Infrastructure)
 
 ### What We Have (Core RR Proof Complete)
@@ -170,32 +170,25 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
    - Can be axiomatized if needed (defines the curve)
    - Or prove via differential forms
 
-### Active Edge for Cycle 356
+### Active Edge for Cycle 357
 
-**Target**: Complete `isOpen_bounded_finiteAdeles` using one of the identified resolution options
+**Target**: Complete H¹(D) finiteness proof chain
 
-**Status**: Mathematical proof is COMPLETE. Formalization blocked by typeclass resolution only.
+**Status**: `isOpen_bounded_finiteAdeles` is NOW PROVED (Cycle 356)!
 
-**Root Cause Identified (Cycle 355)**:
-Lean's typeclass resolution fails on `Valued (adicCompletion K v)` when `v` appears in a dependent function context like `(fun v => adicCompletion K v) v`. The type doesn't simplify, so instance search gets stuck.
+**Next steps to fill `h1_finite_all` axiom**:
+1. Move test_h1_finiteness.lean content into main library
+2. Prove `globalPlusBoundedSubmodule_full` is open (union of translates)
+3. Prove H¹(D) has discrete topology (quotient by open submodule)
+4. Prove compact → discrete → finite
+5. Wire to Module.Finite
 
-**Complete Proof Strategy**:
-1. Split: `{∀ v ∈ T, constraint} ∩ {∀ v ∉ T, constraint}` where T = supp(D)
-2. First part: `Set.Finite.isOpen_biInter` + `RestrictedProduct.continuous_eval` + `hBall_open`
-3. Second part: `RestrictedProduct.isOpen_forall_imp_mem` with `p := (· ∉ T)` since Ball_v = O_v when D v = 0
-
-**Resolution Options** (~30 min focused effort):
-- **A)** Add explicit `@Valued _ _ inst` annotations with all type parameters
-- **B)** Define helper lemmas with concrete types outside the dependent context
-- **C)** Use `haveI` to provide local instances
-
-**This is NOT a mathematical gap** - purely Lean elaboration bookkeeping.
-
-**What's proved** (Cycles 350-352):
-- `integralFullAdeles_covers_h1` ✅
+**What's proved** (test_h1_finiteness.lean):
+- `isOpen_constraint_single_place` ✅ (helper for fixed v)
+- `isOpen_bounded_finiteAdeles` ✅ (finite intersection + isOpen_forall_imp_mem)
 - `isOpen_bounded_infty` ✅
-- `boundedSubmodule_full_isOpen` ✅ (modulo finite adeles lemma)
-- Complete chain from openness → Module.Finite documented
+- `boundedSubmodule_full_isOpen` ✅
+- `integralFullAdeles_covers_h1` ✅
 
 ### Phase 8 Summary (Completed)
 
@@ -210,6 +203,23 @@ Lean's typeclass resolution fails on `Valued (adicCompletion K v)` when `v` appe
 ---
 
 ## Recent Cycles
+
+### Cycle 356 - BREAKTHROUGH: isOpen_bounded_finiteAdeles PROVED
+
+**Used Resolution Option B**: Helper lemma with fixed type parameter
+
+The key was defining `isOpen_constraint_single_place` with `v` as a fixed parameter (not dependent), which allowed Lean to resolve the `Valued` typeclass instance.
+
+**Proof structure**:
+1. Define `isOpen_constraint_single_place v n : IsOpen {a | v(a v) ≤ exp(n)}`
+   - Uses `RestrictedProduct.continuous_eval v` for continuity
+   - Uses `Valued.isOpen_closedBall` for ball openness
+2. Main theorem `isOpen_bounded_finiteAdeles`:
+   - Split: `{∀ v ∈ T, ...} ∩ {∀ v ∉ T, ...}` where T = supp(D)
+   - T-part: `Set.Finite.isOpen_biInter` + helper lemma
+   - Tᶜ-part: `RestrictedProduct.isOpen_forall_imp_mem hAopen` with p = (· ∉ T)
+
+This completes the key topology lemma that was blocking H¹(D) finiteness!
 
 ### Cycle 355 - Root Cause Analysis and Resolution Options
 
