@@ -157,16 +157,25 @@ theorem isOpen_bounded_finiteAdeles (D : DivisorV2 Fq[X]) :
   -- - For v ∈ Sᶜ: need a v ∈ Ball_v
   -- Non-trivial places: T_S = Sᶜ ∪ {v ∈ S | D v < 0} which is finite.
 
-  -- The complete proof is blocked by Lean's typeclass resolution for dependent types.
-  -- The mathematical argument is:
-  -- 1. Use RestrictedProduct.topologicalSpace_eq_iSup to expand the topology
-  -- 2. For each cofinite S, define T_S = Sᶜ ∪ {v | D v < 0} (finite)
-  -- 3. Show preimage under inclusion equals {f | ∀ v ∈ T_S, f.1 v ∈ Ball_v}
-  -- 4. This is open by isOpen_set_pi + continuous_coe
+  -- PROOF STRATEGY (mathematically complete, formalization blocked):
   --
-  -- The formalization fails because Lean can't resolve `Valued` instances on
-  -- dependent function types in RestrictedProduct. This is a Lean limitation,
-  -- not a mathematical gap.
+  -- 1. Split into: {∀ v ∈ T, constraint} ∩ {∀ v ∉ T, constraint} where T = supp(D)
+  -- 2. First part: finite intersection of preimages of open balls, hence open
+  --    Uses: Set.Finite.isOpen_biInter, RestrictedProduct.continuous_eval, hBall_open
+  -- 3. Second part: for v ∉ T, D v = 0 so Ball_v = O_v
+  --    Uses: RestrictedProduct.isOpen_forall_imp_mem with p := (· ∉ T)
+  --
+  -- FORMALIZATION BLOCKER:
+  -- Lean's typeclass resolution fails on `Valued (adicCompletion K v)` when v appears
+  -- in a dependent function context like `(fun v => adicCompletion K v) v`.
+  -- The type doesn't simplify, causing instance search to get stuck.
+  --
+  -- RESOLUTION OPTIONS:
+  -- A) Add explicit `@Valued` annotations with all type parameters
+  -- B) Define helper lemmas with fixed types outside the dependent context
+  -- C) Use `haveI` to provide local instances
+  --
+  -- The mathematical content is clear; this is purely a Lean elaboration issue.
   sorry
 
 omit [Fintype Fq] [DecidableEq Fq] in
