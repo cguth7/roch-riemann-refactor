@@ -52,12 +52,12 @@ Axioms used by the elliptic curve RR proof (6 on critical path):
 | StrongApprox | `instStrongApprox_P1` | P¹ density |
 | StrongApprox | `instStrongApprox_Elliptic` | Elliptic density |
 
-#### Sorry Placeholders (13 found - updated Cycle 347)
+#### Sorry Placeholders (14 found - updated Cycle 359)
 
 | File | Count | Lines | Notes |
 |------|-------|-------|-------|
 | Abstract.lean | 8 | 200,201,203,294,299,312,345,351 | P¹ instance, IsLinearPlaceSupport |
-| AdelicH1Full.lean | 3 | 757,1458,2107 | Strong approx edge cases + residue surjectivity |
+| AdelicH1Full.lean | 4 | 757,1458,2108,2130 | Strong approx + residue inj/surj |
 | StrongApproximation.lean | 2 | 127,171 | P¹ and Elliptic density |
 
 #### All Axioms (6 in Elliptic/, 5 on critical path)
@@ -206,23 +206,27 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
    - `constant_mem_integer_FqtInfty`: Constants land in valuation integers
    - `constantToInteger_FqtInfty`: Ring hom Fq →+* Valued.integer (FqtInfty Fq)
    - `constantToResidue_FqtInfty`: Ring hom Fq →+* Valued.ResidueField (FqtInfty Fq)
+   - `constantToResidue_FqtInfty_injective`: Theorem with proof sketch (v=1 ⟹ unit)
+   - `constantToResidue_FqtInfty_surjective`: Theorem with proof sketch (density)
 
 2. **Theorem structure**:
-   - `finite_residueField_FqtInfty` now uses `Finite.of_surjective` from `constantToResidue_FqtInfty`
-   - Only remaining sorry is `constantToResidue_FqtInfty_surjective`
+   - `finite_residueField_FqtInfty` uses `Finite.of_surjective`
+   - Two localized sorries: injectivity (line 2108) and surjectivity (line 2130)
 
 3. **Sorry localization**:
-   - Previous: Generic sorry in `finite_residueField_FqtInfty` (no structure)
-   - Now: Single sorry for surjectivity with clear mathematical content
+   - Previous: 1 generic sorry with no structure
+   - Now: 2 clean mathematical statements with documented proof sketches
+   - Injectivity: v(k-k') = 1 for distinct constants ⟹ unit ⟹ nonzero residue
+   - Surjectivity: Completion preserves residue field, density argument
 
 **Key lemmas used**:
-- `valued_FqtInfty_eq_inftyValuationDef`: Connects Valued.v on FqtInfty to inftyValuationDef
+- `valued_FqtInfty_eq_inftyValuationDef`: Connects Valued.v to inftyValuationDef
 - `FunctionField.inftyValuation.C`: Constants have valuation 1
 - `RingHom.codRestrict`: Lift to integers subring
 
-**Lines changed**: AdelicH1Full.lean 2052-2120 (complete rewrite of residue field section)
+**Lines changed**: AdelicH1Full.lean 2052-2135 (residue field section with inj/surj theorems)
 
-**Build status**: ✅ Passes with only expected sorries
+**Build status**: ✅ Passes with 4 sorries in AdelicH1Full.lean
 
 ### Cycle 358 - Residue Field Investigation
 
