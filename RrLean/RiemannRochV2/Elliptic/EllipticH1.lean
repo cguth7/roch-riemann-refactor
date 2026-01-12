@@ -40,6 +40,7 @@ The 1-dimensional H¹(O) is spanned by the class of the invariant differential
 import RrLean.RiemannRochV2.Elliptic.EllipticCanonical
 import RrLean.RiemannRochV2.Adelic.AdelicH1v2
 import RrLean.RiemannRochV2.Definitions.Projective
+import RrLean.RiemannRochV2.SerreDuality.General.PairingNondegenerate
 
 noncomputable section
 
@@ -214,6 +215,85 @@ using the Euler characteristic theorem.
 
 The "+1" in ℓ(D) = deg(D) + 1 for P¹ comes from 1 - g = 1 - 0 = 1.
 For elliptic curves: 1 - g = 1 - 1 = 0, so no "+1" term.
+-/
+
+/-! ## Connection to General Serre Duality (Cycle 367)
+
+The general Serre duality theorem from `PairingNondegenerate.lean` states:
+  h¹(D) = ℓ(KDiv - D)
+
+For elliptic curves with KDiv = ellipticCanonical = 0, this specializes to:
+  h¹(D) = ℓ(0 - D) = ℓ(-D)
+
+This matches the `serre_duality` axiom above. We show this connection explicitly.
+-/
+
+open RiemannRochV2.PairingNondegenerate
+
+/-- Helper: The finrank of an R-submodule viewed as a k-module equals
+the finrank of its restrictScalars version.
+
+This is because restrictScalars preserves the carrier and the k-module action
+comes from the same algebra k → K in both cases. -/
+theorem finrank_eq_ell_proj (D : DivisorV2 (CoordRing W))
+    [Module.Finite F (RRModuleV2_real (CoordRing W) (FuncField W) D)] :
+    Module.finrank F (RRModuleV2_real (CoordRing W) (FuncField W) D) =
+    ell_proj F (CoordRing W) (FuncField W) D := by
+  -- ell_proj F R K D = Module.finrank F (RRSpace_proj F R K D)
+  -- RRSpace_proj F R K D = (RRModuleV2_real R K D).restrictScalars F
+  -- The carriers are the same and the F-module structure is the same
+  -- So finrank should be equal
+  unfold ell_proj RRSpace_proj
+  -- Both compute Module.finrank F of essentially the same k-module
+  -- The restrictScalars doesn't change the finrank since it preserves
+  -- the underlying module structure over the scalar field F
+  rfl
+
+/-- The general Serre duality theorem instantiated for elliptic curves.
+
+Uses `serre_duality_finrank` from PairingNondegenerate.lean with:
+- k = F (base field)
+- R = CoordRing W (coordinate ring)
+- K = FuncField W (function field)
+- KDiv = ellipticCanonical W = 0 (canonical divisor)
+
+This gives: h¹(D) = ℓ(0 - D) = ℓ(-D).
+-/
+theorem serre_duality_from_general (D : DivisorV2 (CoordRing W))
+    [Module.Finite F (AdelicH1v2.SpaceModule F (CoordRing W) (FuncField W) D)]
+    [hfin : Module.Finite F (RRModuleV2_real (CoordRing W) (FuncField W) (-D))] :
+    h1_finrank W D = ell_proj F (CoordRing W) (FuncField W) (-D) := by
+  -- Need to provide the Module.Finite instance for (ellipticCanonical W - D)
+  -- Since ellipticCanonical W - D = -D, we can use the provided instance
+  have heq : ellipticCanonical W - D = -D := ellipticCanonical_sub W D
+  -- Transport the Module.Finite instance along this equality
+  haveI : Module.Finite F (RRModuleV2_real (CoordRing W) (FuncField W) (ellipticCanonical W - D)) := by
+    rw [heq]; exact hfin
+  -- Apply the general theorem with KDiv = ellipticCanonical W
+  have h_general := serre_duality_finrank (R := CoordRing W) (K := FuncField W) F D (ellipticCanonical W)
+  -- h_general : Module.finrank F (SpaceModule F R K D) = Module.finrank F (RRModuleV2_real R K (K - D))
+  -- Since ellipticCanonical W - D = -D
+  rw [heq] at h_general
+  -- h_general : Module.finrank F (SpaceModule F R K D) = Module.finrank F (RRModuleV2_real R K (-D))
+  calc h1_finrank W D
+      = Module.finrank F (AdelicH1v2.SpaceModule F (CoordRing W) (FuncField W) D) := rfl
+    _ = Module.finrank F (RRModuleV2_real (CoordRing W) (FuncField W) (-D)) := h_general
+    _ = ell_proj F (CoordRing W) (FuncField W) (-D) := finrank_eq_ell_proj W (-D)
+
+/-! ## Status (Cycle 367)
+
+The `serre_duality_from_general` theorem shows that the `serre_duality` axiom
+(h¹(D) = ℓ(-D)) is derivable from the general Serre duality theorem in
+`PairingNondegenerate.lean`, given the finite-dimensionality assumptions.
+
+The `serre_duality` axiom can now be understood as an instance of the general
+Serre duality theorem for the special case of elliptic curves where:
+- The canonical divisor is 0
+- The base field is F
+
+**Note**: The `serre_duality` axiom is kept for now because the general theorem
+has its own axioms (non-degeneracy of the pairing). Once those are proved,
+the elliptic-specific axiom becomes redundant.
 -/
 
 end RiemannRochV2.Elliptic
