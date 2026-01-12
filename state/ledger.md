@@ -60,44 +60,61 @@ Once these axioms become theorems:
 - `h1_finite_all` follows (finite L(K-D) → finite H¹(D)) → **removes another axiom**
 - 2 axioms eliminated with one proof!
 
-### Attack Strategy
+### COMMITTED ROUTE: Trace-Dual / Different Ideal
 
-**Mathematical approach**: Show the residue pairing is non-degenerate.
+**Decision**: We commit to the trace-dual route. This is the cleanest mathlib-native path.
+Laurent series work is suspended unless we hit a blocker.
 
-For **left non-degeneracy**: If [a] ≠ 0 in H¹(D), construct f ∈ L(KDiv-D) with φ([a], f) ≠ 0.
-- Idea: [a] ≠ 0 means a ∉ K + A(D), so a has "residual information" at some place
-- Find f that "detects" this residue via the pairing
+### Why Trace-Dual?
 
-For **right non-degeneracy**: If f ≠ 0 in L(KDiv-D), construct [a] ∈ H¹(D) with φ([a], f) ≠ 0.
-- Idea: f ≠ 0 has poles (at places where val < 0)
-- Construct adele a that pairs non-trivially with f at a pole
+1. **Infrastructure exists**: `DifferentIdealBridge.lean` + `Mathlib.RingTheory.DedekindDomain.Different`
+2. **Avoids Laurent series**: No need to build K_v ≃ LaurentSeries κ(v)
+3. **Perfect pairing for free**: Mathlib proves `dual_mul_self`, `dual_dual`, `traceForm_nondegenerate`
 
-### Required Infrastructure
+### Goal → Required Lemmas
 
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Pairing on quotient | ✅ DONE | `serreDualityPairing` via liftQ |
-| Pairing formula | ✅ DONE | `φ([a], f) = fullRawPairing k a f.val` |
-| Local residue | ✅ AXIOM | `localResidueHom : K_v →+ κ(v)` |
-| Residue vanishes on O_v | ✅ AXIOM | `localResidue_vanishes_on_integers` |
-| **Residue non-zero detection** | ❌ NEEDED | Key lemma for non-degeneracy |
-| **Laurent series (maybe)** | ❓ TBD | May need K_v ≃ LaurentSeries κ(v) |
+```
+TRACE-DUAL ATTACK PLAN
+│
+├── Lemma 1: L(KDiv-D) ↔ dual(I_D) as fractional ideals
+│   └── Use: DifferentIdealBridge.fractionalIdealToDivisor_dual
+│   └── Use: mem_divisorToFractionalIdeal_iff
+│   └── Show: RRModuleV2_real R K (KDiv-D) ≅ dual(divisorToFractionalIdeal R K D)
+│
+├── Lemma 2: serreDualityPairing = trace pairing (restricted)
+│   └── Show: φ([a], f) corresponds to Tr_{K/k}(a·f) on I × dual(I)
+│   └── Bridge: fullRawPairing ↔ trace form
+│
+├── Lemma 3: Perfect pairing from Mathlib
+│   └── Use: Mathlib.dual_mul_self : dual(I) · I = dual(1)
+│   └── Use: Mathlib.dual_dual : dual(dual(I)) = I
+│   └── Use: Mathlib.traceForm_nondegenerate
+│
+└── Theorem: Perfect pairing ⇒ injective ⇒ non-degeneracy
+    └── Use: LinearMap.IsPerfPair or equivalent
+    └── Conclude: serreDualityPairing_injective ✓
+    └── Note: Right non-deg follows from perfect pairing symmetry
+```
 
-### Potential Approaches
+### Existing Infrastructure
 
-**Option A: Direct residue analysis**
-- For f with pole at v, show ∃ a_v with res_v(a_v · f) ≠ 0
-- Construct global adele from local witness
-- May avoid full Laurent series
+| Component | Location | Status |
+|-----------|----------|--------|
+| Divisor ↔ Fractional Ideal | DifferentIdealBridge.lean | ✅ DONE |
+| `fractionalIdealToDivisor_dual` | DifferentIdealBridge.lean | ✅ DONE |
+| `mem_divisorToFractionalIdeal_iff` | DifferentIdealBridge.lean | ✅ DONE |
+| Canonical divisor from different | DifferentIdealBridge.lean | ✅ DONE |
+| `dual_mul_self`, `dual_dual` | Mathlib.Different | ✅ MATHLIB |
+| `traceForm_nondegenerate` | Mathlib.Different | ✅ MATHLIB |
+| **Bridge: L(KDiv-D) ≅ dual(I_D)** | TBD | ❌ NEEDED |
+| **Bridge: pairing = trace** | TBD | ❌ NEEDED |
 
-**Option B: Laurent series infrastructure**
-- Build K_v ≃ LaurentSeries κ(v)
-- Residue = coefficient of t⁻¹
-- More foundational, enables coefficient manipulation
+### Key Insight
 
-**Option C: Duality via Tate's thesis style**
-- Use self-duality of adeles
-- More abstract but potentially cleaner
+The "right non-degeneracy" axiom is actually redundant once we have perfect pairing:
+- Perfect pairing ⇒ both left and right non-degeneracy
+- `transposePairing_injective` already exists (follows from right non-deg)
+- We only need to prove ONE direction; the other follows from symmetry
 
 ---
 
@@ -170,9 +187,17 @@ RrLean/RiemannRochV2/
 |------|---------|--------|
 | EulerCharacteristic.lean | Main RR theorems | ✅ Sorry-free |
 | PairingNondegenerate.lean | **BOSS BATTLE** | 2 axioms to prove |
+| DifferentIdealBridge.lean | **KEY FOR ATTACK** | ✅ Bridge lemmas exist |
 | PairingDescent.lean | Pairing infrastructure | ✅ Complete (13 axioms) |
-| LocalResidue.lean | Residue map | ✅ Axiomatized (2 axioms) |
 
 ---
 
-*Updated Cycle 368. BOSS BATTLE ENGAGED: Proving non-degeneracy axioms. Victory conditions: eliminate serreDualityPairing_injective and serreDualityPairing_right_nondegen. Reward: serre_duality and h1_finite_all axioms become theorems.*
+## References
+
+- `Mathlib.RingTheory.DedekindDomain.Different` - Trace dual, different ideal
+- `DifferentIdealBridge.lean` - Divisor ↔ Fractional ideal correspondence
+- `TraceDualityProof.lean` - May have additional bridge lemmas
+
+---
+
+*Updated Cycle 368. BOSS BATTLE: Trace-dual route committed. Goal: prove L(KDiv-D) ≅ dual(I_D), show pairing = trace form, invoke Mathlib perfect pairing theorems. Victory: 2 axioms eliminated.*
