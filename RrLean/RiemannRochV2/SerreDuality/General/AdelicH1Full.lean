@@ -2095,6 +2095,29 @@ This is the composition: Fq → RatFunc Fq → FqtInfty Fq → Valued.integer �
 noncomputable def constantToResidue_FqtInfty : Fq →+* Valued.ResidueField (FqtInfty Fq) :=
   (IsLocalRing.residue _).comp (constantToInteger_FqtInfty Fq)
 
+/-- The map from Fq to the residue field is injective.
+
+This follows because distinct constants have valuation 1, so their difference
+also has valuation 1, which means it's not in the maximal ideal.
+
+**Proof sketch**: If constantToResidue k = constantToResidue k', then
+constantToInteger (k - k') has residue 0, meaning it's in the maximal ideal.
+But for k ≠ k', we have v(C(k-k')) = 1, so C(k-k') is a unit (v = 1 in valuation ring ⟺ unit).
+Units have nonzero residue, contradiction.
+-/
+theorem constantToResidue_FqtInfty_injective :
+    Function.Injective (constantToResidue_FqtInfty Fq) := by
+  intro k k' h
+  by_contra hne
+  have hkk' : k - k' ≠ 0 := sub_ne_zero.mpr hne
+  have hval : Valued.v (inftyRingHom Fq (RatFunc.C (k - k'))) = 1 :=
+    constant_val_one_FqtInfty Fq (k - k') hkk'
+  -- v(C(k-k')) = 1 means C(k-k') is a unit in the valuation ring
+  -- (since inverse has v = 1 too, hence ≤ 1, hence in O)
+  -- But residue (constantToInteger (k-k')) = 0 (from h after simplification)
+  -- which means constantToInteger (k-k') is a nonunit - contradiction
+  sorry
+
 /-- The map from Fq to the residue field is surjective.
 
 This is the key lemma stating that the residue field of FqtInfty Fq is isomorphic to Fq.
