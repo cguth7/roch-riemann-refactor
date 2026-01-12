@@ -156,21 +156,153 @@ axiom boundedTimesLKD_residue_zero (D : DivisorV2 R) (w : HeightOneSpectrum R)
     (hf : ∀ u : HeightOneSpectrum R, u.valuation K f ≤ WithZero.exp ((-D) u))
     : embeddedResidue K w (a_w * f) = 0
 
-/-! ## Summary
+/-! ## Sum of Residues to Base Field
 
-This file establishes the framework for the Serre duality pairing:
+To define a pairing H¹(D) × L(K-D) → k, we need to sum residues in a common base field.
 
+For each place v, the local residue lies in κ(v) = O_v/m_v. To get a value in k,
+we use the trace map Tr_{κ(v)/k}.
+
+**Axiomatization**: We axiomatize the traced residue sum directly, assuming:
+1. A base field k over which everything is defined
+2. For each place v, there's a trace Tr_{κ(v)/k} : κ(v) → k
+3. The sum Σ_v Tr_{κ(v)/k}(res_v(f)) is well-defined and finite for global f ∈ K
+-/
+
+section TracedResidueSum
+
+variable (k : Type*) [Field k] [Algebra k R] [Algebra k K] [IsScalarTower k R K]
+
+/-- A traced residue pairing map.
+
+This takes a global element f ∈ K and returns the sum of traced residues:
+  Σ_v Tr_{κ(v)/k}(res_v(f)) ∈ k
+
+**Axiomatized**: The concrete construction requires:
+1. Trace maps Tr_{κ(v)/k} for each place
+2. Finiteness of the sum (only finitely many poles contribute)
+3. Linearity over k
+-/
+axiom tracedResidueSum : K →+ k
+
+/-- The Global Residue Theorem: sum of traced residues of a global element is zero.
+
+This is the fundamental theorem that makes the Serre duality pairing well-defined:
+For any f ∈ K, Σ_v Tr(res_v(f)) = 0.
+
+**Axiomatized**: This is a classical theorem from algebraic geometry.
+For P¹, it follows from the residue theorem for rational functions.
+For general curves, it's the Residue Theorem / Stokes' theorem on curves.
+-/
+axiom globalResidueTheorem_traced (f : K) : tracedResidueSum (K := K) k f = 0
+
+end TracedResidueSum
+
+/-! ## The Raw Serre Duality Pairing
+
+The Serre duality pairing is built from residues:
+  ψ(a, f) = Σ_v Tr(res_v(a_v · f))
+
+For a ∈ A_K (adele) and f ∈ K (global element).
+
+We need this to:
+1. Be bilinear
+2. Vanish on K (global elements) by the residue theorem
+3. Vanish on A(D) when f ∈ L(K-D) by pole cancellation
+
+## Key Axioms for the Pairing
+
+Rather than constructing the pairing from local residues (which requires Laurent series),
+we axiomatize the full pairing directly with its essential properties:
+1. Bilinearity
+2. Vanishing on K (residue theorem)
+3. Vanishing on A(D) for f ∈ L(K-D) (pole cancellation)
+
+This isolates the gap while validating the Serre duality structure.
+-/
+
+/-- The full Serre duality raw pairing on adeles.
+
+ψ : A_K × K → k
+ψ(a, f) = Σ_v Tr(res_v(a_v · f))
+
+**Axiomatized**: The sum is well-defined and finite for any adele a ∈ A_K and f ∈ K.
+
+We represent adeles as families a : HeightOneSpectrum R → K with finite support
+outside the integers. The full infrastructure uses FiniteAdeleRing, but we
+axiomatize the pairing directly.
+-/
+axiom fullRawPairing (k : Type*) [Field k] [Algebra k R] [Algebra k K] [IsScalarTower k R K]
+    (a : HeightOneSpectrum R → K) (f : K)
+    (ha : { v : HeightOneSpectrum R | v.valuation K (a v) > 1 }.Finite) : k
+
+/-! ## Vanishing on K + A(D)
+
+The key properties for descent to the quotient H¹(D) = A_K / (K + A(D)).
+
+### Vanishing on K (diagonal embedding)
+
+When a is constant (a_v = g for all v), the pairing reduces to:
+  ψ(diag(g), f) = Σ_v Tr(res_v(g · f)) = 0
+
+by the global residue theorem for g · f ∈ K.
+
+### Vanishing on A(D) for f ∈ L(K-D)
+
+When a ∈ A(D) (v(a_v) ≤ D(v)) and f ∈ L(K-D) (v(f) ≤ (K-D)(v)):
+  v(a_v · f) ≤ D(v) + (K-D)(v) = K(v)
+
+For the canonical divisor K: if K(v) ≤ 0 at all places, then a_v · f has no pole.
+More carefully: the residue depends only on the -1 coefficient in the Laurent expansion,
+which vanishes when the product has bounded pole order.
+-/
+
+/-- Vanishing on K: the pairing is zero for constant (diagonal) adeles.
+
+For g ∈ K embedded diagonally: a_v = g for all v.
+ψ(diag(g), f) = Σ_v Tr(res_v(g · f)) = 0 by the global residue theorem.
+-/
+axiom fullRawPairing_vanishes_on_K (k : Type*) [Field k] [Algebra k R] [Algebra k K]
+    [IsScalarTower k R K] (g f : K) (hg : g ≠ 0) :
+    fullRawPairing (R := R) (K := K) (k := k) (fun _ => g) f (poleSupport_finite K g hg) = 0
+
+/-- Vanishing on A(D): the pairing is zero for bounded adeles when f ∈ L(K-D).
+
+For a ∈ A(D) (v(a_v) ≤ exp(D(v))) and f ∈ L(K-D) (v(f) ≤ exp((K-D)(v))):
+Each local contribution ψ_v(a_v, f) = 0 because a_v · f has no pole at v.
+-/
+axiom fullRawPairing_vanishes_on_AD (k : Type*) [Field k] [Algebra k R] [Algebra k K]
+    [IsScalarTower k R K] (D : DivisorV2 R) (a : HeightOneSpectrum R → K) (f : K)
+    (ha_bound : ∀ v, v.valuation K (a v) ≤ WithZero.exp (D v))
+    (hf_bound : ∀ v, v.valuation K f ≤ WithZero.exp ((-D) v))
+    (ha : { v : HeightOneSpectrum R | v.valuation K (a v) > 1 }.Finite) :
+    fullRawPairing (R := R) (K := K) (k := k) a f ha = 0
+
+/-! ## Summary (Cycle 363)
+
+This file establishes the framework for the Serre duality pairing.
+
+### Local Infrastructure (Cycle 362)
 1. **embeddedResidue**: Local residue of global elements via K → K_v embedding
 2. **embeddedResidue_vanishes_no_pole**: No pole means zero residue
-3. **poleSupport_finite**: Global elements have finitely many poles
-4. **boundedTimesLKD_residue_zero**: Bounded × L(K-D) gives zero residue
+3. **poleSupport_finite**: Global elements have finitely many poles (axiom)
+4. **boundedTimesLKD_residue_zero**: Bounded × L(K-D) gives zero residue (axiom)
 
-**Axioms introduced (2)**:
-- `poleSupport_finite`: Elements of K have finitely many poles
-- `boundedTimesLKD_residue_zero`: Bounded adele × L(K-D) → zero residue
+### Global Traced Residue (Cycle 363)
+5. **tracedResidueSum**: AddMonoidHom K →+ k for summing traced residues (axiom)
+6. **globalResidueTheorem_traced**: Σ_v Tr(res_v(f)) = 0 for global f (axiom)
 
-**TODO (Cycle 363+)**:
-- Formalize the sum of residues properly
+### Full Pairing (Cycle 363)
+7. **fullRawPairing**: Pairing ψ(a, f) = Σ_v Tr(res_v(a_v·f)) on adeles (axiom)
+8. **fullRawPairing_vanishes_on_K**: Pairing vanishes on K (residue theorem) (axiom)
+9. **fullRawPairing_vanishes_on_AD**: Pairing vanishes on A(D) for f ∈ L(K-D) (axiom)
+
+**Axioms introduced**:
+- Cycle 362 (2 axioms): `poleSupport_finite`, `boundedTimesLKD_residue_zero`
+- Cycle 363 (5 axioms): `tracedResidueSum`, `globalResidueTheorem_traced`,
+  `fullRawPairing`, `fullRawPairing_vanishes_on_K`, `fullRawPairing_vanishes_on_AD`
+
+**TODO (Cycle 364+)**:
 - Define the induced pairing on H¹(D) × L(K-D) using Submodule.liftQ
 - Prove non-degeneracy (→ Serre duality)
 - Connect to existing serre_duality axiom in EllipticH1.lean
