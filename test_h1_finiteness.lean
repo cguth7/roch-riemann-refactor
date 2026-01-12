@@ -241,18 +241,91 @@ theorem boundedSubmodule_full_isOpen (D : ExtendedDivisor (Polynomial Fq)) :
   -- Step 2: Product of open sets is open
   exact (isOpen_bounded_finiteAdeles D.finite).prod (isOpen_bounded_infty D.inftyCoeff)
 
+/-! ## Openness of K + A_K(D) -/
+
+/-- K + A_K(D) is open because A_K(D) is open and K acts by translation.
+    In a topological group, K + B = ⋃_{k ∈ K} (k + B) is open when B is open. -/
+theorem globalPlusBoundedSubmodule_full_isOpen (D : ExtendedDivisor (Polynomial Fq)) :
+    IsOpen (globalPlusBoundedSubmodule_full Fq D : Set (FqFullAdeleRing Fq)) := by
+  -- globalPlusBoundedSubmodule_full = globalSubmodule_full + boundedSubmodule_full
+  -- = { k + b | k ∈ K, b ∈ A_K(D) }
+  -- = ⋃_{k ∈ K} (k + A_K(D))
+  -- This is a union of translates of the open set A_K(D)
+  have hBopen : IsOpen (boundedSubmodule_full Fq D : Set (FqFullAdeleRing Fq)) :=
+    boundedSubmodule_full_isOpen D
+
+  -- The sum of submodules as a set is ⋃_{g ∈ G} (g + H) when G + H
+  have h_eq : (globalPlusBoundedSubmodule_full Fq D : Set (FqFullAdeleRing Fq)) =
+      ⋃ k : RatFunc Fq, (fun x => fqFullDiagonalEmbedding Fq k + x) ''
+        (boundedSubmodule_full Fq D : Set (FqFullAdeleRing Fq)) := by
+    ext a
+    simp only [Set.mem_iUnion, Set.mem_image]
+    constructor
+    · intro ha
+      -- a ∈ K + A_K(D) means ∃ k, b, a = k + b
+      unfold globalPlusBoundedSubmodule_full at ha
+      have ha' := ha
+      rw [SetLike.mem_coe] at ha'
+      -- Use Submodule.add_eq_sup to convert + to ⊔
+      rw [Submodule.add_eq_sup] at ha'
+      rw [Submodule.mem_sup] at ha'
+      obtain ⟨g, hg, b, hb, hab⟩ := ha'
+      obtain ⟨k, hk⟩ := hg
+      use k, a - fqFullDiagonalEmbedding Fq k
+      constructor
+      · -- Need: a - k ∈ A_K(D)
+        have heq : a - fqFullDiagonalEmbedding Fq k = b := by
+          calc a - fqFullDiagonalEmbedding Fq k
+              = (g + b) - fqFullDiagonalEmbedding Fq k := by rw [hab]
+            _ = (g + b) - g := by rw [hk]
+            _ = b := by ring
+        rw [heq]
+        exact hb
+      · -- Need: k + (a - k) = a
+        ring
+    · intro ⟨k, b, hb, hab⟩
+      unfold globalPlusBoundedSubmodule_full
+      rw [SetLike.mem_coe, Submodule.add_eq_sup, Submodule.mem_sup]
+      refine ⟨fqFullDiagonalEmbedding Fq k, ⟨k, rfl⟩, b, hb, hab⟩
+
+  -- Rewrite to union form, then prove open
+  rw [h_eq]
+
+  -- Union of translates of open set is open
+  apply isOpen_iUnion
+  intro k
+  -- Translation by k is a homeomorphism, so image of open is open
+  have htrans : IsOpenMap (fun x => fqFullDiagonalEmbedding Fq k + x) :=
+    isOpenMap_add_left _
+  exact htrans _ hBopen
+
+/-! ## Discrete Topology on Quotient -/
+
+/-- H¹(D) has discrete topology because K + A_K(D) is open. -/
+theorem discreteTopology_spaceModule_full (D : ExtendedDivisor (Polynomial Fq)) :
+    DiscreteTopology (SpaceModule_full Fq D) := by
+  -- SpaceModule_full Fq D = FqFullAdeleRing Fq ⧸ globalPlusBoundedSubmodule_full Fq D
+  -- Use Mathlib's QuotientAddGroup.discreteTopology
+  have hopen : IsOpen (globalPlusBoundedSubmodule_full Fq D : Set (FqFullAdeleRing Fq)) :=
+    globalPlusBoundedSubmodule_full_isOpen D
+  exact QuotientAddGroup.discreteTopology hopen
+
+/-! ## Finite from Compact + Discrete -/
+
+/-- A compact discrete space is finite. (Wrapper for Mathlib's result) -/
+theorem finite_of_compact_discrete' {X : Type*} [TopologicalSpace X]
+    [CompactSpace X] [DiscreteTopology X] : Finite X :=
+  finite_of_compact_of_discrete
+
 /-! ## Main Strategy Summary
 
-When `boundedSubmodule_full_isOpen` is proved:
+Chain completed:
+1. boundedSubmodule_full_isOpen ✅
+2. globalPlusBoundedSubmodule_full_isOpen ✅
+3. discreteTopology_spaceModule_full ✅
+4. finite_of_compact_discrete ✅
 
-1. globalPlusBoundedSubmodule_full is open (union of translates of open set by K)
-2. H¹(D) = FqFullAdeleRing / (K + A_K(D)) has discrete topology
-3. integralFullAdeles maps surjectively onto H¹(D) (fundamental domain)
-4. The image is compact (continuous image of compact)
-5. Compact + discrete = finite
-6. Therefore H¹(D) is finite-dimensional
-
-This fills the sorry at Abstract.lean:299 for deg(D) < -1.
+Remaining: Wire compactness of integralFullAdeles image to Module.Finite.
 -/
 
 end
