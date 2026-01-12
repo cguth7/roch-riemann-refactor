@@ -5546,3 +5546,29 @@ Created `ellipticFullRRData` instance and `riemann_roch_fullRRData` theorem.
 Created WeilDifferential.lean with K-module structure, Serre pairing, etc.
 
 ---
+
+### Cycles 340-360 - Track A (Compactness) Work (Archived)
+
+**Summary**: This work focused on proving H¹ finiteness via adelic compactness. While technically successful for P¹, it was deprioritized because the approach doesn't generalize well to higher genus curves.
+
+**Key achievements**:
+- Cycle 340: `adelic_euler_char` wired, sorryAx eliminated
+- Cycle 342: `ell_finite_all` proved
+- Cycle 346: `degreeOnePlaces_elliptic` fully proved
+- Cycles 350-357: Complete H¹ finiteness proof chain for P¹
+- Cycles 358-360: Residue field finiteness infrastructure (partial)
+
+**What was built**:
+- `isOpen_constraint_single_place`, `isOpen_bounded_finiteAdeles`
+- `discreteTopology_spaceModule_full`, `compactSpace_spaceModule_full`
+- `finite_spaceModule_full`, `module_finite_spaceModule_full`
+- Residue field topology lemmas (maximalIdeal is open, residue classes are clopen)
+
+**Why archived**:
+The remaining sorry (`constantToResidue_FqtInfty_surjective` at AdelicH1Full.lean:2309) is P¹-specific. It requires showing ResidueField(FqtInfty Fq) ≅ Fq by extracting leading coefficients from RatFunc. This doesn't help the general case.
+
+**Better path identified**: Track C (Serre Duality) gives h1_finite via ell_finite (already proved) through the perfect pairing H¹(D) ≅ L(K-D)*. This is more general and avoids P¹-specific topology arguments.
+
+See Cycle 348-349 notes for the Track C blocker analysis (quotient pairing descent).
+
+---
