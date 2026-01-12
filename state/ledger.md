@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 354
+**Cycle**: 355
 **Phase**: 9 (General Curve Infrastructure)
 
 ### What We Have (Core RR Proof Complete)
@@ -170,24 +170,26 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
    - Can be axiomatized if needed (defines the curve)
    - Or prove via differential forms
 
-### Active Edge for Cycle 355
+### Active Edge for Cycle 356
 
-**Target**: Either find a way to complete `isOpen_bounded_finiteAdeles` or consider axiomatizing it
+**Target**: Complete `isOpen_bounded_finiteAdeles` using one of the identified resolution options
 
-**Status**: The lemma has:
-- Complete mathematical proof (5-step argument in comments)
-- Auxiliary lemmas proved (hOv_open, hBall_open)
-- Finite support verified (hT_finite)
+**Status**: Mathematical proof is COMPLETE. Formalization blocked by typeclass resolution only.
 
-**Blockers**:
-- `FiniteAdeleRing` is a `def` not `abbrev`, creating type distinction
-- `simp_rw [topologicalSpace_eq_iSup, isOpen_iSup_iff, isOpen_coinduced]` doesn't apply across type alias
-- Typeclass resolution for `Valued` fails on RestrictedProduct components
+**Root Cause Identified (Cycle 355)**:
+Lean's typeclass resolution fails on `Valued (adicCompletion K v)` when `v` appears in a dependent function context like `(fun v => adicCompletion K v) v`. The type doesn't simplify, so instance search gets stuck.
 
-**Options for Cycle 355**:
-1. Try `unfold FiniteAdeleRing` or explicit cast before topology lemmas
-2. Add a helper lemma in the codebase that works on RestrictedProduct directly
-3. Accept this as a "believed true" axiom (the argument is understood)
+**Complete Proof Strategy**:
+1. Split: `{∀ v ∈ T, constraint} ∩ {∀ v ∉ T, constraint}` where T = supp(D)
+2. First part: `Set.Finite.isOpen_biInter` + `RestrictedProduct.continuous_eval` + `hBall_open`
+3. Second part: `RestrictedProduct.isOpen_forall_imp_mem` with `p := (· ∉ T)` since Ball_v = O_v when D v = 0
+
+**Resolution Options** (~30 min focused effort):
+- **A)** Add explicit `@Valued _ _ inst` annotations with all type parameters
+- **B)** Define helper lemmas with concrete types outside the dependent context
+- **C)** Use `haveI` to provide local instances
+
+**This is NOT a mathematical gap** - purely Lean elaboration bookkeeping.
 
 **What's proved** (Cycles 350-352):
 - `integralFullAdeles_covers_h1` ✅
@@ -208,6 +210,34 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
 ---
 
 ## Recent Cycles
+
+### Cycle 355 - Root Cause Analysis and Resolution Options
+
+**Deep investigation into typeclass resolution blocker**
+
+Attempted approaches:
+1. `unfold FiniteAdeleRing` - doesn't change topology instance
+2. `rw [show inferInstance = ... from rfl]` - elaboration timeout
+3. Helper lemma on RestrictedProduct with `exact key` - typeclass stuck
+4. Explicit `let π` with `continuous_eval` - same typeclass issue
+5. `Set.Finite.isOpen_biInter` approach - instance stuck on dependent type
+
+**Root cause identified**:
+The type `(fun v => adicCompletion K v) v` doesn't simplify to `v.adicCompletion K` during typeclass inference, so Lean can't find the `Valued` instance.
+
+**Complete proof strategy documented**:
+1. Split into T (finite) and Tᶜ (cofinite) parts
+2. T part: `Set.Finite.isOpen_biInter` + `continuous_eval` + `hBall_open`
+3. Tᶜ part: `isOpen_forall_imp_mem` since Ball_v = O_v when D v = 0
+
+**Resolution options identified** (~30 min effort):
+- A) Explicit `@Valued` with all type parameters
+- B) Helper lemmas outside dependent context
+- C) Local instances via `haveI`
+
+**Build status:** ✅ PASSING (1 sorry with complete proof strategy)
+
+---
 
 ### Cycle 354 - Cleaning Up Proof Structure
 
