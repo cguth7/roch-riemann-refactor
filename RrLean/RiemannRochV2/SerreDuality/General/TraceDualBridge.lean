@@ -130,6 +130,47 @@ theorem dual_divisorToFractionalIdeal_eq (D : DivisorV2 R) :
   rw [count_divisorToFractionalIdeal,
       ← fractionalIdealToDivisor_apply R K h_dual_ne, h_div_dual]
 
+/-- The corrected trace-dual identity for Serre duality.
+
+To connect trace duality to the Serre pairing H¹(D) × L(KDiv - D) → k,
+we need to choose the right fractional ideal.
+
+Since L(KDiv - D) = divisorToFractionalIdeal(D - KDiv) (by mem_RRModuleV2_iff_mem_divisorToFractionalIdeal),
+and dual(I_E) = divisorToFractionalIdeal(KDiv - E) (by dual_divisorToFractionalIdeal_eq),
+we need KDiv - E = D - KDiv, so E = 2*KDiv - D.
+
+This lemma shows: dual(divisorToFractionalIdeal(2*KDiv - D)) = divisorToFractionalIdeal(D - KDiv).
+
+For elliptic curves where KDiv = 0:
+- E = -D
+- dual(divisorToFractionalIdeal(-D)) = divisorToFractionalIdeal(D) = divisorToFractionalIdeal(0 - (-D))
+-/
+theorem dual_divisorToFractionalIdeal_for_Serre (D : DivisorV2 R)
+    (KDiv : DivisorV2 R) (hKDiv : KDiv = canonicalDivisorFrom (R := R) (K := K) A) :
+    dual A K_A (divisorToFractionalIdeal R K (2 • KDiv - D)) =
+      divisorToFractionalIdeal R K (D - KDiv) := by
+  -- Apply dual_divisorToFractionalIdeal_eq with E = 2*KDiv - D
+  -- dual(I_E) = divisorToFractionalIdeal(canonicalDivisorFrom A - E)
+  --           = divisorToFractionalIdeal(KDiv - (2*KDiv - D))
+  --           = divisorToFractionalIdeal(D - KDiv)
+  rw [dual_divisorToFractionalIdeal_eq A K_A (2 • KDiv - D)]
+  congr 1
+  rw [hKDiv]
+  ext v
+  simp only [Finsupp.coe_sub, Pi.sub_apply, Finsupp.coe_smul, Pi.smul_apply]
+  ring
+
+/-- Corollary: For elliptic curves (KDiv = 0), dual(I_{-D}) = divisorToFractionalIdeal(D).
+
+This is the special case where the sign issue disappears. -/
+theorem dual_divisorToFractionalIdeal_elliptic (D : DivisorV2 R)
+    (hKDiv : canonicalDivisorFrom (R := R) (K := K) A = 0) :
+    dual A K_A (divisorToFractionalIdeal R K (-D)) =
+      divisorToFractionalIdeal R K D := by
+  have h := dual_divisorToFractionalIdeal_for_Serre A K_A D 0 (by rw [hKDiv])
+  simp only [smul_zero, zero_sub, sub_zero] at h
+  exact h
+
 end DualBridge
 
 /-! ## Membership Bridge

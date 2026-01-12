@@ -277,8 +277,72 @@ This file establishes the trace-pairing bridge (Lemma 2 of the attack plan).
 the non-degeneracy of the trace form, via the residue-trace connection.
 
 **Next steps**:
-- Show these theorems can replace the axioms in PairingNondegenerate.lean
-- This completes the boss battle by showing the axioms are derivable from trace
+- Prove the 2 trace-bridge axioms using Mathlib's perfect pairing machinery
+- Use `dual_mul_self`, `dual_dual`, and `mem_dual` from Mathlib.Different
+- The mathematical path: residue sum relates to trace via local-global principle
+
+**Axiom reduction path**:
+- PairingNondegenerate.lean axioms (2): `serreDualityPairing_injective`, `serreDualityPairing_right_nondegen`
+- TracePairingBridge.lean axioms (2): `residuePairing_controlled_by_trace`, `witness_from_trace_nondegen`
+- Under [FiniteDimensional k K] [Algebra.IsSeparable k K], the first pair derives from the second
+- The trace-bridge axioms are more "elementary" - closer to Mathlib's perfect pairing infrastructure
+-/
+
+/-! ## Axiom Replacement Roadmap
+
+This section documents how to wire TracePairingBridge into the main proof path.
+
+### Current State
+- `PairingNondegenerate.lean` has 2 axioms about Serre pairing non-degeneracy
+- `TracePairingBridge.lean` (this file) derives those 2 theorems from 2 trace-bridge axioms
+
+### Wiring Strategy
+
+To replace axioms in PairingNondegenerate.lean:
+1. Add `import TracePairingBridge` to PairingNondegenerate.lean
+2. Add type class assumptions `[FiniteDimensional k K] [Algebra.IsSeparable k K]`
+3. Replace axiom `serreDualityPairing_injective` with:
+   `serreDualityPairing_injective_from_trace`
+4. Replace axiom `serreDualityPairing_right_nondegen` with:
+   `serreDualityPairing_right_nondegen_from_trace`
+
+This moves the axioms from "Serre pairing is non-degenerate" (abstract) to
+"residue pairing is controlled by trace" (more concrete).
+
+### Proving the Trace-Bridge Axioms
+
+The remaining axioms can potentially be proved using:
+
+1. **`residuePairing_controlled_by_trace`** - Left non-degeneracy:
+   - Key fact: L(KDiv-D) = divisorToFractionalIdeal(D-KDiv)
+   - Key fact: dual(I_{2*KDiv-D}) = divisorToFractionalIdeal(D-KDiv) = L(KDiv-D)
+   - The trace pairing I × dual(I) → R is perfect (Mathlib: `dual_mul_self`)
+   - If residue sum vanishes for all f ∈ dual(I), then by trace non-degeneracy
+     the adele must be "trivial" (in K + A(D))
+
+2. **`witness_from_trace_nondegen`** - Right non-degeneracy:
+   - For nonzero f ∈ L(KDiv-D) = dual(I), trace non-degeneracy gives
+     existence of x ∈ I with Tr(xf) ≠ 0
+   - Construct an adele from x that witnesses the non-vanishing
+
+### Key Mathlib Lemmas
+
+From `Mathlib.RingTheory.DedekindDomain.Different`:
+- `dual_mul_self : dual(I) * I = dual(1)` — perfect pairing property
+- `dual_dual : dual(dual(I)) = I` — involutive
+- `mem_dual : x ∈ dual(I) ↔ ∀ a ∈ I, Tr(xa) ∈ R` — membership characterization
+
+From `Mathlib.FieldTheory.Finite.Trace`:
+- `traceForm_nondegenerate : (traceForm k K).Nondegenerate` — trace is non-degenerate
+
+### For Elliptic Curves (KDiv = 0)
+
+The situation simplifies:
+- L(-D) = divisorToFractionalIdeal(D)
+- dual(divisorToFractionalIdeal(-D)) = divisorToFractionalIdeal(D)
+- Direct perfect pairing: I_{-D} × I_D → R via trace
+
+See `dual_divisorToFractionalIdeal_elliptic` in TraceDualBridge.lean.
 -/
 
 end RiemannRochV2.TracePairingBridge

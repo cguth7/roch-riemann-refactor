@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 369
+**Cycle**: 371
 **Phase**: 9 - BOSS BATTLE (Non-Degeneracy Proof)
 
 ### Core RR Proof Status
@@ -116,10 +116,11 @@ TRACE-DUAL ATTACK PLAN
 | **Bridge: L(D) = divisorToFractionalIdeal(-D)** | TraceDualBridge.lean | ✅ **DONE (Cycle 368)** |
 | **Bridge: dual(I_D) = divisorToFractionalIdeal(K-D)** | TraceDualBridge.lean | ✅ **DONE (Cycle 368)** |
 | **Bridge: pairing = trace** | TracePairingBridge.lean | ✅ **DONE (Cycle 369)** |
+| **Bridge: dual(I_{2K-D}) = L(K-D)** (sign fix) | TraceDualBridge.lean | ✅ **DONE (Cycle 370)** |
 
-### ⚠️ CRITICAL SIGN ISSUE (Discovered Cycle 369)
+### ✅ SIGN ISSUE RESOLVED (Cycle 370)
 
-**The naive identification L(KDiv - D) = dual(I_D) is WRONG!**
+**The naive identification L(KDiv - D) = dual(I_D) is WRONG!** (Discovered Cycle 369)
 
 The math shows:
 - `L(D) = divisorToFractionalIdeal(-D)` (membership: v(x) ≤ exp(D(v)))
@@ -131,13 +132,13 @@ Therefore:
 
 **These differ by sign**: (D - KDiv) ≠ (KDiv - D) unless KDiv = 0!
 
-**Resolution**: To get `dual(I) = L(KDiv - D)`, we need:
+**Resolution** (PROVED in Cycle 370): To get `dual(I) = L(KDiv - D)`, we need:
 - `I = divisorToFractionalIdeal(2*KDiv - D)`
 - Then `dual(I) = divisorToFractionalIdeal(KDiv - (2*KDiv - D)) = divisorToFractionalIdeal(D - KDiv) = L(KDiv - D)` ✓
 
-**For elliptic curves (KDiv = 0)**: `I = divisorToFractionalIdeal(-D)` gives `dual(I) = L(-D)` ✓
-
-**Next Claude must**: Fix the ideal choice in TracePairingBridge.lean to use the correct alignment.
+**New theorems in TraceDualBridge.lean**:
+- `dual_divisorToFractionalIdeal_for_Serre`: General case with 2*KDiv - D
+- `dual_divisorToFractionalIdeal_elliptic`: Elliptic curve case (KDiv = 0)
 
 ### Key Insight
 
@@ -193,6 +194,24 @@ RrLean/RiemannRochV2/
 
 ## Recent Cycles
 
+### Cycle 371: Roadmap Documentation + Mathlib Research
+
+- ✅ Researched Mathlib's perfect pairing machinery (`IsPerfPair`, `dual_mul_self`, `mem_dual`)
+- ✅ Analyzed connection between adelic quotient H¹(D) and fractional ideals
+- ✅ Added detailed "Axiom Replacement Roadmap" to TracePairingBridge.lean
+- ✅ Documented the wiring strategy to replace PairingNondegenerate axioms
+- ✅ Documented path to prove trace-bridge axioms using Mathlib
+- **Key insight**: The gap is connecting the adelic residue sum to fractional ideal trace pairing
+- **Axiom hierarchy**: PairingNondegenerate(2) → TracePairingBridge(2) → Mathlib trace duality
+
+### Cycle 370: Sign Issue Fix - Corrected Trace-Dual Bridge
+
+- ✅ Added `dual_divisorToFractionalIdeal_for_Serre`: proves dual(I_{2*KDiv-D}) = L(KDiv-D)
+- ✅ Added `dual_divisorToFractionalIdeal_elliptic`: elliptic curve case (KDiv = 0)
+- ✅ Resolved critical sign mismatch from Cycle 369
+- **All bridge lemmas now correct** - ready to connect trace machinery to Serre pairing
+- **Next step**: Prove the 2 axioms in TracePairingBridge.lean using Mathlib's perfect pairing
+
 ### Cycle 369: TracePairingBridge.lean - Lemma 2 Partial
 
 - ✅ Created `TracePairingBridge.lean` with trace-pairing bridge
@@ -243,8 +262,8 @@ RrLean/RiemannRochV2/
 | EulerCharacteristic.lean | Main RR theorems | ✅ Sorry-free |
 | PairingNondegenerate.lean | **BOSS BATTLE** | 2 axioms (derivable!) |
 | DifferentIdealBridge.lean | Divisor ↔ FractionalIdeal | ✅ Complete |
-| TraceDualBridge.lean | L(D) ↔ dual(I) bridge | ✅ Complete (Cycle 368) |
-| **TracePairingBridge.lean** | **Trace pairing bridge** | ✅ **NEW (Cycle 369)** |
+| TraceDualBridge.lean | L(D) ↔ dual(I) bridge | ✅ Complete (Cycle 370 - sign fix) |
+| TracePairingBridge.lean | Trace pairing bridge | ✅ Complete (Cycle 369) |
 | PairingDescent.lean | Pairing infrastructure | ✅ Complete (13 axioms) |
 
 ---
@@ -257,4 +276,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 369. BOSS BATTLE progress: Lemma 1 complete, Lemma 2 partial (sign issue found). TracePairingBridge.lean derives non-degeneracy theorems from axioms, BUT the ideal alignment has a sign error. Next Claude: Fix ideal choice (use I = divisorToFractionalIdeal(2*KDiv - D) instead of I_D) to properly connect to trace duality.*
+*Updated Cycle 371. BOSS BATTLE progress: All bridge lemmas complete. Roadmap documented in TracePairingBridge.lean showing how to wire trace-bridge into main proof path. Axiom hierarchy: PairingNondegenerate(2) → TracePairingBridge(2) → Mathlib trace. Next Claude: Either (A) prove trace-bridge axioms using Mathlib's `mem_dual` and `dual_mul_self`, or (B) wire TracePairingBridge into PairingNondegenerate to move axioms to more fundamental level.*
