@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 361
+**Cycle**: 362
 **Phase**: 9 (General Curve Infrastructure)
 
 ### What We Have (Core RR Proof Complete)
@@ -279,6 +279,49 @@ RrLean/RiemannRochV2/SerreDuality/General/
 
 ## Recent Cycles
 
+### Cycle 362: LocalResidue Axiomatization + PairingDescent.lean
+
+**Goal**: Axiomatize local residue linearity and create pairing descent framework.
+
+**What was done**:
+1. ✅ Axiomatized `localResidueHom : K_v →+ κ(v)` as AddMonoidHom
+2. ✅ Axiomatized `localResidue_vanishes_on_integers`
+3. ✅ Proved `localResidue_add`, `localResidue_zero`, `localResidue_neg`, `localResidue_sub`
+4. ✅ Created `SerreDuality/General/PairingDescent.lean`
+5. ✅ Defined `embeddedResidue`: local residue of global elements via K → K_v embedding
+6. ✅ Proved `embeddedResidue_vanishes_no_pole`: no pole means zero residue
+7. ✅ Axiomatized `poleSupport_finite`: global elements have finitely many poles
+8. ✅ Axiomatized `boundedTimesLKD_residue_zero`: bounded × L(K-D) → zero residue
+
+**New axioms introduced (4 total)**:
+| Axiom | File | Purpose |
+|-------|------|---------|
+| `localResidueHom` | LocalResidue.lean | Local residue is additive |
+| `localResidue_vanishes_on_integers` | LocalResidue.lean | res_v(x) = 0 for x ∈ O_v |
+| `poleSupport_finite` | PairingDescent.lean | Global elements have finite poles |
+| `boundedTimesLKD_residue_zero` | PairingDescent.lean | Bounded × L(K-D) → zero residue |
+
+**Remaining sorry** (1 in LocalResidue.lean, not on critical path):
+- `uniformizer_not_mem_maximalIdeal_sq`: π ∉ m_v² (DVR structure, not needed for pairing)
+
+**Key insight**: By axiomatizing the local residue properties, we can validate the
+Serre duality pairing structure without building full Laurent series infrastructure.
+The axioms isolate exactly what's needed for the pairing descent.
+
+**Serre duality pairing structure**:
+- Raw pairing: ψ(a, f) = Σ_v res_v(a_v · f)
+- Vanishes on K: Global residue theorem (axiomatized)
+- Vanishes on A(D) for f ∈ L(K-D): Valuation arithmetic (axiomatized)
+- Descent to H¹(D) × L(K-D) → k: Via Submodule.liftQ (TODO)
+
+**Next steps** (Cycle 363+):
+1. Formalize the sum of residues properly (Finsum or finite support)
+2. Define induced pairing on H¹(D) × L(K-D) using Submodule.liftQ
+3. Prove non-degeneracy → Serre duality theorem
+4. Connect to existing `serre_duality` axiom in EllipticH1.lean
+
+---
+
 ### Cycle 361: LocalResidue.lean Skeleton
 
 **Goal**: Create infrastructure for local residue map res_v : K_v → κ(v)
@@ -345,7 +388,8 @@ RrLean/RiemannRochV2/
 | EllipticSetup.lean | Elliptic setup | Has 1 axiom |
 | StrongApproximation.lean | Density | Has 2 axioms |
 | Abstract.lean | Abstraction layer | Has 3 sorries |
-| LocalResidue.lean | Local residue map | Has 2 sorries (Cycle 361) |
+| LocalResidue.lean | Local residue map | Has 2 axioms, 1 sorry (Cycle 362) |
+| PairingDescent.lean | Serre pairing | Has 2 axioms (Cycle 362) |
 
 ---
 
@@ -357,4 +401,4 @@ RrLean/RiemannRochV2/
 
 ---
 
-*Updated Cycle 361. Phase 9 continues - Track C (Serre Duality) active. LocalResidue.lean created. **Decision**: Axiomatize localResidue linearity (don't build Laurent series yet), proceed to PairingDescent.lean. Validate Serre duality structure before heavy infrastructure investment.*
+*Updated Cycle 362. Phase 9 continues - Track C (Serre Duality) active. LocalResidue.lean axiomatized, PairingDescent.lean created. Framework for Serre duality pairing established with 4 new axioms. Next: formalize sum of residues, define induced pairing on H¹(D), prove non-degeneracy.*

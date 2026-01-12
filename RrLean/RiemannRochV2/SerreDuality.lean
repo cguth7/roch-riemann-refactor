@@ -1,4 +1,6 @@
 import RrLean.RiemannRochV2.SerreDuality.General.Abstract
+import RrLean.RiemannRochV2.SerreDuality.General.LocalResidue
+import RrLean.RiemannRochV2.SerreDuality.General.PairingDescent
 import RrLean.RiemannRochV2.SerreDuality.RatFuncResidues
 import RrLean.RiemannRochV2.SerreDuality.P1Specific.RatFuncPairing
 import RrLean.RiemannRochV2.SerreDuality.P1Specific.DimensionScratch
