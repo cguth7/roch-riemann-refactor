@@ -95,8 +95,9 @@ Rather than proving these for elliptic curves only, we build infrastructure that
 
 **IMPORTANT: Active Edge Rule** - Each cycle picks ONE specific target from the tracks below. Avoid diluting focus across multiple tracks.
 
-#### Track A: Adelic Compactness → H¹ Finiteness
+#### Track A: Adelic Compactness → H¹ Finiteness (PARKED - P¹ only)
 **Goal**: Prove A_K/K is compact (or locally compact with discrete K)
+**Status**: PARKED. This track is P¹-specific and does not generalize to arbitrary genus.
 
 | Component | Status | Notes |
 |-----------|--------|-------|
