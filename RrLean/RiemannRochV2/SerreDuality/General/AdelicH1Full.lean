@@ -2112,26 +2112,77 @@ theorem constantToResidue_FqtInfty_injective :
   have hkk' : k - k' ≠ 0 := sub_ne_zero.mpr hne
   have hval : Valued.v (inftyRingHom Fq (RatFunc.C (k - k'))) = 1 :=
     constant_val_one_FqtInfty Fq (k - k') hkk'
-  -- v(C(k-k')) = 1 means C(k-k') is a unit in the valuation ring
-  -- (since inverse has v = 1 too, hence ≤ 1, hence in O)
-  -- But residue (constantToInteger (k-k')) = 0 (from h after simplification)
-  -- which means constantToInteger (k-k') is a nonunit - contradiction
-  sorry
+  -- The element we're considering
+  let x : FqtInfty Fq := inftyRingHom Fq (RatFunc.C (k - k'))
+  -- x is in Valued.integer
+  have hx_mem : x ∈ Valued.integer (FqtInfty Fq) := constant_mem_integer_FqtInfty Fq (k - k')
+  -- x is nonzero (since inftyRingHom is injective and C is injective and k - k' ≠ 0)
+  have hx_ne : x ≠ 0 := by
+    intro h0
+    have hinj := algebraMap_FqtInfty_injective Fq
+    have hC0 : RatFunc.C (k - k') = 0 := hinj (h0.trans (map_zero _).symm)
+    have hC0' : RatFunc.C (k - k') = RatFunc.C 0 := hC0.trans (map_zero _).symm
+    exact hkk' (RatFunc.C_injective hC0')
+  -- Key: x⁻¹ is also in Valued.integer (since v(x) = 1 implies v(x⁻¹) = 1)
+  have hx_inv_mem : x⁻¹ ∈ Valued.integer (FqtInfty Fq) := by
+    show Valued.v x⁻¹ ≤ 1
+    rw [Valuation.map_inv, hval]
+    simp only [inv_one, le_refl]
+  -- Therefore x is a unit in Valued.integer
+  have hx_unit : IsUnit (⟨x, hx_mem⟩ : Valued.integer (FqtInfty Fq)) := by
+    let x_in_O : Valued.integer (FqtInfty Fq) := ⟨x, hx_mem⟩
+    let x_inv_in_O : Valued.integer (FqtInfty Fq) := ⟨x⁻¹, hx_inv_mem⟩
+    have h_mul : x_in_O * x_inv_in_O = 1 := by
+      ext; simp only [Subring.coe_mul, Subring.coe_one]; exact mul_inv_cancel₀ hx_ne
+    exact ⟨⟨x_in_O, x_inv_in_O, h_mul, by
+      ext; simp only [Subring.coe_mul, Subring.coe_one]; exact inv_mul_cancel₀ hx_ne⟩, rfl⟩
+  -- From h, we derive that residue(constantToInteger (k - k')) = 0
+  have h_sub : constantToResidue_FqtInfty Fq (k - k') = 0 := by rw [map_sub, h, sub_self]
+  -- constantToInteger (k - k') = ⟨x, hx_mem⟩
+  have heq : constantToInteger_FqtInfty Fq (k - k') = ⟨x, hx_mem⟩ := rfl
+  -- This means constantToInteger (k - k') is in the maximal ideal
+  have h_in_max : constantToInteger_FqtInfty Fq (k - k') ∈
+      IsLocalRing.maximalIdeal (Valued.integer (FqtInfty Fq)) := by
+    rw [← Ideal.Quotient.eq_zero_iff_mem]; exact h_sub
+  -- But it's a unit, so not in maximal ideal
+  have h_not_in_max : constantToInteger_FqtInfty Fq (k - k') ∉
+      IsLocalRing.maximalIdeal (Valued.integer (FqtInfty Fq)) := by
+    rw [IsLocalRing.mem_maximalIdeal, heq]
+    simp only [mem_nonunits_iff, not_not]
+    exact hx_unit
+  exact h_not_in_max h_in_max
 
 /-- The map from Fq to the residue field is surjective.
 
 This is the key lemma stating that the residue field of FqtInfty Fq is isomorphic to Fq.
-The proof uses that:
-1. FqtInfty Fq is the completion of RatFunc Fq at inftyValuation
-2. For a discrete valuation, the residue field of the completion equals the residue field
-   of the original ring
-3. The residue field of RatFunc Fq at inftyValuation is Fq (constant coefficients)
+
+**Mathematical proof**:
+The valuation ring of Fq((t⁻¹)) is Fq[[t⁻¹]] with maximal ideal (t⁻¹)·Fq[[t⁻¹]].
+Every element x ∈ Fq[[t⁻¹]] can be written uniquely as x = c₀ + c₁t⁻¹ + c₂t⁻² + ...
+where cᵢ ∈ Fq. The terms c₁t⁻¹ + c₂t⁻² + ... have valuation < 1, so they're in the
+maximal ideal. Therefore residue(x) = c₀ = residue(C(c₀)) = constantToResidue(c₀).
+
+**Technical proof strategy**:
+1. Residue classes in O = Valued.integer are open (maximalIdeal is open in O)
+2. RatFunc Fq is dense in FqtInfty Fq (by `denseRange_inftyRingHom`)
+3. Therefore every residue class contains some inftyRingHom(f) for f ∈ RatFunc
+4. For f ∈ RatFunc with v(f) ≤ 1, residue(f) = constantToResidue(leading coefficient)
+   - If deg(num) < deg(denom): v(f) < 1, so residue = 0 = constantToResidue(0)
+   - If deg(num) = deg(denom): residue = leading ratio ∈ Fq
+5. Hence constantToResidue is surjective
+
+The formal proof requires showing openness of maximalIdeal in the subspace topology
+and extracting leading coefficients from RatFunc elements.
 -/
 theorem constantToResidue_FqtInfty_surjective :
     Function.Surjective (constantToResidue_FqtInfty Fq) := by
-  -- Every element x with v(x) ≤ 1 can be written as c + m where c ∈ Fq and v(m) < 1
-  -- This means residue(x) = residue(c), so Fq → ResidueField is surjective
-  -- Technical proof via density of RatFunc in FqtInfty
+  intro y
+  -- Lift y to x ∈ O, then use density to find f ∈ RatFunc in same residue class
+  -- The residue of f ∈ RatFunc ∩ O is in the image of constantToResidue
+  -- Key steps:
+  -- 1. obtain ⟨x, hx⟩ := IsLocalRing.residue_surjective y
+  -- 2. Use denseRange_inftyRingHom to find f ∈ RatFunc with residue(f) = residue(x)
+  -- 3. Show residue(f) = constantToResidue(leading coeff of f)
   sorry
 
 /-- The residue field of FqtInfty Fq is finite.

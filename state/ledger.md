@@ -52,12 +52,12 @@ Axioms used by the elliptic curve RR proof (6 on critical path):
 | StrongApprox | `instStrongApprox_P1` | P¹ density |
 | StrongApprox | `instStrongApprox_Elliptic` | Elliptic density |
 
-#### Sorry Placeholders (14 found - updated Cycle 359)
+#### Sorry Placeholders (13 found - updated Cycle 359b)
 
 | File | Count | Lines | Notes |
 |------|-------|-------|-------|
 | Abstract.lean | 8 | 200,201,203,294,299,312,345,351 | P¹ instance, IsLinearPlaceSupport |
-| AdelicH1Full.lean | 4 | 757,1458,2108,2130 | Strong approx + residue inj/surj |
+| AdelicH1Full.lean | 3 | 757,1458,2177 | Strong approx + residue surj |
 | StrongApproximation.lean | 2 | 127,171 | P¹ and Elliptic density |
 
 #### All Axioms (6 in Elliptic/, 5 on critical path)
@@ -172,14 +172,17 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
 
 ### Active Edge for Cycle 360
 
-**Target**: Prove `constantToResidue_FqtInfty_surjective`
+**Status**: Cycle 359 completed injectivity proof. Surjectivity remains as a documented sorry.
 
-**Status**: Major progress in Cycle 359 - built full proof infrastructure, localized sorry to surjectivity.
-
-**Remaining sorry**: `constantToResidue_FqtInfty_surjective` in AdelicH1Full.lean:2107
+**Remaining sorry**: `constantToResidue_FqtInfty_surjective` in AdelicH1Full.lean:2177
 - Surjectivity of Fq → ResidueField (every residue class contains a constant)
-- Mathematical fact: completion preserves residue field for discrete valuations
-- Proof approach: density of RatFunc in FqtInfty + continuity of residue map
+- Detailed mathematical proof documented in docstring
+- Technical approach: show maximalIdeal is open, use density of RatFunc
+
+**Possible directions for Cycle 360**:
+1. Continue surjectivity proof (topology + density arguments)
+2. Pivot to Track C (Serre Duality) - may be more tractable
+3. Address strong approximation sorries (lines 757, 1458)
 
 ### Phase 8 Summary (Completed)
 
@@ -199,34 +202,35 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
 
 **Target**: Prove `finite_residueField_FqtInfty`
 
-**Major Progress**:
+**MAJOR BREAKTHROUGH - Injectivity PROVEN**:
 
-1. **Built complete proof infrastructure**:
-   - `constant_val_one_FqtInfty`: Constants have valuation 1 under inftyValuation
-   - `constant_mem_integer_FqtInfty`: Constants land in valuation integers
-   - `constantToInteger_FqtInfty`: Ring hom Fq →+* Valued.integer (FqtInfty Fq)
-   - `constantToResidue_FqtInfty`: Ring hom Fq →+* Valued.ResidueField (FqtInfty Fq)
-   - `constantToResidue_FqtInfty_injective`: Theorem with proof sketch (v=1 ⟹ unit)
-   - `constantToResidue_FqtInfty_surjective`: Theorem with proof sketch (density)
+1. **Injectivity proof complete** (lines 2108-2153):
+   - For distinct constants k ≠ k', have v(C(k-k')) = 1
+   - Elements with v = 1 are units in Valued.integer (inverse has v = 1⁻¹ = 1 ≤ 1)
+   - Units have nonzero residue, contradicting residue(k-k') = 0
+   - Key lemmas: `algebraMap_FqtInfty_injective`, `RatFunc.C_injective`, `Valuation.map_inv`
 
-2. **Theorem structure**:
-   - `finite_residueField_FqtInfty` uses `Finite.of_surjective`
-   - Two localized sorries: injectivity (line 2108) and surjectivity (line 2130)
+2. **Built complete proof infrastructure**:
+   - `constant_val_one_FqtInfty`: Constants have valuation 1 under inftyValuation ✅
+   - `constant_mem_integer_FqtInfty`: Constants land in valuation integers ✅
+   - `constantToInteger_FqtInfty`: Ring hom Fq →+* Valued.integer ✅
+   - `constantToResidue_FqtInfty`: Ring hom Fq →+* ResidueField ✅
+   - `constantToResidue_FqtInfty_injective`: ✅ PROVED (40 lines of proof)
+   - `constantToResidue_FqtInfty_surjective`: Documented sorry with proof strategy
 
-3. **Sorry localization**:
-   - Previous: 1 generic sorry with no structure
-   - Now: 2 clean mathematical statements with documented proof sketches
-   - Injectivity: v(k-k') = 1 for distinct constants ⟹ unit ⟹ nonzero residue
-   - Surjectivity: Completion preserves residue field, density argument
+3. **Surjectivity sorry** (line 2177):
+   - Mathematical proof documented: residue classes are open, RatFunc is dense
+   - Technical challenge: extracting leading coefficients from RatFunc elements
+   - Not critical for immediate progress (can be tackled in future cycle)
 
 **Key lemmas used**:
 - `valued_FqtInfty_eq_inftyValuationDef`: Connects Valued.v to inftyValuationDef
 - `FunctionField.inftyValuation.C`: Constants have valuation 1
 - `RingHom.codRestrict`: Lift to integers subring
+- `Valuation.map_inv`: v(x⁻¹) = v(x)⁻¹
+- `IsLocalRing.mem_maximalIdeal`: x ∈ maximalIdeal ↔ x ∈ nonunits
 
-**Lines changed**: AdelicH1Full.lean 2052-2135 (residue field section with inj/surj theorems)
-
-**Build status**: ✅ Passes with 4 sorries in AdelicH1Full.lean
+**Build status**: ✅ Passes with 3 sorries in AdelicH1Full.lean (down from 4)
 
 ### Cycle 358 - Residue Field Investigation
 
