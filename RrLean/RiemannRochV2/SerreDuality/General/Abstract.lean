@@ -277,26 +277,15 @@ The Serre duality equation h¹(D) = ℓ(K-D) becomes 0 = 0.
 instance p1ProjectiveAdelicRRData :
     ProjectiveAdelicRRData Fq (p1CanonicalExt Fq) p1GenusExt where
   h1_finite := fun D => by
-    -- H¹(D) is finite-dimensional for all D.
-    -- Two cases:
-    -- 1. If deg(D) ≥ -1 with D.finite effective and D.inftyCoeff ≥ -1: H¹(D) = 0
-    -- 2. Otherwise: requires compactness/Serre duality argument
-    -- For now, we defer the full proof
-    by_cases hdeg : D.deg ≥ -1
-    · by_cases heff : D.finite.Effective
-      · by_cases hinfty : D.inftyCoeff ≥ -1
-        · exact SpaceModule_full_finite_of_deg_ge_neg_one Fq D hdeg heff hinfty
-        · -- D.finite effective but D.inftyCoeff < -1
-          push_neg at hinfty
-          exact SpaceModule_full_finite_deep_neg_infty Fq D hdeg heff hinfty
-      · -- D.finite not effective but deg(D) ≥ -1
-        -- For algebraically closed fields, IsLinearPlaceSupport is automatic
-        have hlin : IsLinearPlaceSupport D.finite := by sorry -- holds for alg. closed
-        exact SpaceModule_full_finite_not_effective Fq D hdeg heff hlin
-    · -- deg(D) < -1: need compactness/Serre duality argument
-      -- H¹(D) ≅ L(K-D)ᵛ, and L(K-D) is finite-dimensional by RRSpace_proj_ext_finite
-      -- The isomorphism requires the residue pairing infrastructure
-      sorry
+    -- H¹(D) is finite-dimensional for all D via the compactness argument:
+    -- 1. boundedSubmodule_full D is open in FqFullAdeleRing
+    -- 2. K + A_K(D) is open (union of translates)
+    -- 3. H¹(D) = quotient by open subgroup → discrete topology
+    -- 4. integralFullAdeles is compact and covers H¹(D)
+    -- 5. Compact + discrete = finite → Module.Finite
+    --
+    -- The finite_residueField_FqtInfty instance provides Finite (ResidueField (FqtInfty Fq))
+    exact module_finite_spaceModule_full Fq D
   ell_finite := RRSpace_proj_ext_finite Fq
   h1_vanishing := fun D hdeg => by
     -- hdeg : D.deg > 2 * 0 - 2 = -2, i.e., D.deg ≥ -1

@@ -2026,6 +2026,298 @@ instance RRSpace_proj_ext_finite (D : ExtendedDivisor (Polynomial Fq)) :
 
 end P1Instance
 
+/-! ## H¹(D) Finiteness via Compactness (Cycle 356)
+
+This section proves that H¹(D) is finite-dimensional for ALL extended divisors D
+using a topological argument:
+
+1. boundedSubmodule_full D is open in FqFullAdeleRing
+2. K + A_K(D) is open (union of translates of open set)
+3. H¹(D) = quotient by open subgroup → discrete topology
+4. integralFullAdeles is compact and covers H¹(D)
+5. Compact + discrete = finite
+6. Finite → Module.Finite
+
+This fills the sorry in `p1ProjectiveAdelicRRData.h1_finite` for deg(D) < -1.
+-/
+
+section H1Finiteness
+
+-- Fq inherited from file-level variable at line 52
+
+open IsDedekindDomain IsDedekindDomain.HeightOneSpectrum
+open RiemannRochV2.AdelicH1v2 RiemannRochV2.AdelicTopology FunctionField
+open scoped Polynomial WithZero
+
+/-! ### Residue Field at Infinity is Finite
+
+For FqtInfty Fq = Fq((t⁻¹)), the residue field is:
+- Valuation ring = Fq[[t⁻¹]] (power series in t⁻¹)
+- Maximal ideal = (t⁻¹) · Fq[[t⁻¹]]
+- Residue field = Fq[[t⁻¹]]/(t⁻¹) ≅ Fq
+
+Since Fq is finite (Fintype), the residue field is also finite.
+-/
+
+/-- The residue field of FqtInfty Fq is finite.
+
+This follows because the residue field of Fq((t⁻¹)) is isomorphic to Fq,
+and Fq is finite (we have Fintype Fq).
+
+Mathematical justification:
+- FqtInfty Fq is the completion of RatFunc Fq at infinity
+- The valuation ring is Fq[[t⁻¹]] (formal power series in t⁻¹)
+- The residue field is Fq[[t⁻¹]]/(t⁻¹) ≅ Fq
+- Since Fq is finite, so is the residue field
+-/
+instance finite_residueField_FqtInfty : Finite (Valued.ResidueField (FqtInfty Fq)) := by
+  -- The residue field of FqtInfty Fq is isomorphic to Fq
+  -- This is standard but requires building the isomorphism explicitly
+  -- For now we axiomatize; the mathematical content is clear
+  sorry
+
+/-! ### Openness of Bounded Submodule -/
+
+/-- Helper: The constraint set for a single finite place is open.
+    With v fixed (not dependent), Lean can resolve the Valued instance. -/
+lemma isOpen_constraint_single_place (v : HeightOneSpectrum Fq[X]) (n : ℤ) :
+    IsOpen {a : FiniteAdeleRing Fq[X] (RatFunc Fq) | Valued.v (a.1 v) ≤ WithZero.exp n} := by
+  have heval_cont : Continuous (fun (a : FiniteAdeleRing Fq[X] (RatFunc Fq)) => a.1 v) :=
+    RestrictedProduct.continuous_eval v
+  have hball_open : IsOpen {x : v.adicCompletion (RatFunc Fq) | Valued.v x ≤ WithZero.exp n} := by
+    apply Valued.isOpen_closedBall
+    exact WithZero.exp_ne_zero
+  exact hball_open.preimage heval_cont
+
+/-- The bounded set is open in the finite adele ring.
+
+The key insight is that for elements of the RestrictedProduct (which are integral
+at cofinitely many places), the condition "Valued.v (a v) ≤ exp(D v)" is:
+- Automatically satisfied at places where D v = 0 (because exp(0) = 1 and a v is integral)
+- An open condition at finitely many places in supp(D)
+
+This makes the infinite intersection effectively a finite one. -/
+theorem isOpen_bounded_finiteAdeles (D : DivisorV2 Fq[X]) :
+    IsOpen {a : FiniteAdeleRing Fq[X] (RatFunc Fq) |
+      ∀ v, Valued.v (a.1 v) ≤ WithZero.exp (D v)} := by
+  let T : Set (HeightOneSpectrum Fq[X]) := {v | D v ≠ 0}
+  have hT_finite : T.Finite := D.finite_support
+
+  have h_outside_T : ∀ v : HeightOneSpectrum Fq[X], v ∉ T → D v = 0 := by
+    intro v hv
+    simp only [T, Set.mem_setOf_eq, not_not] at hv
+    exact hv
+
+  let constraint (v : HeightOneSpectrum Fq[X]) : Set (FiniteAdeleRing Fq[X] (RatFunc Fq)) :=
+    {a | Valued.v (a.1 v) ≤ WithZero.exp (D v)}
+
+  have h_eq : {a : FiniteAdeleRing Fq[X] (RatFunc Fq) | ∀ v, Valued.v (a.1 v) ≤ WithZero.exp (D v)} =
+      (⋂ v ∈ T, constraint v) ∩
+      {a | ∀ v, v ∉ T → Valued.v (a.1 v) ≤ WithZero.exp (D v)} := by
+    ext a
+    simp only [constraint, Set.mem_setOf_eq, Set.mem_inter_iff, Set.mem_iInter]
+    constructor
+    · intro h
+      exact ⟨fun v _ => h v, fun v _ => h v⟩
+    · intro ⟨hT, hnotT⟩ v
+      by_cases hv : v ∈ T
+      · exact hT v hv
+      · exact hnotT v hv
+  rw [h_eq]
+
+  have h_T_open : IsOpen (⋂ v ∈ T, constraint v) := by
+    apply hT_finite.isOpen_biInter
+    intro v _
+    exact isOpen_constraint_single_place Fq v (D v)
+
+  have h_notT_open : IsOpen {a : FiniteAdeleRing Fq[X] (RatFunc Fq) |
+      ∀ v, v ∉ T → Valued.v (a.1 v) ≤ WithZero.exp (D v)} := by
+    have h_eq' : {a : FiniteAdeleRing Fq[X] (RatFunc Fq) |
+        ∀ v, v ∉ T → Valued.v (a.1 v) ≤ WithZero.exp (D v)} =
+        {a | ∀ v, v ∉ T → a.1 v ∈ v.adicCompletionIntegers (RatFunc Fq)} := by
+      ext a
+      simp only [Set.mem_setOf_eq]
+      apply forall_congr'
+      intro v
+      apply imp_congr_right
+      intro hv
+      rw [h_outside_T v hv]
+      simp only [WithZero.exp_zero]
+      rw [HeightOneSpectrum.mem_adicCompletionIntegers]
+    rw [h_eq']
+    have hAopen : ∀ v : HeightOneSpectrum Fq[X],
+        IsOpen (v.adicCompletionIntegers (RatFunc Fq) : Set (v.adicCompletion (RatFunc Fq))) :=
+      fun v => Valued.isOpen_valuationSubring _
+    exact RestrictedProduct.isOpen_forall_imp_mem hAopen
+
+  exact h_T_open.inter h_notT_open
+
+/-- The infinity part constraint set is open in FqtInfty. -/
+theorem isOpen_bounded_infty (n : ℤ) :
+    IsOpen { x : FqtInfty Fq | Valued.v x ≤ WithZero.exp n } := by
+  have h_exp_ne : (WithZero.exp n : WithZero (Multiplicative ℤ)) ≠ 0 := WithZero.exp_ne_zero
+  apply Valued.isOpen_closedBall
+  exact h_exp_ne
+
+/-- The bounded submodule is open in the full adele ring.
+
+This is the product of openness in finite adeles and at infinity. -/
+theorem boundedSubmodule_full_isOpen (D : ExtendedDivisor (Polynomial Fq)) :
+    IsOpen (boundedSubmodule_full Fq D : Set (FqFullAdeleRing Fq)) := by
+  have h_eq : (boundedSubmodule_full Fq D : Set (FqFullAdeleRing Fq)) =
+      { a : FiniteAdeleRing Fq[X] (RatFunc Fq) |
+          ∀ v, Valued.v (a.1 v) ≤ WithZero.exp (D.finite v) } ×ˢ
+      { x : FqtInfty Fq | Valued.v x ≤ WithZero.exp D.inftyCoeff } := by
+    ext ⟨a_fin, a_infty⟩
+    constructor
+    · intro h
+      constructor
+      · intro v
+        exact h.1 v
+      · exact h.2
+    · intro ⟨hfin, hinfty⟩
+      constructor
+      · intro v
+        exact hfin v
+      · exact hinfty
+  rw [h_eq]
+  exact (isOpen_bounded_finiteAdeles Fq D.finite).prod (isOpen_bounded_infty Fq D.inftyCoeff)
+
+/-! ### Openness of K + A_K(D) -/
+
+/-- K + A_K(D) is open because A_K(D) is open and K acts by translation.
+    In a topological group, K + B = ⋃_{k ∈ K} (k + B) is open when B is open. -/
+theorem globalPlusBoundedSubmodule_full_isOpen (D : ExtendedDivisor (Polynomial Fq)) :
+    IsOpen (globalPlusBoundedSubmodule_full Fq D : Set (FqFullAdeleRing Fq)) := by
+  have hBopen : IsOpen (boundedSubmodule_full Fq D : Set (FqFullAdeleRing Fq)) :=
+    boundedSubmodule_full_isOpen Fq D
+
+  have h_eq : (globalPlusBoundedSubmodule_full Fq D : Set (FqFullAdeleRing Fq)) =
+      ⋃ k : RatFunc Fq, (fun x => fqFullDiagonalEmbedding Fq k + x) ''
+        (boundedSubmodule_full Fq D : Set (FqFullAdeleRing Fq)) := by
+    ext a
+    simp only [Set.mem_iUnion, Set.mem_image]
+    constructor
+    · intro ha
+      unfold globalPlusBoundedSubmodule_full at ha
+      have ha' := ha
+      rw [SetLike.mem_coe] at ha'
+      rw [Submodule.add_eq_sup] at ha'
+      rw [Submodule.mem_sup] at ha'
+      obtain ⟨g, hg, b, hb, hab⟩ := ha'
+      obtain ⟨k, hk⟩ := hg
+      use k, a - fqFullDiagonalEmbedding Fq k
+      constructor
+      · have heq : a - fqFullDiagonalEmbedding Fq k = b := by
+          calc a - fqFullDiagonalEmbedding Fq k
+              = (g + b) - fqFullDiagonalEmbedding Fq k := by rw [hab]
+            _ = (g + b) - g := by rw [hk]
+            _ = b := by ring
+        rw [heq]
+        exact hb
+      · ring
+    · intro ⟨k, b, hb, hab⟩
+      unfold globalPlusBoundedSubmodule_full
+      rw [SetLike.mem_coe, Submodule.add_eq_sup, Submodule.mem_sup]
+      refine ⟨fqFullDiagonalEmbedding Fq k, ⟨k, rfl⟩, b, hb, hab⟩
+
+  rw [h_eq]
+  apply isOpen_iUnion
+  intro k
+  have htrans : IsOpenMap (fun x => fqFullDiagonalEmbedding Fq k + x) :=
+    isOpenMap_add_left _
+  exact htrans _ hBopen
+
+/-! ### Discrete Topology on Quotient -/
+
+/-- H¹(D) has discrete topology because K + A_K(D) is open. -/
+theorem discreteTopology_spaceModule_full (D : ExtendedDivisor (Polynomial Fq)) :
+    DiscreteTopology (SpaceModule_full Fq D) := by
+  have hopen : IsOpen (globalPlusBoundedSubmodule_full Fq D : Set (FqFullAdeleRing Fq)) :=
+    globalPlusBoundedSubmodule_full_isOpen Fq D
+  exact QuotientAddGroup.discreteTopology hopen
+
+/-! ### Compactness via Fundamental Domain -/
+
+/-- The quotient map from FqFullAdeleRing to H¹(D) is continuous. -/
+theorem continuous_quotientMapLinear_full (D : ExtendedDivisor (Polynomial Fq)) :
+    Continuous (quotientMapLinear_full Fq D) :=
+  continuous_quot_mk
+
+/-- Every element of H¹(D) has a representative in integralFullAdeles. -/
+theorem integralFullAdeles_covers_h1 (D : ExtendedDivisor (Polynomial Fq)) :
+    ∀ x : SpaceModule_full Fq D, ∃ a ∈ integralFullAdeles Fq,
+      Submodule.Quotient.mk a = x := by
+  intro x
+  obtain ⟨a, rfl⟩ := Submodule.Quotient.mk_surjective _ x
+  obtain ⟨k, hk⟩ := exists_translate_in_integralFullAdeles Fq a
+  use a - fqFullDiagonalEmbedding Fq k, hk
+  symm
+  rw [Submodule.Quotient.eq]
+  simp only [sub_sub_cancel]
+  apply Submodule.mem_sup_left
+  exact ⟨k, rfl⟩
+
+/-- The image of integralFullAdeles in H¹(D) is compact.
+    (Continuous image of compact is compact)
+
+    Note: Requires finite residue field at infinity (standard for function fields). -/
+theorem isCompact_image_h1 [Finite (Valued.ResidueField (FqtInfty Fq))]
+    (D : ExtendedDivisor (Polynomial Fq)) :
+    IsCompact (Set.range (fun a : integralFullAdeles Fq =>
+      quotientMapLinear_full Fq D a.1)) := by
+  have h_compact : IsCompact (integralFullAdeles Fq) := isCompact_integralFullAdeles Fq
+  let f : FqFullAdeleRing Fq → SpaceModule_full Fq D := quotientMapLinear_full Fq D
+  have h_cont : Continuous f := continuous_quotientMapLinear_full Fq D
+  have h_image : IsCompact (f '' integralFullAdeles Fq) := h_compact.image h_cont
+  convert h_image using 1
+  ext x
+  simp only [Set.mem_range, Set.mem_image]
+  constructor
+  · rintro ⟨⟨a, ha⟩, rfl⟩
+    exact ⟨a, ha, rfl⟩
+  · rintro ⟨a, ha, rfl⟩
+    exact ⟨⟨a, ha⟩, rfl⟩
+
+/-- The image of integralFullAdeles covers all of H¹(D).
+    Combined with compactness, this shows H¹(D) is compact. -/
+theorem range_eq_univ_h1 (D : ExtendedDivisor (Polynomial Fq)) :
+    Set.range (fun a : integralFullAdeles Fq =>
+      quotientMapLinear_full Fq D a.1) = Set.univ := by
+  ext x
+  simp only [Set.mem_range, Set.mem_univ, iff_true]
+  obtain ⟨a, ha, hax⟩ := integralFullAdeles_covers_h1 Fq D x
+  use ⟨a, ha⟩
+  exact hax
+
+/-- H¹(D) is a compact space. -/
+theorem compactSpace_spaceModule_full [Finite (Valued.ResidueField (FqtInfty Fq))]
+    (D : ExtendedDivisor (Polynomial Fq)) :
+    CompactSpace (SpaceModule_full Fq D) := by
+  rw [← isCompact_univ_iff, ← range_eq_univ_h1 Fq D]
+  exact isCompact_image_h1 Fq D
+
+/-- H¹(D) is finite (as a type) because it's compact and discrete. -/
+theorem finite_spaceModule_full [Finite (Valued.ResidueField (FqtInfty Fq))]
+    (D : ExtendedDivisor (Polynomial Fq)) :
+    Finite (SpaceModule_full Fq D) := by
+  haveI : DiscreteTopology (SpaceModule_full Fq D) := discreteTopology_spaceModule_full Fq D
+  haveI : CompactSpace (SpaceModule_full Fq D) := compactSpace_spaceModule_full Fq D
+  exact finite_of_compact_of_discrete
+
+/-- H¹(D) is finite-dimensional as an Fq-module.
+
+This is the key result that fills the h1_finite sorry in ProjectiveAdelicRRData.
+
+Requires: Finite residue field at infinity (standard for function fields over Fq). -/
+theorem module_finite_spaceModule_full [Finite (Valued.ResidueField (FqtInfty Fq))]
+    (D : ExtendedDivisor (Polynomial Fq)) :
+    Module.Finite Fq (SpaceModule_full Fq D) := by
+  haveI : Finite (SpaceModule_full Fq D) := finite_spaceModule_full Fq D
+  infer_instance
+
+end H1Finiteness
+
 end RiemannRochV2
 
 end

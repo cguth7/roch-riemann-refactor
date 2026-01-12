@@ -170,27 +170,17 @@ Once φ descends to H¹(D) and is non-degenerate, we get:
    - Can be axiomatized if needed (defines the curve)
    - Or prove via differential forms
 
-### Active Edge for Cycle 357
+### Active Edge for Cycle 358
 
-**Target**: Wire `module_finite_spaceModule_full` to `h1_finite_all` axiom
+**Target**: Prove `finite_residueField_FqtInfty` (ResidueField(FqtInfty Fq) ≅ Fq)
 
-**Status**: COMPLETE PROOF CHAIN ACHIEVED (Cycle 356)!
+**Status**: H¹ FINITENESS WIRED TO MAIN LIBRARY (Cycle 357)!
 
-The full proof chain for H¹(D) finiteness is now complete in `test_h1_finiteness.lean`:
+The `p1ProjectiveAdelicRRData.h1_finite` sorry is now filled with `module_finite_spaceModule_full`.
 
-1. `isOpen_constraint_single_place` ✅ (helper for typeclass resolution)
-2. `isOpen_bounded_finiteAdeles` ✅ (RestrictedProduct topology)
-3. `boundedSubmodule_full_isOpen` ✅ (product of open sets)
-4. `globalPlusBoundedSubmodule_full_isOpen` ✅ (union of translates)
-5. `discreteTopology_spaceModule_full` ✅ (quotient by open is discrete)
-6. `isCompact_image_h1` ✅ (continuous image of compact)
-7. `compactSpace_spaceModule_full` ✅ (H¹ is compact)
-8. `finite_spaceModule_full` ✅ (compact + discrete = finite)
-9. `module_finite_spaceModule_full` ✅ (Finite → Module.Finite)
-
-**Remaining**: Move content to main library and wire to axiom.
-
-**Dependency**: `Finite (Valued.ResidueField (FqtInfty Fq))` - standard for function fields
+**Remaining sorry**: `finite_residueField_FqtInfty` in AdelicH1Full.lean:2073
+- Needs: Prove ResidueField(FqtInfty Fq) ≅ Fq (standard for function fields)
+- The valuation ring of Fq((t⁻¹)) is Fq[[t⁻¹]], residue field is Fq
 
 ### Phase 8 Summary (Completed)
 
@@ -205,6 +195,25 @@ The full proof chain for H¹(D) finiteness is now complete in `test_h1_finitenes
 ---
 
 ## Recent Cycles
+
+### Cycle 357 - H¹ Finiteness Wired to Main Library
+
+**Moved proof chain from test file to main library:**
+
+1. Moved all theorems to `AdelicH1Full.lean` section `H1Finiteness` (lines 2044-2319)
+2. Updated `Abstract.lean` to use `module_finite_spaceModule_full Fq D`
+3. The `p1ProjectiveAdelicRRData.h1_finite` sorry is now **FILLED**!
+
+**Key theorems in main library:**
+- `isOpen_constraint_single_place`, `isOpen_bounded_finiteAdeles`, `isOpen_bounded_infty`
+- `boundedSubmodule_full_isOpen`, `globalPlusBoundedSubmodule_full_isOpen`
+- `discreteTopology_spaceModule_full` - quotient is discrete
+- `isCompact_image_h1`, `compactSpace_spaceModule_full` - compactness
+- `finite_spaceModule_full`, `module_finite_spaceModule_full` - **KEY RESULT**
+
+**Remaining sorry:** `finite_residueField_FqtInfty` - needs ResidueField ≅ Fq proof
+
+**Build status:** ✅ Passes with only expected sorries
 
 ### Cycle 356 - MAJOR BREAKTHROUGH: Complete H¹(D) Module.Finite Chain
 
