@@ -5572,3 +5572,43 @@ The remaining sorry (`constantToResidue_FqtInfty_surjective` at AdelicH1Full.lea
 See Cycle 348-349 notes for the Track C blocker analysis (quotient pairing descent).
 
 ---
+
+---
+
+## Cycles 361-367 (Serre Duality Track C - Pairing Infrastructure)
+
+*Archived from ledger.md on Cycle 368*
+
+### Summary
+
+These cycles built the Serre duality pairing infrastructure:
+- Cycle 361: LocalResidue.lean skeleton
+- Cycle 362: Axiomatized local residue + created PairingDescent.lean
+- Cycle 363: Full raw pairing axiomatization
+- Cycle 364: Refactored for liftQ compatibility
+- Cycle 365: Pairing descent to H¹(D) quotient complete
+- Cycle 366: Non-degeneracy axioms + serre_duality_finrank theorem
+- Cycle 367: Wired general theorem to elliptic curve instance
+
+### Key Results
+
+- `serreDualityPairing : H¹(D) →ₗ[k] (L(KDiv-D) →ₗ[k] k)` defined via liftQ
+- `serre_duality_finrank : h¹(D) = ℓ(KDiv - D)` proved (from non-degeneracy axioms)
+- `serre_duality_from_general` connects to elliptic curve instance
+
+### Axioms Introduced
+
+**LocalResidue.lean (2)**:
+- `localResidueHom` - Local residue is additive
+- `localResidue_vanishes_on_integers` - res_v(x) = 0 for x ∈ O_v
+
+**PairingDescent.lean (13)**:
+- `poleSupport_finite`, `boundedTimesLKD_residue_zero`
+- `tracedResidueSum`, `globalResidueTheorem_traced`
+- `fullRawPairing` + bilinearity axioms (6)
+- `fullRawPairing_vanishes_on_K`, `fullRawPairing_vanishes_on_AD`
+
+**PairingNondegenerate.lean (2)**:
+- `serreDualityPairing_injective` - Left non-degeneracy
+- `serreDualityPairing_right_nondegen` - Right non-degeneracy
+
