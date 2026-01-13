@@ -193,62 +193,61 @@ When a ∈ A(D) (v(a_v) ≤ D(v) for all v) and f ∈ L(K-D) (v(f) ≤ (K-D)(v) 
 
 /-- Bounded adele times L(K-D) element has zero residue.
 
-**Axiomatized**: When a_v has bounded pole (v(a_v) ≤ exp(D(v))) and
+**PROVED** (Cycle 377): When a_v has bounded pole (v(a_v) ≤ exp(D(v))) and
 f ∈ L(K-D) (v(f) ≤ exp((K-D)(v))), the product a_v · f has residue 0.
 
 This follows from valuation arithmetic: v(a_v · f) = v(a_v) · v(f).
 When the valuations multiply to something ≤ 1 (no pole), the residue vanishes.
+
+**Proof strategy** (Cycle 377):
+1. By multiplicativity: w.valuation K (a_w * f) = w.valuation K a_w * w.valuation K f
+2. By hypothesis: w.valuation K a_w ≤ exp(D w) and w.valuation K f ≤ exp(-D w)
+3. By monotonicity: product ≤ exp(D w) * exp(-D w) = exp(0) = 1
+4. By embeddedResidue_vanishes_no_pole: residue is 0 when valuation ≤ 1
 -/
-axiom boundedTimesLKD_residue_zero (D : DivisorV2 R) (w : HeightOneSpectrum R)
+theorem boundedTimesLKD_residue_zero (D : DivisorV2 R) (w : HeightOneSpectrum R)
     (a_w : K) (f : K)
     (ha : w.valuation K a_w ≤ WithZero.exp (D w))
     (hf : ∀ u : HeightOneSpectrum R, u.valuation K f ≤ WithZero.exp ((-D) u))
-    : embeddedResidue K w (a_w * f) = 0
+    : embeddedResidue K w (a_w * f) = 0 := by
+  -- Goal: show the embedded residue is 0
+  -- Strategy: show the valuation of the product is ≤ 1, then use embeddedResidue_vanishes_no_pole
 
-/-! ## Sum of Residues to Base Field
+  -- Step 1: Get the bound on f at w from the universal hypothesis
+  have hf_w : w.valuation K f ≤ WithZero.exp ((-D) w) := hf w
+  -- (-D) w = -(D w) for Finsupp
+  have h_neg : (-D) w = -(D w) := Finsupp.neg_apply D w
+  rw [h_neg] at hf_w
 
-To define a pairing H¹(D) × L(K-D) → k, we need to sum residues in a common base field.
+  -- Step 2: Compute the valuation of the product using multiplicativity
+  have h_mul : w.valuation K (a_w * f) = w.valuation K a_w * w.valuation K f :=
+    (w.valuation K).map_mul a_w f
 
-For each place v, the local residue lies in κ(v) = O_v/m_v. To get a value in k,
-we use the trace map Tr_{κ(v)/k}.
+  -- Step 3: Bound the product valuation
+  have h_prod_bound : w.valuation K (a_w * f) ≤ 1 := by
+    rw [h_mul]
+    calc w.valuation K a_w * w.valuation K f
+        ≤ WithZero.exp (D w) * WithZero.exp (-(D w)) := mul_le_mul' ha hf_w
+      _ = WithZero.exp (D w + (-(D w))) := by rw [← WithZero.exp_add]
+      _ = WithZero.exp 0 := by ring_nf
+      _ = 1 := WithZero.exp_zero
 
-**Axiomatization**: We axiomatize the traced residue sum directly, assuming:
-1. A base field k over which everything is defined
-2. For each place v, there's a trace Tr_{κ(v)/k} : κ(v) → k
-3. The sum Σ_v Tr_{κ(v)/k}(res_v(f)) is well-defined and finite for global f ∈ K
+  -- Step 4: Apply the vanishing lemma
+  exact embeddedResidue_vanishes_no_pole K w (a_w * f) h_prod_bound
+
+/-! ## Sum of Residues to Base Field (Historical Note)
+
+**Cycle 377**: The axioms `tracedResidueSum` and `globalResidueTheorem_traced` were
+removed in this cycle because they were never used. The `fullRawPairing` axiom
+directly axiomatizes the pairing without going through an intermediate traced
+residue sum. The residue theorem is implicitly captured by
+`fullRawPairing_vanishes_on_K` (vanishing on global elements).
+
+For reference, the mathematical setup is:
+- For each place v, the local residue lies in κ(v) = O_v/m_v
+- To get a value in k, use the trace map Tr_{κ(v)/k}
+- The sum Σ_v Tr_{κ(v)/k}(res_v(f)) = 0 for global f ∈ K (residue theorem)
 -/
-
-section TracedResidueSum
-
-variable (k : Type*) [Field k] [Algebra k R] [Algebra k K] [IsScalarTower k R K]
-
-/-- A traced residue sum map as a k-linear map.
-
-This takes a global element f ∈ K and returns the sum of traced residues:
-  Σ_v Tr_{κ(v)/k}(res_v(f)) ∈ k
-
-**Axiomatized**: The concrete construction requires:
-1. Trace maps Tr_{κ(v)/k} for each place
-2. Finiteness of the sum (only finitely many poles contribute)
-3. Linearity over k
-
-Using →ₗ[k] (LinearMap) rather than →+ (AddMonoidHom) for compatibility with
-Submodule.liftQ which requires linearity.
--/
-axiom tracedResidueSum : K →ₗ[k] k
-
-/-- The Global Residue Theorem: sum of traced residues of a global element is zero.
-
-This is the fundamental theorem that makes the Serre duality pairing well-defined:
-For any f ∈ K, Σ_v Tr(res_v(f)) = 0.
-
-**Axiomatized**: This is a classical theorem from algebraic geometry.
-For P¹, it follows from the residue theorem for rational functions.
-For general curves, it's the Residue Theorem / Stokes' theorem on curves.
--/
-axiom globalResidueTheorem_traced (f : K) : tracedResidueSum (K := K) k f = 0
-
-end TracedResidueSum
 
 /-! ## The Raw Serre Duality Pairing
 
@@ -320,13 +319,44 @@ axiom fullRawPairing_smul_right (a : FiniteAdeleRing R K) (c : k) (f : K) :
     fullRawPairing (R := R) (K := K) k a (c • f) =
     c * fullRawPairing (R := R) (K := K) k a f
 
-/-- Pairing with zero adele is zero. -/
-axiom fullRawPairing_zero_left (f : K) :
-    fullRawPairing (R := R) (K := K) k 0 f = 0
+/-- Pairing with zero adele is zero.
 
-/-- Pairing with zero function is zero. -/
-axiom fullRawPairing_zero_right (a : FiniteAdeleRing R K) :
-    fullRawPairing (R := R) (K := K) k a 0 = 0
+**PROVED** (Cycle 377): Follows from additivity.
+f(0, y) = f(0+0, y) = f(0,y) + f(0,y), so f(0,y) = 0
+-/
+theorem fullRawPairing_zero_left (f : K) :
+    fullRawPairing (R := R) (K := K) k 0 f = 0 := by
+  have h := fullRawPairing_add_left (R := R) (K := K) k (0 : FiniteAdeleRing R K) 0 f
+  simp only [add_zero] at h
+  -- h : fullRawPairing k 0 f = fullRawPairing k 0 f + fullRawPairing k 0 f
+  -- x = x + x means x = 0
+  have h' : fullRawPairing (R := R) (K := K) k 0 f - fullRawPairing (R := R) (K := K) k 0 f =
+            fullRawPairing (R := R) (K := K) k 0 f := by
+    calc fullRawPairing (R := R) (K := K) k 0 f - fullRawPairing (R := R) (K := K) k 0 f
+        = (fullRawPairing (R := R) (K := K) k 0 f + fullRawPairing (R := R) (K := K) k 0 f) -
+          fullRawPairing (R := R) (K := K) k 0 f := by rw [← h]
+      _ = fullRawPairing (R := R) (K := K) k 0 f := by ring
+  simp only [sub_self] at h'
+  exact h'.symm
+
+/-- Pairing with zero function is zero.
+
+**PROVED** (Cycle 377): Follows from additivity.
+f(x, 0) = f(x, 0+0) = f(x,0) + f(x,0), so f(x,0) = 0
+-/
+theorem fullRawPairing_zero_right (a : FiniteAdeleRing R K) :
+    fullRawPairing (R := R) (K := K) k a 0 = 0 := by
+  have h := fullRawPairing_add_right (R := R) (K := K) k a (0 : K) 0
+  simp only [add_zero] at h
+  -- h : fullRawPairing k a 0 = fullRawPairing k a 0 + fullRawPairing k a 0
+  have h' : fullRawPairing (R := R) (K := K) k a 0 - fullRawPairing (R := R) (K := K) k a 0 =
+            fullRawPairing (R := R) (K := K) k a 0 := by
+    calc fullRawPairing (R := R) (K := K) k a 0 - fullRawPairing (R := R) (K := K) k a 0
+        = (fullRawPairing (R := R) (K := K) k a 0 + fullRawPairing (R := R) (K := K) k a 0) -
+          fullRawPairing (R := R) (K := K) k a 0 := by rw [← h]
+      _ = fullRawPairing (R := R) (K := K) k a 0 := by ring
+  simp only [sub_self] at h'
+  exact h'.symm
 
 /-! ### Bundled Linear Maps
 
@@ -455,36 +485,40 @@ end RawPairing
 
 This file establishes the framework for the Serre duality pairing.
 
-### Local Infrastructure (Cycle 362, updated Cycle 376)
+### Local Infrastructure (Cycle 362, updated Cycle 377)
 1. **embeddedResidue**: Local residue of global elements via K → K_v embedding
 2. **embeddedResidue_vanishes_no_pole**: No pole means zero residue
 3. **poleSupport_finite**: Global elements have finitely many poles (**THEOREM** Cycle 376)
-4. **boundedTimesLKD_residue_zero**: Bounded × L(K-D) gives zero residue (axiom)
+4. **boundedTimesLKD_residue_zero**: Bounded × L(K-D) gives zero residue (**THEOREM** Cycle 377)
 
-### Global Traced Residue (Cycle 363)
-5. **tracedResidueSum**: K →ₗ[k] k for summing traced residues (axiom)
-6. **globalResidueTheorem_traced**: Σ_v Tr(res_v(f)) = 0 for global f (axiom)
+### Global Traced Residue (Cycle 363 → REMOVED Cycle 377)
+- ~~**tracedResidueSum**~~: REMOVED (unused, vestigial)
+- ~~**globalResidueTheorem_traced**~~: REMOVED (unused, vestigial)
 
-### Full Pairing (Cycle 364 - Refactored)
-7. **fullRawPairing**: Pairing ψ : FiniteAdeleRing R K → K → k (axiom)
-8. **Bilinearity axioms**: add_left, add_right, smul_left, smul_right, zero_left, zero_right
-9. **serrePairingLeft/Right**: Bundled linear maps for liftQ compatibility
-10. **fullRawPairing_vanishes_on_K**: Pairing vanishes on K (axiom)
-11. **fullRawPairing_vanishes_on_AD**: Pairing vanishes on A(D) for f ∈ L(KDiv-D) (axiom)
+### Full Pairing (Cycle 364 - Refactored, updated Cycle 377)
+5. **fullRawPairing**: Pairing ψ : FiniteAdeleRing R K → K → k (axiom)
+6. **Bilinearity axioms**: add_left, add_right, smul_left, smul_right (axioms); zero_left, zero_right (**THEOREMS** Cycle 377)
+7. **serrePairingLeft/Right**: Bundled linear maps for liftQ compatibility
+8. **fullRawPairing_vanishes_on_K**: Pairing vanishes on K (axiom)
+9. **fullRawPairing_vanishes_on_AD**: Pairing vanishes on A(D) for f ∈ L(KDiv-D) (axiom)
 
-**Axioms introduced** (current count: 14):
-- Cycle 362 (1 axiom): `boundedTimesLKD_residue_zero`
+**Axioms introduced** (current count: 9):
+- Cycle 362 (0 axioms): Both now theorems!
   - `poleSupport_finite` now THEOREM (Cycle 376)
-- Cycle 363 (2 axioms): `tracedResidueSum`, `globalResidueTheorem_traced`
-- Cycle 364 (9 axioms): `fullRawPairing`, `fullRawPairing_add_left`, `fullRawPairing_add_right`,
-  `fullRawPairing_smul_left`, `fullRawPairing_smul_right`, `fullRawPairing_zero_left`,
-  `fullRawPairing_zero_right`, `fullRawPairing_vanishes_on_K`, `fullRawPairing_vanishes_on_AD`
+  - `boundedTimesLKD_residue_zero` now THEOREM (Cycle 377)
+- Cycle 363 (0 axioms): REMOVED (Cycle 377)
+  - `tracedResidueSum` REMOVED (unused, vestigial)
+  - `globalResidueTheorem_traced` REMOVED (unused, vestigial)
+- Cycle 364 (7 axioms): `fullRawPairing`, `fullRawPairing_add_left`, `fullRawPairing_add_right`,
+  `fullRawPairing_smul_left`, `fullRawPairing_smul_right`, `fullRawPairing_vanishes_on_K`,
+  `fullRawPairing_vanishes_on_AD`
+  - `fullRawPairing_zero_left` now THEOREM (Cycle 377, from additivity)
+  - `fullRawPairing_zero_right` now THEOREM (Cycle 377, from additivity)
 - Cycle 374 (1 axiom): `fullRawPairing_from_trace_witness` (trace-residue bridge, right non-deg)
 - Cycle 375 (1 axiom): `fullRawPairing_left_vanishing_to_mem` (trace-residue bridge, left non-deg)
 
 **Key Changes in Cycle 364**:
 - Use FiniteAdeleRing R K directly (no witness parameter)
-- tracedResidueSum now K →ₗ[k] k (linear over k)
 - Added full bilinearity axioms for liftQ compatibility
 - Added bundled linear maps serrePairingLeft/Right
 - Use canonical divisor KDiv parameter in vanishing_on_AD

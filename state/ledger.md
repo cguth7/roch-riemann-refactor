@@ -13,7 +13,7 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 376
+**Cycle**: 377
 **Phase**: 10 - AXIOM DISCHARGE
 
 ### Core RR Proof Status
@@ -156,11 +156,11 @@ The "right non-degeneracy" axiom is actually redundant once we have perfect pair
 | File | Axioms | Purpose |
 |------|--------|---------|
 | LocalResidue.lean | 2 | Local residue map + vanishing |
-| PairingDescent.lean | 14 | Raw pairing + bilinearity + vanishing + trace bridges |
+| PairingDescent.lean | 9 | Raw pairing + bilinearity + vanishing + trace bridges |
 | PairingNondegenerate.lean | 0 | **Non-degeneracy (derived!)** |
 | TracePairingBridge.lean | 0 | **All derived from bridging axioms!** |
 
-**Total Track C axioms**: 16 (reduced from 17, `poleSupport_finite` proved!)
+**Total Track C axioms**: 11 (reduced from 16: 3 proved + 2 removed as unused!)
 
 ### Elliptic Curve Axioms
 
@@ -194,6 +194,28 @@ RrLean/RiemannRochV2/
 ---
 
 ## Recent Cycles
+
+### Cycle 377: Five Axioms Eliminated!
+
+**Part 1: Proved `boundedTimesLKD_residue_zero`**
+- ✅ **Proved** using valuation multiplicativity
+- Proof strategy: v(a·f) = v(a)·v(f) ≤ exp(D)·exp(-D) = 1 → no pole → residue 0
+
+**Part 2: Removed 2 unused axioms**
+- ✅ **Removed `tracedResidueSum`** - vestigial, never used
+- ✅ **Removed `globalResidueTheorem_traced`** - vestigial, never used
+- These were from an earlier design; `fullRawPairing` axiomatizes the pairing directly
+
+**Part 3: Proved zero axioms from additivity**
+- ✅ **Proved `fullRawPairing_zero_left`** - follows from add_left: x = x + x implies x = 0
+- ✅ **Proved `fullRawPairing_zero_right`** - follows from add_right: x = x + x implies x = 0
+
+**Result**:
+- PairingDescent axioms: 14 → 9 (−5)
+- **Total Track C axioms**: 16 → 11
+
+**Key insight**: The residue theorem is implicitly captured by `fullRawPairing_vanishes_on_K`,
+not as a separate axiom. Zero axioms are derivable from additivity.
 
 ### Cycle 376: First Axiom Discharged - `poleSupport_finite` Now PROVED!
 
@@ -379,12 +401,18 @@ axiom fullRawPairing_from_trace_witness (D : DivisorV2 R) (f : K) (hf : f ≠ 0)
 
 ---
 
-*Updated Cycle 376. First axiom discharged! The axiom hierarchy is:*
+*Updated Cycle 377. Five axioms eliminated (3 proved + 2 removed as unused)! The axiom hierarchy is:*
 
 ```
-fullRawPairing axioms (PairingDescent, 14 - includes both trace bridges)
+fullRawPairing axioms (PairingDescent, 9 - includes both trace bridges)
 ├── fullRawPairing_from_trace_witness (Cycle 374, right non-deg)
-└── fullRawPairing_left_vanishing_to_mem (Cycle 375, left non-deg)
+├── fullRawPairing_left_vanishing_to_mem (Cycle 375, left non-deg)
+├── poleSupport_finite → THEOREM (Cycle 376)
+├── boundedTimesLKD_residue_zero → THEOREM (Cycle 377)
+├── tracedResidueSum → REMOVED (Cycle 377, unused)
+├── globalResidueTheorem_traced → REMOVED (Cycle 377, unused)
+├── fullRawPairing_zero_left → THEOREM (Cycle 377, from additivity)
+└── fullRawPairing_zero_right → THEOREM (Cycle 377, from additivity)
          ↓
 trace-bridge theorems (TracePairingBridge, 0 axioms - all derived!)
 ├── witness_from_trace_nondegen (uses Mathlib traceForm_nondegenerate)
@@ -399,15 +427,17 @@ Serre duality theorem (h¹(D) = ℓ(KDiv - D))
 
 ## Next Steps for Future Cycles
 
-### Full Axiom Inventory (23 total)
+### Full Axiom Inventory (18 total)
 
-**PairingDescent.lean (14 axioms)**:
+**PairingDescent.lean (9 axioms)**:
 | Axiom | Tractability | Notes |
 |-------|--------------|-------|
 | ~~`poleSupport_finite`~~ | ✅ PROVED | Cycle 376: Used FractionalIdeal.finite_factors |
-| `boundedTimesLKD_residue_zero` | 🟡 MEDIUM | Valuation arithmetic |
-| `tracedResidueSum` | 🔴 LOW | Needs trace map infrastructure |
-| `globalResidueTheorem_traced` | 🔴 LOW | Classical result, needs infrastructure |
+| ~~`boundedTimesLKD_residue_zero`~~ | ✅ PROVED | Cycle 377: Valuation multiplicativity |
+| ~~`tracedResidueSum`~~ | ✅ REMOVED | Cycle 377: Unused, vestigial |
+| ~~`globalResidueTheorem_traced`~~ | ✅ REMOVED | Cycle 377: Unused, vestigial |
+| ~~`fullRawPairing_zero_left`~~ | ✅ PROVED | Cycle 377: Follows from add_left |
+| ~~`fullRawPairing_zero_right`~~ | ✅ PROVED | Cycle 377: Follows from add_right |
 | `fullRawPairing` | 🔴 LOW | Needs residue sum construction |
 | (6 bilinearity axioms) | 🔴 LOW | Follow from `fullRawPairing` construction |
 | `fullRawPairing_vanishes_on_K` | 🔴 LOW | Residue theorem application |
@@ -433,10 +463,10 @@ Serre duality theorem (h¹(D) = ℓ(KDiv - D))
 
 ### Priority Order
 
-1. **`poleSupport_finite`** (🟢 HIGH) - Most tractable, use Mathlib ideal theory
-2. **`serre_duality`** (elliptic) - Wire to general theorem with instances
-3. **`h1_finite_all`** - Follows from Serre duality
-4. **`boundedTimesLKD_residue_zero`** - Valuation arithmetic
+1. ~~**`poleSupport_finite`**~~ ✅ DONE (Cycle 376) - Used Mathlib ideal theory
+2. ~~**`boundedTimesLKD_residue_zero`**~~ ✅ DONE (Cycle 377) - Valuation arithmetic
+3. **`serre_duality`** (elliptic) - Wire to general theorem with instances
+4. **`h1_finite_all`** - Follows from Serre duality
 5. **`exists_localUniformizer`** - DVR theory from Mathlib
 
 ### ~~Option A: Prove `residuePairing_controlled_by_trace`~~ ✅ DONE (Cycle 375)
@@ -444,6 +474,6 @@ Serre duality theorem (h¹(D) = ℓ(KDiv - D))
 
 ### Key Files to Read First
 1. **This ledger** (always read first!)
-2. `PairingDescent.lean` - current axiom frontier (15 axioms including both trace bridges)
+2. `PairingDescent.lean` - current axiom frontier (9 axioms including both trace bridges)
 3. `TracePairingBridge.lean` - trace-residue connection (all derived)
 4. `PairingNondegenerate.lean` - derived non-degeneracy theorems
