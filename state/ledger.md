@@ -13,8 +13,8 @@
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 375
-**Phase**: 9 - BOSS BATTLE (Trace Bridge Complete!)
+**Cycle**: 376
+**Phase**: 10 - AXIOM DISCHARGE
 
 ### Core RR Proof Status
 
@@ -156,11 +156,11 @@ The "right non-degeneracy" axiom is actually redundant once we have perfect pair
 | File | Axioms | Purpose |
 |------|--------|---------|
 | LocalResidue.lean | 2 | Local residue map + vanishing |
-| PairingDescent.lean | 15 | Raw pairing + bilinearity + vanishing + **both trace bridges** |
+| PairingDescent.lean | 14 | Raw pairing + bilinearity + vanishing + trace bridges |
 | PairingNondegenerate.lean | 0 | **Non-degeneracy (derived!)** |
 | TracePairingBridge.lean | 0 | **All derived from bridging axioms!** |
 
-**Total Track C axioms**: 17 (unchanged, but all pushed to PairingDescent)
+**Total Track C axioms**: 16 (reduced from 17, `poleSupport_finite` proved!)
 
 ### Elliptic Curve Axioms
 
@@ -194,6 +194,21 @@ RrLean/RiemannRochV2/
 ---
 
 ## Recent Cycles
+
+### Cycle 376: First Axiom Discharged - `poleSupport_finite` Now PROVED!
+
+- ✅ **Proved `poleSupport_finite`** using Mathlib's `FractionalIdeal.finite_factors`
+- ✅ **Axiom count reduced**: PairingDescent 15 → 14 axioms
+- ✅ **Total Track C axioms**: 17 → 16
+
+**Proof strategy**:
+1. For f ∈ K, v.valuation K f > 1 iff count K v (spanSingleton f) < 0
+2. `FractionalIdeal.finite_factors` says count is eventually 0 (cofinite)
+3. {v | count < 0} ⊆ {v | count ≠ 0}, hence finite
+
+**Key Mathlib lemma**: `FractionalIdeal.finite_factors : ∀ᶠ v in cofinite, count K v I = 0`
+
+This is the first axiom discharge since completing the non-degeneracy infrastructure!
 
 ### Cycle 375: Left Non-Degeneracy Now PROVED - TracePairingBridge is Axiom-Free!
 
@@ -352,7 +367,7 @@ axiom fullRawPairing_from_trace_witness (D : DivisorV2 R) (f : K) (hf : f ≠ 0)
 | TracePairingBridge.lean | Trace-residue connection | ✅ **0 axioms (Cycle 375)** |
 | DifferentIdealBridge.lean | Divisor ↔ FractionalIdeal | ✅ Complete |
 | TraceDualBridge.lean | L(D) ↔ dual(I) bridge | ✅ Complete (Cycle 370 - sign fix) |
-| PairingDescent.lean | **AXIOM FRONTIER** | 15 axioms (includes bridging) |
+| PairingDescent.lean | **AXIOM FRONTIER** | 14 axioms (includes bridging) |
 
 ---
 
@@ -364,10 +379,10 @@ axiom fullRawPairing_from_trace_witness (D : DivisorV2 R) (f : K) (hf : f ≠ 0)
 
 ---
 
-*Updated Cycle 375. BOTH non-degeneracy directions are now PROVED! The axiom hierarchy is:*
+*Updated Cycle 376. First axiom discharged! The axiom hierarchy is:*
 
 ```
-fullRawPairing axioms (PairingDescent, 15 - includes both trace bridges)
+fullRawPairing axioms (PairingDescent, 14 - includes both trace bridges)
 ├── fullRawPairing_from_trace_witness (Cycle 374, right non-deg)
 └── fullRawPairing_left_vanishing_to_mem (Cycle 375, left non-deg)
          ↓
@@ -384,24 +399,47 @@ Serre duality theorem (h¹(D) = ℓ(KDiv - D))
 
 ## Next Steps for Future Cycles
 
+### Full Axiom Inventory (23 total)
+
+**PairingDescent.lean (14 axioms)**:
+| Axiom | Tractability | Notes |
+|-------|--------------|-------|
+| ~~`poleSupport_finite`~~ | ✅ PROVED | Cycle 376: Used FractionalIdeal.finite_factors |
+| `boundedTimesLKD_residue_zero` | 🟡 MEDIUM | Valuation arithmetic |
+| `tracedResidueSum` | 🔴 LOW | Needs trace map infrastructure |
+| `globalResidueTheorem_traced` | 🔴 LOW | Classical result, needs infrastructure |
+| `fullRawPairing` | 🔴 LOW | Needs residue sum construction |
+| (6 bilinearity axioms) | 🔴 LOW | Follow from `fullRawPairing` construction |
+| `fullRawPairing_vanishes_on_K` | 🔴 LOW | Residue theorem application |
+| `fullRawPairing_vanishes_on_AD` | 🔴 LOW | Pole cancellation |
+| `fullRawPairing_from_trace_witness` | 🔴 LOW | Local-global trace bridge |
+| `fullRawPairing_left_vanishing_to_mem` | 🔴 LOW | Local-global trace bridge |
+
+**LocalResidue.lean (2 axioms)**:
+| Axiom | Tractability | Notes |
+|-------|--------------|-------|
+| `localResidueHom` | 🔴 LOW | Needs Laurent series K_v ≃ κ(v)((t)) |
+| `localResidue_vanishes_on_integers` | 🔴 LOW | Follows from localResidueHom |
+
+**Elliptic files (6 axioms)**:
+| Axiom | Tractability | Notes |
+|-------|--------------|-------|
+| `serre_duality` | 🟡 MEDIUM | Follows from general theorem IF instances available |
+| `h1_finite_all` | 🟡 MEDIUM | Follows from Serre duality + L(K-D) finite |
+| `h1_zero_eq_one` | 🔴 LOW | Genus definition, needs curve theory |
+| `h1_vanishing_positive` | 🔴 LOW | Strong approximation |
+| `isDedekindDomain_coordinateRing_axiom` | ⚪ KEEP | Foundational, may keep as axiom |
+| `exists_localUniformizer` | 🟡 MEDIUM | DVR theory |
+
+### Priority Order
+
+1. **`poleSupport_finite`** (🟢 HIGH) - Most tractable, use Mathlib ideal theory
+2. **`serre_duality`** (elliptic) - Wire to general theorem with instances
+3. **`h1_finite_all`** - Follows from Serre duality
+4. **`boundedTimesLKD_residue_zero`** - Valuation arithmetic
+5. **`exists_localUniformizer`** - DVR theory from Mathlib
+
 ### ~~Option A: Prove `residuePairing_controlled_by_trace`~~ ✅ DONE (Cycle 375)
-
-### Option A: Reduce PairingDescent Bridging Axioms
-**Target**: The 2 trace bridging axioms in PairingDescent.lean
-**Approach**:
-- Prove using Laurent series infrastructure (K_v ≃ κ(v)((t)))
-- Or use Mathlib's fractional ideal perfect pairing machinery more directly
-- Connect local residues to global trace via adelic decomposition
-
-### Option B: Reduce Elliptic-Specific Axioms
-**Target axioms** in EllipticH1.lean:
-- `h1_zero_eq_one`: h¹(O) = 1 for elliptic curves (genus definition)
-- `h1_vanishing_positive`: h¹(D) = 0 for deg(D) > 0
-- `serre_duality`: h¹(D) = ℓ(-D) (redundant once general Serre duality proved)
-
-### Option C: Documentation/Cleanup
-- Clean up linter warnings
-- Archive old cycles from ledger
 - Document the proof structure
 
 ### Key Files to Read First

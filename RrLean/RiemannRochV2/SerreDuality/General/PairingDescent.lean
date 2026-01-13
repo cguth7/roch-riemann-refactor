@@ -35,13 +35,15 @@ import RrLean.RiemannRochV2.SerreDuality.General.LocalResidue
 import RrLean.RiemannRochV2.Core.Divisor
 import RrLean.RiemannRochV2.Core.RRSpace
 import RrLean.RiemannRochV2.Adelic.AdelicH1v2
+import RrLean.RiemannRochV2.ResidueTheory.DifferentIdealBridge
 import Mathlib.RingTheory.DedekindDomain.FiniteAdeleRing
+import Mathlib.RingTheory.DedekindDomain.Factorization
 import Mathlib.RingTheory.Trace.Basic
 
 noncomputable section
 
-open IsDedekindDomain IsDedekindDomain.HeightOneSpectrum
-open scoped Valued
+open IsDedekindDomain IsDedekindDomain.HeightOneSpectrum FractionalIdeal
+open scoped Valued nonZeroDivisors
 
 variable {R : Type*} [CommRing R] [IsDomain R] [IsDedekindDomain R]
 variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
@@ -111,10 +113,48 @@ def poleSupport (f : K) : Set (HeightOneSpectrum R) :=
 This is a fundamental property of function fields: a global element
 has only finitely many poles.
 
-**Axiomatized**: Follows from the fact that elements of the fraction field
-of a Dedekind domain have only finitely many poles.
+**Proof** (Cycle 376): Uses `FractionalIdeal.finite_factors` from Mathlib.
+The key steps:
+1. v.valuation K f > 1 iff count K v (spanSingleton f) < 0 (via valuation_eq_exp_neg_count)
+2. The set {v | count K v I ≠ 0} is finite for any fractional ideal I
+3. {v | count < 0} ⊆ {v | count ≠ 0}, so the pole support is finite
 -/
-axiom poleSupport_finite (f : K) (hf : f ≠ 0) : (poleSupport (R := R) K f).Finite
+theorem poleSupport_finite (f : K) (hf : f ≠ 0) : (poleSupport (R := R) K f).Finite := by
+  -- The pole support is {v | v.valuation K f > 1}
+  -- By valuation_eq_exp_neg_count: v.valuation K f = exp(-count K v (spanSingleton f))
+  -- So v.valuation K f > 1 iff -count K v (spanSingleton f) > 0 iff count < 0
+  -- The support of count is finite by FractionalIdeal.finite_factors
+
+  -- First, get the fractional ideal corresponding to f
+  let I := spanSingleton R⁰ f
+  have hI : I ≠ 0 := spanSingleton_ne_zero_iff.mpr hf
+
+  -- finite_factors says: eventually (wrt cofinite), count K v I = 0
+  -- This means {v | count K v I ≠ 0} is finite
+  have h_finite_support : {v : HeightOneSpectrum R | count K v I ≠ 0}.Finite := by
+    have h := FractionalIdeal.finite_factors I
+    rw [Filter.eventually_cofinite] at h
+    exact h
+
+  -- The pole support is a subset of this finite set
+  apply Set.Finite.subset h_finite_support
+  intro v hv
+  -- hv : v ∈ poleSupport K f, i.e., v.valuation K f > 1
+  -- Need: count K v I ≠ 0
+  unfold poleSupport at hv
+  simp only [Set.mem_setOf_eq] at hv
+
+  -- Use valuation_eq_exp_neg_count to relate valuation to count
+  have h_val := RiemannRochV2.valuation_eq_exp_neg_count R K v f hf
+  rw [h_val] at hv
+  -- hv : WithZero.exp (-count K v I) > 1
+
+  -- exp(-n) > 1 = exp(0) iff -n > 0 iff n < 0
+  -- So count K v I < 0, which means count K v I ≠ 0
+  simp only [Set.mem_setOf_eq]
+  by_contra h_count_zero
+  rw [h_count_zero, neg_zero, WithZero.exp_zero] at hv
+  exact lt_irrefl 1 hv
 
 /-! ## The Raw Pairing Structure
 
@@ -415,10 +455,10 @@ end RawPairing
 
 This file establishes the framework for the Serre duality pairing.
 
-### Local Infrastructure (Cycle 362)
+### Local Infrastructure (Cycle 362, updated Cycle 376)
 1. **embeddedResidue**: Local residue of global elements via K → K_v embedding
 2. **embeddedResidue_vanishes_no_pole**: No pole means zero residue
-3. **poleSupport_finite**: Global elements have finitely many poles (axiom)
+3. **poleSupport_finite**: Global elements have finitely many poles (**THEOREM** Cycle 376)
 4. **boundedTimesLKD_residue_zero**: Bounded × L(K-D) gives zero residue (axiom)
 
 ### Global Traced Residue (Cycle 363)
@@ -432,8 +472,9 @@ This file establishes the framework for the Serre duality pairing.
 10. **fullRawPairing_vanishes_on_K**: Pairing vanishes on K (axiom)
 11. **fullRawPairing_vanishes_on_AD**: Pairing vanishes on A(D) for f ∈ L(KDiv-D) (axiom)
 
-**Axioms introduced**:
-- Cycle 362 (2 axioms): `poleSupport_finite`, `boundedTimesLKD_residue_zero`
+**Axioms introduced** (current count: 14):
+- Cycle 362 (1 axiom): `boundedTimesLKD_residue_zero`
+  - `poleSupport_finite` now THEOREM (Cycle 376)
 - Cycle 363 (2 axioms): `tracedResidueSum`, `globalResidueTheorem_traced`
 - Cycle 364 (9 axioms): `fullRawPairing`, `fullRawPairing_add_left`, `fullRawPairing_add_right`,
   `fullRawPairing_smul_left`, `fullRawPairing_smul_right`, `fullRawPairing_zero_left`,
