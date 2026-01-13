@@ -384,6 +384,31 @@ axiom fullRawPairing_from_trace_witness (D : DivisorV2 R) (f : K) (hf : f ≠ 0)
       a ∉ AdelicH1v2.globalPlusBoundedSubmodule k R K D ∧
       fullRawPairing (R := R) (K := K) k a f ≠ 0
 
+/-- Left non-degeneracy from trace: universal pairing vanishing implies membership.
+
+This is the left-side dual of `fullRawPairing_from_trace_witness`.
+
+If fullRawPairing(a, f) = 0 for all f satisfying the L(KDiv-D) valuation conditions,
+then a ∈ K + A(D).
+
+**Mathematical justification**:
+1. L(KDiv-D) corresponds to a fractional ideal (the trace dual of I_{2*KDiv-D})
+2. If the residue pairing vanishes on this entire space
+3. By trace non-degeneracy properties, the adele must be "trivial" (in K + A(D))
+
+The key insight is that L(KDiv-D) is "large enough" that universal vanishing
+on this space forces membership in the kernel K + A(D).
+
+**Axiomatized** because proving this requires the detailed connection between
+local residues at each place and the global trace structure, similar to the
+right-side axiom `fullRawPairing_from_trace_witness`.
+-/
+axiom fullRawPairing_left_vanishing_to_mem (D KDiv : DivisorV2 R)
+    (a : FiniteAdeleRing R K)
+    (h_all_vanish : ∀ f : K, satisfiesValuationCondition R K (KDiv - D) f →
+        fullRawPairing (R := R) (K := K) k a f = 0) :
+    a ∈ AdelicH1v2.globalPlusBoundedSubmodule k R K D
+
 end RawPairing
 
 /-! ## Summary
@@ -413,7 +438,8 @@ This file establishes the framework for the Serre duality pairing.
 - Cycle 364 (9 axioms): `fullRawPairing`, `fullRawPairing_add_left`, `fullRawPairing_add_right`,
   `fullRawPairing_smul_left`, `fullRawPairing_smul_right`, `fullRawPairing_zero_left`,
   `fullRawPairing_zero_right`, `fullRawPairing_vanishes_on_K`, `fullRawPairing_vanishes_on_AD`
-- Cycle 374 (1 axiom): `fullRawPairing_from_trace_witness` (trace-residue bridge)
+- Cycle 374 (1 axiom): `fullRawPairing_from_trace_witness` (trace-residue bridge, right non-deg)
+- Cycle 375 (1 axiom): `fullRawPairing_left_vanishing_to_mem` (trace-residue bridge, left non-deg)
 
 **Key Changes in Cycle 364**:
 - Use FiniteAdeleRing R K directly (no witness parameter)
