@@ -262,6 +262,79 @@ for the Serre duality pairing construction.
 -- Note: The precise formulation requires summing over all places with poles.
 -- We defer this to PairingDescent.lean where we have access to the adelic structure.
 
+/-! ## Concrete Residue via Uniformizer (Cycle 378)
+
+We define a concrete residue extraction using the uniformizer π.
+
+**Key idea**: For x ∈ K_v with a simple pole (val(x) = exp(1)):
+- x · π has val(x·π) = exp(1) · exp(-1) = 1, so x·π ∈ O_v is a unit
+- The residue is the image of x·π in κ(v)
+
+For x ∈ O_v (val(x) ≤ 1): residue = 0
+
+This matches the axiomatized `localResidueHom` for elements with at most simple poles.
+-/
+
+/-- The uniformizer is nonzero. -/
+lemma uniformizer_ne_zero : uniformizer_elem K v ≠ 0 :=
+  (uniformizer K v).ne_zero
+
+/-- The uniformizer is a unit in K_v (as a field element). -/
+lemma uniformizer_isUnit : IsUnit (uniformizer_elem K v) := by
+  rw [isUnit_iff_ne_zero]
+  exact uniformizer_ne_zero K v
+
+/-- For x with val(x) = exp(n) where n ≥ 1, x·π has val = exp(n-1). -/
+lemma val_mul_uniformizer (x : v.adicCompletion K) :
+    Valued.v (x * uniformizer_elem K v) = Valued.v x * WithZero.exp (-1 : ℤ) := by
+  rw [Valuation.map_mul, (uniformizer K v).val_eq]
+
+/-- For x with val(x) · exp(-1) ≤ 1, we have x·π ∈ O_v. -/
+lemma mul_uniformizer_mem_integers (x : v.adicCompletion K)
+    (hx : Valued.v x * WithZero.exp (-1 : ℤ) ≤ 1) :
+    x * uniformizer_elem K v ∈ v.adicCompletionIntegers K := by
+  show Valued.v (x * uniformizer_elem K v) ≤ 1
+  rw [val_mul_uniformizer]
+  exact hx
+
+/-- Concrete residue for elements with at most a simple pole.
+
+For x with val(x) ≤ exp(1) (at most simple pole):
+- If val(x) ≤ 1: return 0 (no pole)
+- If 1 < val(x) ≤ exp(1): return residueMap(x·π)
+
+This is partial - only handles simple poles. Full residue needs recursion.
+-/
+noncomputable def residueSimplePole (x : v.adicCompletion K)
+    (hx : Valued.v x ≤ WithZero.exp (1 : ℤ)) : residueField_Ov K v :=
+  if h : Valued.v x ≤ 1 then
+    0  -- No pole, residue is 0
+  else
+    -- x has a simple pole: val(x) > 1 but ≤ exp(1)
+    -- So x·π has val ≤ 1, meaning x·π ∈ O_v
+    let hprod : Valued.v x * WithZero.exp (-1 : ℤ) ≤ 1 := by
+      -- val(x) ≤ exp(1), so val(x) · exp(-1) ≤ exp(1) · exp(-1) = 1
+      calc Valued.v x * WithZero.exp (-1 : ℤ)
+          ≤ WithZero.exp (1 : ℤ) * WithZero.exp (-1 : ℤ) := by
+            apply mul_le_mul_right'
+            exact hx
+        _ = WithZero.exp (1 + (-1) : ℤ) := by rw [← WithZero.exp_add]
+        _ = WithZero.exp 0 := by norm_num
+        _ = 1 := WithZero.exp_zero
+    residueMap_Ov K v ⟨x * uniformizer_elem K v, mul_uniformizer_mem_integers K v x hprod⟩
+
+/-- The simple pole residue vanishes for elements in O_v. -/
+theorem residueSimplePole_vanishes_on_integers (x : v.adicCompletionIntegers K) :
+    residueSimplePole K v x (by
+      -- val(x) ≤ 1 ≤ exp(1)
+      have h1 : Valued.v (x : v.adicCompletion K) ≤ 1 := x.property
+      have h2 : (1 : WithZero (Multiplicative ℤ)) ≤ WithZero.exp (1 : ℤ) :=
+        le_of_lt (WithZero.exp_lt_exp.mpr (by norm_num : (0 : ℤ) < 1))
+      exact le_trans h1 h2) = 0 := by
+  unfold residueSimplePole
+  have hx_int : Valued.v (x : v.adicCompletion K) ≤ 1 := x.property
+  simp only [dif_pos hx_int]
+
 end RiemannRochV2.LocalResidue
 
 /-! ## Summary (Cycle 362)

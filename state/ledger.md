@@ -4,16 +4,18 @@
 
 ## Mission
 
-**Goal**: Prove Riemann-Roch for curves over algebraically closed fields in Lean 4, using only the standard 3 foundational axioms (propext, Classical.choice, Quot.sound).
+**Goal**: Prove Riemann-Roch for **arbitrary genus curves** over algebraically closed fields in Lean 4, using only the standard 3 foundational axioms (propext, Classical.choice, Quot.sound).
 
 **Motivation**: Daniel Litt's Twitter challenge (Dec 15, 2025) - a fully formalized RR theorem.
+
+**Scope Clarification**: The elliptic curve files (EllipticH1.lean, EllipticRRData.lean, etc.) are a **test instance** only. The real goal is proving the general Serre duality theorem with minimal axioms. Elliptic-specific axioms are NOT the priority.
 
 ---
 
 ## Current State
 
 **Build**: ✅ PASSING
-**Cycle**: 377
+**Cycle**: 378
 **Phase**: 10 - AXIOM DISCHARGE
 
 ### Core RR Proof Status
@@ -26,15 +28,15 @@
 | `riemann_roch_from_euler` | ✅ PROVED |
 | `serre_duality_finrank` | ✅ PROVED (from axioms) |
 
-### Critical Path Axioms (5 remaining)
+### General Theory Axiom Frontier (11 total)
 
-| Axiom | File | Status |
-|-------|------|--------|
-| `serre_duality` | EllipticH1 | 🎯 **ACTIVE TARGET** |
-| `h1_finite_all` | EllipticRRData | Follows from Serre duality |
-| `h1_zero_eq_one` | EllipticH1 | Genus definition |
-| `h1_vanishing_positive` | EllipticH1 | Strong approximation |
-| `isDedekindDomain_coordinateRing_axiom` | EllipticSetup | Keep as axiom |
+| File | Axioms | Status |
+|------|--------|--------|
+| PairingDescent.lean | 9 | 🎯 **ACTIVE FRONTIER** |
+| LocalResidue.lean | 2 | Depends on Laurent series |
+
+The elliptic-specific axioms (EllipticH1, EllipticRRData, etc.) are **NOT** the priority.
+They exist only as a test instance for the general theory.
 
 ---
 
@@ -194,6 +196,26 @@ RrLean/RiemannRochV2/
 ---
 
 ## Recent Cycles
+
+### Cycle 378: Uniformizer-Based Residue - First Step
+
+- ✅ **Clarified mission**: Goal is general RR for arbitrary genus, not elliptic-specific
+- ✅ **Researched Mathlib**: Residue theorem is NOT in Mathlib (confirmed)
+- ✅ **Started uniformizer route**: Added `residueSimplePole` to LocalResidue.lean
+- ✅ **Proved vanishing**: `residueSimplePole_vanishes_on_integers` - residue is 0 for O_v elements
+
+**New in LocalResidue.lean** (Cycle 378):
+- `uniformizer_ne_zero`: π ≠ 0
+- `uniformizer_isUnit`: π is a unit in K_v
+- `val_mul_uniformizer`: val(x·π) = val(x) · exp(-1)
+- `mul_uniformizer_mem_integers`: x·π ∈ O_v when val(x) · exp(-1) ≤ 1
+- `residueSimplePole`: Concrete residue for elements with at most simple poles
+- `residueSimplePole_vanishes_on_integers`: **PROVED** - vanishing on O_v
+
+**Next steps** (future cycles):
+1. Extend to higher-order poles (recursive definition)
+2. Prove additivity of `residueSimplePole`
+3. Show it matches axiomatized `localResidueHom` → eliminate axiom
 
 ### Cycle 377: Five Axioms Eliminated!
 
@@ -427,53 +449,104 @@ Serre duality theorem (h¹(D) = ℓ(KDiv - D))
 
 ## Next Steps for Future Cycles
 
-### Full Axiom Inventory (18 total)
+### ⚠️ FOCUS: General Theory Axioms (NOT Elliptic-Specific)
 
-**PairingDescent.lean (9 axioms)**:
+The goal is **arbitrary genus RR**. The elliptic files are just a test instance.
+Focus on reducing axioms in **PairingDescent.lean** and **LocalResidue.lean**.
+
+### General Theory Axiom Inventory (11 remaining)
+
+**PairingDescent.lean (9 axioms)** - THE AXIOM FRONTIER:
 | Axiom | Tractability | Notes |
 |-------|--------------|-------|
-| ~~`poleSupport_finite`~~ | ✅ PROVED | Cycle 376: Used FractionalIdeal.finite_factors |
-| ~~`boundedTimesLKD_residue_zero`~~ | ✅ PROVED | Cycle 377: Valuation multiplicativity |
-| ~~`tracedResidueSum`~~ | ✅ REMOVED | Cycle 377: Unused, vestigial |
-| ~~`globalResidueTheorem_traced`~~ | ✅ REMOVED | Cycle 377: Unused, vestigial |
-| ~~`fullRawPairing_zero_left`~~ | ✅ PROVED | Cycle 377: Follows from add_left |
-| ~~`fullRawPairing_zero_right`~~ | ✅ PROVED | Cycle 377: Follows from add_right |
-| `fullRawPairing` | 🔴 LOW | Needs residue sum construction |
-| (6 bilinearity axioms) | 🔴 LOW | Follow from `fullRawPairing` construction |
-| `fullRawPairing_vanishes_on_K` | 🔴 LOW | Residue theorem application |
-| `fullRawPairing_vanishes_on_AD` | 🔴 LOW | Pole cancellation |
-| `fullRawPairing_from_trace_witness` | 🔴 LOW | Local-global trace bridge |
-| `fullRawPairing_left_vanishing_to_mem` | 🔴 LOW | Local-global trace bridge |
+| `fullRawPairing` | 🔴 HARD | Needs residue sum construction |
+| `fullRawPairing_add_left` | 🔴 HARD | Follows from fullRawPairing |
+| `fullRawPairing_add_right` | 🔴 HARD | Follows from fullRawPairing |
+| `fullRawPairing_smul_left` | 🔴 HARD | Follows from fullRawPairing |
+| `fullRawPairing_smul_right` | 🔴 HARD | Follows from fullRawPairing |
+| `fullRawPairing_vanishes_on_K` | 🔴 HARD | Residue theorem |
+| `fullRawPairing_vanishes_on_AD` | 🔴 HARD | Pole cancellation |
+| `fullRawPairing_from_trace_witness` | 🟡 MEDIUM | Local-global trace bridge |
+| `fullRawPairing_left_vanishing_to_mem` | 🟡 MEDIUM | Local-global trace bridge |
 
 **LocalResidue.lean (2 axioms)**:
 | Axiom | Tractability | Notes |
 |-------|--------------|-------|
-| `localResidueHom` | 🔴 LOW | Needs Laurent series K_v ≃ κ(v)((t)) |
-| `localResidue_vanishes_on_integers` | 🔴 LOW | Follows from localResidueHom |
+| `localResidueHom` | 🔴 HARD | Needs Laurent series K_v ≃ κ(v)((t)) |
+| `localResidue_vanishes_on_integers` | 🔴 HARD | Follows from localResidueHom |
 
-**Elliptic files (6 axioms)**:
-| Axiom | Tractability | Notes |
-|-------|--------------|-------|
-| `serre_duality` | 🟡 MEDIUM | Follows from general theorem IF instances available |
-| `h1_finite_all` | 🟡 MEDIUM | Follows from Serre duality + L(K-D) finite |
-| `h1_zero_eq_one` | 🔴 LOW | Genus definition, needs curve theory |
-| `h1_vanishing_positive` | 🔴 LOW | Strong approximation |
-| `isDedekindDomain_coordinateRing_axiom` | ⚪ KEEP | Foundational, may keep as axiom |
-| `exists_localUniformizer` | 🟡 MEDIUM | DVR theory |
+### Eliminated Axioms (Cycle 376-377)
+| Axiom | Status |
+|-------|--------|
+| `poleSupport_finite` | ✅ PROVED (Cycle 376) |
+| `boundedTimesLKD_residue_zero` | ✅ PROVED (Cycle 377) |
+| `tracedResidueSum` | ✅ REMOVED (unused) |
+| `globalResidueTheorem_traced` | ✅ REMOVED (unused) |
+| `fullRawPairing_zero_left` | ✅ PROVED (from additivity) |
+| `fullRawPairing_zero_right` | ✅ PROVED (from additivity) |
 
-### Priority Order
+### Elliptic Instance Axioms (6 total - LOW PRIORITY)
 
-1. ~~**`poleSupport_finite`**~~ ✅ DONE (Cycle 376) - Used Mathlib ideal theory
-2. ~~**`boundedTimesLKD_residue_zero`**~~ ✅ DONE (Cycle 377) - Valuation arithmetic
-3. **`serre_duality`** (elliptic) - Wire to general theorem with instances
-4. **`h1_finite_all`** - Follows from Serre duality
-5. **`exists_localUniformizer`** - DVR theory from Mathlib
+These exist only as a test instance. Do NOT prioritize unless helpful for general theory.
 
-### ~~Option A: Prove `residuePairing_controlled_by_trace`~~ ✅ DONE (Cycle 375)
-- Document the proof structure
+| Axiom | File | Notes |
+|-------|------|-------|
+| `serre_duality` | EllipticH1 | Derivable from general theorem |
+| `h1_finite_all` | EllipticRRData | Derivable from Serre duality |
+| `h1_zero_eq_one` | EllipticH1 | Genus definition |
+| `h1_vanishing_positive` | EllipticH1 | Strong approximation |
+| `isDedekindDomain_coordinateRing_axiom` | EllipticSetup | Keep as axiom |
+| `exists_localUniformizer` | EllipticPlaces | DVR theory |
+
+### Priority Order (General Theory Focus)
+
+1. ~~**`poleSupport_finite`**~~ ✅ DONE (Cycle 376)
+2. ~~**`boundedTimesLKD_residue_zero`**~~ ✅ DONE (Cycle 377)
+3. 🎯 **BUILD UNIFORMIZER-BASED LAURENT EXPANSION** ← NEXT STEP
+   - Goal: Construct `K_v ≃ LaurentSeries κ(v)` using DVR uniformizer π
+   - This eliminates `localResidueHom` and `localResidue_vanishes_on_integers` (2 axioms)
+   - Infrastructure exists: `uniformizer`, `uniformizer_mem_integers` in LocalResidue.lean
+4. **Construct `fullRawPairing`** - Define as Σ_v Tr(res_v(a_v · f)), depends on step 3
+5. **Prove residue theorem** - `fullRawPairing_vanishes_on_K`, may need separate approach
+
+### Research Findings (Cycle 378)
+
+**Mathlib Status:**
+1. ✅ `LaurentSeries` exists with `HahnSeries.coeff` for coefficient extraction
+2. ✅ `RatFunc K → LaurentSeries K` coercion exists (used for P¹ residue)
+3. ❌ **Residue theorem is NOT in Mathlib** (listed on "undergrad not in mathlib")
+4. ❌ `v.adicCompletion K → LaurentSeries κ(v)` isomorphism does NOT exist
+
+**What This Means:**
+- The P¹ case works because `RatFunc → LaurentSeries` exists in Mathlib
+- For general curves, we need `K_v ≃ LaurentSeries κ(v)` which requires uniformizer expansion
+- The residue theorem `Σ_v res_v(f) = 0` is genuine mathematical content not in Mathlib
+
+**Axiom Assessment:**
+The 11 remaining axioms capture real mathematical gaps:
+- `localResidueHom`: Needs K_v ↔ Laurent series isomorphism
+- `fullRawPairing`: Needs local residues + finite sum
+- `fullRawPairing_vanishes_on_K`: IS the residue theorem
+- Trace bridges: Connect local/global via residue-trace relation
+
+**Strategic Options:**
+
+1. 🎯 **Build uniformizer-based Laurent expansion** (MEDIUM effort) ← CHOSEN PATH
+   - Use DVR uniformizer π to expand K_v elements
+   - Define residue as π⁻¹ coefficient
+   - Would eliminate `localResidueHom` axioms (2 axioms)
+   - Then `fullRawPairing` becomes definable as a sum
+
+2. **Accept current axiom level** (fallback)
+   - Axioms are at mathematically meaningful boundaries
+   - They capture content beyond current Mathlib
+
+3. **Alternative: Algebraic de Rham** (HIGH effort, speculative)
+   - Avoid Laurent series entirely - probably not worth it
 
 ### Key Files to Read First
 1. **This ledger** (always read first!)
-2. `PairingDescent.lean` - current axiom frontier (9 axioms including both trace bridges)
-3. `TracePairingBridge.lean` - trace-residue connection (all derived)
-4. `PairingNondegenerate.lean` - derived non-degeneracy theorems
+2. `PairingDescent.lean` - current axiom frontier (9 axioms)
+3. `LocalResidue.lean` - local residue axioms (2 axioms)
+4. `TracePairingBridge.lean` - trace-residue connection (all derived)
+5. `PairingNondegenerate.lean` - derived non-degeneracy theorems
