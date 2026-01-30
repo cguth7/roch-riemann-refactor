@@ -2,3 +2,9 @@
 lake-packages/
 build/
 *.olean
+
+# Gas Town (added by gt)
+.runtime/
+.claude/
+.beads/
+.logs/
