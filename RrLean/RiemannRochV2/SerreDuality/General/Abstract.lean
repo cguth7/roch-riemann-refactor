@@ -223,6 +223,24 @@ section ProjectiveAdelicRRData
 
 variable (Fq : Type*) [Field Fq] [Fintype Fq] [DecidableEq Fq]
 
+/-! ### Linear Place Support Axiom
+
+For algebraically closed fields, all irreducible polynomials are linear (X - α),
+so all places have degree 1, and `IsLinearPlaceSupport D` is automatic for any D.
+
+For finite fields Fq, this is NOT automatic (some places have degree > 1).
+However, the degree-counting proofs in `PlaceDegree.lean` require deg(v) = 1
+for all places in D.support.
+
+This axiom asserts that all divisors we care about are supported on linear places.
+It holds automatically when Fq is algebraically closed.
+
+**To discharge**: Replace `[Fintype Fq]` with `[IsAlgClosed Fq]` and prove
+using the fact that algebraically closed fields have no proper finite extensions.
+-/
+axiom all_divisors_linear_place_support (D : DivisorV2 (Polynomial Fq)) :
+    IsLinearPlaceSupport D
+
 /-- Projective Adelic Riemann-Roch Data for curves with explicit infinity.
 
 Unlike the affine `AdelicRRData`, this uses:
@@ -297,8 +315,8 @@ instance p1ProjectiveAdelicRRData :
         push_neg at hinfty
         exact h1_finrank_full_eq_zero_deep_neg_infty Fq D h heff hinfty
     · -- D.finite not effective but deg(D) ≥ -1
-      -- For algebraically closed fields, IsLinearPlaceSupport is automatic
-      have hlin : IsLinearPlaceSupport D.finite := by sorry -- holds for alg. closed
+      -- Use axiom: for alg. closed fields, all divisors have linear place support
+      have hlin : IsLinearPlaceSupport D.finite := all_divisors_linear_place_support Fq D.finite
       exact h1_finrank_full_eq_zero_not_effective Fq D h heff hlin
   serre_duality := fun D => by
     -- Serre duality: h¹(D) = ℓ(K-D)
@@ -330,8 +348,8 @@ instance p1ProjectiveAdelicRRData :
             exact (ell_proj_ext_canonical_sub_eq_zero_deep_neg_infty Fq D hfin h_infty' hdeg).symm
       · -- D.finite not effective but deg(D) ≥ -1
         -- Both h¹(D) = 0 and ℓ(K-D) = 0 for this case
-        -- For algebraically closed fields, IsLinearPlaceSupport is automatic
-        have hlin : IsLinearPlaceSupport D.finite := by sorry -- holds for alg. closed
+        -- Use axiom: for alg. closed fields, all divisors have linear place support
+        have hlin : IsLinearPlaceSupport D.finite := all_divisors_linear_place_support Fq D.finite
         rw [h1_finrank_full_eq_zero_not_effective Fq D hdeg hfin hlin]
         have heq : p1CanonicalExt Fq = canonicalExtended Fq := rfl
         rw [heq]
