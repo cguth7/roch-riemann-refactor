@@ -335,9 +335,365 @@ theorem residueSimplePole_vanishes_on_integers (x : v.adicCompletionIntegers K) 
   have hx_int : Valued.v (x : v.adicCompletion K) ≤ 1 := x.property
   simp only [dif_pos hx_int]
 
+/-! ## Extension to Higher-Order Poles (Cycle 379)
+
+We extend `residueSimplePole` to handle poles of arbitrary order using recursion.
+
+**Strategy**: For x with pole of order n > 1:
+1. Extract the leading coefficient: a_n = (x · π^n) mod m_v
+2. Lift a_n back to O_v as ã_n
+3. Compute y = x - ã_n · π^{-n}, which has pole order < n
+4. Recurse: res(x) = res(y) since π^{-n} has no π^{-1} term when n > 1
+
+**Key insight**: The residue is the coefficient of π^{-1} in the Laurent expansion.
+Subtracting higher-order pole terms doesn't change the residue.
+-/
+
+/-! ### Lifting from Residue Field to Integers
+
+We use `Function.surjInv` to lift elements from κ(v) back to O_v.
+The residue map is surjective, so this always succeeds.
+-/
+
+/-- The residue map O_v → κ(v) is surjective. -/
+lemma residueMap_surjective :
+    Function.Surjective (residueMap_Ov K v) :=
+  Ideal.Quotient.mk_surjective
+
+/-- Lift an element of κ(v) to O_v using `Function.surjInv`.
+Any lift will do - the specific choice doesn't affect the residue computation. -/
+noncomputable def liftFromResidue (a : residueField_Ov K v) : v.adicCompletionIntegers K :=
+  Function.surjInv (residueMap_surjective K v) a
+
+/-- The lifted element projects back to the original residue class. -/
+lemma liftFromResidue_proj (a : residueField_Ov K v) :
+    residueMap_Ov K v (liftFromResidue K v a) = a :=
+  Function.surjInv_eq (residueMap_surjective K v) a
+
+/-- Lifting 0 gives an element in the maximal ideal. -/
+lemma liftFromResidue_zero_mem_maximalIdeal :
+    liftFromResidue K v 0 ∈ maximalIdeal_Ov K v := by
+  rw [IsLocalRing.mem_maximalIdeal]
+  intro hu
+  have hproj := liftFromResidue_proj K v 0
+  rw [← hproj] at hu
+  -- If residueMap(x) is a unit in κ(v), then x ∉ m_v
+  -- But residueMap(x) = 0 is not a unit
+  have h0_not_unit : ¬IsUnit (0 : residueField_Ov K v) := by
+    simp only [not_isUnit_zero]
+  rw [← hproj] at h0_not_unit
+  exact h0_not_unit (hu.map (residueMap_Ov K v))
+
+/-! ### Uniformizer Inverse and Powers -/
+
+/-- The inverse of the uniformizer in K_v. Since K_v is a field and π ≠ 0, this exists. -/
+noncomputable def uniformizer_inv : v.adicCompletion K :=
+  (uniformizer_elem K v)⁻¹
+
+/-- The valuation of π⁻¹ is exp(1). -/
+lemma uniformizer_inv_val :
+    Valued.v (uniformizer_inv K v) = WithZero.exp (1 : ℤ) := by
+  unfold uniformizer_inv
+  rw [Valuation.map_inv, (uniformizer K v).val_eq]
+  simp only [WithZero.inv_exp, neg_neg]
+
+/-- Powers of π⁻¹: (π⁻¹)^n for n : ℕ. -/
+noncomputable def uniformizer_inv_pow (n : ℕ) : v.adicCompletion K :=
+  (uniformizer_inv K v) ^ n
+
+/-- The valuation of (π⁻¹)^n is exp(n). -/
+lemma uniformizer_inv_pow_val (n : ℕ) :
+    Valued.v (uniformizer_inv_pow K v n) = WithZero.exp (n : ℤ) := by
+  unfold uniformizer_inv_pow
+  rw [Valuation.map_pow, uniformizer_inv_val]
+  induction n with
+  | zero => simp [WithZero.exp_zero]
+  | succ n ih =>
+    rw [pow_succ, ih, ← WithZero.exp_add]
+    congr 1
+    omega
+
+/-- π⁻¹ is nonzero. -/
+lemma uniformizer_inv_ne_zero : uniformizer_inv K v ≠ 0 := by
+  unfold uniformizer_inv
+  exact inv_ne_zero (uniformizer_ne_zero K v)
+
+/-- (π⁻¹)^n is nonzero for any n. -/
+lemma uniformizer_inv_pow_ne_zero (n : ℕ) : uniformizer_inv_pow K v n ≠ 0 := by
+  unfold uniformizer_inv_pow
+  exact pow_ne_zero n (uniformizer_inv_ne_zero K v)
+
+/-- Powers of π: π^n for n : ℕ. -/
+noncomputable def uniformizer_pow (n : ℕ) : v.adicCompletion K :=
+  (uniformizer_elem K v) ^ n
+
+/-- The valuation of π^n is exp(-n). -/
+lemma uniformizer_pow_val (n : ℕ) :
+    Valued.v (uniformizer_pow K v n) = WithZero.exp (-(n : ℤ)) := by
+  unfold uniformizer_pow
+  rw [Valuation.map_pow, (uniformizer K v).val_eq]
+  induction n with
+  | zero => simp [WithZero.exp_zero]
+  | succ n ih =>
+    rw [pow_succ, Valuation.map_mul, ih, (uniformizer K v).val_eq, ← WithZero.exp_add]
+    congr 1
+    omega
+
+/-- π^n lies in O_v for any n ≥ 0. -/
+lemma uniformizer_pow_mem_integers (n : ℕ) :
+    uniformizer_pow K v n ∈ v.adicCompletionIntegers K := by
+  show Valued.v (uniformizer_pow K v n) ≤ 1
+  rw [uniformizer_pow_val]
+  exact le_of_lt (WithZero.exp_lt_exp.mpr (by omega : -(n : ℤ) < 0))
+
+/-- π^n as an element of O_v. -/
+noncomputable def uniformizer_pow_in_Ov (n : ℕ) : v.adicCompletionIntegers K :=
+  ⟨uniformizer_pow K v n, uniformizer_pow_mem_integers K v n⟩
+
+/-- For nonzero x in the integer ring with val(x) < 1, we have val(x) ≤ exp(-1).
+This uses the fact that the valuation takes values in {0} ∪ {exp(n) : n ∈ ℤ},
+so val < 1 = exp(0) and val ≠ 0 implies val = exp(n) for some n ≤ -1.
+
+**Key insight**: The adic valuation is a discrete valuation with uniformizer π satisfying
+val(π) = exp(-1). The next value below 1 = exp(0) is exp(-1).
+-/
+lemma val_lt_one_of_nonzero_le_exp_neg_one (x : v.adicCompletionIntegers K)
+    (hx_ne : (x : v.adicCompletion K) ≠ 0)
+    (hx_lt : Valued.v (x : v.adicCompletion K) < 1) :
+    Valued.v (x : v.adicCompletion K) ≤ WithZero.exp (-1 : ℤ) := by
+  -- The valuation is nonzero (since x ≠ 0)
+  have hval_ne : Valued.v (x : v.adicCompletion K) ≠ 0 := by
+    intro h0
+    exact hx_ne (Valuation.zero_iff.mp h0)
+  -- For a nonzero element x ∈ WithZero Γ₀, we can extract x = ↑(some g ∈ Γ₀)
+  -- In our case Γ₀ = Multiplicative ℤ, so x = exp(n) for some n : ℤ
+  -- WithZero.ne_zero_iff_exists gives us this
+  rw [WithZero.ne_zero_iff_exists] at hval_ne
+  obtain ⟨g, hg⟩ := hval_ne
+  -- g ∈ Multiplicative ℤ, and there exists n : ℤ with g = Multiplicative.ofAdd n
+  -- This means (↑g : WithZero _) = WithZero.exp n
+  -- We have hx_lt : (↑g) < 1 = exp(0), so g < Multiplicative.ofAdd 0
+  -- In Multiplicative ℤ, this means g = Multiplicative.ofAdd n for some n < 0
+  rw [← hg] at hx_lt ⊢
+  -- Now we need: (↑g : WithZero (Multiplicative ℤ)) ≤ exp(-1) given (↑g) < 1 = exp(0)
+  -- First, (↑g) < exp(0) means g < Multiplicative.ofAdd 0 (via WithZero.coe_lt_coe)
+  rw [← WithZero.coe_one, WithZero.coe_lt_coe] at hx_lt
+  -- g < 1 in Multiplicative ℤ means toAdd g < 0
+  have hg_neg : Multiplicative.toAdd g < 0 := by
+    rwa [← Multiplicative.ofAdd_zero, Multiplicative.ofAdd_lt] at hx_lt
+  -- Now (↑g) ≤ exp(-1) iff g ≤ Multiplicative.ofAdd (-1)
+  rw [← WithZero.coe_le_coe, ← WithZero.exp]
+  -- Reduce to toAdd g ≤ -1
+  rw [Multiplicative.ofAdd_le]
+  omega
+
+/-! ### Higher-Order Pole Residue via Recursion
+
+For x with val(x) ≤ exp(n), we define the residue recursively:
+- If n = 0: x ∈ O_v, residue = 0
+- If n ≥ 1 and val(x) ≤ exp(n-1): recurse with smaller bound
+- If n ≥ 1 and val(x) > exp(n-1): strip leading term and recurse
+
+The recursion is well-founded on n : ℕ.
+-/
+
+/-- For x with val(x) ≤ exp(n), multiplying by π^n gives an element of O_v. -/
+lemma mul_uniformizer_pow_mem_integers (x : v.adicCompletion K) (n : ℕ)
+    (hx : Valued.v x ≤ WithZero.exp (n : ℤ)) :
+    x * uniformizer_pow K v n ∈ v.adicCompletionIntegers K := by
+  show Valued.v (x * uniformizer_pow K v n) ≤ 1
+  rw [Valuation.map_mul, uniformizer_pow_val]
+  calc Valued.v x * WithZero.exp (-(n : ℤ))
+      ≤ WithZero.exp (n : ℤ) * WithZero.exp (-(n : ℤ)) := mul_le_mul_right' hx _
+    _ = WithZero.exp (n + -(n : ℤ)) := by rw [← WithZero.exp_add]
+    _ = WithZero.exp 0 := by ring_nf
+    _ = 1 := WithZero.exp_zero
+
+/-- Helper: if val(x) ≤ exp(n) but val(x) > exp(n-1), then extracting the leading
+coefficient and subtracting gives an element with val ≤ exp(n-1). -/
+lemma val_after_leading_term_subtraction (x : v.adicCompletion K) (n : ℕ) (hn : n ≥ 1)
+    (hx_upper : Valued.v x ≤ WithZero.exp (n : ℤ))
+    (hx_lower : ¬Valued.v x ≤ WithZero.exp ((n - 1 : ℕ) : ℤ)) :
+    let a := residueMap_Ov K v ⟨x * uniformizer_pow K v n,
+             mul_uniformizer_pow_mem_integers K v x n hx_upper⟩
+    let a_lift := liftFromResidue K v a
+    Valued.v (x - (a_lift : v.adicCompletion K) * uniformizer_inv_pow K v n) ≤
+      WithZero.exp ((n - 1 : ℕ) : ℤ) := by
+  intro a a_lift
+  -- Step 1: x * π^n and a_lift have the same residue class
+  -- So their difference is in the maximal ideal m_v
+  have h_same_residue : residueMap_Ov K v ⟨x * uniformizer_pow K v n,
+      mul_uniformizer_pow_mem_integers K v x n hx_upper⟩ = residueMap_Ov K v a_lift := by
+    -- a_lift is defined as the lift of a, so it projects back to a
+    exact (liftFromResidue_proj K v a).symm
+  -- The difference x * π^n - a_lift lies in m_v (maximal ideal)
+  have h_diff_mem : (⟨x * uniformizer_pow K v n, mul_uniformizer_pow_mem_integers K v x n hx_upper⟩ : v.adicCompletionIntegers K) - a_lift ∈ maximalIdeal_Ov K v := by
+    rw [IsLocalRing.mem_maximalIdeal]
+    intro hu
+    -- If the difference is a unit, its residue class is nonzero
+    -- But both have the same residue class, so the difference has residue 0
+    have hdiff_res : residueMap_Ov K v (⟨x * uniformizer_pow K v n, _⟩ - a_lift) = 0 := by
+      simp only [map_sub, h_same_residue, sub_self]
+    -- A unit in O_v cannot map to 0 under the residue map
+    rw [IsLocalRing.residue_eq_zero_iff] at hdiff_res
+    exact hu.not_isUnit_of_mem_maximalIdeal hdiff_res
+  -- Step 2: Elements in m_v have valuation < 1 = exp(0), hence ≤ exp(-1)
+  have h_diff_val : Valued.v ((⟨x * uniformizer_pow K v n, _⟩ : v.adicCompletionIntegers K) - a_lift : v.adicCompletion K) ≤ WithZero.exp (-1 : ℤ) := by
+    -- Convert membership in maximal ideal to valuation condition
+    have hval_lt : Valued.v ((⟨x * uniformizer_pow K v n, mul_uniformizer_pow_mem_integers K v x n hx_upper⟩ : v.adicCompletionIntegers K) - a_lift : v.adicCompletion K) < 1 := by
+      rw [← ResidueFieldIso.mem_maximalIdeal_iff_val_lt_one]
+      exact h_diff_mem
+    -- Either the element is zero (val = 0 ≤ exp(-1)) or nonzero (val < 1 implies val ≤ exp(-1))
+    by_cases hz : ((⟨x * uniformizer_pow K v n, mul_uniformizer_pow_mem_integers K v x n hx_upper⟩ : v.adicCompletionIntegers K) - a_lift : v.adicCompletion K) = 0
+    · -- If zero, val = 0 ≤ exp(-1)
+      rw [hz, Valuation.map_zero]
+      exact bot_le
+    · -- Nonzero element with val < 1 implies val ≤ exp(-1)
+      exact val_lt_one_of_nonzero_le_exp_neg_one K v
+        (⟨x * uniformizer_pow K v n, mul_uniformizer_pow_mem_integers K v x n hx_upper⟩ - a_lift)
+        hz hval_lt
+  -- Step 3: Rewrite the expression as (x * π^n - a_lift) * π^{-n}
+  have h_rewrite : x - (a_lift : v.adicCompletion K) * uniformizer_inv_pow K v n =
+      ((⟨x * uniformizer_pow K v n, _⟩ : v.adicCompletionIntegers K) - a_lift : v.adicCompletion K) *
+      uniformizer_inv_pow K v n := by
+    -- x - a_lift * π^{-n} = (x * π^n - a_lift) * π^{-n}
+    -- x * π^n * π^{-n} - a_lift * π^{-n} = x - a_lift * π^{-n} ✓
+    simp only [sub_mul, Subtype.coe_mk]
+    congr 1
+    -- x * π^n * π^{-n} = x
+    unfold uniformizer_inv_pow uniformizer_pow uniformizer_inv
+    rw [mul_comm (uniformizer_elem K v ^ n), ← mul_assoc]
+    rw [mul_inv_cancel_right₀ (pow_ne_zero n (uniformizer_ne_zero K v))]
+  -- Step 4: Compute the valuation
+  rw [h_rewrite, Valuation.map_mul, uniformizer_inv_pow_val]
+  calc Valued.v ((⟨x * uniformizer_pow K v n, _⟩ : v.adicCompletionIntegers K) - a_lift : v.adicCompletion K) *
+         WithZero.exp (n : ℤ)
+      ≤ WithZero.exp (-1 : ℤ) * WithZero.exp (n : ℤ) := mul_le_mul_right' h_diff_val _
+    _ = WithZero.exp (-1 + n : ℤ) := by rw [← WithZero.exp_add]
+    _ = WithZero.exp ((n - 1 : ℕ) : ℤ) := by congr 1; omega
+
+/-- Residue for elements with bounded pole order.
+
+For x with val(x) ≤ exp(n), computes the coefficient of π^{-1} in the Laurent expansion.
+Uses recursion on n, stripping leading terms for higher-order poles.
+-/
+noncomputable def residuePole (x : v.adicCompletion K) (n : ℕ)
+    (hx : Valued.v x ≤ WithZero.exp (n : ℤ)) : residueField_Ov K v :=
+  match n with
+  | 0 => 0  -- x ∈ O_v, no pole, residue is 0
+  | n + 1 =>
+    if h : Valued.v x ≤ WithZero.exp (n : ℤ) then
+      -- Pole order is actually ≤ n, recurse with smaller bound
+      residuePole x n h
+    else if hn1 : n = 0 then
+      -- Simple pole case (n + 1 = 1): residue = (x · π) mod m_v
+      residueSimplePole K v x (by rw [hn1]; exact hx)
+    else
+      -- Higher order pole (n + 1 ≥ 2): strip leading term and recurse
+      -- Leading coefficient: a = (x · π^{n+1}) mod m_v
+      let a := residueMap_Ov K v ⟨x * uniformizer_pow K v (n + 1),
+               mul_uniformizer_pow_mem_integers K v x (n + 1) hx⟩
+      -- Lift a back to O_v
+      let a_lift := liftFromResidue K v a
+      -- Compute y = x - a_lift · π^{-(n+1)}
+      let y := x - (a_lift : v.adicCompletion K) * uniformizer_inv_pow K v (n + 1)
+      -- y has pole order ≤ n, recurse
+      -- The proof that val(y) ≤ exp(n) is deferred
+      residuePole y n (val_after_leading_term_subtraction K v x (n + 1) (by omega) hx h)
+
+/-- The recursive residue agrees with simple pole residue for simple poles. -/
+theorem residuePole_eq_residueSimplePole (x : v.adicCompletion K)
+    (hx : Valued.v x ≤ WithZero.exp (1 : ℤ)) :
+    residuePole K v x 1 hx = residueSimplePole K v x hx := by
+  unfold residuePole
+  split_ifs with h
+  · -- val(x) ≤ 1, so x ∈ O_v
+    simp only [residuePole]
+    -- residuePole x 0 _ = 0 = residueSimplePole for integers
+    have hsimp : residueSimplePole K v x hx = 0 := by
+      unfold residueSimplePole
+      simp only [dif_pos h]
+    rw [hsimp]
+  · -- val(x) > 1 but ≤ exp(1), genuine simple pole
+    rfl
+
+/-- The recursive residue vanishes on integers. -/
+theorem residuePole_vanishes_on_integers (x : v.adicCompletionIntegers K) (n : ℕ)
+    (hx : Valued.v (x : v.adicCompletion K) ≤ WithZero.exp (n : ℤ)) :
+    residuePole K v x n hx = 0 := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    unfold residuePole
+    have hint : Valued.v (x : v.adicCompletion K) ≤ 1 := x.property
+    -- For integers, val ≤ 1 = exp(0), so val ≤ exp(n) for any n ≥ 0
+    have hexp : Valued.v (x : v.adicCompletion K) ≤ WithZero.exp (n : ℤ) := by
+      calc Valued.v (x : v.adicCompletion K) ≤ 1 := hint
+        _ = WithZero.exp 0 := WithZero.exp_zero.symm
+        _ ≤ WithZero.exp (n : ℤ) := WithZero.exp_le_exp.mpr (by omega : (0 : ℤ) ≤ n)
+    -- The first branch always triggers since x is an integer
+    simp only [dif_pos hexp]
+    -- Now we need to show residuePole x n hexp = 0
+    exact ih hexp
+
+/-! ### Towards Eliminating localResidueHom Axiom
+
+Once `residuePole` is fully proven, we can define `localResidueHom` concretely
+as the composition of `residuePole` with the bound on pole orders.
+
+For adelic elements, the pole order at each place is bounded by the divisor.
+This allows us to use `residuePole` with an explicit bound.
+
+**TODO** (future cycle):
+1. Prove `val_after_leading_term_subtraction` using valuation arithmetic
+2. Prove additivity of `residuePole`
+3. Define `localResidueHom` as `residuePole` with sufficient pole bound
+4. Remove the axiom
+-/
+
 end RiemannRochV2.LocalResidue
 
-/-! ## Summary (Cycle 362)
+/-! ## Summary
+
+### Cycle 362 (Initial)
+**Axioms introduced**:
+1. `localResidueHom`: The local residue is an additive group homomorphism K_v →+ κ(v)
+2. `localResidue_vanishes_on_integers`: res_v(x) = 0 for x ∈ O_v
+
+**Theorems derived**:
+- `localResidue_add`: res_v(x+y) = res_v(x) + res_v(y)
+- `localResidue_zero`: res_v(0) = 0
+- `localResidue_neg`: res_v(-x) = -res_v(x)
+- `localResidue_sub`: res_v(x-y) = res_v(x) - res_v(y)
+
+### Cycle 378 (Concrete Residue)
+**Definitions**:
+- `residueSimplePole`: Concrete residue for elements with at most a simple pole
+- `residueSimplePole_vanishes_on_integers`: Simple pole residue is 0 for integers
+
+### Cycle 379 (Higher-Order Poles)
+**New definitions**:
+- `liftFromResidue`: Lifts residue field elements back to O_v via `Function.surjInv`
+- `uniformizer_inv`, `uniformizer_inv_pow`: Inverse uniformizer and its powers
+- `uniformizer_pow`, `uniformizer_pow_in_Ov`: Uniformizer powers in O_v
+- `residuePole`: Recursive residue for poles of arbitrary order
+
+**Key lemmas**:
+- `val_lt_one_of_nonzero_le_exp_neg_one`: Elements in m_v have val ≤ exp(-1)
+- `val_after_leading_term_subtraction`: Stripping leading term reduces pole order
+- `residuePole_eq_residueSimplePole`: Agrees with simple pole residue
+- `residuePole_vanishes_on_integers`: Vanishes on integers
+
+**Remaining sorries** (not on critical path):
+- `uniformizer_not_mem_maximalIdeal_sq`: π ∉ m_v² (DVR structure)
+
+**Target**: Eliminate `localResidueHom` axiom by proving additivity of `residuePole`.
+
+**Next**: Prove additivity of `residuePole` to define `localResidueHom` concretely.
+-/
+
+end
+-! ## Summary (Cycle 362)
 
 **Axioms introduced**:
 1. `localResidueHom`: The local residue is an additive group homomorphism K_v →+ κ(v)
